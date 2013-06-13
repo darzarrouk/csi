@@ -480,7 +480,7 @@ class multifaultsolve(object):
         fout.write('[ catmip.samplers.metropolis #%s.sampler ]\n'%(prefix))
         fout.write('steps = %i \n'%steps)
         fout.write('scaling = .1 \n')
-        fout.write('MinimumRatio = %f \n'%minimumratio)
+        fout.write('MinimumRatio = %e \n'%minimumratio)
         fout.write(' \n')
 
         fout.write('; COV schedule\n')
