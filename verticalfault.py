@@ -8,6 +8,7 @@ import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
 import okada4py as ok
+import scipy.interpolate as sciint
 
 class verticalfault(object):
 
@@ -93,6 +94,42 @@ class verticalfault(object):
         self.lon = np.array(Lon)
         self.lat = np.array(Lat)
 
+        # All done
+        return
+
+    def addfaults(self, filename):
+        '''
+        Add some other faults to plot with the modeled one.
+
+        Args:
+            * filename      : Name of the fault file (GMT lon lat format).
+        '''
+
+        # Allocate a list 
+        self.addfaults = []
+
+        # Read the file
+        fin = open(filename, 'r')
+        A = fin.readline()
+        tmpflt=[]
+        while len(A.split()) > 0:
+            if A.split()[0] is '>':
+                if len(tmpflt) > 0:
+                    self.addfaults.append(np.array(tmpflt))
+                tmpflt = []
+            else:
+                lon = float(A.split()[0])
+                lat = float(A.split()[1])
+                tmpflt.append([lon,lat])
+            A = fin.readline()
+        fin.close()
+
+        # Convert to utm
+        self.addfaultsxy = []
+        for fault in self.addfaults:
+            x,y = self.ll2xy(fault[:,0], fault[:,1])
+            self.addfaultsxy.append([x,y])
+        
         # All done
         return
 
@@ -333,7 +370,7 @@ class verticalfault(object):
         xt = xi[-1]                                       # Starting point
         while xt<self.xf[od][-1]:
             # First guess
-            xt = xi[-1] + every/2.
+            xt = xi[-1] + every*np.random.rand(1)
             # First guess of y
             yt = self.inter(xt)
             # Compute the distance between the two successive points
@@ -351,6 +388,12 @@ class verticalfault(object):
             if np.isfinite(xt) and np.isfinite(yt):
                 xi.append(xt)
                 yi.append(yt)
+
+        # Last point
+        d = np.sqrt( (self.xf[0]-xi[-1])**2 + (self.yf[0]-yi[-1])**2 )
+        if d > every/50.:
+            xi.append(self.xf[0])
+            yi.append(self.yf[0])
 
         # Store the result in self
         self.xi = np.array(xi)
@@ -419,11 +462,11 @@ class verticalfault(object):
                 p[0,:] = [x1, y1, z[j]]
                 pll[0,:] = [lon1, lat1, z[j]]
                 p[1,:] = [x2, y2, z[j+1]]
-                pll[1,:] = [lon2, lat2, z[j]]
+                pll[1,:] = [lon2, lat2, z[j+1]]
                 p[2,:] = [x3, y3, z[j+1]]
                 pll[2,:] = [lon3, lat3, z[j+1]]
                 p[3,:] = [x4, y4, z[j]]
-                pll[3,:] = [lon4, lat4, z[j+1]]
+                pll[3,:] = [lon4, lat4, z[j]]
                 self.patch.append(p)
                 self.patchll.append(pll)
                 self.slip.append([0.0, 0.0, 0.0])
@@ -432,6 +475,82 @@ class verticalfault(object):
         self.slip = np.array(self.slip)
 
         # All done
+        return
+
+    def BuildPatchesVarResolution(self, depths, Depthpoints, Resolpoints, interpolation='linear'):
+        '''
+        Patchizes the fault with a variable patch size at depth.
+        The variable patch size is given by the respoints table.
+        Depthpoints = [depth1, depth2, depth3, ...., depthN]
+        Resolpoints = [Resol1, Resol2, Resol3, ...., ResolN]
+        The final resolution is interpolated given the 'interpolation' method.
+        Interpolation can be 'linear', 'cubic'.
+        '''
+
+        print('Build fault patches for fault %s between %f and %f km deep, with a variable resolution'%(self.name, self.top, self.depth))
+
+        # Define the depth vector
+        z = np.array(depths)
+        self.z_patches = z
+
+        # Interpolate the resolution
+        fint = sciint.interp1d(Depthpoints, Resolpoints, kind=interpolation)
+        resol = fint(z)
+
+        # build lists for storing things
+        self.patch = []
+        self.patchll = []
+        self.slip = []
+
+        # iterate over the depths 
+        for j in range(len(z)-1):
+
+            # discretize the fault at the desired resolution
+            print('Discretizing at depth %f'%z[j])
+            self.discretize(every=resol[j], tol=resol[j]/20.)
+
+            # iterate over the discretized fault
+            for i in range(len(self.xi)-1):
+                # First corner
+                x1 = self.xi[i]
+                y1 = self.yi[i]
+                lon1 = self.loni[i]
+                lat1 = self.lati[i]
+                # Second corner
+                x2 = self.xi[i]
+                y2 = self.yi[i]
+                lon2 = self.loni[i]
+                lat2 = self.lati[i]
+                # Third corner
+                x3 = self.xi[i+1]
+                y3 = self.yi[i+1]
+                lon3 = self.loni[i+1]
+                lat3 = self.lati[i+1]
+                # Fourth corner
+                x4 = self.xi[i+1]
+                y4 = self.yi[i+1]
+                lon4 = self.loni[i+1]
+                lat4 = self.loni[i+1]
+                # build patches
+                p = np.zeros((4,3))
+                pll = np.zeros((4,3))
+                # fill them
+                p[0,:] = [x1, y1, z[j]]
+                pll[0,:] = [lon1, lat1, z[j]]
+                p[1,:] = [x2, y2, z[j+1]]
+                pll[1,:] = [lon2, lat2, z[j+1]]
+                p[2,:] = [x3, y3, z[j+1]]
+                pll[2,:] = [lon3, lat3, z[j+1]]
+                p[3,:] = [x4, y4, z[j]]
+                pll[3,:] = [lon4, lat4, z[j]]
+                self.patch.append(p)
+                self.patchll.append(pll)
+                self.slip.append([0.0, 0.0, 0.0])
+
+        # Translate slip into a np.array
+        self.slip = np.array(self.slip)
+
+        # all done
         return
 
     def deletepatch(self, patch):
@@ -1289,7 +1408,7 @@ class verticalfault(object):
         # All done
         return
 
-    def plot(self,ref='utm', figure=134):
+    def plot(self,ref='utm', figure=134, add=False):
         '''
         Plot the available elements of the fault.
         
@@ -1320,6 +1439,13 @@ class verticalfault(object):
             ax.plot(self.xf, self.yf, '-b')
         else:
             ax.plot(self.lon, self.lat,'-b')
+
+        if add and (ref is 'utm'):
+            for fault in self.addfaultsxy:
+                ax.plot(fault[:,0], fault[:,1], '-k')
+        elif add and (ref is not 'utm'):
+            for fault in self.addfaults:
+                ax.plot(fault[:,0], fault[:,1], '-k')
 
         # Plot the discretized trace
         if self.xi is not None:

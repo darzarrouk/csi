@@ -106,6 +106,10 @@ class multifaultsolve(object):
         # self ready
         self.ready = True
 
+        # Set the number of parameters
+        self.Nd = Nd
+        self.Np = Np
+
         # All done
         return
 
@@ -138,6 +142,9 @@ class multifaultsolve(object):
             st = self.fault_indexes[fault.name][0]
             se = self.fault_indexes[fault.name][1]
             self.Cm[st:se, st:se] = fault.Cm
+
+        # Store the number of parameters
+        self.Np = Np
 
         # All done
         return
@@ -188,6 +195,16 @@ class multifaultsolve(object):
         # All done
         return
 
+    def SetSolutionFromExternal(self, soln):
+        '''
+        Takes a vector where the solution of the problem is and affects it to mpost.
+        '''
+
+        # put it in mpost
+        self.mpost = soln
+
+        # All done
+        return
 
     def NonNegativeBruteSoln(self):
         '''
@@ -477,7 +494,7 @@ class multifaultsolve(object):
         fout.write(' \n')
 
         fout.write('; metropolis sampler\n')
-        fout.write('[ catmip.samplers.metropolis #%s.sampler ]\n'%(prefix))
+        fout.write('[ catmip.samplers.metropolis #%s.controller.sampler ]\n'%(prefix))
         fout.write('steps = %i \n'%steps)
         fout.write('scaling = .1 \n')
         fout.write(' \n')

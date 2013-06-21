@@ -596,13 +596,14 @@ class gpsrates(object):
         # All done
         return
 
-    def writetofile(self, filename):
+    def writetofile(self, filename, data='data'):
         '''
         Args:
             * filename  : Name of the output file.
-        '''
+            * data      : data or synth.
 
-        print ("Write data set %s to file %s"%(self.name, filename))
+        '''
+        print ("Write %s set %s to file %s"%(data, self.name, filename))
 
         # open the file
         fout = open(filename,'w')
@@ -612,8 +613,13 @@ class gpsrates(object):
 
         # Loop over stations
         for i in range(len(self.station)):
-            fout.write('%s %f %f %f %f %f %f %f %f \n'%(self.station[i], self.lon[i], self.lat[i], 
+            if data is 'data':
+                fout.write('%s %f %f %f %f %f %f %f %f \n'%(self.station[i], self.lon[i], self.lat[i], 
                                                         self.vel_enu[i,0], self.vel_enu[i,1], self.vel_enu[i,2],
+                                                        self.err_enu[i,0], self.err_enu[i,1], self.err_enu[i,2]))
+            elif data is 'synth':
+                fout.write('%s %f %f %f %f %f %f %f %f \n'%(self.station[i], self.lon[i], self.lat[i],
+                                                        self.synth[i,0], self.synth[i,1], self.synth[i,2],
                                                         self.err_enu[i,0], self.err_enu[i,1], self.err_enu[i,2]))
         
         # Close file

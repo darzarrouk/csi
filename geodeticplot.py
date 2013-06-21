@@ -62,11 +62,43 @@ class geodeticplot:
         # All done
         return
 
-    def faulttrace(self, fault, color='r'):
+    def set_view(self, elevation, azimuth):
+        '''
+        Sets azimuth and elevation angle for the 3D plot.
+        '''
+        # Set angles
+        self.faille.view_init(elevation,azimuth)
+        #all done
+        return
+
+    def set_xymap(self, xlim, ylim):
+        '''
+        Sets the xlim and ylim on the map.
+        '''
+
+        self.carte.xlim(xlim)
+        self.carte.ylim(ylim)
+
+        # All done
+        return
+
+    def faulttrace(self, fault, color='r', add=False):
         '''
         Args:
             * fault         : Fault class from verticalfault.
+            * color         : Color of the fault.
+            * add           : plot the faults in fault.addfaults    
         '''
+
+        # Plot the added faults before
+        if add and (self.ref is 'utm'):
+            for f in fault.addfaultsxy:
+                self.faille.plot(f[0], f[1], '-k')
+                self.carte.plot(f[0], f[1], '-k')
+        elif add and (self.ref is not 'utm'):
+            for f in fault.addfaults:
+                self.faille.plot(f[0], f[1], '-k')
+                self.carte.plot(f[0], f[1], '-k')
 
         # Plot the surface trace
         if self.ref is 'utm':
@@ -98,7 +130,7 @@ class geodeticplot:
         # All done
         return
 
-    def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True, plot_on_2d=False):
+    def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True, plot_on_2d=False, revmap=False):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -131,7 +163,10 @@ class geodeticplot:
         self.setzaxis(fault.depth+5., zticklabels=fault.z_patches)
 
         # set color business
-        cmap = plt.get_cmap('jet')
+        if revmap:
+            cmap = plt.get_cmap('jet_r')
+        else:
+            cmap = plt.get_cmap('jet')
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
