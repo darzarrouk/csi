@@ -323,3 +323,26 @@ class seismiclocations(object):
         # All done
         return  
 
+    def write2file(self, filename):
+        '''
+        Write the earthquakes to a file.
+        Args:
+            * filename      : Name of the output file.
+        '''
+
+        # open the file
+        fout = open(filename, 'w')
+
+        # Write a header
+        fout.write('# Lon | Lat | Depth (km) | Mw \n')
+
+        # Loop over the earthquakes
+        for u in range(len(self.lon)):
+            fout.write('%f %f %f %f \n'%(self.lon[u], self.lat[u], self.depth[u], self.mag[u]))
+        
+        # Close the file
+        fout.close()
+
+        # all done
+        return
+

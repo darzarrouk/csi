@@ -386,8 +386,6 @@ class verticalfault(object):
                 yt = self.inter(xt)
                 # New distance
                 d = np.sqrt((xt-xi[-1])**2 + (yt-yi[-1])**2)
-                # print
-                # print 'Out : %f %f %f %f %f %f %f '%(d, xt, yt, xi[-1], yi[-1], tol, every)
             # When d-every<tol, store the xt and yt values, if they are non-nan
             if np.isfinite(xt) and np.isfinite(yt):
                 xi.append(xt)
@@ -404,8 +402,7 @@ class verticalfault(object):
         self.yi = np.array(yi)
 
         # Compute the lon/lat
-        if self.utmzone is not None:
-            self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
+        self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
 
         # All done
         return
