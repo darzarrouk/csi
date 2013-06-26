@@ -340,14 +340,12 @@ class verticalfault(object):
             return pointwise(xs) #array(map(pointwise, array(xs)))
         return ufunclike
     
-    def discretize(self, every=2, tol=0.5, method='linear', fracstep=5.):
+    def discretize(self, every=2, tol=0.5, fracstep=0.2): 
         '''
         Refine the surface fault trace prior to divide it into patches.
         Args:
             * every         : Spacing between each point.
             * tol           : Tolerance in the spacing.
-            * method        : Interpolation method. Can be 'linear','nearest', 'zero', 'slinear', 'quadratic' or 'cubic'. Default is 'linear'.
-            * fracstep      : Jumping factor. The smallest, the bigger the jumps.
         '''
 
         # print
@@ -368,22 +366,28 @@ class verticalfault(object):
         xi = [self.xf[od][0]]                             # Interpolated x fault
         yi = [self.yf[od][0]]                             # Interpolated y fault
         xt = xi[-1]                                       # Starting point
-        while xt<self.xf[od][-1]:
+        while xt<self.xf[od][-1]+tol:
             # First guess
-            xt = xi[-1] + every*np.random.rand(1)
+            xt = xi[-1] + every 
             # First guess of y
             yt = self.inter(xt)
             # Compute the distance between the two successive points
             d = np.sqrt((xt-xi[-1])**2 + (yt-yi[-1])**2)
             while np.abs(d-every)>tol:
                 if (xt>xi[-1]) and ((d-every)>0):       # In that case, reduce xt
-                    xt = xt - d/fracstep
+                    xt -= (d-every)* fracstep
                 elif (xt>xi[-1]) and ((d-every)<0):     # In that case, increase xt
-                    xt = xt + d/fracstep
+                    xt += -1.* fracstep * (d-every) 
+                elif (xt<xi[-1]):
+                    xt += np.abs(d+every)
+                elif (xt>xi[0]):
+                    xt -= np.abs(d+every)
                 # Get corresponding yt
                 yt = self.inter(xt)
                 # New distance
                 d = np.sqrt((xt-xi[-1])**2 + (yt-yi[-1])**2)
+                # print
+                # print 'Out : %f %f %f %f %f %f %f '%(d, xt, yt, xi[-1], yi[-1], tol, every)
             # When d-every<tol, store the xt and yt values, if they are non-nan
             if np.isfinite(xt) and np.isfinite(yt):
                 xi.append(xt)
@@ -530,7 +534,7 @@ class verticalfault(object):
                 x4 = self.xi[i+1]
                 y4 = self.yi[i+1]
                 lon4 = self.loni[i+1]
-                lat4 = self.loni[i+1]
+                lat4 = self.lati[i+1]
                 # build patches
                 p = np.zeros((4,3))
                 pll = np.zeros((4,3))
@@ -551,6 +555,126 @@ class verticalfault(object):
         self.slip = np.array(self.slip)
 
         # all done
+        return
+
+    def readPatchesFromFile(self, filename):
+        '''
+        Read the patches from a GMT formatted file.
+        Args:   
+            * filename  : Name of the file.
+        '''
+
+        # create the lists
+        self.patch = []
+        self.patchll = []
+        self.slip = []
+
+        # open the file
+        fin = open(filename, 'r')
+
+        # read all the lines
+        A = fin.readlines()
+
+        # Loop over the file
+        i = 0
+        while i<len(A):
+            
+            # Assert it works
+            assert A[i].split()[0] is '>', 'Not a patch, reformat your file...'
+            # build patches
+            p = np.zeros((4,3))
+            pll = np.zeros((4,3))
+            # get the values
+            lon1, lat1, z1 = A[i+1].split()
+            lon2, lat2, z2 = A[i+2].split()
+            lon3, lat3, z3 = A[i+3].split()
+            lon4, lat4, z4 = A[i+4].split()
+            # Pass as floating point
+            lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1)
+            lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
+            # Pass as floating point
+            lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1)
+            lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
+            lon3 = float(lon3); lat3 = float(lat3); z3 = float(z3)
+            lon4 = float(lon4); lat4 = float(lat4); z4 = float(z4)
+            # Store theme
+            pll[0,:] = [lon1, lat1, z1]
+            pll[1,:] = [lon2, lat2, z2]
+            pll[2,:] = [lon3, lat3, z3]
+            pll[3,:] = [lon4, lat4, z4]
+            print pll
+            # translate to utm
+            x1, y1 = self.ll2xy(lon1, lat1)
+            x2, y2 = self.ll2xy(lon2, lat2)
+            x3, y3 = self.ll2xy(lon3, lat3)
+            x4, y4 = self.ll2xy(lon4, lat4)
+            # Put these in m
+            x1 /= 1000.; y1 /= 1000.
+            x2 /= 1000.; y2 /= 1000.
+            x3 /= 1000.; y3 /= 1000.
+            x4 /= 1000.; y4 /= 1000.
+            # Store them
+            p[0,:] = [x1, y1, z1]
+            p[1,:] = [x2, y2, z2]
+            p[2,:] = [x3, y3, z3]
+            p[3,:] = [x4, y4, z4]
+            print p
+            # Store these in the lists
+            self.patch.append(p)
+            self.patchll.append(pll)
+            self.slip.append([0.0, 0.0, 0.0])
+            # increase i
+            i += 5
+
+        # Close the file
+        fin.close()
+
+        # Translate slip to np.array
+        self.slip = np.array(self.slip)
+
+        # All done
+        return
+
+    def writePatches2File(self, filename, add_slip=None):
+        '''
+        Writes the patch corners in a file that can be used in psxyz.
+        Args:
+            * filename      : Name of the file.
+            * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total.
+        '''
+
+        # Write something
+        print('Writing geometry to file %s'%filename)
+
+        # Open the file
+        fout = open(filename, 'w')
+
+        # Loop over the patches
+        for p in range(len(self.patchll)):
+
+            # Select the string for the color
+            string = '  '
+            if add_slip is not None:
+                if add_slip is 'strikeslip':
+                    string = '-Z%f'%self.slip[p,0]
+                elif add_slip is 'dipslip':
+                    string = '-Z%f'%self.slip[p,1]
+                elif add_slip is 'total':
+                    slip = np.sqrt(self.slip[p,0]^2 + self.slip[p,1]^2)
+                    string = '-Z%f'%slip
+
+            # Write the string to file
+            fout.write('> %s \n'%string)
+
+            # Write the 4 patch corners
+            p = self.patchll[p]
+            for pp in p:
+                fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
+
+        # Close th file
+        fout.close()
+
+        # All done 
         return
 
     def deletepatch(self, patch):
