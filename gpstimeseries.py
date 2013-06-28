@@ -200,7 +200,7 @@ class gpstimeseries:
         # Loop over the stations
         for sta in self.station:
             
-            site = gpssta.gpsstation(sta)
+            site = gpssta.gpsstation(sta, directory=directory)
 
             if site.valid:
                 string = '\r Importing station %s'%sta
