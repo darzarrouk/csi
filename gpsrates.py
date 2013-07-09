@@ -6,6 +6,7 @@ Written by R. Jolivet, April 2013.
 
 import numpy as np
 import pyproj as pp
+import matplotlib.pyplot as plt
 
 class gpsrates(object):
 
@@ -47,7 +48,7 @@ class gpsrates(object):
         '''
 
         # Get the index
-        u = np.flatnonzero(self.station == station)
+        u = np.     latnonzero(self.station == station)
 
         # return the values
         return self.vel_enu[u,0], self.vel_enu[u,1], self.vel_enu[u,2]
@@ -112,6 +113,190 @@ class gpsrates(object):
             self.rot_enu = self.rot_enu*factor
         if self.synth is not None:
             self.synth = self.synth*factor
+
+        # All done
+        return
+
+    def getprofile(self, name, loncenter, latcenter, length, azimuth, width):
+        '''
+        Project the GPS velocities onto a profile. 
+        Works on the lat/lon coordinates system.
+        Args:
+            * name              : Name of the profile.
+            * loncenter         : Profile origin along longitude.
+            * latcenter         : Profile origin along latitude.
+            * length            : Length of profile.
+            * azimuth           : Azimuth in degrees.
+            * width             : Width of the profile.
+        '''
+
+        # the profiles are in a dictionary
+        if not hasattr(self, 'profiles'):
+            self.profiles = {}
+
+        # Azimuth into radians
+        alpha = azimuth*180.0/np.pi
+
+        # Convert the lat/lon of the center into UTM.
+        xc, yc = self.lonlat2xy(loncenter, latcenter)
+
+        # Copmute the across points of the profile
+        xa1 = xc - (width/2.)*np.cos(alpha)
+        ya1 = yc + (width/2.)*np.sin(alpha)
+        xa2 = xc + (width/2.)*np.cos(alpha)
+        ya2 = yc - (width/2.)*np.sin(alpha)
+
+        # Compute the endpoints of the profile
+        xe1 = xc + (length/2.)*np.sin(alpha)
+        ye1 = yc + (length/2.)*np.cos(alpha)
+        xe2 = xc - (length/2.)*np.sin(alpha)
+        ye2 = yc - (length/2.)*np.cos(alpha)
+
+        # Convert the endpoints
+        elon1, elat1 = self.xy2lonlat(xe1, ye1)
+        elon2, elat2 = self.xy2lonlat(xe2, ye2)
+
+        # Design a box in the UTM coordinate system.
+        x1 = xe1 - (width/2.)*np.cos(alpha)
+        y1 = ye1 + (width/2.)*np.sin(alpha)
+        x2 = xe1 + (width/2.)*np.cos(alpha)
+        y2 = ye1 - (width/2.)*np.sin(alpha)
+        x3 = xe2 + (width/2.)*np.cos(alpha) 
+        y3 = ye2 - (width/2.)*np.sin(alpha) 
+        x4 = xe2 - (width/2.)*np.cos(alpha) 
+        y4 = ye2 + (width/2.)*np.sin(alpha)
+        
+        # Convert the box into lon/lat for further things
+        lon1, lat1 = self.xy2lonlat(x1, y1)
+        lon2, lat2 = self.xy2lonlat(x2, y2)
+        lon3, lat3 = self.xy2lonlat(x3, y3)
+        lon4, lat4 = self.xy2lonlat(x4, y4)
+
+        # make the box 
+        box = []
+        box.append([x1, y1])
+        box.append([x2, y2])
+        box.append([x3, y3])
+        box.append([x4, y4])
+
+        # make latlon box
+        boxll = []
+        boxll.append([lon1, lat1]) 
+        boxll.append([lon2, lat2])
+        boxll.append([lon3, lat3])
+        boxll.append([lon4, lat4])
+
+        # Get the GPSs in this box.
+        # 1. import shapely and nxutils
+        import shapely.geometry as geom
+        import matplotlib.nxutils as mnu
+
+        # 2. Create an array with the GPS positions
+        GPSXY = np.vstack((self.x, self.y)).T
+
+        # 3. Find those who are inside
+        Bol = mnu.points_inside_poly(GPSXY, box)
+        
+        # 4. Get these GPS
+        xg = self.x[Bol]
+        yg = self.y[Bol]
+        vel = self.vel_enu[Bol,:]
+        err = self.err_enu[Bol,:]
+        names = self.station[Bol]
+
+        # 5. Get the sign of the scalar product between the line and the point
+        vec = np.array([xe1-xc, ye1-yc])
+        gpsxy = np.vstack((xg-xc, yg-yc)).T
+        sign = np.sign(np.dot(gpsxy, vec))
+
+        # 6. Compute the distance (along, across profile) and the velocity (normal/along profile)
+        # Create the list that will hold these values
+        Dacros = []; Dalong = []; Vacros = []; Valong = []; Vup = []; Eacros = []; Ealong = []; Eup = []
+        # Build a line object
+        Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
+        Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]])
+        # Build a multipoint
+        PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
+        # Create vectors
+        vec1 = vec/np.sqrt(vec[0]**2 + vec[1]**2)
+        vec2 = np.array([xa1-xc, ya1-yc]); vec2 /= np.sqrt(vec2[0]**2 + vec2[1]**2)
+        # Loop on the points
+        for p in range(len(PP.geoms)):
+            Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
+            Dacros.append(Lalong.distance(PP.geoms[p]))
+            Vacros.append(np.dot(vec2,vel[p,0:2]))
+            Valong.append(np.dot(vec1,vel[p,0:2]))
+            Eacros.append(np.dot(vec2,err[p,0:2]))
+            Ealong.append(np.dot(vec1,err[p,0:2]))
+            Vup.append(vel[p,2])
+            Eup.append(err[p,2])
+            
+        # Store it in the profile list
+        self.profiles[name] = {}
+        dic = self.profiles[name] 
+        dic['Center'] = [loncenter, latcenter]
+        dic['Length'] = length
+        dic['Width'] = width
+        dic['Box'] = np.array(boxll)
+        dic['Normal Velocity'] = np.array(Vacros)
+        dic['Normal Error'] = np.array(Eacros)
+        dic['Parallel Velocity'] = np.array(Valong)
+        dic['Parallel Error'] = np.array(Ealong)
+        dic['Vertical Velocity'] = np.array(Vup)
+        dic['Vertical Error'] = np.array(Eup)
+        dic['Distance'] = np.array(Dalong)
+        dic['Normal Distance'] = np.array(Dacros)
+        dic['Stations'] = names
+    
+        # all done
+        return
+
+    def plotprofile(self, name, legendscale=10.):
+        '''
+        Plot profile.
+        Args:
+            * name      : Name of the profile.
+            * legendscale: Length of the legend arrow.
+        '''
+
+        # open a figure
+        fig = plt.figure()
+        carte = fig.add_subplot(121)
+        prof = fig.add_subplot(122)
+
+        # plot the GPS stations on the map
+        p = carte.quiver(self.x, self.y, self.vel_enu[:,0], self.vel_enu[:,1], width=0.0025, color='k')
+        carte.quiverkey(p, 0.1, 0.9, legendscale, "%f"%legendscale, coordinates='axes', color='k')
+
+        # plot the box on the map
+        b = self.profiles[name]['Box']
+        bb = np.zeros((5, 2))
+        for i in range(4):
+            x, y = self.lonlat2xy(b[i,0], b[i,1])
+            bb[i,0] = x
+            bb[i,1] = y
+        bb[4,0] = bb[0,0]
+        bb[4,1] = bb[0,1]
+        carte.plot(bb[:,0], bb[:,1], '.k')
+        carte.plot(bb[:,0], bb[:,1], '-k')
+
+        # plot the selected stations on the map
+        # Later
+
+        # plot the profile
+        x = self.profiles[name]['Distance']
+        y = self.profiles[name]['Parallel Velocity']
+        ey = self.profiles[name]['Parallel Error']
+        p = prof.errorbar(x, y, yerr=ey, label='Fault normal velocity', marker='.', linestyle='')
+        y = self.profiles[name]['Normal Velocity']
+        ey = self.profiles[name]['Normal Error']
+        q = prof.errorbar(x, y, yerr=ey, label='Fault parallel velocity', marker='.', linestyle='')
+
+        # plot the legend
+        prof.legend()
+
+        # Show to screen 
+        plt.show()
 
         # All done
         return
@@ -283,6 +468,14 @@ class gpsrates(object):
 
         # All done
         return x, y
+
+    def xy2lonlat(self, x, y):
+        '''
+        Convert x, y to lon lat using the utm transform.
+        '''
+
+        # all done
+        return self.putm(x*1000., y*1000., inverse=True)
 
     def select_stations(self, minlon, maxlon, minlat, maxlat):
         ''' 
