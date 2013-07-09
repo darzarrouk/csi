@@ -632,12 +632,13 @@ class verticalfault(object):
         # All done
         return
 
-    def writePatches2File(self, filename, add_slip=None):
+    def writePatches2File(self, filename, add_slip=None, scale=1.0):
         '''
         Writes the patch corners in a file that can be used in psxyz.
         Args:
             * filename      : Name of the file.
             * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total.
+            * scale         : Multiply the slip value by a factor.
         '''
 
         # Write something
@@ -653,12 +654,14 @@ class verticalfault(object):
             string = '  '
             if add_slip is not None:
                 if add_slip is 'strikeslip':
-                    string = '-Z%f'%self.slip[p,0]
+                    slp = self.slip[p,0]*scale
+                    string = '-Z%f'%slp
                 elif add_slip is 'dipslip':
-                    string = '-Z%f'%self.slip[p,1]
+                    lp = self.slip[p,1]*scale
+                    string = '-Z%f'%slp
                 elif add_slip is 'total':
-                    slip = np.sqrt(self.slip[p,0]^2 + self.slip[p,1]^2)
-                    string = '-Z%f'%slip
+                    slp = np.sqrt(self.slip[p,0]^2 + self.slip[p,1]^2)*scale
+                    string = '-Z%f'%slp
 
             # Write the string to file
             fout.write('> %s \n'%string)
