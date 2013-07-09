@@ -135,7 +135,7 @@ class gpsrates(object):
             self.profiles = {}
 
         # Azimuth into radians
-        alpha = azimuth*180.0/np.pi
+        alpha = azimuth*np.pi/180.
 
         # Convert the lat/lon of the center into UTM.
         xc, yc = self.lonlat2xy(loncenter, latcenter)
@@ -247,11 +247,12 @@ class gpsrates(object):
         dic['Distance'] = np.array(Dalong)
         dic['Normal Distance'] = np.array(Dacros)
         dic['Stations'] = names
+        dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
     
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10.):
+    def plotprofile(self, name, legendscale=10., fault=None):
         '''
         Plot profile.
         Args:
@@ -292,14 +293,81 @@ class gpsrates(object):
         ey = self.profiles[name]['Normal Error']
         q = prof.errorbar(x, y, yerr=ey, label='Fault parallel velocity', marker='.', linestyle='')
 
+        # If a fault is here, plot it
+        if fault is not None:
+            # If there is only one fault
+            if fault.__class__ is not list:
+                fault = [fault]
+            # Loop on the faults
+            for f in fault:
+                carte.plot(f.xf, f.yf, '-')
+                # Get the distance
+                d = self.intersectProfileFault(name, f)
+                if d is not None:
+                    ymin, ymax = prof.get_ylim()
+                    prof.plot([d, d], [ymin, ymax], '--', label=f.name)
+
         # plot the legend
         prof.legend()
+
+        # axis of the map
+        carte.axis('equal')
 
         # Show to screen 
         plt.show()
 
         # All done
         return
+
+    def intersectProfileFault(self, name, fault):
+        '''
+        Gets the distance between the fault/profile intersection and the profile center.
+        Args:
+            * name      : name of the profile.
+            * fault     : fault object from verticalfault.
+        '''
+
+        # Grab the fault trace
+        xf = fault.xf
+        yf = fault.yf
+
+        # Grab the profile
+        prof = self.profiles[name]
+
+        # import shapely
+        import shapely.geometry as geom
+        
+        # Build a linestring with the profile center
+        Lp = geom.LineString(prof['EndPoints'])
+
+        # Build a linestring with the fault
+        ff = []
+        for i in range(len(xf)):
+            ff.append([xf[i], yf[i]])
+        Lf = geom.LineString(ff)
+
+        # Get the intersection
+        if Lp.crosses(Lf):
+            Pi = Lp.intersection(Lf)
+            p = Pi.coords[0]
+        else:
+            return None
+
+        # Get the center
+        lonc, latc = prof['Center']
+        xc, yc = self.lonlat2xy(lonc, latc)
+
+        # Get the sign 
+        xa,ya = prof['EndPoints'][0]
+        vec1 = [xa-xc, ya-yc]
+        vec2 = [p[0]-xc, p[1]-yc]
+        sign = np.sign(np.dot(vec1, vec2))
+
+        # Compute the distance to the center
+        d = np.sqrt( (xc-p[0])**2 + (yc-p[1])**2)*sign
+
+        # All done
+        return d
 
     def read_from_enu(self, velfile, factor=1., minerr=1., header=0):
         '''

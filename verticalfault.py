@@ -314,7 +314,7 @@ class verticalfault(object):
         self.yi = np.array(self.yi)
 
         # Build the corresponding lon lat arrays
-        self.loni, self.lati = self.xy2ll(self.xi*1000., self.yi*1000.)
+        self.loni, self.lati = self.xy2ll(self.xi, self.yi)
 
         # All done
         return
