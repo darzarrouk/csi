@@ -773,10 +773,12 @@ class verticalfault(object):
         # Remove the patch
         if patch.__class__ is int:
             del self.patch[patch]
+            del self.patchll[patch]
             self.slip = np.delete(self.slip, patch, axis=0)
         elif patch.__class__ is list:
             for p in patch:
                 del self.patch[p]
+                del self.patchll[p]
                 self.slip = np.delete(self.slip, p, axis=0)
 
         # All done
