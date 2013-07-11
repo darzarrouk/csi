@@ -362,40 +362,50 @@ class verticalfault(object):
         od = np.argsort(self.xf)
         self.inter = scint.interp1d(self.xf[od], self.yf[od], bounds_error=False)
     
-        # Loop to get equally spaced points
-        xi = [self.xf[od][0]]                             # Interpolated x fault
-        yi = [self.yf[od][0]]                             # Interpolated y fault
-        xt = xi[-1]                                       # Starting point
-        while xt<self.xf[od][-1]+tol:
-            # First guess
-            xt = xi[-1] + every 
-            # First guess of y
-            yt = self.inter(xt)
-            # Compute the distance between the two successive points
-            d = np.sqrt((xt-xi[-1])**2 + (yt-yi[-1])**2)
-            while np.abs(d-every)>tol:
-                if (xt>xi[-1]) and ((d-every)>0):       # In that case, reduce xt
-                    xt -= (d-every)* fracstep
-                elif (xt>xi[-1]) and ((d-every)<0):     # In that case, increase xt
-                    xt += -1.* fracstep * (d-every) 
-                elif (xt<xi[-1]):
-                    xt += np.abs(d+every)
-                elif (xt>xi[0]):
-                    xt -= np.abs(d+every)
-                # Get corresponding yt
-                yt = self.inter(xt)
-                # New distance
-                d = np.sqrt((xt-xi[-1])**2 + (yt-yi[-1])**2)
-            # When d-every<tol, store the xt and yt values, if they are non-nan
-            if np.isfinite(xt) and np.isfinite(yt):
+        # Initialize the list of equally spaced points
+        xi = [self.xf[od][0]]                               # Interpolated x fault
+        yi = [self.yf[od][0]]                               # Interpolated y fault
+        xlast = self.xf[od][-1]                             # Last point
+        ylast = self.yf[od][-1]
+
+        # First guess for the next point
+        xt = xi[-1] + every * fracstep 
+        # Check if first guess is in the domain
+        if xt>xlast:
+            xt = xlast
+        # Get the corresponding yt
+        yt = self.inter(xt)
+            
+        # While the last point is not the last wanted point
+        while (xi[-1] < xlast):
+            if (xt==xlast):         # I am at the end
                 xi.append(xt)
                 yi.append(yt)
-
-        # Last point
-        d = np.sqrt( (self.xf[0]-xi[-1])**2 + (self.yf[0]-yi[-1])**2 )
-        if d > every/50.:
-            xi.append(self.xf[0])
-            yi.append(self.yf[0])
+            else:                   # I am not at the end
+                # I compute the distance between me and the last accepted point
+                d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
+                # Check if I am in the tolerated range
+                if np.abs(d-every)<tol:
+                    xi.append(xt)
+                    yi.append(yt)
+                else:
+                    # While I am to far away from my goal and I did not pass the last x
+                    while ((np.abs(d-every)>tol) and (xt<xlast)):
+                        # I add the distance*frac that I need to go
+                        xt -= (d-every)*fracstep
+                        if (xt>xlast):          # If I passed the last point
+                            xt = xlast
+                        elif (xt<xi[-1]):       # If I passed the previous point
+                            xt = xi[-1] + every
+                        # I compute the corresponding yt
+                        yt = self.inter(xt)
+                        # I compute the corresponding distance
+                        d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
+                    # When I stepped out of that loop, append
+                    xi.append(xt)
+                    yi.append(yt)
+            # Next guess for the loop
+            xt = xi[-1] + every * fracstep
 
         # Store the result in self
         self.xi = np.array(xi)
@@ -478,7 +488,7 @@ class verticalfault(object):
         # All done
         return
 
-    def BuildPatchesVarResolution(self, depths, Depthpoints, Resolpoints, interpolation='linear'):
+    def BuildPatchesVarResolution(self, depths, Depthpoints, Resolpoints, interpolation='linear', minpatchsize=0.1, extrap=None):
         '''
         Patchizes the fault with a variable patch size at depth.
         The variable patch size is given by the respoints table.
@@ -508,7 +518,9 @@ class verticalfault(object):
 
             # discretize the fault at the desired resolution
             print('Discretizing at depth %f'%z[j])
-            self.discretize(every=resol[j], tol=resol[j]/20.)
+            self.discretize(every=np.floor(resol[j]), tol=resol[j]/20., fracstep=resol[j]/1000.)
+            if extrap is not None:
+                self.extrapolate(length_added=extrap[0], extrap=extrap[1])
 
             # iterate over the discretized fault
             for i in range(len(self.xi)-1):
@@ -544,15 +556,79 @@ class verticalfault(object):
                 pll[2,:] = [lon3, lat3, z[j+1]]
                 p[3,:] = [x4, y4, z[j]]
                 pll[3,:] = [lon4, lat4, z[j]]
-                self.patch.append(p)
-                self.patchll.append(pll)
-                self.slip.append([0.0, 0.0, 0.0])
+                psize = np.sqrt( (x3-x2)**2 + (y3-y2)**2 )
+                if psize>minpatchsize:
+                    self.patch.append(p)
+                    self.patchll.append(pll)
+                    self.slip.append([0.0, 0.0, 0.0])
+                else:           # Increase the size of the previous patch
+                    self.patch[-1][2,:] = [x3, y3, z[j+1]]
+                    self.patch[-1][3,:] = [x4, y4, z[j]]
+                    self.patchll[-1][2,:] = [lon3, lat3, z[j+1]]
+                    self.patchll[-1][3,:] = [lon4, lat4, z[j]]
+
 
         # Translate slip into a np.array
         self.slip = np.array(self.slip)
 
         # all done
         return
+
+    def mergePatches(self, p1, p2):
+        '''
+        Merges 2 patches that have common corners.
+        Args:
+            * p1    : index of the patch #1.
+            * p2    : index of the patch #2.
+        '''
+
+        print 'Merging patches %i and %i into patch %i'%(p1,p2,p1)
+
+        # Get the patches
+        patch1 = self.patch[p1]
+        patch2 = self.patch[p2]
+        patch1ll = self.patchll[p1]
+        patch2ll = self.patchll[p2]
+
+        # Create the newpatches
+        newpatch = np.zeros((4,3))
+        newpatchll = np.zeros((4,3))
+
+        # determine which corners are in common, needs at least two
+        if ((patch1[0]==patch2[1]).all() and (patch1[3]==patch2[2]).all()):     # patch2 is above patch1
+            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:] 
+            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
+            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
+            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
+        elif ((patch1[3]==patch2[0]).all() and (patch1[2]==patch2[1]).all()):   # patch2 is on the right of patch1
+            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
+            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
+            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
+            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
+        elif ((patch1[1]==patch2[0]).all() and (patch1[2]==patch2[3]).all()):   # patch2 is under patch1
+            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
+            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
+            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
+            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
+        elif ((patch1[0]==patch2[3]).all() and (patch1[1]==patch2[2]).all()):   # patch2 is on the left of patch1
+            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:]
+            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
+            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
+            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
+        else:
+            print 'Patches do not have common corners...'
+            return
+
+        # Replace the patch 1 by the new patch
+        self.patch[p1] = newpatch
+        self.patchll[p1] = newpatchll
+
+        # Delete the patch 2
+        self.deletepatch(p2)
+
+        # All done
+        return
+
 
     def readPatchesFromFile(self, filename):
         '''
@@ -663,13 +739,23 @@ class verticalfault(object):
                     slp = np.sqrt(self.slip[p,0]^2 + self.slip[p,1]^2)*scale
                     string = '-Z%f'%slp
 
-            # Write the string to file
-            fout.write('> %s \n'%string)
+            # Put the parameter number in the file as well if it exists
+            parameter = ' ' 
+            if hasattr(self,'index_parameter'):
+                i = np.int(self.index_parameter[p,0])
+                j = np.int(self.index_parameter[p,1])
+                k = np.int(self.index_parameter[p,2])
+                parameter = '# %i %i %i '%(i,j,k)
 
-            # Write the 4 patch corners
+            # Write the string to file
+            fout.write('> %s %s \n'%(string,parameter))
+
+            # Write the 4 patch corners (the order is to be GMT friendly)
             p = self.patchll[p]
-            for pp in p:
-                fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
+            pp=p[1]; fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
+            pp=p[0]; fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
+            pp=p[3]; fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
+            pp=p[2]; fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
 
         # Close th file
         fout.close()

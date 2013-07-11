@@ -167,6 +167,18 @@ class multifaultsolve(object):
             se = self.fault_indexes[fault.name][1]
             fault.mpost = self.mpost[st:se]
             
+            # Save the fault indexes
+            fault.index_parameter = np.zeros((fault.slip.shape))
+            fault.index_parameter[:,:] = 9999999
+            if 's' in fault.slipdir:
+                fault.index_parameter[:,0] = range(st, st+fault.slip.shape[0])
+                st += fault.slip.shape[0]
+            if 'd' in fault.slipdir:
+                fault.index_parameter[:,1] = range(st, st+fault.slip.shape[0])
+                st += fault.slip.shape[0]
+            if 'u' in fault.slipdir:
+                fault.index_parameter[:,2] = range(st, st+fault.slip.shape[0])
+
             # put the slip values in slip
             st = 0
             if 's' in fault.slipdir:
