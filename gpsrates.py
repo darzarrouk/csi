@@ -66,6 +66,17 @@ class gpsrates(object):
         # return the values
         return self.err_enu[u,0], self.err_enu[u,1], self.err_enu[u,2]
 
+    def scale_errors(self, scale):
+        '''
+        Multiplies the errors by scale.
+        '''
+
+        # Multiplyt
+        self.err_enu[:,:] *= scale
+
+        # all done
+        return
+
     def buildCd(self, direction='en'):
         '''
         Builds a diagonal data covariance matrix using the formal uncertainties in the GPS data.
@@ -117,7 +128,7 @@ class gpsrates(object):
         # All done
         return
 
-    def getprofile(self, name, loncenter, latcenter, length, azimuth, width):
+    def getprofile(self, name, loncenter, latcenter, length, azimuth, width, data='data'):
         '''
         Project the GPS velocities onto a profile. 
         Works on the lat/lon coordinates system.
@@ -128,11 +139,18 @@ class gpsrates(object):
             * length            : Length of profile.
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
+            * data              : Do the profile through the 'data' or the 'synth'etics.
         '''
 
         # the profiles are in a dictionary
         if not hasattr(self, 'profiles'):
             self.profiles = {}
+
+        # What data do we want
+        if data is 'data':
+            values = self.vel_enu
+        elif data is 'synth':
+            values = self.synth
 
         # Azimuth into radians
         alpha = azimuth*np.pi/180.
@@ -200,7 +218,7 @@ class gpsrates(object):
         # 4. Get these GPS
         xg = self.x[Bol]
         yg = self.y[Bol]
-        vel = self.vel_enu[Bol,:]
+        vel = values[Bol,:]
         err = self.err_enu[Bol,:]
         names = self.station[Bol]
 
@@ -238,10 +256,10 @@ class gpsrates(object):
         dic['Length'] = length
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
-        dic['Normal Velocity'] = np.array(Vacros)
-        dic['Normal Error'] = np.array(Eacros)
-        dic['Parallel Velocity'] = np.array(Valong)
-        dic['Parallel Error'] = np.array(Ealong)
+        dic['Parallel Velocity'] = np.array(Vacros)
+        dic['Parallel Error'] = np.array(Eacros)
+        dic['Normal Velocity'] = np.array(Valong)
+        dic['Normal Error'] = np.array(Ealong)
         dic['Vertical Velocity'] = np.array(Vup)
         dic['Vertical Error'] = np.array(Eup)
         dic['Distance'] = np.array(Dalong)
@@ -249,6 +267,58 @@ class gpsrates(object):
         dic['Stations'] = names
         dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
     
+        # all done
+        return
+
+    def writeProfile2File(self, name, filename, fault=None):
+        '''
+        Writes the profile named 'name' to the ascii file filename.
+        '''
+
+        # open a file
+        fout = open(filename, 'w')
+
+        # Get the dictionary
+        dic = self.profiles[name]
+
+        # Write the header
+        fout.write('#---------------------------------------------------\n')
+        fout.write('# Profile Generated with StaticInv\n')
+        fout.write('# Center: {} {} \n'.format(dic['Center'][0], dic['Center'][1]))
+        fout.write('# Endpoints: \n')
+        fout.write('#           {} {} \n'.format(dic['EndPoints'][0][0], dic['EndPoints'][0][1]))
+        fout.write('#           {} {} \n'.format(dic['EndPoints'][1][0], dic['EndPoints'][1][1]))
+        fout.write('# Box Points: \n')
+        fout.write('#           {} {} \n'.format(dic['Box'][0][0],dic['Box'][0][1]))
+        fout.write('#           {} {} \n'.format(dic['Box'][1][0],dic['Box'][1][1]))
+        fout.write('#           {} {} \n'.format(dic['Box'][2][0],dic['Box'][2][1]))
+        fout.write('#           {} {} \n'.format(dic['Box'][3][0],dic['Box'][3][1]))
+        
+        # Place faults in the header                                                     
+        if fault is not None:
+            if fault.__class__ is not list:                                             
+                fault = [fault]
+            fout.write('# Fault Positions: \n')                                          
+            for f in fault:
+                d = self.intersectProfileFault(name, f)
+                fout.write('# {}          {} \n'.format(f.name, d))
+        
+        fout.write('#---------------------------------------------------\n')
+
+        # Write the values
+        for i in range(len(dic['Distance'])):
+            d = dic['Distance'][i]
+            Vp = dic['Parallel Velocity'][i]
+            Ep = dic['Parallel Error'][i]
+            Vn = dic['Normal Velocity'][i]
+            En = dic['Normal Error'][i]
+            Vu = dic['Vertical Velocity'][i]
+            Eu = dic['Vertical Error'][i]
+            fout.write('{} {} {} {} {} {} {} \n'.format(d, Vp, Ep, Vn, En, Vu, Eu))
+
+        # Close the file
+        fout.close()
+
         # all done
         return
 
@@ -288,10 +358,10 @@ class gpsrates(object):
         x = self.profiles[name]['Distance']
         y = self.profiles[name]['Parallel Velocity']
         ey = self.profiles[name]['Parallel Error']
-        p = prof.errorbar(x, y, yerr=ey, label='Fault normal velocity', marker='.', linestyle='')
+        p = prof.errorbar(x, y, yerr=ey, label='Fault parallel velocity', marker='.', linestyle='')
         y = self.profiles[name]['Normal Velocity']
         ey = self.profiles[name]['Normal Error']
-        q = prof.errorbar(x, y, yerr=ey, label='Fault parallel velocity', marker='.', linestyle='')
+        q = prof.errorbar(x, y, yerr=ey, label='Fault normal velocity', marker='.', linestyle='')
 
         # If a fault is here, plot it
         if fault is not None:
@@ -414,6 +484,68 @@ class gpsrates(object):
                 east = np.float(A[6])
                 north = np.float(A[7])
                 up = np.float(A[8])
+                if east == 0.:
+                    east = minerr
+                if north == 0.:
+                    north = minerr
+                if up == 0:
+                    up = minerr
+                self.err_enu.append([east, north, up])
+
+        # Make np array with that
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+        self.vel_enu = np.array(self.vel_enu)*factor
+        self.err_enu = np.array(self.err_enu)*factor
+        self.station = np.array(self.station)
+        self.factor = factor
+
+        # Pass to xy 
+        self.ll2xy()
+
+        # All done
+        return
+
+    def read_from_unavco(self, velfile, factor=1., minerr=1., header=37):
+        '''
+        Reading velocities from a unavco file
+        '''
+
+        print ("Read data from file %s into data set %s"%(velfile, self.name))
+
+        # Keep the file
+        self.velfile = velfile
+
+        # open the file
+        fvel = open(self.velfile, 'r')
+
+        # read it 
+        Vel = fvel.readlines()
+
+        # Initialize things
+        self.lon = []           # Longitude list
+        self.lat = []           # Latitude list
+        self.vel_enu = []       # ENU velocities list
+        self.err_enu = []       # ENU errors list
+        self.station = []       # Name of the stations
+
+        for i in range(header,len(Vel)):
+
+            A = Vel[i].split()
+            if 'nan' not in A:
+
+                self.station.append(A[0])
+                self.lon.append(np.float(A[8]))
+                self.lat.append(np.float(A[7]))
+
+                east = np.float(A[20])
+                north = np.float(A[19])
+                up = np.float(A[21])
+                self.vel_enu.append([east, north, up])
+
+                east = np.float(A[23])
+                north = np.float(A[22])
+                up = np.float(A[24])
                 if east == 0.:
                     east = minerr
                 if north == 0.:
@@ -773,6 +905,27 @@ class gpsrates(object):
         # All done
         return 
 
+    def makeDelaunay(self):
+        '''
+        Builds a Delaunay triangulation of the GPS network.
+        '''
+
+        # import needed matplotlib
+        import matplotlib.delaunay as triangle
+
+        # Do the triangulation
+        Cense, Edges, Triangles, Neighbors = triangle.delaunay(self.x, self.y)
+
+        # Store the triangulation scheme
+        self.triangle = {}
+        self.triangle['CircumCenters'] = Cense
+        self.triangle['Edges'] = Edges
+        self.triangle['Triangles'] = Triangles
+        self.triangle['Neighbours'] = Neighbors
+
+        # All done
+        return
+
     def buildsynth(self, faults, direction='sd', include_poly=False):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
@@ -889,7 +1042,7 @@ class gpsrates(object):
         # All done 
         return
 
-    def plot(self, ref='utm', faults=None, figure=135):
+    def plot(self, ref='utm', faults=None, figure=135, name=False, legendscale=10., color='b', scale=150):
         '''
         Args:
             * ref       : can be 'utm' or 'lonlat'.
@@ -916,22 +1069,42 @@ class gpsrates(object):
         if faults is not None:
             for fault in faults:
                 if ref is 'utm':
-                    ax.plot(fault.xf, fault.yf, '-b')
+                    ax.plot(fault.xf, fault.yf, '-r', label=fault.name)
                 else:
-                    ax.plot(fault.lon, fault.lat, '-b')
+                    ax.plot(fault.lon, fault.lat, '-r', label=fault.name)
 
         # Plot the GPS velocities
         if ref is 'utm':
-            ax.quiver(self.x, self.y, self.vel_enu[:,0], self.vel_enu[:,1])
+            p = ax.quiver(self.x, self.y, self.vel_enu[:,0], self.vel_enu[:,1], label='data', color=color, scale=scale)
+            q = ax.quiverkey(p, 0.04, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
         else:
-            ax.quiver(self.lon, self.lat, self.vel_enu[:,0], self.vel_enu[:,1])
+            p = ax.quiver(self.lon, self.lat, self.vel_enu[:,0], self.vel_enu[:,1], label='data', scale=scale)
+            q = ax.quiverkey(p, 0.04, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
 
         # if some synthetics exist
         if self.synth is not None:
             if ref is 'utm':
-                ax.quiver(self.x, self.y, self.synth[:,0], self.synth[:,1], 'b')
+                s = ax.quiver(self.x, self.y, self.synth[:,0], self.synth[:,1], label='synth', color='r', scale=scale)
+                q = ax.quiverkey(s, 0.04, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color='r')
             else:
-                ax.quiver(self.lon, self.lat, self.synth[:,0], self.synth[:,1], 'b')
+                s = ax.quiver(self.lon, self.lat, self.synth[:,0], self.synth[:,1], label='synth', color='r', scale=scale)
+                q = ax.quiverkey(s, 0.04, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color='r')
+
+        # Plot the name of the stations if asked
+        if name:
+            if ref is 'utm':
+                for i in range(len(self.x)):
+                    ax.text(self.x[i], self.y[i], self.station[i], fontsize=12)
+            else:
+                for i in range(len(self.lon)):
+                    ax.text(self.lon[i], self.lat[i], self.station[i], fontsize=12)
+
+        # Plot the legend
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles, labels)
+
+        # Axis
+        ax.axis('equal')
 
         # Do the plot
         plt.show()

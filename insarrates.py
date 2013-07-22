@@ -7,6 +7,7 @@ Written by R. Jolivet, April 2013.
 import numpy as np
 import pyproj as pp
 import shapely.geometry as geom
+import matplotlib.pyplot as plt
 
 class insarrates(object):
 
@@ -42,6 +43,31 @@ class insarrates(object):
 
         # All done
         return
+
+    def lonlat2xy(self, lon, lat):
+        '''
+        Uses the transformation in self to convert  lon/lat vector to x/y utm.
+        Args:
+            * lon           : Longitude array.
+            * lat           : Latitude array.
+        '''
+
+        x, y = self.putm(lon,lat)
+        x /= 1000.
+        y /= 1000.
+
+        return x, y
+
+    def xy2lonlat(self, x, y):
+        '''
+        Uses the transformation in self to convert x.y vectors to lon/lat.
+        Args:
+            * x             : Xarray
+            * y             : Yarray
+        '''
+
+        lon, lat = self.putm(x*1000., y*1000., inverse=True)
+        return lon, lat
 
     def read_from_varres(self,filename, factor=1.0, step=0.0, header=2, cov=False):
         '''
@@ -96,9 +122,7 @@ class insarrates(object):
         fsp.close()
 
         # Compute lon lat to utm
-        x, y = self.putm(self.lon, self.lat)
-        self.x = x/1000.
-        self.y = y/1000.
+        self.x, self.y = self.lonlat2xy(self.lon,self.lat)
 
         # Compute corner to xy
         self.xycorner = np.zeros(self.corner.shape)
@@ -113,6 +137,64 @@ class insarrates(object):
         if cov:
             nd = self.vel.size
             self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))
+
+        # All done
+        return
+
+    def read_from_mat(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.115):
+        '''
+        Reads velocity map from a mat file.
+        Args:
+            * filename  : Name of the input file
+            * factor    : scale by a factor.
+            * step      : add a step.
+        '''
+
+        # Initialize values
+        self.vel = []
+        self.lon = []
+        self.lat = []
+        self.err = []
+        self.los = []
+
+        # Open the input file
+        import scipy.io as scio
+        A = scio.loadmat(filename)
+        
+        # Get the phase values
+        self.vel = A['velo'].flatten()*factor + step
+        self.err = A['verr'].flatten()
+        self.err[np.where(np.isnan(self.vel))] = np.nan
+        self.vel[np.where(np.isnan(self.err))] = np.nan
+
+        # Deal with lon/lat
+        Lon = A['posx'].flatten()
+        Lat = A['posy'].flatten()
+        Lon,Lat = np.meshgrid(Lon,Lat)
+        w,l = Lon.shape
+        self.lon = Lon.reshape((w*l,)).flatten()
+        self.lat = Lat.reshape((w*l,)).flatten()
+
+        # Keep the non-nan pixels
+        u = np.flatnonzero(np.isfinite(self.vel))
+        self.lon = self.lon[u]
+        self.lat = self.lat[u]
+        self.vel = self.vel[u]
+        self.err = self.err[u]
+
+        # Convert to utm
+        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
+
+        # Deal with the LOS
+        alpha = (heading+90.0)*np.pi/180.0
+        phi = incidence*np.pi/180.0
+        Se = np.sin(alpha) * np.sin(phi)
+        Sn = np.cos(alpha) * np.sin(phi)
+        Su = np.cos(phi)
+        self.los = np.ones((self.lon.shape[0],3))
+        self.los[:,0] *= Se
+        self.los[:,1] *= Sn
+        self.los[:,2] *= Su
 
         # All done
         return
@@ -321,6 +403,307 @@ class insarrates(object):
         # All done
         return
 
+    def getprofile(self, name, loncenter, latcenter, length, azimuth, width):
+        '''
+        Project the GPS velocities onto a profile. 
+        Works on the lat/lon coordinates system.
+        Args:
+            * name              : Name of the profile.
+            * loncenter         : Profile origin along longitude.
+            * latcenter         : Profile origin along latitude.
+            * length            : Length of profile.
+            * azimuth           : Azimuth in degrees.
+            * width             : Width of the profile.
+        '''
+
+        # the profiles are in a dictionary
+        if not hasattr(self, 'profiles'):
+            self.profiles = {}
+
+        # Azimuth into radians
+        alpha = azimuth*np.pi/180.
+
+        # Convert the lat/lon of the center into UTM.
+        xc, yc = self.lonlat2xy(loncenter, latcenter)
+
+        # Copmute the across points of the profile
+        xa1 = xc - (width/2.)*np.cos(alpha)
+        ya1 = yc + (width/2.)*np.sin(alpha)
+        xa2 = xc + (width/2.)*np.cos(alpha)
+        ya2 = yc - (width/2.)*np.sin(alpha)
+
+        # Compute the endpoints of the profile
+        xe1 = xc + (length/2.)*np.sin(alpha)
+        ye1 = yc + (length/2.)*np.cos(alpha)
+        xe2 = xc - (length/2.)*np.sin(alpha)
+        ye2 = yc - (length/2.)*np.cos(alpha)
+
+        # Convert the endpoints
+        elon1, elat1 = self.xy2lonlat(xe1, ye1)
+        elon2, elat2 = self.xy2lonlat(xe2, ye2)
+
+        # Design a box in the UTM coordinate system.
+        x1 = xe1 - (width/2.)*np.cos(alpha)
+        y1 = ye1 + (width/2.)*np.sin(alpha)
+        x2 = xe1 + (width/2.)*np.cos(alpha)
+        y2 = ye1 - (width/2.)*np.sin(alpha)
+        x3 = xe2 + (width/2.)*np.cos(alpha)
+        y3 = ye2 - (width/2.)*np.sin(alpha)
+        x4 = xe2 - (width/2.)*np.cos(alpha)
+        y4 = ye2 + (width/2.)*np.sin(alpha)
+
+        # Convert the box into lon/lat for further things
+        lon1, lat1 = self.xy2lonlat(x1, y1)
+        lon2, lat2 = self.xy2lonlat(x2, y2)     
+        lon3, lat3 = self.xy2lonlat(x3, y3)
+        lon4, lat4 = self.xy2lonlat(x4, y4)
+
+        # make the box 
+        box = []
+        box.append([x1, y1])
+        box.append([x2, y2])
+        box.append([x3, y3])
+        box.append([x4, y4])
+
+        # make latlon box
+        boxll = []
+        boxll.append([lon1, lat1])
+        boxll.append([lon2, lat2])
+        boxll.append([lon3, lat3])
+        boxll.append([lon4, lat4])
+
+        # Get the InSAR points in this box.
+        # 1. import shapely and nxutils
+        import shapely.geometry as geom
+        import matplotlib.nxutils as mnu
+
+        # 2. Create an array with the InSAR positions
+        SARXY = np.vstack((self.x, self.y)).T
+
+        # 3. Find those who are inside
+        Bol = mnu.points_inside_poly(SARXY, box)
+
+        # 4. Get these values
+        xg = self.x[Bol]
+        yg = self.y[Bol]
+        vel = self.vel[Bol]
+        err = self.err[Bol]
+
+        # 5. Get the sign of the scalar product between the line and the point
+        vec = np.array([xe1-xc, ye1-yc])
+        sarxy = np.vstack((xg-xc, yg-yc)).T
+        sign = np.sign(np.dot(sarxy, vec))
+
+        # 6. Compute the distance (along, across profile) and get the velocity
+        # Create the list that will hold these values
+        Dacros = []; Dalong = []; V = []; E = []
+        # Build lines of the profile
+        Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
+        Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]]) 
+        # Build a multipoint
+        PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
+        # Loop on the points
+        for p in range(len(PP.geoms)):
+            Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
+            Dacros.append(Lalong.distance(PP.geoms[p]))
+
+        # Store it in the profile list
+        self.profiles[name] = {}
+        dic = self.profiles[name]
+        dic['Center'] = [loncenter, latcenter]
+        dic['Length'] = length
+        dic['Width'] = width
+        dic['Box'] = np.array(boxll)
+        dic['LOS Velocity'] = vel
+        dic['LOS Error'] = err
+        dic['Distance'] = np.array(Dalong)
+        dic['Normal Distance'] = np.array(Dacros)
+        dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
+
+        # All done
+        return
+
+    def writeProfile2File(self, name, filename, fault=None):
+        '''
+        Writes the profile named 'name' to the ascii file filename.
+        '''
+
+        # open a file
+        fout = open(filename, 'w')
+
+        # Get the dictionary
+        dic = self.profiles[name]
+
+        # Write the header
+        fout.write('#---------------------------------------------------\n')
+        fout.write('# Profile Generated with StaticInv\n')
+        fout.write('# Center: {} {} \n'.format(dic['Center'][0], dic['Center'][1]))
+        fout.write('# Endpoints: \n')
+        fout.write('#           {} {} \n'.format(dic['EndPoints'][0][0], dic['EndPoints'][0][1]))
+        fout.write('#           {} {} \n'.format(dic['EndPoints'][1][0], dic['EndPoints'][1][1]))
+        fout.write('# Box Points: \n')
+        fout.write('#           {} {} \n'.format(dic['Box'][0][0],dic['Box'][0][1]))
+        fout.write('#           {} {} \n'.format(dic['Box'][1][0],dic['Box'][1][1]))
+        fout.write('#           {} {} \n'.format(dic['Box'][2][0],dic['Box'][2][1]))
+        fout.write('#           {} {} \n'.format(dic['Box'][3][0],dic['Box'][3][1]))
+
+        # Place faults in the header
+        if fault is not None:
+            if fault.__class__ is not list:
+                fault = [fault]
+            fout.write('# Fault Positions: \n')
+            for f in fault:
+                d = self.intersectProfileFault(name, f)
+                fout.write('# {}           {} \n'.format(f.name, d))
+
+        fout.write('#---------------------------------------------------\n')
+
+        # Write the values
+        for i in range(len(dic['Distance'])):
+            d = dic['Distance'][i]
+            Vp = dic['LOS Velocity'][i]
+            Ep = dic['LOS Error'][i]
+            if np.isfinite(Vp):
+                fout.write('{} {} {} \n'.format(d, Vp, Ep))
+
+        # Close the file
+        fout.close()
+
+        # all done
+        return
+
+    def plotprofile(self, name, legendscale=10., fault=None):
+        '''
+        Plot profile.
+        Args:
+            * name      : Name of the profile.
+            * legendscale: Length of the legend arrow.
+        '''
+
+        # open a figure
+        fig = plt.figure()
+        carte = fig.add_subplot(121)
+        prof = fig.add_subplot(122)
+
+        # Prepare a color map for insar
+        import matplotlib.colors as colors
+        import matplotlib.cm as cmx
+        cmap = plt.get_cmap('jet')
+        cNorm = colors.Normalize(vmin=self.vel.min(), vmax=self.vel.max())
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+
+        # plot the InSAR Points on the Map
+        carte.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, vmin=self.vel.min(), vmax=self.vel.max(), linewidths=0.0)
+        scalarMap.set_array(self.vel) 
+        plt.colorbar(scalarMap)
+
+        # plot the box on the map
+        b = self.profiles[name]['Box']
+        bb = np.zeros((5, 2))
+        for i in range(4):
+            x, y = self.lonlat2xy(b[i,0], b[i,1])
+            bb[i,0] = x
+            bb[i,1] = y
+        bb[4,0] = bb[0,0]
+        bb[4,1] = bb[0,1]
+        carte.plot(bb[:,0], bb[:,1], '.k')
+        carte.plot(bb[:,0], bb[:,1], '-k')
+
+        # plot the selected stations on the map
+        # Later
+
+        # plot the profile
+        x = self.profiles[name]['Distance']
+        y = self.profiles[name]['LOS Velocity']
+        ey = self.profiles[name]['LOS Error']
+        p = prof.errorbar(x, y, yerr=ey, label='los velocity', marker='.', linestyle='')
+
+        # If a fault is here, plot it
+        if fault is not None:
+            # If there is only one fault
+            if fault.__class__ is not list:
+                fault = [fault]
+            # Loop on the faults
+            for f in fault:
+                carte.plot(f.xf, f.yf, '-')
+                # Get the distance
+                d = self.intersectProfileFault(name, f)
+                if d is not None:
+                    ymin, ymax = prof.get_ylim()
+                    prof.plot([d, d], [ymin, ymax], '--', label=f.name)
+
+        # plot the legend
+        prof.legend()
+
+        # axis of the map
+        carte.axis('equal')
+
+        # Show to screen 
+        plt.show()
+
+        # All done
+        return
+
+    def intersectProfileFault(self, name, fault):
+        '''
+        Gets the distance between the fault/profile intersection and the profile center.
+        Args:
+            * name      : name of the profile.
+            * fault     : fault object from verticalfault.
+        '''
+
+        # Grab the fault trace
+        xf = fault.xf
+        yf = fault.yf
+
+        # Grab the profile
+        prof = self.profiles[name]
+
+        # import shapely
+        import shapely.geometry as geom
+
+        # Build a linestring with the profile center
+        Lp = geom.LineString(prof['EndPoints'])
+
+        # Build a linestring with the fault
+        ff = []
+        for i in range(len(xf)):
+            ff.append([xf[i], yf[i]])
+        Lf = geom.LineString(ff)
+
+        # Get the intersection
+        if Lp.crosses(Lf):
+            Pi = Lp.intersection(Lf)
+            p = Pi.coords[0]
+        else:
+            return None
+
+        # Get the center
+        lonc, latc = prof['Center']
+        xc, yc = self.lonlat2xy(lonc, latc)
+
+        # Get the sign 
+        xa,ya = prof['EndPoints'][0]
+        vec1 = [xa-xc, ya-yc]
+        vec2 = [p[0]-xc, p[1]-yc]
+        sign = np.sign(np.dot(vec1, vec2))
+
+        # Compute the distance to the center
+        d = np.sqrt( (xc-p[0])**2 + (yc-p[1])**2)*sign
+
+        # All done
+        return d
+
+    def writeProfile2File(self, name, outfile):
+        '''
+        Write the profile you asked for into a ascii file.
+        Args:
+                * name          : Name of the profile
+                * outfile       : Name of the output file
+        '''
+
+        return
+
     def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False):
         '''
         Plot the data set, together with a fault, if asked.
@@ -332,13 +715,6 @@ class insarrates(object):
             * gps       : superpose a GPS dataset.
             * decim     : plot the insar following the decimation process of varres.
         '''
-
-        # Check something 
-        if faults.__class__ is not list:
-            faults = [faults]
-
-        # Import some things
-        import matplotlib.pyplot as plt
 
         # Create the figure
         fig = plt.figure(figure)
@@ -354,6 +730,8 @@ class insarrates(object):
 
         # Plot the surface fault trace if asked
         if faults is not None:
+            if faults.__class__ is not list:
+                faults = [faults] 
             for fault in faults:
                 if ref is 'utm':
                     ax.plot(fault.xf, fault.yf, '-b')
@@ -401,9 +779,9 @@ class insarrates(object):
 
         # Plot the insar
         if ref is 'utm':
-            ax.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, vmin=self.vel.min(), vmax=self.vel.max())
+            ax.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, vmin=self.vel.min(), vmax=self.vel.max(), linewidths=0.)
         else:
-            ax.scatter(self.lon, self.lat, s=10, c=self.vel, cmap=cmap, vmin=self.vel.min(), vmax=self.vel.max())
+            ax.scatter(self.lon, self.lat, s=10, c=self.vel, cmap=cmap, vmin=self.vel.min(), vmax=self.vel.max(), linewidths=0.)
 
         # Colorbar
         scalarMap.set_array(self.vel)

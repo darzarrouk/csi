@@ -14,4 +14,5 @@ from .gpstimeseries import gpstimeseries
 from .gpsstation import gpsstation
 from .velocitymodel import velocitymodel
 from .dippingfault import dippingfault
+from .strainfield import strainfield
 from timefnutils import *
