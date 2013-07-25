@@ -860,6 +860,68 @@ class gpsrates(object):
         # All done
         return
     
+    def removeHelmertTransform(self, fault):
+        '''
+        Removes the Helmert Transform stored in the fault given as argument.
+        '''
+
+        # Get the size of the transform
+        assert fault.helmert[self.name]
+        Nh = fault.helmert[self.name]
+
+        # Get the number of observation per station
+        No = self.obs_per_station
+
+        # Get the position of the center of the network
+        x0 = np.mean(self.x)
+        y0 = np.mean(self.y)
+        z0 = 0                                              # No 3D for now, later
+
+        # Compute the baselines
+        base_x = self.x - x0
+        base_y = self.y - y0
+        base_z = 0
+
+        # Allocate a Helmert base
+        H = np.zeros((No,Nh))
+
+        # Fill in the part that does not change
+        H[:,:No] = np.eye(No)
+
+        # Store the transform here
+        self.HelmTransform = np.zeros(self.vel_enu.shape)
+
+        # Get the parameters for this data set
+        Hvec = fault.polysol[self.name]
+        self.HelmertParameters = Hvec
+
+        # Loop over the station
+        for i in range(self.station.shape[0]):
+
+            # Clean the part that changes
+            H[:,No:] = 0.0
+
+            # Put the rotation components and the scale components
+            x1, y1, z1 = base_x[i], base_y[i], base_z
+            if Nh==7:
+                H[:,3:6] = np.array([[0.0, -z1, y1],
+                                     [z1, 0.0, -x1],
+                                     [-y1, x1, 0.0]])
+                H[:,7] = np.array([x1, y1, z1])
+            else:
+                H[:,2] = np.array([y1, -x1])
+                H[:,3] = np.array([x1, y1])
+
+            # Do the transform
+            newv = np.dot(H,Hvec)
+            self.HelmTransform[i,:No] = newv
+
+            # Correct the data
+            self.vel_enu[i,:No] -= newv
+
+        # All done
+        return
+
     def remove_euler_rotation(self, eradius=6378137.0):
         '''
         Removes the best fit Euler rotation from the network.
@@ -905,9 +967,11 @@ class gpsrates(object):
         # All done
         return 
 
-    def makeDelaunay(self):
+    def makeDelaunay(self, plot=False):
         '''
         Builds a Delaunay triangulation of the GPS network.
+        Args:   
+            * plot          : True/False(default).
         '''
 
         # import needed matplotlib
@@ -915,6 +979,14 @@ class gpsrates(object):
 
         # Do the triangulation
         Cense, Edges, Triangles, Neighbors = triangle.delaunay(self.x, self.y)
+
+        # plot
+        if plot:
+            plt.figure()
+            for ed in Edges:
+                plt.plot([self.x[ed[0]], self.x[ed[1]]], [self.y[ed[0]], self.y[ed[1]]], '-')
+            plt.plot(self.x, self.y, '.k')
+            plt.show()
 
         # Store the triangulation scheme
         self.triangle = {}

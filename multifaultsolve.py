@@ -138,7 +138,6 @@ class multifaultsolve(object):
         
         # Store the guys
         for fault in faults:
-            print fault.name
             st = self.fault_indexes[fault.name][0]
             se = self.fault_indexes[fault.name][1]
             self.Cm[st:se, st:se] = fault.Cm
@@ -194,13 +193,20 @@ class multifaultsolve(object):
                 fault.slip[:,2] = fault.mpost[st:se]
                 st += fault.slip.shape[0]
 
-            # Get the polynomial values if they exist
+            # Get the polynomial/orbital/helmert values if they exist
             fault.polysol = {}
             for dset in fault.poly.keys():
-                if fault.poly[dset] > 0:
-                    se = st + fault.poly[dset]
-                    fault.polysol[dset] = fault.mpost[st:se]
-                    st += fault.poly[dset]
+                if (fault.poly[dset].__class__ is not str):
+                    if (fault.poly[dset] > 0):
+                        se = st + fault.poly[dset]
+                        fault.polysol[dset] = fault.mpost[st:se]
+                        st += fault.poly[dset]
+                elif (fault.poly[dset].__class__ is str):
+                    if fault.poly[dset] is 'full':
+                        nh = fault.helmert['GPS']
+                        se = st + nh
+                        fault.polysol[dset] = fault.mpost[st:se]
+                        st += nh
                 else:
                     fault.polysol[dset] = None
 

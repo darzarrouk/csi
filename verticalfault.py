@@ -937,7 +937,7 @@ class verticalfault(object):
         if 't' in slipdir:
             G['tensile'] = np.zeros((Ndt, Np))
 
-        # Initializes the data vector
+        # Initializes the data vector and the data covariance
         if data.dtype is 'insarrates':
             self.d[data.name] = data.vel
             vertical = True                 # In InSAR, you need to use the vertical, no matter what....
@@ -1007,6 +1007,119 @@ class verticalfault(object):
         # Clean the screen 
         sys.stdout.write('\n')
         sys.stdout.flush()
+
+        # All done
+        return
+
+    def differentiateGFs(self, datas):
+        '''
+        Uses the Delaunay triangulation to prepare a differential Green's function matrix, data vector
+        and data covariance matrix.
+        Args:   
+            * datas         : List of dataset concerned
+        '''
+
+        # Create temporary Green's function, data and Cd dictionaries to hold the new ones
+        Gdiff = {}
+        ddiff = {}
+
+        # Loop over the datasets
+        for data in datas:
+
+            # Check something
+            if data.dtype is not 'gpsrates':
+                print('This has not been implemented for other data set than gpsrates')
+                return
+
+            # Get the GFs, the data and the data covariance
+            G = self.G[data.name]
+            d = self.d[data.name]
+            Cd = data.Cd
+
+            # Get some size informations
+            nstation = data.station.shape[0]
+            lengthd = d.shape[0]
+            if (lengthd == 3*nstation):
+               vertical = True
+               ncomp = 3
+            else:
+               vertical = False
+               ncomp = 2
+
+            # Get the couples
+            edges = data.triangle['Edges']
+
+            # How many lines/columns ?
+            Nd = edges.shape[0]
+            k = G.keys()[0]
+            Np = G[k].shape[1]
+
+            # Create the spaces
+            Gdiff[data.name] = {}
+            for key in G.keys():
+                Gdiff[data.name][key] = np.zeros((Nd*ncomp, Np))
+            ddiff[data.name] = np.zeros((Nd*ncomp,))
+            Cddiff = np.zeros((Nd*ncomp, Nd*ncomp))
+
+            # Loop over the lines of Edges
+            for i in range(Nd):
+
+                # Get the couple
+                m = edges[i][0]
+                n = edges[i][1]
+
+                # Deal with the GFs
+                for key in G.keys():
+                    # East component
+                    Line1 = G[key][m,:]
+                    Line2 = G[key][n,:]
+                    Gdiff[data.name][key][i,:] = Line1 - Line2
+                    # North Component
+                    Line1 = G[key][m+nstation,:]
+                    Line2 = G[key][n+nstation,:]
+                    Gdiff[data.name][key][i+Nd,:] = Line1 - Line2
+                    # Vertical
+                    if vertical:
+                        Line1 = G[key][m+2*nstation,:]
+                        Line2 = G[key][n+2*nstation,:]
+                        Gdiff[data.name][key][i+2*Nd,:] = Line1 - Line2
+
+                # Deal with the data vector
+                # East
+                d1 = d[m]
+                d2 = d[n]
+                ddiff[data.name][i] = d1 - d2
+                # North
+                d1 = d[m+nstation]
+                d2 = d[n+nstation]
+                ddiff[data.name][i+Nd] = d1 - d2
+                # Vertical
+                if vertical:
+                    d1 = d[m+2*nstation]
+                    d2 = d[n+2*nstation]
+                    ddiff[data.name][i+2*Nd] = d1 - d2
+
+                # Deal with the Covariance (Only diagonal, for now)
+                # East
+                cd1 = Cd[m,m]
+                cd2 = Cd[n,n]
+                Cddiff[i,i] = cd1+cd2
+                # North
+                cd1 = Cd[m+nstation,m+nstation]
+                cd2 = Cd[n+nstation,n+nstation]
+                Cddiff[i+Nd,i+Nd] = cd1+cd2
+                # Vertical
+                if vertical:
+                    cd1 = Cd[m+2*nstation,m+2*nstation]
+                    cd2 = Cd[n+2*nstation,n+2*nstation]
+                    Cddiff[i+2*Nd,i+2*Nd] = cd1+cd2
+
+            # Once the data loop is done, store Cd
+            data.Cd = Cddiff
+
+        # Once it is all done, store G and d
+        self.G = Gdiff
+        self.d = ddiff
 
         # All done
         return
@@ -1140,6 +1253,8 @@ class verticalfault(object):
                               1 -> estimate a constant offset
                               3 -> estimate z = ax + by + c
                               4 -> estimate z = axy + bx + cy + d
+                              'full' -> Only for GPS, estimates a rotation, translation and scaling with 
+                                        respect to the center of the network (Helmert transform).
             * slipdir       : which directions of slip to include. can be any combination of s, d and t.
         '''
 
@@ -1155,19 +1270,42 @@ class verticalfault(object):
         self.poly = {}
 
         # Set poly right
-        if (polys.__class__ is float) or (polys.__class__ is int):
+        if polys.__class__ is not list:
             for data in datas:
-                self.poly[data.name] = polys*data.obs_per_station
+                if polys.__class__ is not str:
+                    self.poly[data.name] = polys*data.obs_per_station
+                else:
+                    if data.dtype is 'gpsrates':
+                        self.poly[data.name] = polys
+                    else:
+                        print('Data type must be gpsrates to implement a Helmert transform')
+                        return
         elif polys.__class__ is list:
             for d in range(len(datas)):
-                self.poly[datas[d].name] = polys[d]*data.obs_per_station
+                if polys[d].__class__ is not str:
+                    self.poly[datas[d].name] = polys[d]*data.obs_per_station
+                else:
+                    if datas[d].dtype is 'gpsrates':
+                        self.poly[datas[d].name] = polys[d]
+                    else:
+                        print('Data type must be gpsrates to implement a Helmert transform')
+                        return
 
         # Get the number of parameters
         N = len(self.patch)
         Nps = N*len(slipdir)
         Npo = 0
+        self.helmert = {}
         for data in datas :
-            Npo += (self.poly[data.name])
+            if self.poly[data.name] is 'full':
+                if data.obs_per_station==3:
+                    Npo += 7                    # 3D Helmert transform is 7 parameters
+                    self.helmert[data.name] = 7
+                else:   
+                    Npo += 4                    # 2D Helmert transform is 4 parameters
+                    self.helmert[data.name] = 4
+            else:
+                Npo += (self.poly[data.name])
         Np = Nps + Npo
 
         # Get the number of data
@@ -1209,27 +1347,39 @@ class verticalfault(object):
             G[el:el+Ndlocal,0:Nps] = Glocal
 
             # Build the polynomial function
-            if self.poly[data.name] > 0:
-                if data.dtype is 'gpsrates':
-                    orb = np.zeros((Ndlocal, self.poly[data.name]))
-                    nn = Ndlocal/data.obs_per_station
-                    orb[:nn, 0] = 1.0
-                    orb[nn:2*nn, 1] = 1.0
-                    if data.obs_per_station == 3:
-                        orb[2*nn:3*nn, 2] = 1.0
-                elif data.dtype is 'insarrates':
-                    orb = np.zeros((Ndlocal, self.poly[data.name]))
-                    orb[:] = 1.0
-                    if self.poly[data.name] >= 3:
-                        orb[:,1] = data.x/np.abs(data.x).max()
-                        orb[:,2] = data.y/np.abs(data.y).max()
-                    if self.poly[data.name] >= 4:
-                        orb[:,3] = (data.x/np.abs(data.x).max())*(data.y/np.abs(data.y).max())
+            if self.poly[data.name].__class__ is not str:
+                if self.poly[data.name] > 0:
+                    if data.dtype is 'gpsrates':
+                        orb = np.zeros((Ndlocal, self.poly[data.name]))
+                        nn = Ndlocal/data.obs_per_station
+                        orb[:nn, 0] = 1.0
+                        orb[nn:2*nn, 1] = 1.0
+                        if data.obs_per_station == 3:
+                            orb[2*nn:3*nn, 2] = 1.0
+                    elif data.dtype is 'insarrates':
+                        orb = np.zeros((Ndlocal, self.poly[data.name]))
+                        orb[:] = 1.0
+                        if self.poly[data.name] >= 3:
+                            orb[:,1] = data.x/np.abs(data.x).max()
+                            orb[:,2] = data.y/np.abs(data.y).max()
+                        if self.poly[data.name] >= 4:
+                            orb[:,3] = (data.x/np.abs(data.x).max())*(data.y/np.abs(data.y).max())
 
-                # Put it into G for as much observable per station we have
-                polend = polstart + self.poly[data.name]
-                G[el:el+Ndlocal, polstart:polend] = orb
-                polstart += self.poly[data.name]
+                    # Put it into G for as much observable per station we have
+                    polend = polstart + self.poly[data.name]
+                    G[el:el+Ndlocal, polstart:polend] = orb
+                    polstart += self.poly[data.name]
+            else:
+                if self.poly[data.name] is 'full':
+                    orb = self.getHelmertMatrix(data)
+                    if data.obs_per_station==3:
+                        nc = 7
+                    elif data.obs_per_station==2:
+                        nc = 4
+                    # Put it into G for as much observable per station we have
+                    polend = polstart + nc
+                    G[el:el+Ndlocal, polstart:polend] = orb
+                    polstart += nc
 
             # Update el to check where we are
             el = el + Ndlocal
@@ -1239,6 +1389,74 @@ class verticalfault(object):
 
         # All done
         return
+
+    def getHelmertMatrix(self, data):
+        '''
+        Returns a Helmert matrix for a gps data set.
+        '''
+
+        # Check
+        assert (data.dtype is 'gpsrates')
+
+        # Get the number of stations
+        ns = data.station.shape[0]
+
+        # Get the data vector size
+        nd = self.d[data.name].shape[0]
+
+        # Get the number of helmert transform parameters
+        if data.obs_per_station==3:
+            nc = 7
+        else:
+            nc = 4
+
+        # Check something
+        assert data.obs_per_station*ns==nd
+
+        # Get the position of the center of the network
+        x0 = np.mean(data.x)
+        y0 = np.mean(data.y)
+        z0 = 0              # We do not deal with the altitude of the stations yet (later)
+
+        # Compute the baselines
+        base_x = data.x - x0
+        base_y = data.y - y0
+        base_z = 0
+
+        # Allocate a Helmert base
+        H = np.zeros((data.obs_per_station,nc))
+        
+        # put the translation in it (that part never changes)
+        H[:,:data.obs_per_station] = np.eye(data.obs_per_station)
+
+        # Allocate the full matrix
+        Hf = np.zeros((nd,nc))
+
+        # Loop over the stations
+        for i in range(ns):
+
+            # Clean the part that changes
+            H[:,data.obs_per_station:] = 0.0
+
+            # Put the rotation components and the scale components
+            x1, y1, z1 = base_x[i], base_y[i], base_z
+            if nc==7:
+                H[:,3:6] = np.array([[0.0, -z1, y1],
+                                     [z1, 0.0, -x1],
+                                     [-y1, x1, 0.0]])
+                H[:,7] = np.array([x1, y1, z1])
+            else:
+                H[:,2] = np.array([y1, -x1])
+                H[:,3] = np.array([x1, y1])
+
+            # put the lines where they should be
+            Hf[i,:] = H[0]
+            Hf[i+ns,:] = H[1]
+            if nc==7:
+                Hf[i+2*ns,:] = H[2]
+
+        # all done 
+        return Hf
 
     def assembled(self, datas):
         ''' 
