@@ -25,7 +25,7 @@ class insarrates(object):
 
         print ("---------------------------------")
         print ("---------------------------------")
-        print (" Initialize InSAR data set %s"%self.name)
+        print (" Initialize InSAR data set {}".format(self.name))
 
         # Initialize the UTM transformation
         self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
@@ -80,7 +80,7 @@ class insarrates(object):
             * cov           : Read an additional covariance file (binary float32, Nd*Nd elements).
         '''
 
-        print ("Read from file %s into data set %s"%(filename, self.name))
+        print ("Read from file {} into data set {}".format(filename, self.name))
 
         # Open the file
         fin = open(filename+'.txt','r')
@@ -316,7 +316,7 @@ class insarrates(object):
         los = self.los
 
         # Open the file
-        filename = 'edks_%s.idEN'%(self.name)
+        filename = 'edks_{}.idEN'.format(self.name)
         fout = open(filename, 'w')
 
         # Write a header
@@ -324,7 +324,7 @@ class insarrates(object):
 
         # Loop over the data locations
         for i in range(len(x)):
-            string = '%5i %f %f %f %f %f \n'%(i, x[i], y[i], LOS[i,0], LOS[i,1], LOS[i,2])
+            string = '{:5d} {} {} {} {} {} \n'.format(i, x[i], y[i], LOS[i,0], LOS[i,1], LOS[i,2])
             fout.write(string)
 
         # Close the file

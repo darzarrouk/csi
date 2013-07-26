@@ -26,7 +26,7 @@ class velocitymodel(object):
         # print
         print ("---------------------------------")
         print ("---------------------------------")
-        print ("Initialize Velocity Model %s"%self.name)
+        print ("Initialize Velocity Model {}".format(self.name))
 
         # Create a utm transformation
         self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
@@ -564,15 +564,15 @@ class velocitymodel(object):
         fout = open(filename, 'w')
 
         # Write the first line
-        fout.write("%i 1000. \n"%(Nlayers))
+        fout.write("{} 1000. \n".format(Nlayers))
 
         # Loop over the depths
         d0 = 0
         for i in range(Nlayers):
             if i < Nlayers - 1:
-                string = " %f  %f  %f  %f \n"%(vs[i], vp[i], r[i], d[i]-d0)
+                string = " {}  {}  {}  {} \n".format(vs[i], vp[i], r[i], d[i]-d0)
             else:
-                string = " %f  %f  %f  0.00 \n"%(vs[i], vp[i], r[i])
+                string = " {}  {}  {}  0.00 \n".format(vs[i], vp[i], r[i])
             fout.write(string)
             # update d0
             d0 = d[i]

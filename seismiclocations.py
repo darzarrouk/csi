@@ -25,7 +25,7 @@ class seismiclocations(object):
 
         print ("---------------------------------")
         print ("---------------------------------")
-        print (" Initialize Seismicity data set %s"%self.name)
+        print (" Initialize Seismicity data set {}".format(self.name))
 
         # Initialize the UTM transformation
         self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
@@ -49,7 +49,7 @@ class seismiclocations(object):
             * header        : Size of the header.
         '''
 
-        print ("Read from file %s into data set %s"%(filename, self.name))
+        print ("Read from file {} into data set {}".format(filename, self.name))
 
         # Open the file
         fin = open(filename,'r')
@@ -124,7 +124,7 @@ class seismiclocations(object):
         self.maxlat = maxlat
 
         # Select on latitude and longitude
-        print( "Selecting the earthquakes in the box Lon: %f to %f and Lat: %f to %f"%(minlon, maxlon, minlat, maxlat))
+        print( "Selecting the earthquakes in the box Lon: {} to {} and Lat: {} to {}".format(minlon, maxlon, minlat, maxlat))
         u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon) & (self.depth < depth))
 
         # Select the stations
@@ -185,7 +185,7 @@ class seismiclocations(object):
             ed = end
 
         # Get values
-        print ("Selecting earthquake between %s and %s"%(st.isoformat(),ed.isoformat()))
+        print ("Selecting earthquake between {} and {}".format(st.isoformat(),ed.isoformat()))
         u = np.flatnonzero((self.time > st) & (self.time < ed))
 
         # Select the stations
@@ -212,7 +212,7 @@ class seismiclocations(object):
         mag = self.mag
 
         # get indexes
-        print ("Selecting earthquake between magnitudes %f and %f"%(minimum, maximum))
+        print ("Selecting earthquake between magnitudes {} and {}".format(minimum, maximum))
         u = np.flatnonzero((self.mag > minimum) & (self.mag < maximum))
 
         # Select the stations
@@ -338,7 +338,7 @@ class seismiclocations(object):
 
         # Loop over the earthquakes
         for u in range(len(self.lon)):
-            fout.write('%f %f %f %f \n'%(self.lon[u], self.lat[u], self.depth[u], self.mag[u]))
+            fout.write('{} {} {} {} \n'.format(self.lon[u], self.lat[u], self.depth[u], self.mag[u]))
         
         # Close the file
         fout.close()

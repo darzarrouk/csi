@@ -29,7 +29,7 @@ class gpstimeseries:
         # print
         print ("---------------------------------")
         print ("---------------------------------")
-        print ("Initialize GPS array %s"%self.name)
+        print ("Initialize GPS array {}".format(self.name))
 
         # Create a utm transformation
         self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
@@ -47,7 +47,7 @@ class gpstimeseries:
             * coordfile : File containing the coordinates.
         '''
 
-        print ("Read data from file %s into data set %s"%(coordfile, self.name))
+        print ("Read data from file {} into data set {}".format(coordfile, self.name))
 
         # Keep the files, to remember
         self.coordfile = coordfile
@@ -203,7 +203,7 @@ class gpstimeseries:
             site = gpssta.gpsstation(sta, directory=directory)
 
             if site.valid:
-                string = '\r Importing station %s'%sta
+                string = '\r Importing station {}'.format(sta)
                 sys.stdout.write(string)
                 sys.stdout.flush()
                 site.read_sopac_timeseries()
@@ -315,7 +315,7 @@ class gpstimeseries:
                 u_err = erreur / n
 
             # Create the string
-            string = '%s %f %f %f %f %f %f %f %f \n'%(sta.name, lon, lat, e_vel, n_vel, u_vel, e_err, n_err, u_err)
+            string = '{} {} {} {} {} {} {} {} {} \n'.format(sta.name, lon, lat, e_vel, n_vel, u_vel, e_err, n_err, u_err)
             fout.write(string)
 
         # Close file

@@ -47,24 +47,24 @@ class multifaultsolve(object):
         for fault in faults:
             if fault.Gassembled is None:
                 self.ready = False
-                print("G has not been assembled in fault structure %s"%fault.name)
+                print("G has not been assembled in fault structure {}".format(fault.name))
                 return
             if fault.dassembled is None:
                 self.ready = False
-                print("d has not been assembled in fault structure %s"%fault.name)
+                print("d has not been assembled in fault structure {}".format(fault.name))
 
         # Check that the sizes of the data vectors are consistent
         self.d = faults[0].dassembled
         for fault in faults:
             if (fault.dassembled != self.d).all():
-                print("Data vectors are not consistent, please re-consider your data in fault structure %s"%fault.name)
+                print("Data vectors are not consistent, please re-consider your data in fault structure {}".format(fault.name))
                 return
 
         # Check that the data covariance matrix is the same 
         self.Cd = faults[0].Cd
         for fault in faults:
             if (fault.Cd != self.Cd).all():
-                print("Data Covariance Matrix are not consistent, please re-consider your data in fault structure %s"%fault.name)
+                print("Data Covariance Matrix are not consistent, please re-consider your data in fault structure {}".format(fault.name))
                 return
 
         # Initialize things
@@ -159,7 +159,7 @@ class multifaultsolve(object):
         # Loop over the faults
         for fault in faults:
             
-            print ("Distribute the slip values to fault %s"%fault.name)
+            print ("Distribute the slip values to fault {}".format(fault.name))
 
             # Affect the model parameters
             st = self.fault_indexes[fault.name][0]
@@ -368,7 +368,7 @@ class multifaultsolve(object):
         self.Gfile = outfile
 
         # Print stuff
-        print("Green's functions matrix size: %i ; %i"%(G.shape))
+        print("Green's functions matrix size: {} ; {}".format(G.shape))
 
         # All done
         return
@@ -400,7 +400,7 @@ class multifaultsolve(object):
         self.dfile = outfile
 
         # Print stuff
-        print("Data vector size: %i"%(d.shape[0]))
+        print("Data vector size: {}".format(d.shape[0]))
 
         # All done
         return
@@ -433,7 +433,7 @@ class multifaultsolve(object):
         self.Cdfile = outfile
 
         # print stuff
-        print("Data Covariance Size: %i ; %i"%(Cd.shape))
+        print("Data Covariance Size: {} ; {}".format(Cd.shape))
 
         # All done
         return
@@ -481,7 +481,7 @@ class multifaultsolve(object):
         fout.write(' \n')
 
         fout.write('; exercising the sequential controller \n')
-        fout.write('[ %s ] \n'%(prefix))
+        fout.write('[ {} ] \n'.format(prefix))
         fout.write('shell = mpi \n')
         fout.write('model = altar.models.lineargm.linearfullcov \n')
         fout.write('controller = catmip.annealer \n')
@@ -489,38 +489,38 @@ class multifaultsolve(object):
         fout.write(' \n')
 
         fout.write('; model configuration \n')
-        fout.write('[ altar.models.lineargm.linearfullcov #%s.model ] \n'%(prefix))
-        fout.write('dof = %i \n'%(self.G.shape[1]))
-        fout.write('nd = %i \n'%(self.G.shape[0]))
-        fout.write('support = (%f, %f) \n'%(support[0], support[1]))
-        fout.write('Gfile=%s \n'%self.Gfile)
-        fout.write('dfile=%s \n'%(self.dfile))
-        fout.write('covfile=%s \n'%(self.Cdfile))
+        fout.write('[ altar.models.lineargm.linearfullcov #{}.model ] \n'.format(prefix))
+        fout.write('dof = {} \n'.format(self.G.shape[1]))
+        fout.write('nd = {} \n'.format(self.G.shape[0]))
+        fout.write('support = ({}, {}) \n'.format(support[0], support[1]))
+        fout.write('Gfile={} \n'.format(self.Gfile))
+        fout.write('dfile={} \n'.format(self.dfile))
+        fout.write('covfile={} \n'.format(self.Cdfile))
         fout.write(' \n')
 
         fout.write('; mpi application shell \n')
-        fout.write('[ mpi.shells.mpirun #%s.shell ] \n'%(prefix))
-        fout.write('tasks = %i \n'%(tasks))
+        fout.write('[ mpi.shells.mpirun #{}.shell ] \n'.format(prefix))
+        fout.write('tasks = {} \n'.format(tasks))
         fout.write(' \n')
 
         fout.write('; annealing schedule\n')
-        fout.write('[ catmip.controllers.annealer #%s.controller ]\n'%(prefix))
-        fout.write('chains = %i \n'%chains)
+        fout.write('[ catmip.controllers.annealer #{}.controller ]\n'.format(prefix))
+        fout.write('chains = {} \n'.format(chains))
         fout.write('tolerance = .005 \n')
         fout.write('scheduler = cov \n')
         fout.write('sampler = metropolis \n')
         fout.write(' \n')
 
         fout.write('; metropolis sampler\n')
-        fout.write('[ catmip.samplers.metropolis #%s.controller.sampler ]\n'%(prefix))
-        fout.write('steps = %i \n'%steps)
+        fout.write('[ catmip.samplers.metropolis #{}.controller.sampler ]\n'.format(prefix))
+        fout.write('steps = {} \n'.format(steps))
         fout.write('scaling = .1 \n')
         fout.write(' \n')
 
         fout.write('; COV schedule\n')
-        fout.write('[ catmip.schedulers.cov #%s.controller.scheduler ] \n'%(prefix))
+        fout.write('[ catmip.schedulers.cov #{}.controller.scheduler ] \n'.format(prefix))
         fout.write('tolerance = .01 \n')
-        fout.write('MinimumRatio = %e \n'%minimumratio)
+        fout.write('MinimumRatio = {} \n'.format(minimumratio))
         fout.write(' \n')
 
         fout.write('; end of file')
@@ -548,7 +548,7 @@ class multifaultsolve(object):
         fout.write('    import catmip \n')
         fout.write('    print(catmip.__file__) \n')
         fout.write('    # instantiate the default application\n')
-        fout.write("    app = catmip.application(name='%s')\n"%prefix)
+        fout.write("    app = catmip.application(name='{}')\n".format(prefix))
         fout.write('    # run it\n')
         fout.write('    app.run()\n')
         fout.write('    # and return the app object \n')

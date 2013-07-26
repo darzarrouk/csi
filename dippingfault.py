@@ -22,7 +22,7 @@ class dippingfault(object):
 
         print ("---------------------------------")
         print ("---------------------------------")
-        print ("Initializing fault %s"%self.name)
+        print ("Initializing fault {}".format(self.name))
 
         # Set the reference point in the x,y domain (not implemented)
         self.xref = 0.0
@@ -248,7 +248,7 @@ class dippingfault(object):
         '''
 
         # print 
-        print ("Extrapolating the fault for %f km"%length_added)
+        print ("Extrapolating the fault for {} km".format(length_added))
 
         # Check if the fault has been interpolated before
         if self.xi is None:
@@ -358,7 +358,7 @@ class dippingfault(object):
         '''
 
         # print
-        print("Discretizing the fault %s every %f km"%(self.name, every))
+        print("Discretizing the fault {} every {} km".format(self.name, every))
 
         # Check if the fault is in UTM coordinates
         if self.xf is None:
@@ -416,7 +416,7 @@ class dippingfault(object):
         # If the maximum depth and the number of patches is not set
         assert self.vertdepth is not None, "Please set dip, depth and number of patches."
 
-        print ("Build patches for fault %s between depths: %f, %f"%(self.name, self.top, self.vertdepth))
+        print ("Build patches for fault {} between depths: {}, {}".format(self.name, self.top, self.vertdepth))
 
         # Define the depth vector
         z = np.linspace(self.top, self.vertdepth, num=self.numz+1)
@@ -687,7 +687,7 @@ class dippingfault(object):
         The Green's function matrix is stored in a dictionary. Each entry of the dictionary is named after the corresponding dataset. Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
         '''
 
-        print ("Building Green's functions for the data set %s of type %s"%(data.name, data.dtype))
+        print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
 
         # Get the number of data
         Nd = data.lon.shape[0]
@@ -745,7 +745,7 @@ class dippingfault(object):
 
         # Loop over each patch
         for p in range(len(self.patch)):
-            sys.stdout.write('\r Patch: %i / %i '%(p+1,len(self.patch)))
+            sys.stdout.write('\r Patch: {} / {} '.format(p+1,len(self.patch)))
             sys.stdout.flush()
             
             # get the surface displacement corresponding to unit slip
@@ -924,7 +924,7 @@ class dippingfault(object):
         # print
         print ("---------------------------------")
         print ("---------------------------------")
-        print("Assembling G for fault %s"%self.name)
+        print("Assembling G for fault {}".format(self.name))
 
         # Store the assembled slip directions
         self.slipdir = slipdir
@@ -971,7 +971,7 @@ class dippingfault(object):
         for data in datas:
 
             # print
-            print("Dealing with %s of type %s"%(data.name, data.dtype))
+            print("Dealing with {} of type {}".format(data.name, data.dtype))
 
             # Get the corresponding G
             Ndlocal = self.d[data.name].shape[0]
@@ -1043,7 +1043,7 @@ class dippingfault(object):
         for data in datas:
 
                 # print
-                print("Dealing with data %s"%data.name)
+                print("Dealing with data {}".format(data.name))
 
                 # Get the local d
                 dlocal = self.d[data.name]
@@ -1103,8 +1103,8 @@ class dippingfault(object):
         print ("---------------------------------")
         print ("---------------------------------")
         print ("Assembling the Cm matrix ")
-        print ("Sigma = %f"%sigma)
-        print ("Lambda = %f"%lam)
+        print ("Sigma = {}".format(sigma))
+        print ("Lambda = {}".format(lam))
 
         # Need the patch geometry
         if self.patch is None:
@@ -1123,7 +1123,7 @@ class dippingfault(object):
             yd = (np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())/(np.unique(self.centers[:,1]).size)
             zd = (np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())/(np.unique(self.centers[:,2]).size)
             lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
-        print ("Lambda0 = %f"%lam0)
+        print ("Lambda0 = {}".format(lam0))
         C = (sigma*lam0/lam)**2
 
         # Creates the principal Cm matrix
@@ -1222,14 +1222,14 @@ class dippingfault(object):
         data.writeEDKSdata()
 
         # Open the EDKSsubParams.py file
-        filename = 'EDKSParams_%s_%s.py'%(self.name, data.name)
+        filename = 'EDKSParams_{}_{}.py'.format(self.name, data.name)
         fout = open(filename, 'w')
 
         # Write in it
         fout.write("# File with the rectangles properties\n")
-        fout.write("RectanglesPropFile = 'edks_%s.END'\n"%self.name)
+        fout.write("RectanglesPropFile = 'edks_{}.END'\n".format(self.name))
         fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
-        fout.write("ReceiverFile = 'edks_%s.idEN'\n"%data.name)
+        fout.write("ReceiverFile = 'edks_{}.idEN'\n".format(data.name))
         fout.write("# read receiver direction (# not yet implemented)\n")
         if data.dtype is 'insarrates':
             fout.write("useRecvDir = True # True for InSAR, uses LOS information\n")
@@ -1240,12 +1240,12 @@ class dippingfault(object):
         if amax is None:
             fout.write("Amax = None # None computes Amax automatically. \n")
         else:
-            fout.write("Amax = %f # Minimum size for the patch division.\n"%amax)
+            fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
 
         fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
-        fout.write("EDKSfilename = '%s'\n"%edksfilename)
-        fout.write("prefix = 'edks_%s_%s'\n"%(self.name, data.name))
-        fout.write("plotGeometry = %s # set to False if you are running in a remote Workstation\n"%plot)
+        fout.write("EDKSfilename = '{}'\n".format(edksfilename))
+        fout.write("prefix = 'edks_{}_{}'\n".format(self.name, data.name))
+        fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
         
         # Close the file
         fout.close()
@@ -1266,7 +1266,7 @@ class dippingfault(object):
         '''
 
         # Filename
-        filename = 'edks_%s'%self.name
+        filename = 'edks_{}'.format(self.name)
 
         # Open the output file
         flld = open(filename+'.lonlatdepth','w')
@@ -1289,8 +1289,8 @@ class dippingfault(object):
             if ref is not None:
                 x -= refx
                 y -= refy
-            flld.write('%f %f %f %f %f %f %f %5i \n'%(lon,lat,z,strike,dip,length,width,p))
-            fend.write('%f %f %f %f %f %f %f %5i \n'%(x,y,z,strike,dip,length,width,p))
+            flld.write('{} {} {} {} {} {} {} {:5i}\n'.format(lon,lat,z,strike,dip,length,width,p))
+            fend.write('{} {} {} {} {} {} {} {:5i} \n'.format(x,y,z,strike,dip,length,width,p))
 
         # Close the files
         flld.close()
@@ -1361,8 +1361,8 @@ class dippingfault(object):
         elif (disk is not None):
             lon = []; lat = []
             xd, yd = self.ll2xy(disk[0], disk[1])
-            print 'Center: %f ; %f'%(xd,yd)
-            print 'Radius: %f'%(disk[2])
+            print 'Center: {} ; {}'.format(xd,yd)
+            print 'Radius: {}'.format(disk[2])
             xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
             ampx = (xmax-xmin) 
             ampy = (ymax-ymin)
@@ -1392,7 +1392,7 @@ class dippingfault(object):
         # Create the station name array
         self.sim.station = []
         for i in range(len(self.sim.x)):
-            name = '%04i'%i
+            name = '{:04i}'.format(i)
             self.sim.station.append(name)
         self.sim.station = np.array(self.sim.station)
 
@@ -1412,7 +1412,7 @@ class dippingfault(object):
 
         # Loop over the patches
         for p in range(len(self.patch)):
-            sys.stdout.write('\r Patch %i / %i '%(p+1,len(self.patch)))
+            sys.stdout.write('\r Patch {} / {} '.format(p+1,len(self.patch)))
             sys.stdout.flush()
             # Get the surface displacement due to the slip on this patch
             ss, ds, op = self.slip2dis(self.sim, p)

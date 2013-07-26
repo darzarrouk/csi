@@ -124,11 +124,11 @@ class geodeticplot:
         if self.ref is 'utm':
             if fault.xf is None:
                 fault.trace2xy()
-            self.faille.plot(fault.xf, fault.yf, '-%s'%color, linewidth=2)
-            self.carte.plot(fault.xf, fault.yf, '-%s'%color, linewidth=2)
+            self.faille.plot(fault.xf, fault.yf, '-{}'.format(color), linewidth=2)
+            self.carte.plot(fault.xf, fault.yf, '-{}'.format(color), linewidth=2)
         else:
-            self.faille.plot(fault.lon, fault.lat, '-%s'%color, linewidth=2)
-            self.carte.plot(fault.lon, fault.lat, '-%s'%color, linewidth=2)
+            self.faille.plot(fault.lon, fault.lat, '-{}'.format(color), linewidth=2)
+            self.carte.plot(fault.lon, fault.lat, '-{}'.format(color), linewidth=2)
 
         # All done
         return
@@ -141,11 +141,11 @@ class geodeticplot:
 
         # Plot the surface trace
         if self.ref is 'utm':
-            self.faille.plot(fault.xi, fault.yi, '.%s'%color, linewidth=2)
-            self.carte.plot(fault.xi, fault.yi, '.%s'%color, linewidth=2)
+            self.faille.plot(fault.xi, fault.yi, '.{}'.format(color), linewidth=2)
+            self.carte.plot(fault.xi, fault.yi, '.{}'.format(color), linewidth=2)
         else:
-            self.faille.plot(fault.loni, fault.lati, '.s'%color, linewidth=2)
-            self.carte.plot(fault.loni, fault.lati, '.%s'%color, linewidth=2)
+            self.faille.plot(fault.loni, fault.lati, '.{}'.format(color), linewidth=2)
+            self.carte.plot(fault.loni, fault.lati, '.{}'.format(color), linewidth=2)
 
         # All done
         return
@@ -270,27 +270,27 @@ class geodeticplot:
             if self.ref is 'utm':
                 p = self.carte.quiver(gps.x, gps.y, gps.vel_enu[:,0], gps.vel_enu[:,1], width=0.0025, color=color, scale=scale)
                 self.psave = p
-                q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "%f"%legendscale, coordinates='axes', color=color)
+                q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
             else:
                 p = self.carte.quiver(gps.lon, gps.lat, gps.vel_enu[:,0], gps.vel_enu[:,1], width=0.0025, color=color, scale=scale)
-                q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "%f"%legendscale, coordinates='axes', color=color)
+                q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
 
             # If there is some synthetics
             if gps.synth is not None:                                                        
                 if self.ref is 'utm':                                                              
                     p = self.carte.quiver(gps.x, gps.y, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025)   
-                    q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "%f"%legendscale, coordinates='axes', color=colorsynth)
+                    q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
                 else:                                                                         
                     p = self.carte.quiver(gps.lon, gps.lat, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025)  
-                    q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "%f"%legendscale, coordinates='axes', color=colorsynth)
+                    q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
         elif data is 'res':
             if self.ref is 'utm':
                 p = self.carte.quiver(gps.x, gps.y, gps.vel_enu[:,0]-gps.synth[:,0], gps.vel_enu[:,1]-gps.synth[:,1], width=0.0025, color=color, scale=scale)
                 self.psave = p
-                q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "%f"%legendscale, coordinates='axes', color=color)
+                q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
             else:
                 p = self.carte.quiver(gps.lon, gps.lat, gps.vel_enu[:,0]-gps.synth[:,0], gps.vel_enu[:,1]-gps.synth[:,1], width=0.0025, color=color, scale=scale)
-                q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "%f"%legendscale, coordinates='axes', color=color)
+                q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
 
         # Plot the name of the stations if asked
         if name:

@@ -30,7 +30,7 @@ def bspline_nu(n,tk,t):
        t - time vector'''
 
     B = np.zeros((len(tk),len(t)))
-    assert (n+1) < len(tk), 'Not enough knots for order %d bspline'%(n)
+    assert (n+1) < len(tk), 'Not enough knots for order {} bspline'.format(n)
 
     for m in xrange(len(tk)-1):
         ind = where((t>=tk[m]) & (t<tk[m+1]))
@@ -108,7 +108,7 @@ def Timefn(rep,t):
 
             for m in xrange(len(ts)):
                 hfn = (t-ts[m])
-                vn = 'LINE/%2.3f'%(ts[m])
+                vn = 'LINE/{:2.3f}'.format(ts[m])
                 rf = 0.0
                 H.append(hfn)
                 vname.append(vn)
@@ -119,7 +119,7 @@ def Timefn(rep,t):
             assert num==1, 'Undefined LINEAR_FINITE sequence.'
             for trange in fn[1]:
                 hfn = (t - trange[0]) * ((t >= trange[0]) & (t <= trange[1]))
-                vn = 'LINEFIN/%2.3f/%2.3f' % (trange[0], trange[1])
+                vn = 'LINEFIN/{:2.3f}/{:2.3f}'.format(trange[0], trange[1])
                 rf = 0.0
                 H.append(hfn)
                 vname.append(vn)
@@ -138,7 +138,7 @@ def Timefn(rep,t):
                 g = (t-ts[p])
                 for m in xrange(order[p]+1):
                     hfn = g**m
-                    vn = 'P/%d/%2.1f'%(m,ts[p])
+                    vn = 'P/{d}/{:2.1f}'.format(m,ts[p])
                     rf = 0.0
                     H.append(hfn)
                     vname.append(vn)
@@ -152,7 +152,7 @@ def Timefn(rep,t):
             ts = fn[1]
             for m in xrange(len(ts)):
                 hfn = (t-ts[m])**2
-                vn = 'QUAD/%2.3f'%(ts[m])
+                vn = 'QUAD/{:2.3f}'.format(ts[m])
                 rf = 0.0
                 H.append(hfn)
                 vname.append(vn)
@@ -179,7 +179,7 @@ def Timefn(rep,t):
 
             for m in xrange(len(ts)):
                 hfn = (1 - np.exp(-(t-ts[m])/taus[m]))*(t>=ts[m])
-                vn = 'EXP/%2.3f/%2.3f'%(ts[m],taus[m])
+                vn = 'EXP/{:2.3f}/{:2.3f}'.format(ts[m],taus[m])
                 rf = 0.0
                 H.append(hfn)
                 vname.append(vn)
@@ -196,7 +196,7 @@ def Timefn(rep,t):
 
             for m in xrange(len(ts)):
                 hfn = np.log(1.0+ ((t-ts[m])/taus[m])*(t>=ts[m]))
-                vn = 'LOG/%2.3f/%2.3f'%(ts[m],taus[m])
+                vn = 'LOG/{:2.3f}/{:2.3f}'.format(ts[m],taus[m])
                 rf = 0.0
                 H.append(hfn)
                 vname.append(vn)
@@ -210,7 +210,7 @@ def Timefn(rep,t):
 
             for m in xrange(len(ts)):
                 hfn = 1.0*(t>=ts[m])
-                vn = 'STEP/%2.3f'%(ts[m])
+                vn = 'STEP/{:2.3f}'.format(ts[m])
                 rf = 0.0
                 H.append(hfn)
                 vname.append(vn)
@@ -225,13 +225,13 @@ def Timefn(rep,t):
             for m in xrange(len(taus)):
                 #hfn = 1-np.cos(2*np.pi*t/taus[m])
                 hfn = np.cos(2*np.pi*t/taus[m])
-                vn = 'COS/%2.3f'%(taus[m])
+                vn = 'COS/{:2.3f}'.format(taus[m])
                 rf = 0.0
                 H.append(hfn)
                 vname.append(vn)
                 rflag.append(rf)
                 hfn = np.sin(2*np.pi*t/taus[m])
-                vn = 'SIN/%2.3f'%(taus[m])
+                vn = 'SIN/{:2.3f}'.format(taus[m])
                 rf = 0.0
                 H.append(hfn)
                 vname.append(vn)
@@ -252,7 +252,7 @@ def Timefn(rep,t):
                 dtk = ts[2] - ts[1]
                 for p in xrange(len(ts)):
                     hfn = bspline(orders[m],dtk,t-ts[p])
-                    vn = 'Bsp/%d/%d'%(p,orders[m])
+                    vn = 'Bsp/{}/{}'.format(p,orders[m])
                     rf = regstart
                     H.append(hfn)
                     vname.append(vn)
@@ -275,7 +275,7 @@ def Timefn(rep,t):
                 dtk = ts[2] - ts[1]
                 for p in xrange(len(ts)):
                     hfn = ispline(orders[m],dtk,t-ts[p])
-                    vn = 'Isp/%d/%d'%(p,orders[m])
+                    vn = 'Isp/{}/{}'.format(p,orders[m])
                     rf = regstart
                     H.append(hfn)
                     vname.append(vn)
@@ -299,7 +299,7 @@ def Timefn(rep,t):
                     hfn[master+1:m+1] = 1
 
                 rf = 0.0
-                vn = 'SBAS/%d/%d'%(m,master)
+                vn = 'SBAS/{}/{}'.format(m,master)
                 H.append(hfn)
                 vname.append(vn)
                 rflag.append(rf)

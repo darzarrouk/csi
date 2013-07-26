@@ -26,7 +26,7 @@ class gpsrates(object):
         # print
         print ("---------------------------------")
         print ("---------------------------------")
-        print ("Initialize GPS array %s"%self.name)
+        print ("Initialize GPS array {}".format(self.name))
 
         # Create a utm transformation
         self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
@@ -337,7 +337,7 @@ class gpsrates(object):
 
         # plot the GPS stations on the map
         p = carte.quiver(self.x, self.y, self.vel_enu[:,0], self.vel_enu[:,1], width=0.0025, color='k')
-        carte.quiverkey(p, 0.1, 0.9, legendscale, "%f"%legendscale, coordinates='axes', color='k')
+        carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color='k')
 
         # plot the box on the map
         b = self.profiles[name]['Box']
@@ -449,7 +449,7 @@ class gpsrates(object):
             * minerr    : if err=0, then err=minerr.
         '''
 
-        print ("Read data from file %s into data set %s"%(velfile, self.name))
+        print ("Read data from file {} into data set {}".format(velfile, self.name))
 
         # Keep the file
         self.velfile = velfile
@@ -511,7 +511,7 @@ class gpsrates(object):
         Reading velocities from a unavco file
         '''
 
-        print ("Read data from file %s into data set %s"%(velfile, self.name))
+        print ("Read data from file {} into data set {}".format(velfile, self.name))
 
         # Keep the file
         self.velfile = velfile
@@ -576,7 +576,7 @@ class gpsrates(object):
             * coordfile : File containing the coordinates.
         '''
 
-        print ("Read data from file %s into data set %s"%(velfile, self.name))
+        print ("Read data from file {} into data set {}".format(velfile, self.name))
 
         # Keep the files, to remember
         self.velfile = velfile+'.vel'
@@ -882,6 +882,10 @@ class gpsrates(object):
         base_y = self.y - y0
         base_z = 0
 
+        # Normalize the baselines
+        base_x_max = np.abs(base_x).max(); base_x /= base_x_max
+        base_y_max = np.abs(base_y).max(); base_y /= base_y_max
+
         # Allocate a Helmert base
         H = np.zeros((No,Nh))
 
@@ -894,6 +898,8 @@ class gpsrates(object):
         # Get the parameters for this data set
         Hvec = fault.polysol[self.name]
         self.HelmertParameters = Hvec
+        print('Removing a {} parameters Helmert Tranform from the gpsrates {}'.format(Nh, self.name))
+        print('Parameters: {}'.format(tuple(Hvec[i] for i in range(Nh))))
 
         # Loop over the station
         for i in range(self.station.shape[0]):
@@ -929,7 +935,7 @@ class gpsrates(object):
             * eradius   : Radius of the earth (should not change that much :-)).
         '''
 
-        print ("Remove the best fot euler rotation in GPS data set %s"%self.name)
+        print ("Remove the best fot euler rotation in GPS data set {}".format(self.name))
 
         import eulerPoleUtils as eu
 
@@ -1065,7 +1071,7 @@ class gpsrates(object):
         y = self.y
 
         # Open the file
-        filename = 'edks_%s.idEN'%(self.name)
+        filename = 'edks_{}.idEN'.format(self.name)
         fout = open(filename, 'w')
 
         # Write a header
@@ -1073,7 +1079,7 @@ class gpsrates(object):
 
         # Loop over the data locations
         for i in range(len(x)):
-            string = '%5i %f %f \n'%(i, x[i], y[i])
+            string = '{:5i} {} {} \n'.format(i, x[i], y[i])
             fout.write(string)
 
         # Close the file
@@ -1089,7 +1095,7 @@ class gpsrates(object):
             * data      : data or synth.
 
         '''
-        print ("Write %s set %s to file %s"%(data, self.name, filename))
+        print ("Write {} set {} to file {}".format(data, self.name, filename))
 
         # open the file
         fout = open(filename,'w')
@@ -1100,11 +1106,11 @@ class gpsrates(object):
         # Loop over stations
         for i in range(len(self.station)):
             if data is 'data':
-                fout.write('%s %f %f %f %f %f %f %f %f \n'%(self.station[i], self.lon[i], self.lat[i], 
+                fout.write('{} {} {} {} {} {} {} {} {} \n'.format(self.station[i], self.lon[i], self.lat[i], 
                                                         self.vel_enu[i,0], self.vel_enu[i,1], self.vel_enu[i,2],
                                                         self.err_enu[i,0], self.err_enu[i,1], self.err_enu[i,2]))
             elif data is 'synth':
-                fout.write('%s %f %f %f %f %f %f %f %f \n'%(self.station[i], self.lon[i], self.lat[i],
+                fout.write('{} {} {} {} {} {} {} {} {} \n'.format(self.station[i], self.lon[i], self.lat[i],
                                                         self.synth[i,0], self.synth[i,1], self.synth[i,2],
                                                         self.err_enu[i,0], self.err_enu[i,1], self.err_enu[i,2]))
         
@@ -1161,6 +1167,15 @@ class gpsrates(object):
             else:
                 s = ax.quiver(self.lon, self.lat, self.synth[:,0], self.synth[:,1], label='synth', color='r', scale=scale)
                 q = ax.quiverkey(s, 0.04, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color='r')
+
+        # If the Helmert transform has been estimated
+        if hasattr(self, 'HelmTransform'):
+            if ref is 'utm':
+                s = ax.quiver(self.x, self.y, self.HelmTransform[:,0], self.HelmTransform[:,1], label='Helmert Tranform', color='b', scale=scale)
+                q = ax.quiverkey(s, 0.04, 0.05, legendscale, "{}".format(legendscale), coordinates='axes', color='b')
+            else:
+                s = ax.quiver(self.lon, self.lat, self.HelmTransform[:,0], self.HelmTransform[:,1], label='Helmert Tranform', color='b', scale=scale)
+                q = ax.quiverkey(s, 0.04, 0.05, legendscale, "{}".format(legendscale), coordinates='axes', color='b')
 
         # Plot the name of the stations if asked
         if name:

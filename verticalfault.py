@@ -23,7 +23,7 @@ class verticalfault(object):
 
         print ("---------------------------------")
         print ("---------------------------------")
-        print ("Initializing fault %s"%self.name)
+        print ("Initializing fault {}".format(self.name))
 
         # Set the reference point in the x,y domain (not implemented)
         self.xref = 0.0
@@ -241,7 +241,7 @@ class verticalfault(object):
         '''
 
         # print 
-        print ("Extrapolating the fault for %f km"%length_added)
+        print ("Extrapolating the fault for {} km".format(length_added))
 
         # Check if the fault has been interpolated before
         if self.xi is None:
@@ -349,7 +349,7 @@ class verticalfault(object):
         '''
 
         # print
-        print("Discretizing the fault %s every %f km"%(self.name, every))
+        print("Discretizing the fault {} every {} km".format(self.name, every))
 
         # Check if the fault is in UTM coordinates
         if self.xf is None:
@@ -429,7 +429,7 @@ class verticalfault(object):
             print("Please use setdepth to define maximum depth and number of patches")
             return
 
-        print ("Build patches for fault %s between depths: %f, %f"%(self.name, self.top, self.depth))
+        print ("Build patches for fault {} between depths: {}, {}".format(self.name, self.top, self.depth))
 
         # Define the depth vector
         z = np.linspace(self.top, self.depth, num=self.numz+1)
@@ -498,7 +498,7 @@ class verticalfault(object):
         Interpolation can be 'linear', 'cubic'.
         '''
 
-        print('Build fault patches for fault %s between %f and %f km deep, with a variable resolution'%(self.name, self.top, self.depth))
+        print('Build fault patches for fault {} between {} and {} km deep, with a variable resolution'.format(self.name, self.top, self.depth))
 
         # Define the depth vector
         z = np.array(depths)
@@ -517,7 +517,7 @@ class verticalfault(object):
         for j in range(len(z)-1):
 
             # discretize the fault at the desired resolution
-            print('Discretizing at depth %f'%z[j])
+            print('Discretizing at depth {}'.format(z[j]))
             self.discretize(every=np.floor(resol[j]), tol=resol[j]/20., fracstep=resol[j]/1000.)
             if extrap is not None:
                 self.extrapolate(length_added=extrap[0], extrap=extrap[1])
@@ -582,7 +582,7 @@ class verticalfault(object):
             * p2    : index of the patch #2.
         '''
 
-        print 'Merging patches %i and %i into patch %i'%(p1,p2,p1)
+        print 'Merging patches {} and {} into patch {}'.format(p1,p2,p1)
 
         # Get the patches
         patch1 = self.patch[p1]
@@ -640,6 +640,7 @@ class verticalfault(object):
         # create the lists
         self.patch = []
         self.patchll = []
+        self.index_parameter = []
         self.slip = []
 
         # open the file
@@ -654,6 +655,14 @@ class verticalfault(object):
             
             # Assert it works
             assert A[i].split()[0] is '>', 'Not a patch, reformat your file...'
+            # Get the Patch Id
+            self.index_parameter.append([np.int(A[i].split()[3]),np.int(A[i].split()[4]),np.int(A[i].split()[5])])
+            # Get the slip value
+            if len(A[i].split()>7):
+                slip = np.array([np.float(A[i].split()[7]), np.float(A[i].split()[8]), np.float(A[i].split()[9])])
+            else:
+                slip = np.array([0.0, 0.0, 0.0])
+            self.slip.append(slip)
             # build patches
             p = np.zeros((4,3))
             pll = np.zeros((4,3))
@@ -675,7 +684,6 @@ class verticalfault(object):
             pll[1,:] = [lon2, lat2, z2]
             pll[2,:] = [lon3, lat3, z3]
             pll[3,:] = [lon4, lat4, z4]
-            print pll
             # translate to utm
             x1, y1 = self.ll2xy(lon1, lat1)
             x2, y2 = self.ll2xy(lon2, lat2)
@@ -691,11 +699,9 @@ class verticalfault(object):
             p[1,:] = [x2, y2, z2]
             p[2,:] = [x3, y3, z3]
             p[3,:] = [x4, y4, z4]
-            print p
             # Store these in the lists
             self.patch.append(p)
             self.patchll.append(pll)
-            self.slip.append([0.0, 0.0, 0.0])
             # increase i
             i += 5
 
@@ -704,6 +710,7 @@ class verticalfault(object):
 
         # Translate slip to np.array
         self.slip = np.array(self.slip)
+        self.index_parameter = np.array(self.index_parameter)
 
         # All done
         return
@@ -718,7 +725,7 @@ class verticalfault(object):
         '''
 
         # Write something
-        print('Writing geometry to file %s'%filename)
+        print('Writing geometry to file {}'.format(filename))
 
         # Open the file
         fout = open(filename, 'w')
@@ -731,13 +738,13 @@ class verticalfault(object):
             if add_slip is not None:
                 if add_slip is 'strikeslip':
                     slp = self.slip[p,0]*scale
-                    string = '-Z%f'%slp
+                    string = '-Z{}'.format(slp)
                 elif add_slip is 'dipslip':
                     lp = self.slip[p,1]*scale
-                    string = '-Z%f'%slp
+                    string = '-Z{}'.format(slp)
                 elif add_slip is 'total':
                     slp = np.sqrt(self.slip[p,0]^2 + self.slip[p,1]^2)*scale
-                    string = '-Z%f'%slp
+                    string = '-Z{}'.format(slp)
 
             # Put the parameter number in the file as well if it exists
             parameter = ' ' 
@@ -745,17 +752,20 @@ class verticalfault(object):
                 i = np.int(self.index_parameter[p,0])
                 j = np.int(self.index_parameter[p,1])
                 k = np.int(self.index_parameter[p,2])
-                parameter = '# %i %i %i '%(i,j,k)
+                parameter = '# {} {} {} '.format(i,j,k)
+
+            # Put the slip value
+            slipstring = ' # {} {} {} '.format(self.slip[p,0], self.slip[p,1], self.slip[p,2])
 
             # Write the string to file
-            fout.write('> %s %s \n'%(string,parameter))
+            fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
 
             # Write the 4 patch corners (the order is to be GMT friendly)
             p = self.patchll[p]
-            pp=p[1]; fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
-            pp=p[0]; fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
-            pp=p[3]; fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
-            pp=p[2]; fout.write('%f %f %f \n'%(pp[0], pp[1], pp[2]))
+            pp=p[1]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+            pp=p[0]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+            pp=p[3]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+            pp=p[2]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
 
         # Close th file
         fout.close()
@@ -909,7 +919,7 @@ class verticalfault(object):
         The Green's function matrix is stored in a dictionary. Each entry of the dictionary is named after the corresponding dataset. Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
         '''
 
-        print ("Building Green's functions for the data set %s of type %s"%(data.name, data.dtype))
+        print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
 
         # Get the number of data
         Nd = data.lon.shape[0]
@@ -967,7 +977,7 @@ class verticalfault(object):
 
         # Loop over each patch
         for p in range(len(self.patch)):
-            sys.stdout.write('\r Patch: %i / %i '%(p+1,len(self.patch)))
+            sys.stdout.write('\r Patch: {} / {} '.format(p+1,len(self.patch)))
             sys.stdout.flush()
             
             # get the surface displacement corresponding to unit slip
@@ -1261,7 +1271,7 @@ class verticalfault(object):
         # print
         print ("---------------------------------")
         print ("---------------------------------")
-        print("Assembling G for fault %s"%self.name)
+        print("Assembling G for fault {}".format(self.name))
 
         # Store the assembled slip directions
         self.slipdir = slipdir
@@ -1331,7 +1341,7 @@ class verticalfault(object):
         for data in datas:
 
             # print
-            print("Dealing with %s of type %s"%(data.name, data.dtype))
+            print("Dealing with {} of type {}".format(data.name, data.dtype))
 
             # Get the corresponding G
             Ndlocal = self.d[data.name].shape[0]
@@ -1423,6 +1433,10 @@ class verticalfault(object):
         base_y = data.y - y0
         base_z = 0
 
+        # Normalize the baselines
+        base_x_max = np.abs(base_x).max(); base_x /= base_x_max
+        base_y_max = np.abs(base_y).max(); base_y /= base_y_max
+
         # Allocate a Helmert base
         H = np.zeros((data.obs_per_station,nc))
         
@@ -1483,7 +1497,7 @@ class verticalfault(object):
         for data in datas:
 
                 # print
-                print("Dealing with data %s"%data.name)
+                print("Dealing with data {}".format(data.name))
 
                 # Get the local d
                 dlocal = self.d[data.name]
@@ -1543,8 +1557,8 @@ class verticalfault(object):
         print ("---------------------------------")
         print ("---------------------------------")
         print ("Assembling the Cm matrix ")
-        print ("Sigma = %f"%sigma)
-        print ("Lambda = %f"%lam)
+        print ("Sigma = {}".format(sigma))
+        print ("Lambda = {}".format(lam))
 
         # Need the patch geometry
         if self.patch is None:
@@ -1563,7 +1577,7 @@ class verticalfault(object):
             yd = (np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())/(np.unique(self.centers[:,1]).size)
             zd = (np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())/(np.unique(self.centers[:,2]).size)
             lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
-        print ("Lambda0 = %f"%lam0)
+        print ("Lambda0 = {}".format(lam0))
         C = (sigma*lam0/lam)**2
 
         # Creates the principal Cm matrix
@@ -1662,14 +1676,14 @@ class verticalfault(object):
         data.writeEDKSdata()
 
         # Open the EDKSsubParams.py file
-        filename = 'EDKSParams_%s_%s.py'%(self.name, data.name)
+        filename = 'EDKSParams_{}_{}.py'.format(self.name, data.name)
         fout = open(filename, 'w')
 
         # Write in it
         fout.write("# File with the rectangles properties\n")
-        fout.write("RectanglesPropFile = 'edks_%s.END'\n"%self.name)
+        fout.write("RectanglesPropFile = 'edks_{}.END'\n".format(self.name))
         fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
-        fout.write("ReceiverFile = 'edks_%s.idEN'\n"%data.name)
+        fout.write("ReceiverFile = 'edks_{}.idEN'\n".format(data.name))
         fout.write("# read receiver direction (# not yet implemented)\n")
         if data.dtype is 'insarrates':
             fout.write("useRecvDir = True # True for InSAR, uses LOS information\n")
@@ -1680,12 +1694,12 @@ class verticalfault(object):
         if amax is None:
             fout.write("Amax = None # None computes Amax automatically. \n")
         else:
-            fout.write("Amax = %f # Minimum size for the patch division.\n"%amax)
+            fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
 
         fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
-        fout.write("EDKSfilename = '%s'\n"%edksfilename)
-        fout.write("prefix = 'edks_%s_%s'\n"%(self.name, data.name))
-        fout.write("plotGeometry = %s # set to False if you are running in a remote Workstation\n"%plot)
+        fout.write("EDKSfilename = '{}'\n".format(edksfilename))
+        fout.write("prefix = 'edks_{}_{}'\n".format(self.name, data.name))
+        fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
         
         # Close the file
         fout.close()
@@ -1706,7 +1720,7 @@ class verticalfault(object):
         '''
 
         # Filename
-        filename = 'edks_%s'%self.name
+        filename = 'edks_{}'.format(self.name)
 
         # Open the output file
         flld = open(filename+'.lonlatdepth','w')
@@ -1729,8 +1743,8 @@ class verticalfault(object):
             if ref is not None:
                 x -= refx
                 y -= refy
-            flld.write('%f %f %f %f %f %f %f %5i \n'%(lon,lat,z,strike,dip,length,width,p))
-            fend.write('%f %f %f %f %f %f %f %5i \n'%(x,y,z,strike,dip,length,width,p))
+            flld.write('{} {} {} {} {} {} {} {:5i} \n'.format(lon,lat,z,strike,dip,length,width,p))
+            fend.write('{} {} {} {} {} {} {} {:5i} \n'.format(x,y,z,strike,dip,length,width,p))
 
         # Close the files
         flld.close()
@@ -1812,7 +1826,7 @@ class verticalfault(object):
 
         # Loop over the patches
         for p in range(len(self.patch)):
-            sys.stdout.write('\r Patch %i / %i '%(p+1,len(self.patch)))
+            sys.stdout.write('\r Patch {} / {} '.format(p+1,len(self.patch)))
             sys.stdout.flush()
             # Get the surface displacement due to the slip on this patch
             ss, ds, op = self.slip2dis(self.sim, p)

@@ -315,7 +315,7 @@ class gpsstation:
                 raise ValueError('Undefined data type in textread.')
     
             if inp not in ('K', 'k'):
-                sname = 'var%2d'% (ind)
+                sname = 'var{:2d}'.format(ind)
                 vars()[sname] = []
    
         fin = open(fname, 'r')
@@ -328,14 +328,14 @@ class gpsstation:
                 for ind, val in enumerate(strs):
                     inp = inplist[ind]
                     if inp not in ('K', 'k'):
-                        sname = 'var%2d'% (ind)
+                        sname = 'var{:2d}'.format(ind)
                         vars()[sname].append(val)
 
         fin.close()
 
         for ind, inp in enumerate(inplist):
             if inp not in ('K', 'k'):
-                sname = 'var%2d'% (ind)
+                sname = 'var{:2d}'.format(ind)
                 vars()[sname] = np.array(vars()[sname])
                 if inp in ('F', 'f'):
                     vars()[sname] = vars()[sname].astype(np.float)
@@ -345,7 +345,7 @@ class gpsstation:
         retlist = []
         for ind, inp in enumerate(inplist):
             if inp not in ('K', 'k'):
-                sname = 'var%2d'% (ind)
+                sname = 'var{:2d}'.format(ind)
                 retlist.append(vars()[sname])
 
         return retlist
