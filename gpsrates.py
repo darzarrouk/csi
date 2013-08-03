@@ -860,6 +860,29 @@ class gpsrates(object):
         # All done
         return
     
+    def removePoly(self, fault):
+        '''
+        Removes the polynomial form inverted.
+        '''
+
+        # Get the parameters of the polynomial
+        Ns = fault.polysol[self.name].shape[0]
+        Cx = 0.0;
+        Cy = 0.0;
+        Cz = 0.0;
+        if Ns==2:
+            Cx, Cy = fault.polysol[self.name]
+        elif Ns==3:
+            Cx, Cy, Cz = fault.polysol[self.name]
+
+        # Add that to the values
+        self.vel_enu[:,0] -= Cx
+        self.vel_enu[:,1] -= Cy
+        self.vel_enu[:,2] -= Cz
+
+        # all done
+        return
+    
     def removeHelmertTransform(self, fault):
         '''
         Removes the Helmert Transform stored in the fault given as argument.
@@ -870,6 +893,11 @@ class gpsrates(object):
         Nh = fault.helmert[self.name]
 
         # Get the number of observation per station
+        if not hasattr(self, 'obs_per_station'):
+            if Nh == 4:
+                self.obs_per_station = 2
+            else:
+                self.obs_per_station = 3
         No = self.obs_per_station
 
         # Get the position of the center of the network
@@ -1000,6 +1028,24 @@ class gpsrates(object):
         self.triangle['Edges'] = Edges
         self.triangle['Triangles'] = Triangles
         self.triangle['Neighbours'] = Neighbors
+
+        # All done
+        return
+
+    def removeSynth(self, faults, direction='sd', include_poly=False):
+        '''
+        Removes the synthetics from a slip model.
+        Args:
+            * faults        : list of faults to include.
+            * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
+            * include_poly  : if a polynomial function has been estimated, include it.
+        '''
+
+        # build the synthetics
+        self.buildsynth(faults, direction=direction, include_poly=include_poly)
+
+        # Correct the data from the synthetics
+        self.vel_enu -= self.synth
 
         # All done
         return

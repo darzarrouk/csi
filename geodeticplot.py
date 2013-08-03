@@ -167,6 +167,8 @@ class geodeticplot:
             slip = fault.slip[:,1]
         elif slip is 'opening':
             slip = fault.slip[:,2]
+        elif slip is 'total':
+            slip = np.sqrt(fault.slip[:,0]**2 + fault.slip[:,1]**2 + fault.slip[:,2]**2)
         else:
             print ("Unknown slip direction")
             return
@@ -253,7 +255,7 @@ class geodeticplot:
         # All done
         return
 
-    def gpsvelocities(self, gps, color='k', colorsynth='b', scale=None, legendscale=10., name=False, data='both'):
+    def gpsvelocities(self, gps, color='k', colorsynth='b', scale=None, legendscale=10., linewidths=.1, name=False, data='both'):
         '''
         Args:
             * gps           : gps object from gpsrates.
@@ -261,6 +263,7 @@ class geodeticplot:
             * colorsynth    : Color of the synthetics.
             * scale         : Scales the arrows
             * legendscale   : Length of the scale.
+            * linewidths    : Width of the arrows.
             * name          : Plot the name of the stations (True/False).
             * data          : If both, plots data and synthetics, if 'res', plots the residuals.
         '''
@@ -268,28 +271,28 @@ class geodeticplot:
         if data is 'both':
             # Plot the GPS velocities
             if self.ref is 'utm':
-                p = self.carte.quiver(gps.x, gps.y, gps.vel_enu[:,0], gps.vel_enu[:,1], width=0.0025, color=color, scale=scale)
+                p = self.carte.quiver(gps.x, gps.y, gps.vel_enu[:,0], gps.vel_enu[:,1], width=0.0025, color=color, scale=scale, linewidths=linewidths)
                 self.psave = p
                 q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
             else:
-                p = self.carte.quiver(gps.lon, gps.lat, gps.vel_enu[:,0], gps.vel_enu[:,1], width=0.0025, color=color, scale=scale)
+                p = self.carte.quiver(gps.lon, gps.lat, gps.vel_enu[:,0], gps.vel_enu[:,1], width=0.0025, color=color, scale=scale, linewidths=linewidths)
                 q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
 
             # If there is some synthetics
             if gps.synth is not None:                                                        
                 if self.ref is 'utm':                                                              
-                    p = self.carte.quiver(gps.x, gps.y, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025)   
+                    p = self.carte.quiver(gps.x, gps.y, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)   
                     q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
                 else:                                                                         
-                    p = self.carte.quiver(gps.lon, gps.lat, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025)  
+                    p = self.carte.quiver(gps.lon, gps.lat, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)  
                     q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
         elif data is 'res':
             if self.ref is 'utm':
-                p = self.carte.quiver(gps.x, gps.y, gps.vel_enu[:,0]-gps.synth[:,0], gps.vel_enu[:,1]-gps.synth[:,1], width=0.0025, color=color, scale=scale)
+                p = self.carte.quiver(gps.x, gps.y, gps.vel_enu[:,0]-gps.synth[:,0], gps.vel_enu[:,1]-gps.synth[:,1], width=0.0025, color=color, scale=scale, linewidths=linewidths)
                 self.psave = p
                 q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
             else:
-                p = self.carte.quiver(gps.lon, gps.lat, gps.vel_enu[:,0]-gps.synth[:,0], gps.vel_enu[:,1]-gps.synth[:,1], width=0.0025, color=color, scale=scale)
+                p = self.carte.quiver(gps.lon, gps.lat, gps.vel_enu[:,0]-gps.synth[:,0], gps.vel_enu[:,1]-gps.synth[:,1], width=0.0025, color=color, scale=scale, linewidths=linewidths)
                 q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
 
         # Plot the name of the stations if asked
@@ -317,6 +320,8 @@ class geodeticplot:
             d = insar.vel
         elif data is 'synth':
             d = insar.synth
+        elif data is 'res':
+            d = insar.vel-insar.synth
 
         # Prepare the color limits
         if norm is None:
@@ -486,7 +491,26 @@ class geodeticplot:
         # All done
         return
 
+    def slipdirection(self, fault, linewidth=1., color='k', scale=1.):
+        '''
+        Plots the segment in slip direction of the fault.
+        '''
 
+        # Check if it exists
+        if not hasattr(fault,'slipdirection'):
+            fault.computeSlipDirection(scale=scale)
 
+        # Loop on the vectors
+        for v in fault.slipdirection:
+            # Z increase downward
+            v[0][2] *= -1.0
+            v[1][2] *= -1.0
+            # Make lists
+            x, y, z = zip(v[0],v[1])
+            # Plot
+            self.faille.plot3D(x, y, z, color=color, linewidth=linewidth)
 
+        # All done
+        return
+            
 

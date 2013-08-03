@@ -1361,8 +1361,6 @@ class dippingfault(object):
         elif (disk is not None):
             lon = []; lat = []
             xd, yd = self.ll2xy(disk[0], disk[1])
-            print 'Center: {} ; {}'.format(xd,yd)
-            print 'Radius: {}'.format(disk[2])
             xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
             ampx = (xmax-xmin) 
             ampy = (ymax-ymin)

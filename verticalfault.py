@@ -4,11 +4,15 @@ A class that deals with vertical faults.
 Written by R. Jolivet, April 2013
 '''
 
+# Externals
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
-import okada4py as ok
 import scipy.interpolate as sciint
+import copy
+
+# Personals
+import okada4py as ok
 
 class verticalfault(object):
 
@@ -65,6 +69,13 @@ class verticalfault(object):
 
         # All done
         return
+
+    def duplicateFault(self):
+        '''
+        Returns a copy of the fault.
+        '''
+
+        return copy.deepcopy(self)
 
     def initializeslip(self, n=None):
         '''
@@ -582,7 +593,7 @@ class verticalfault(object):
             * p2    : index of the patch #2.
         '''
 
-        print 'Merging patches {} and {} into patch {}'.format(p1,p2,p1)
+        print('Merging patches {} and {} into patch {}'.format(p1,p2,p1))
 
         # Get the patches
         patch1 = self.patch[p1]
@@ -616,7 +627,7 @@ class verticalfault(object):
             newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
             newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
         else:
-            print 'Patches do not have common corners...'
+            print('Patches do not have common corners...')
             return
 
         # Replace the patch 1 by the new patch
@@ -740,10 +751,10 @@ class verticalfault(object):
                     slp = self.slip[p,0]*scale
                     string = '-Z{}'.format(slp)
                 elif add_slip is 'dipslip':
-                    lp = self.slip[p,1]*scale
+                    slp = self.slip[p,1]*scale
                     string = '-Z{}'.format(slp)
                 elif add_slip is 'total':
-                    slp = np.sqrt(self.slip[p,0]^2 + self.slip[p,1]^2)*scale
+                    slp = np.sqrt(self.slip[p,0]**2 + self.slip[p,1]**2)*scale
                     string = '-Z{}'.format(slp)
 
             # Put the parameter number in the file as well if it exists
@@ -773,6 +784,103 @@ class verticalfault(object):
         # All done 
         return
 
+    def getslip(self, p):
+        '''
+        Returns the slip vector for a patch.
+        '''
+        
+        # output index
+        io = None
+
+        # Find the index of the patch
+        for i in range(len(self.patch)):
+            if (self.patch[i]==p).all():
+                io = i
+
+        # All done
+        return self.slip[io,:]
+
+    def writeSlipDirection2File(self, filename, scale=1.0):
+        '''
+        Write a psxyz compatible file to draw lines starting from the center of each patch, 
+        indicating the direction of slip.
+        Tensile slip is not used...
+        '''
+
+        # Copmute the slip direction
+        self.computeSlipDirection(scale=scale)
+
+        # Write something
+        print('Writing slip direction to file {}'.format(filename))
+
+        # Open the file
+        fout = open(filename, 'w')
+
+        # Loop over the patches
+        for p in self.slipdirection:
+            
+            # Write the > sign to the file
+            fout.write('> \n ')
+
+            # Get the center of the patch
+            xc, yc, zc = p[0]
+            lonc, latc = self.xy2ll(xc, yc)
+            zc = -1.0 * zc
+            fout.write('{} {} {} \n'.format(lonc, latc, zc))
+
+            # Get the end of the vector
+            xc, yc, zc = p[1]
+            lonc, latc = self.xy2ll(xc, yc)
+            zc = -1.0 * zc
+            fout.write('{} {} {} \n'.format(lonc, latc, zc))
+
+        # Close file
+        fout.close()
+
+        # all done
+        return
+
+    def computeSlipDirection(self, scale=1.0):
+        '''
+        Computes the segment indicating the slip direction.
+        '''
+
+        # Create the array
+        self.slipdirection = []
+
+        # Loop over the patches                                                                                 
+        for p in self.patch:                                                                                    
+            
+            # Get the center of the patch                                                                       
+            x1, y1, z1 = self.getcenter(p)
+                                                                                                                
+            # Get some geometry
+            xc1, xc2, xc3, width, length, strike, dip = self.getpatchgeometry(p)                                   
+            # Get the slip vector
+            slip = self.getslip(p)                                                                              
+            rake = np.arctan(slip[1]/slip[0])
+
+            # Compute the vector                                                                                
+            x = np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake)                           
+            y = np.cos(strike)*np.cos(rake) - np.sin(strike)*np.cos(dip)*np.sin(rake)                           
+            z = np.sin(dip)*np.sin(rake)
+        
+            # Scale these
+            x *= scale
+            y *= scale                                                                                          
+            z *= scale                                                                                          
+        
+            # update point 
+            x2 = x1 + x
+            y2 = y1 + y
+            z2 = z1 + z                                                                          
+ 
+            # Append
+            self.slipdirection.append([[x1, y1, z1],[x2, y2, z2]])
+
+        # All done
+        return
+
     def deletepatch(self, patch):
         '''
         Deletes a patch.
@@ -781,15 +889,30 @@ class verticalfault(object):
         '''
 
         # Remove the patch
-        if patch.__class__ is int:
-            del self.patch[patch]
-            del self.patchll[patch]
-            self.slip = np.delete(self.slip, patch, axis=0)
-        elif patch.__class__ is list:
-            for p in patch:
-                del self.patch[p]
-                del self.patchll[p]
-                self.slip = np.delete(self.slip, p, axis=0)
+        del self.patch[patch]
+        del self.patchll[patch]
+        self.slip = np.delete(self.slip, patch, axis=0)
+
+        # All done
+        return
+
+    def deletepatches(self, tutu):
+        '''
+        Deletes a list of patches.
+        '''
+
+        while len(tutu)>0:
+
+            # Get index to delete
+            i = tutu.pop()
+
+            # delete it
+            self.deletepatch(i)
+
+            # Upgrade list
+            for u in range(len(tutu)):
+                if tutu[u]>i:
+                    tutu[u] -= 1
 
         # All done
         return
@@ -822,12 +945,15 @@ class verticalfault(object):
         '''
         Returns the patch geometry as needed for okada85.
         Args:
-            * patch         : index of the wanted patch.
+            * patch         : index of the wanted patch or patch;
             * center        : if true, returns the coordinates of the center of the patch. if False, returns the UL corner.
         '''
 
         # Get the patch
-        p = self.patch[patch]
+        if patch.__class__ is int:
+            p = self.patch[patch]
+        else:
+            p = patch
 
         # Get the UL corner of the patch
         if center:
@@ -1293,7 +1419,7 @@ class verticalfault(object):
         elif polys.__class__ is list:
             for d in range(len(datas)):
                 if polys[d].__class__ is not str:
-                    self.poly[datas[d].name] = polys[d]*data.obs_per_station
+                    self.poly[datas[d].name] = polys[d]*datas[d].obs_per_station
                 else:
                     if datas[d].dtype is 'gpsrates':
                         self.poly[datas[d].name] = polys[d]
@@ -1787,11 +1913,12 @@ class verticalfault(object):
         # All done
         return x,y,z
 
-    def surfacesimulation(self, box=None):
+    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None):
         ''' 
         Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
         Args:
             * box       : Can be a list of [minlon, maxlon, minlat, maxlat].
+            * disk      : list of [xcenter, ycenter, radius, n]
         '''
 
         # create a fake gps object
@@ -1799,17 +1926,36 @@ class verticalfault(object):
         self.sim = gpsrates('simulation', utmzone=self.utmzone)
 
         # Create a lon lat grid
-        if box is None:
+        if (box is None) and (disk is None) :
             lon = np.linspace(self.lon.min(), self.lon.max(), 100)
             lat = np.linspace(self.lat.min(), self.lat.max(), 100)
-        else:
+            lon, lat = np.meshgrid(lon,lat)
+            lon = lon.flatten()
+            lat = lat.flatten()
+        elif (box is not None):
             lon = np.linspace(box[0], box[1], 100)
             lat = np.linspace(box[2], box[3], 100)
-        lon, lat = np.meshgrid(lon,lat)
-        lon = lon.flatten()
-        lat = lat.flatten()
+            lon, lat = np.meshgrid(lon,lat)
+            lon = lon.flatten()
+            lat = lat.flatten()
+        elif (disk is not None):
+            lon = []; lat = []
+            xd, yd = self.ll2xy(disk[0], disk[1])
+            xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
+            ampx = (xmax-xmin)
+            ampy = (ymax-ymin)
+            n = 0
+            while n<disk[3]:
+                x, y = np.random.rand(2)
+                x *= ampx; x -= ampx/2.; x += xd
+                y *= ampy; y -= ampy/2.; y += yd
+                if ((x-xd)**2 + (y-yd)**2) <= (disk[2]**2):
+                    lo, la = self.xy2ll(x,y)
+                    lon.append(lo); lat.append(la)
+                    n += 1
+            lon = np.array(lon); lat = np.array(lat)
 
-        if (lon.max()>360.) or (lon.min()<0.0) or (lat.max()>90.) or (lat.min()<-90):
+        if (lon.max()>360.) or (lon.min()<-180.0) or (lat.max()>90.) or (lat.min()<-90):
             self.sim.x = lon
             self.sim.y = lat
         else:
@@ -1820,6 +1966,24 @@ class verticalfault(object):
 
         # Initialize the vel_enu array
         self.sim.vel_enu = np.zeros((lon.size, 3))
+
+        # Create the station name array
+        self.sim.station = []
+        for i in range(len(self.sim.x)):
+            name = '{:04d}'.format(i)
+            self.sim.station.append(name)
+        self.sim.station = np.array(self.sim.station)
+
+        # Create an error array
+        if err is not None:
+            self.sim.err_enu = []
+            for i in range(len(self.sim.x)):
+                x,y,z = np.random.rand(3)
+                x *= err
+                y *= err
+                z *= err
+                self.sim.err_enu.append([x,y,z])
+            self.sim.err_enu = np.array(self.sim.err_enu)
 
         # import stuff
         import sys
@@ -1852,7 +2016,7 @@ class verticalfault(object):
         # All done
         return
 
-    def plot(self,ref='utm', figure=134, add=False):
+    def plot(self,ref='utm', figure=134, add=False, maxdepth=None):
         '''
         Plot the available elements of the fault.
         
@@ -1949,6 +2113,10 @@ class verticalfault(object):
             # put up a colorbar        
             scalarMap.set_array(self.totalslip)
             plt.colorbar(scalarMap)
+
+        # Depth
+        if maxdepth is not None:
+            ax.set_zlim3d([-1.0*maxdepth, 0])
 
         # show
         plt.show()

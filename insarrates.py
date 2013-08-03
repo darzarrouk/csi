@@ -241,7 +241,60 @@ class insarrates(object):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', include_poly=True):
+    def removePoly(self, fault):
+        '''
+        Removes a polynomial from the parameters that are in a fault.
+        '''
+
+        # Get the number
+        Oo = fault.polysol[self.name].shape[0]
+        assert ( (Oo==1) or (Oo==3) or (Oo==4) ), 'Number of polynomial parameters can be 0, 3 or 4.'
+
+        # Get the parameters
+        Op = fault.polysol[self.name]
+
+        # Create the transfer matrix
+        Nd = self.vel.shape[0]
+        orb = np.zeros((Nd, Oo))
+
+        # Fill in the first columns
+        orb[:,0] = 1.
+
+        # If more columns
+        if Oo>=3:
+            orb[:,1] = self.x/np.abs(self.x).max() 
+            orb[:,2] = self.y/np.abs(self.y).max()
+        if Oo>=4:
+            orb[:,3] = (self.x/np.abs(self.x).max())*(self.y/np.abs(self.y).max())
+
+        # Get the correction
+        self.orb = np.dot(orb,Op)
+
+        # Correct
+        self.vel -= self.orb
+
+        # All done
+        return
+
+    def removeSynth(self, faults, direction='sd', include_poly=False):
+        '''
+        Removes the synthetics using the faults and the slip distributions that are in there.
+        Args:
+            * faults        : List of faults.
+            * direction     : Direction of slip to use.
+            * include_poly  : if a polynomial function has been estimated, include it.
+        '''
+
+        # Build synthetics
+        self.buildsynth(faults, direction=direction, include_poly=include_poly)
+
+        # Correct
+        self.vel -= self.synth
+
+        # All done
+        return
+
+    def buildsynth(self, faults, direction='sd', include_poly=False):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:

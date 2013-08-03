@@ -8,6 +8,7 @@ Written by R. Jolivet, April 2013.
 
 '''
 
+import copy
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
@@ -110,7 +111,63 @@ class multifaultsolve(object):
         self.Nd = Nd
         self.Np = Np
 
+        # Describe which parameters are what
+        self.describeParams(faults)
+
         # All done
+        return
+
+    def describeParams(self, faults):
+        '''
+        Prints to screen  which parameters are what...
+        '''
+
+        # Prepare the table
+        print('  Fault Name   ||   Strike Slip   ||   Dip Slip   ||   Tensile   ||   Orbits   ')
+
+        # initialize the counters
+        ns = 0 
+        ne = 0
+
+        # Loop over the faults
+        for fault in faults:
+            
+            # Where does this fault starts
+            nfs = copy.deepcopy(ns)
+
+            # Initialize the values
+            ss = 'None'
+            ds = 'None'
+            ts = 'None'
+
+            # Conditions on slip
+            if 's' in fault.slipdir:
+                ne += len(fault.patch)
+                ss = '{} - {}'.format(ns,ne)
+                ns += len(fault.patch)
+            if 'd' in fault.slipdir:
+                ne += len(fault.patch)
+                ds = '{} - {}'.format(ns, ne)
+                ns += len(fault.patch)
+            if 't' in fault.slipdir:
+                ne += len(fault.patch)
+                ts = '{} - {}'.format(ns, ne)
+                ns += len(fault.patch)
+
+            # conditions on orbits (the rest is orbits)
+            np = ne - nfs
+            no = fault.Gassembled.shape[1] - np
+            if no>0:
+                ne += no
+                op = '{} - {}'.format(ns, ne)
+                ns += no
+            else:
+                op = 'None'
+            
+            # print things
+            print('{:15s}||{:17s}||{:14s}||{:13s}||{:12s}'.format(fault.name, ss, ds, ts, op))
+
+        # all done
         return
 
     def assembleCm(self):
@@ -368,7 +425,7 @@ class multifaultsolve(object):
         self.Gfile = outfile
 
         # Print stuff
-        print("Green's functions matrix size: {} ; {}".format(G.shape))
+        print("Green's functions matrix size: {} ; {}".format(G.shape[0], G.shape[1]))
 
         # All done
         return
@@ -433,7 +490,7 @@ class multifaultsolve(object):
         self.Cdfile = outfile
 
         # print stuff
-        print("Data Covariance Size: {} ; {}".format(Cd.shape))
+        print("Data Covariance Size: {} ; {}".format(Cd.shape[0], Cd.shape[1]))
 
         # All done
         return

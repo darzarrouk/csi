@@ -161,8 +161,8 @@ def Timefn(rep,t):
         elif fname in ('OFFSET'): # constant offset
             num = len(fn) - 1
             if (num != 1):
-                print 'Undefined sequence: ', fn
-                print 'Eg: [[\'OFFSET\'],[t_dummy]]'
+                print('Undefined sequence: {}'.format(fn))
+                print('Eg: [[\'OFFSET\'],[t_dummy]]')
                 sys.exit(1)
             ts = fn[1]
             H.append(np.ones(t.shape, dtype=float))

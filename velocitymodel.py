@@ -422,7 +422,6 @@ class velocitymodel(object):
 
         # Get x
         x = Results['x']
-        print Results
 
         # Store the guys
         p = []
