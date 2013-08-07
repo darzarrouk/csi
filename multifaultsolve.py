@@ -252,20 +252,21 @@ class multifaultsolve(object):
 
             # Get the polynomial/orbital/helmert values if they exist
             fault.polysol = {}
-            for dset in fault.poly.keys():
-                if (fault.poly[dset].__class__ is not str):
-                    if (fault.poly[dset] > 0):
-                        se = st + fault.poly[dset]
-                        fault.polysol[dset] = fault.mpost[st:se]
-                        st += fault.poly[dset]
-                elif (fault.poly[dset].__class__ is str):
-                    if fault.poly[dset] is 'full':
-                        nh = fault.helmert['GPS']
-                        se = st + nh
-                        fault.polysol[dset] = fault.mpost[st:se]
-                        st += nh
-                else:
-                    fault.polysol[dset] = None
+            for dset in fault.datanames:
+                if dset in fault.poly.keys():
+                    if (fault.poly[dset].__class__ is not str):
+                        if (fault.poly[dset] > 0):
+                            se = st + fault.poly[dset]
+                            fault.polysol[dset] = fault.mpost[st:se]
+                            st += fault.poly[dset]
+                    elif (fault.poly[dset].__class__ is str):
+                        if fault.poly[dset] is 'full':
+                            nh = fault.helmert['GPS']
+                            se = st + nh
+                            fault.polysol[dset] = fault.mpost[st:se]
+                            st += nh
+                    else:
+                        fault.polysol[dset] = None
 
         # All done
         return

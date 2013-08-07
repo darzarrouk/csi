@@ -394,7 +394,7 @@ class geodeticplot:
             * fault     : fault object from verticalfault.
             * norm      : List of lower and upper bound of the colorbar.
             * colorbar  : activates the plotting of the colorbar.
-            * direction : which direction do we plot ('east', 'north', 'up', 'total' or a given azimuth in degrees).
+            * direction : which direction do we plot ('east', 'north', 'up', 'total' or a given azimuth in degrees, or an array to project in the LOS).
         '''
 
         if direction is 'east':
@@ -407,6 +407,8 @@ class geodeticplot:
             d = np.sqrt(fault.sim.vel_enu[:,0]**2 + fault.sim.vel_enu[:,1]**2 + fault.sim.vel_enu[:,2]**2)
         elif direction.__class__ is float:
             d = fault.sim.vel_enu[:,0]/np.sin(direction*np.pi/180.) + fault.sim.vel_enu[:,1]/np.cos(direction*np.pi/180.)
+        elif direction.shape[0]==3:
+            d = np.dot(fault.sim.vel_enu,direction)
         else:
             print ('Unknown direction')
             return
@@ -441,7 +443,7 @@ class geodeticplot:
             * insar     : insar object from insarrates.
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
-            * data      : plot either 'data' or 'synth'.
+            * data      : plot either 'data' or 'synth' or 'res'.
         '''
 
         # Prepare the colorlimits
@@ -461,6 +463,11 @@ class geodeticplot:
             d = insar.vel
         elif data is 'synth':
             d = insar.synth
+        elif data is 'res':
+            d = insar.vel - insar.synth
+        else:
+            print('Unknown data type')
+            return
 
         for i in range(insar.xycorner.shape[0]):
             x = []

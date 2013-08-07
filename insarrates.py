@@ -248,7 +248,7 @@ class insarrates(object):
 
         # Get the number
         Oo = fault.polysol[self.name].shape[0]
-        assert ( (Oo==1) or (Oo==3) or (Oo==4) ), 'Number of polynomial parameters can be 0, 3 or 4.'
+        assert ( (Oo==1) or (Oo==3) or (Oo==4) ), 'Number of polynomial parameters can be 1, 3 or 4.'
 
         # Get the parameters
         Op = fault.polysol[self.name]
@@ -256,6 +256,9 @@ class insarrates(object):
         # Create the transfer matrix
         Nd = self.vel.shape[0]
         orb = np.zeros((Nd, Oo))
+
+        # Print Something
+        print('Correcting insar rate {} from polynomial function: {}'.format(self.name, tuple(Op[i] for i in range(Oo))))
 
         # Fill in the first columns
         orb[:,0] = 1.
@@ -331,15 +334,16 @@ class insarrates(object):
                 losop_synth = np.dot(Gt, St)
                 self.synth += losop_synth
 
-            if (self.name in fault.polysol.keys()) and (include_poly):
-                sarorb = fault.polysol[self.name]
-                if sarorb is not None:
-                    self.synth += sarorb[0]
-                    if sarorb.size >= 3:
-                        self.synth += sarorb[1] * data.x/np.abs(data.x).max()
-                        self.synth += sarorb[2] * data.y/np.abs(data.y).max() 
-                    if sarorb.size >= 4:
-                        self.synth += sarorb[3] * (data.x/np.abs(data.x).max())*(data.y/np.abs(data.y).max())
+            if include_poly:
+                if (self.name in fault.polysol.keys()):
+                    sarorb = fault.polysol[self.name]
+                    if sarorb is not None:
+                        self.synth += sarorb[0]
+                        if sarorb.size >= 3:
+                            self.synth += sarorb[1] * data.x/np.abs(data.x).max()
+                            self.synth += sarorb[2] * data.y/np.abs(data.y).max() 
+                        if sarorb.size >= 4:
+                            self.synth += sarorb[3] * (data.x/np.abs(data.x).max())*(data.y/np.abs(data.y).max())
 
         # All done
         return

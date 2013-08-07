@@ -851,11 +851,8 @@ class verticalfault(object):
         # Loop over the patches                                                                                 
         for p in self.patch:                                                                                    
             
-            # Get the center of the patch                                                                       
-            x1, y1, z1 = self.getcenter(p)
-                                                                                                                
             # Get some geometry
-            xc1, xc2, xc3, width, length, strike, dip = self.getpatchgeometry(p)                                   
+            xc1, xc2, xc3, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
             # Get the slip vector
             slip = self.getslip(p)                                                                              
             rake = np.arctan(slip[1]/slip[0])
@@ -871,12 +868,12 @@ class verticalfault(object):
             z *= scale                                                                                          
         
             # update point 
-            x2 = x1 + x
-            y2 = y1 + y
-            z2 = z1 + z                                                                          
+            x2 = xc1 + x
+            y2 = yc1 + y
+            z2 = zc1 + z                                                                          
  
             # Append
-            self.slipdirection.append([[x1, y1, z1],[x2, y2, z2]])
+            self.slipdirection.append([[xc1, yc1, zc1],[x2, y2, z2]])
 
         # All done
         return
@@ -1143,6 +1140,47 @@ class verticalfault(object):
         # Clean the screen 
         sys.stdout.write('\n')
         sys.stdout.flush()
+
+        # All done
+        return
+
+    def saveGreensFunctions(self):
+        '''
+        Saves the Green's functions in different files
+        '''
+
+        # Print stuff
+        print('Writing Greens functions to file for fault {}'.format(self.name))
+
+        # Loop over the keys in self.G
+        for data in self.G.keys(): 
+
+            # Get the Green's function
+            G = self.G[data]
+
+            # StrikeSlip Component
+            if 'strikeslip' in G.keys():
+                Nd, Np = G['strikeslip'].shape
+                gss = np.insert(G['strikeslip'].flatten(), 0, Np)
+                gss = np.insert(gss, 0, Nd)
+                filename = '{}_{}_SS.gf'.format(self.name, data)
+                gss.tofile(filename)
+
+            # DipSlip Component
+            if 'dipslip' in G.keys():
+                Nd, Np = G['dipslip'].shape
+                gds = np.insert(G['dipslip'].flatten(), 0, Np)
+                gds = np.insert(G['dipslip'], 0, Nd)
+                filename = '{}_{}_DS.gf'.format(self.name, data)
+                gds.tofile(filename)
+
+            # Tensile
+            if 'tensile' in G.keys():
+                Nd, Np = G['tensile'].shape
+                gts = np.insert(G['tensile'].flatten(), 0, Np)
+                gts = np.insert(gts, 0, Nd)
+                filename = '{}_{}_TS.gf'.format(self.name, data)
+                gts.tofile(filename)
 
         # All done
         return
@@ -1461,10 +1499,16 @@ class verticalfault(object):
         # Allocate G and d
         G = np.zeros((Nd, Np))
 
+        # Create the list of data names, to keep track of it
+        self.datanames = []
+
         # loop over the datasets
         el = 0
         polstart = Nps
         for data in datas:
+
+            # Keep data name
+            self.datanames.append(data.name)
 
             # print
             print("Dealing with {} of type {}".format(data.name, data.dtype))
@@ -1801,21 +1845,29 @@ class verticalfault(object):
         # Write the data to the EDKS file
         data.writeEDKSdata()
 
+        # Create the variables
+        RectanglePropFile = 'edks_{}.END'.format(self.name)
+        ReceiverFile = 'edks_{}.idEN'.format(data.name)
+        if data.dtype is 'insarrates':
+            useRecvDir = True # True for InSAR, uses LOS information
+        else:
+            useRecvDir = False # False for GPS, uses ENU displacements
+        EDKSunits = 1000.0
+        EDKSfilename = '{}'.format(edksfilename)
+        prefix = 'edks_{}_{}'.format(self.name, data.name)
+        plotGeometry = '{}'.format(plot)
+
         # Open the EDKSsubParams.py file
         filename = 'EDKSParams_{}_{}.py'.format(self.name, data.name)
         fout = open(filename, 'w')
 
         # Write in it
         fout.write("# File with the rectangles properties\n")
-        fout.write("RectanglesPropFile = 'edks_{}.END'\n".format(self.name))
+        fout.write("RectanglesPropFile = '{}'\n".format(RectanglePropFile))
         fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
-        fout.write("ReceiverFile = 'edks_{}.idEN'\n".format(data.name))
+        fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
         fout.write("# read receiver direction (# not yet implemented)\n")
-        if data.dtype is 'insarrates':
-            fout.write("useRecvDir = True # True for InSAR, uses LOS information\n")
-        else:
-            fout.write("useRecvDir = False # False for GPS, uses ENU displacements\n")
-
+        fout.write("useRecvDir = {} # True for InSAR, uses LOS information\n".format(useRecvDir))
         fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
         if amax is None:
             fout.write("Amax = None # None computes Amax automatically. \n")
@@ -1824,14 +1876,19 @@ class verticalfault(object):
 
         fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
         fout.write("EDKSfilename = '{}'\n".format(edksfilename))
-        fout.write("prefix = 'edks_{}_{}'\n".format(self.name, data.name))
+        fout.write("prefix = '{}'\n".format(prefix))
         fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
         
         # Close the file
         fout.close()
 
+        # Build usefull outputs
+        parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
+        parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
+        method_par = dict(zip(parNames, parValues))
+
         # All done
-        return filename
+        return filename, RectanglePropFile, ReceiverFile, method_par
 
     def writeEDKSgeometry(self, ref=None):
         '''
@@ -1862,15 +1919,15 @@ class verticalfault(object):
 
         # Loop over the patches
         for p in range(len(self.patch)):
-            x, y, z, width, length, strike, dip = self.getpatchgeometry(p)
+            x, y, z, width, length, strike, dip = self.getpatchgeometry(p, center=True)
             strike = strike*180./np.pi
             dip = dip*180./np.pi
             lon, lat = self.xy2ll(x,y)
             if ref is not None:
                 x -= refx
                 y -= refy
-            flld.write('{} {} {} {} {} {} {} {:5i} \n'.format(lon,lat,z,strike,dip,length,width,p))
-            fend.write('{} {} {} {} {} {} {} {:5i} \n'.format(x,y,z,strike,dip,length,width,p))
+            flld.write('{} {} {} {} {} {} {} {:5d} \n'.format(lon,lat,z,strike,dip,length,width,p))
+            fend.write('{} {} {} {} {} {} {} {:5d} \n'.format(x,y,z,strike,dip,length,width,p))
 
         # Close the files
         flld.close()

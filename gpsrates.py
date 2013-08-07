@@ -1125,7 +1125,7 @@ class gpsrates(object):
 
         # Loop over the data locations
         for i in range(len(x)):
-            string = '{:5i} {} {} \n'.format(i, x[i], y[i])
+            string = '{:5d} {} {} \n'.format(i, x[i], y[i])
             fout.write(string)
 
         # Close the file
