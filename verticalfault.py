@@ -805,6 +805,7 @@ class verticalfault(object):
         Write a psxyz compatible file to draw lines starting from the center of each patch, 
         indicating the direction of slip.
         Tensile slip is not used...
+        scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
         '''
 
         # Copmute the slip direction
@@ -843,18 +844,19 @@ class verticalfault(object):
     def computeSlipDirection(self, scale=1.0):
         '''
         Computes the segment indicating the slip direction.
+        scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
         '''
 
         # Create the array
         self.slipdirection = []
 
-        # Loop over the patches                                                                                 
-        for p in self.patch:                                                                                    
+        # Loop over the patches
+        for p in self.patch:  
             
             # Get some geometry
             xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
             # Get the slip vector
-            slip = self.getslip(p)                                                                              
+            slip = self.getslip(p) 
             rake = np.arctan(slip[1]/slip[0])
 
             # Compute the vector
@@ -863,9 +865,23 @@ class verticalfault(object):
             z = np.sin(dip)*np.sin(rake)
         
             # Scale these
-            x *= scale
-            y *= scale
-            z *= scale 
+            if scale.__class__ is float:
+                sca = scale
+            elif scale.__class__ is str:
+                if scale is 'total':
+                    sca = np.sqrt(slip[0]**2 + slip[1]**2 + slip[2]**2)
+                elif scale is 'strikeslip':
+                    sca = slip[0]
+                elif scale is 'dipslip':
+                    sca = slip[1]
+                elif scale is 'tensile':
+                    sca = slip[2]
+                else:
+                    print('Unknown Slip Direction in computeSlipDirection')
+                    sys.exit(1)
+            x *= sca
+            y *= sca
+            z *= sca
         
             # update point 
             xe = xc + x
