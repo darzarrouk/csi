@@ -852,28 +852,28 @@ class verticalfault(object):
         for p in self.patch:                                                                                    
             
             # Get some geometry
-            xc1, xc2, xc3, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
+            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
             # Get the slip vector
             slip = self.getslip(p)                                                                              
             rake = np.arctan(slip[1]/slip[0])
 
-            # Compute the vector                                                                                
-            x = np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake)                           
-            y = np.cos(strike)*np.cos(rake) - np.sin(strike)*np.cos(dip)*np.sin(rake)                           
+            # Compute the vector
+            x = np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake) 
+            y = np.cos(strike)*np.cos(rake) - np.sin(strike)*np.cos(dip)*np.sin(rake)
             z = np.sin(dip)*np.sin(rake)
         
             # Scale these
             x *= scale
-            y *= scale                                                                                          
-            z *= scale                                                                                          
+            y *= scale
+            z *= scale 
         
             # update point 
-            x2 = xc1 + x
-            y2 = yc1 + y
-            z2 = zc1 + z                                                                          
+            xe = xc + x
+            ye = yc + y
+            ze = zc + z                                                                          
  
             # Append
-            self.slipdirection.append([[xc1, yc1, zc1],[x2, y2, z2]])
+            self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])
 
         # All done
         return
