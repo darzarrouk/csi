@@ -64,6 +64,11 @@ class seismiclocations(object):
         self.depth = []
         self.mag = []
 
+        # Read the header to figure out where is the magnitude
+        desc = A[header-2].split()
+        imag = np.flatnonzero(np.array(desc)=='MAG').tolist()[0]
+        imag += 4
+
         # Loop over the A, there is a header line header
         for i in range(header, len(A)):
             # Split the string line 
@@ -78,7 +83,7 @@ class seismiclocations(object):
             lat = np.float(tmp[6])
             lon = np.float(tmp[7])
             depth = np.float(tmp[8])
-            mag = np.float(tmp[13])
+            mag = np.float(tmp[imag])
 
             # Create the time object
             d = dt.datetime(yr, mo, da, hr, mi)
@@ -344,5 +349,25 @@ class seismiclocations(object):
         fout.close()
 
         # all done
+        return
+
+    def mergeCatalog(self, catalog):
+        '''
+        Merges another catalog into this one.
+        Args:
+            catalog:    Seismic location object.
+        '''
+
+        # Merge variables
+        self.mag = np.hstack((self.mag, catalog.mag))
+        self.lat = np.hstack((self.lat, catalog.lat))
+        self.lon = np.hstack((self.lon, catalog.lon))
+        self.depth = np.hstack((self.depth, catalog.depth))
+        self.time = np.hstack((self.time, catalog.time))
+
+        # Compute the xy
+        self.ll2xy()
+
+        # all done 
         return
 

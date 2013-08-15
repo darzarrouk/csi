@@ -2186,6 +2186,77 @@ class verticalfault(object):
         # All done
         return
 
+    def ExtractAlongStrikeVariations(self, depth=0.5, origin=None, filename='alongstrike.dat', orientation=0.0):
+        '''
+        Extract the Along Strike Variations of the creep at a given depth
+        Args:
+            depth   : Depth at which we extract the along strike variations of slip.
+            origin  : Computes a distance from origin. Give [lon, lat].
+            filename: Saves to a file.
+            orientation: defines the direction of positive distances.
+        '''
+
+        # Dictionary to store these guys
+        if not hasattr(self, 'AlongStrike'):
+            self.AlongStrike = {}
+
+        # Creates the List where we will store things
+        # For each patch, it will be [lon, lat, strike-slip, dip-slip, tensile, distance]
+        Var = []
+
+        # Creates the orientation vector
+        Dir = np.array([np.cos(orientation*np.pi/180.), np.sin(orientation*np.pi/180.)])
+
+        # initialize the origin
+        x0 = 0
+        y0 = 0
+        if origin is not None:
+            x0, y0 = self.ll2xy(origin[0], origin[1])
+
+        # open the output file
+        fout = open(filename, 'w')
+        fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) \n')
+
+        # Loop over the patches
+        for p in self.patch:
+
+            # Get depth range
+            dmin = np.min([p[i][2] for i in range(4)])
+            dmax = np.max([p[i][2] for i in range(4)])
+
+            # If good depth, keep it
+            if ((depth>=dmin) & (depth<=dmax)):
+                
+                # Get the slip
+                slip = self.getslip(p)
+
+                # Get patch center
+                xc, yc, zc = self.getcenter(p)
+                lonc, latc = self.xy2ll(xc, yc)
+
+                # Computes the horizontal distance
+                vec = np.array([x0-xc, y0-yc])
+                sign = np.sign( np.dot(Dir,vec) )
+                dist = sign * np.sqrt( (xc-x0)**2 + (yc-y0)**2 )
+
+                # Assemble
+                o = [lonc, latc, slip[0], slip[1], slip[2], dist]
+
+                # write output
+                fout.write('{} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], dist))
+
+                # append
+                Var.append(o)
+
+        # Close the file
+        fout.close()
+
+        # Stores it 
+        self.AlongStrike['Depth {}'.format(depth)] = np.array(Var)
+
+        # all done 
+        return
+
     def plot(self,ref='utm', figure=134, add=False, maxdepth=None):
         '''
         Plot the available elements of the fault.
