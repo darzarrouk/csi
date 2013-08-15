@@ -7,7 +7,12 @@ import copy
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
-import okada4py as ok
+import sys
+
+# Personal
+major, minor, micro, release, serial = sys.version_info
+if major==2:
+    import okada4py as ok
 
 class dippingfault(object):
 

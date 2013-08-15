@@ -225,7 +225,7 @@ class geodeticplot:
         # put up a colorbar        
         if colorbar:
             scalarMap.set_array(slip)
-            self.fig1.colorbar(scalarMap, shrink=0.6, orientation='h')
+            self.fig1.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
 
         # All done
         return

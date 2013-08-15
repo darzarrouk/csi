@@ -136,7 +136,7 @@ class insarrates(object):
         # Read the covariance
         if cov:
             nd = self.vel.size
-            self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))
+            self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))*factor
 
         # All done
         return
@@ -191,6 +191,64 @@ class insarrates(object):
         Se = np.sin(alpha) * np.sin(phi)
         Sn = np.cos(alpha) * np.sin(phi)
         Su = np.cos(phi)
+        self.los = np.ones((self.lon.shape[0],3))
+        self.los[:,0] *= Se
+        self.los[:,1] *= Sn
+        self.los[:,2] *= Su
+
+        # All done
+        return
+
+    def read_from_grd(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.1):
+        '''
+        Reads velocity map from a grd file.
+        Args:
+            * filename  : Name of the input file
+            * factor    : scale by a factor
+            * step      : add a value.
+        '''
+
+        # Initialize values
+        self.vel = []
+        self.lon = []
+        self.lat = []
+        self.err = []
+        self.los = []
+
+        # Open the input file
+        import scipy.io.netcdf as netcdf
+        fin = netcdf.netcdf_file(filename)
+
+        # Get the values
+        self.vel = fin.variables['z'][:,:].flatten() * factor + step
+        self.err = np.ones((fin.variables['z'].shape)) * factor
+        self.err[np.where(np.isnan(self.vel))] = np.nan
+        self.vel[np.where(np.isnan(self.err))] = np.nan
+
+        # Deal with lon/lat
+        Lon = fin.variables['x'][:]
+        Lat = fin.variables['y'][:]
+        Lon, Lat = np.meshgrid(Lon,Lat)
+        w, l = Lon.shape
+        self.lon = Lon.reshape((w*l,)).flatten()
+        self.lat = Lat.reshape((w*l,)).flatten()
+
+        # Keep the non-nan pixels only
+        u = np.flatnonzero(np.isfinite(self.vel))
+        self.lon = self.lon[u]
+        self.lat = self.lat[u]
+        self.vel = self.vel[u]
+        self.err = self.err[u]
+
+        # Convert to utm
+        self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
+
+        # Deal with the LOS
+        alpha = (heading+90.0)*np.pi/180.0
+        phi = incidence*np.pi/180.0 
+        Se = np.sin(alpha) * np.sin(phi) 
+        Sn = np.cos(alpha) * np.sin(phi) 
+        Su = np.cos(phi) 
         self.los = np.ones((self.lon.shape[0],3))
         self.los[:,0] *= Se
         self.los[:,1] *= Sn
@@ -381,7 +439,7 @@ class insarrates(object):
 
         # Loop over the data locations
         for i in range(len(x)):
-            string = '{:5d} {} {} {} {} {} \n'.format(i, x[i], y[i], LOS[i,0], LOS[i,1], LOS[i,2])
+            string = '{:5d} {} {} {} {} {} \n'.format(i, x[i], y[i], los[i,0], los[i,1], los[i,2])
             fout.write(string)
 
         # Close the file
@@ -761,7 +819,7 @@ class insarrates(object):
 
         return
 
-    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False):
+    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal'):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -843,6 +901,9 @@ class insarrates(object):
         # Colorbar
         scalarMap.set_array(self.vel)
         plt.colorbar(scalarMap)
+
+        # Axis
+        plt.axis(axis)
 
         # Show
         plt.show()

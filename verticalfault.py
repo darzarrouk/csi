@@ -10,9 +10,12 @@ import pyproj as pp
 import matplotlib.pyplot as plt
 import scipy.interpolate as sciint
 import copy
+import sys
 
 # Personals
-import okada4py as ok
+major, minor, micro, release, serial = sys.version_info
+if major==2:
+    import okada4py as ok
 
 class verticalfault(object):
 
@@ -800,7 +803,7 @@ class verticalfault(object):
         # All done
         return self.slip[io,:]
 
-    def writeSlipDirection2File(self, filename, scale=1.0):
+    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False):
         '''
         Write a psxyz compatible file to draw lines starting from the center of each patch, 
         indicating the direction of slip.
@@ -809,7 +812,7 @@ class verticalfault(object):
         '''
 
         # Copmute the slip direction
-        self.computeSlipDirection(scale=scale)
+        self.computeSlipDirection(scale=scale, factor=factor)
 
         # Write something
         print('Writing slip direction to file {}'.format(filename))
@@ -821,18 +824,20 @@ class verticalfault(object):
         for p in self.slipdirection:
             
             # Write the > sign to the file
-            fout.write('> \n ')
+            fout.write('> \n')
 
             # Get the center of the patch
             xc, yc, zc = p[0]
             lonc, latc = self.xy2ll(xc, yc)
-            zc = -1.0 * zc
+            if neg_depth:
+                zc = -1.0*zc
             fout.write('{} {} {} \n'.format(lonc, latc, zc))
 
             # Get the end of the vector
             xc, yc, zc = p[1]
             lonc, latc = self.xy2ll(xc, yc)
-            zc = -1.0 * zc
+            if neg_depth:
+                zc = -1.0*zc
             fout.write('{} {} {} \n'.format(lonc, latc, zc))
 
         # Close file
@@ -841,7 +846,7 @@ class verticalfault(object):
         # all done
         return
 
-    def computeSlipDirection(self, scale=1.0):
+    def computeSlipDirection(self, scale=1.0, factor=1.0):
         '''
         Computes the segment indicating the slip direction.
         scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
@@ -869,13 +874,13 @@ class verticalfault(object):
                 sca = scale
             elif scale.__class__ is str:
                 if scale is 'total':
-                    sca = np.sqrt(slip[0]**2 + slip[1]**2 + slip[2]**2)
+                    sca = np.sqrt(slip[0]**2 + slip[1]**2 + slip[2]**2)*factor
                 elif scale is 'strikeslip':
-                    sca = slip[0]
+                    sca = slip[0]*factor
                 elif scale is 'dipslip':
-                    sca = slip[1]
+                    sca = slip[1]*factor
                 elif scale is 'tensile':
-                    sca = slip[2]
+                    sca = slip[2]*factor
                 else:
                     print('Unknown Slip Direction in computeSlipDirection')
                     sys.exit(1)
@@ -1077,7 +1082,8 @@ class verticalfault(object):
         Npt = len(self.patch)*len(slipdir)
 
         # Initializes a space in the dictionary to store the green's function
-        self.G[data.name] = {}
+        if data.name not in self.G.keys():
+            self.G[data.name] = {}
         G = self.G[data.name]
         if 's' in slipdir:
             G['strikeslip'] = np.zeros((Ndt, Np))
@@ -1160,9 +1166,11 @@ class verticalfault(object):
         # All done
         return
 
-    def saveGreensFunctions(self):
+    def saveGFs(self, dtype='d'):
         '''
         Saves the Green's functions in different files
+        Args:
+            dtype       : Format of the binary data saved.
         '''
 
         # Print stuff
@@ -1176,26 +1184,23 @@ class verticalfault(object):
 
             # StrikeSlip Component
             if 'strikeslip' in G.keys():
-                Nd, Np = G['strikeslip'].shape
-                gss = np.insert(G['strikeslip'].flatten(), 0, Np)
-                gss = np.insert(gss, 0, Nd)
+                gss = G['strikeslip'].flatten()
                 filename = '{}_{}_SS.gf'.format(self.name, data)
+                gss = gss.astype(dtype)
                 gss.tofile(filename)
 
             # DipSlip Component
             if 'dipslip' in G.keys():
-                Nd, Np = G['dipslip'].shape
-                gds = np.insert(G['dipslip'].flatten(), 0, Np)
-                gds = np.insert(G['dipslip'], 0, Nd)
+                gds = G['dipslip'].flatten()
                 filename = '{}_{}_DS.gf'.format(self.name, data)
+                gds = gds.astype(dtype)
                 gds.tofile(filename)
 
             # Tensile
             if 'tensile' in G.keys():
-                Nd, Np = G['tensile'].shape
-                gts = np.insert(G['tensile'].flatten(), 0, Np)
-                gts = np.insert(gts, 0, Nd)
+                gts = G['tensile'].flatten()
                 filename = '{}_{}_TS.gf'.format(self.name, data)
+                gts = gts.astype(dtype)
                 gts.tofile(filename)
 
         # All done
@@ -1314,7 +1319,92 @@ class verticalfault(object):
         # All done
         return
 
-    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], tensile=[None, None, None], vertical=True):
+    def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None, vertical=False, dtype='d'):
+        '''
+        Sets the Green's functions from binary files. Be carefull, these have to be in the 
+        good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and 
+        if insar, GF are projected already)
+        Args:
+            * data          : Data structure from gpsrates or insarrates.
+            * strikeslip    : File containing the Green's functions for strikeslip displacements.
+            * dipslip       : File containing the Green's functions for dipslip displacements.
+            * tensile       : File containing the Green's functions for tensile displacements.
+            * vertical      : Deal with the UP component (gps: default is false, insar, it will be true anyway).
+            * dtype         : Type of binary data.
+        '''
+
+        print('---------------------------------')
+        print('---------------------------------')
+        print("Set up Green's functions for fault {} from files {}, {} and {}".format(self.name, strikeslip, dipslip, tensile))
+
+        # Get the number of patches
+        Npatchs = len(self.patch)
+
+        # Read the files and reshape the GFs
+        if strikeslip is not None:
+            Gss = np.fromfile(strikeslip, dtype=dtype)
+            ndl = int(Gss.shape[0]/Npatchs)
+            Gss = Gss.reshape((ndl, Npatchs))
+        if dipslip is not None:
+            Gds = np.fromfile(dipslip, dtype=dtype)
+            ndl = int(Gds.shape[0]/Npatchs)
+            Gds = Gds.reshape((ndl, Npatchs))
+        if tensile is not None:
+            Gts = np.fromfile(tensile, dtype=dtype)
+            ndl = int(Gts.shape[0]/Npatchs)
+            Gts = Gts.reshape((ndl, Npatchs))
+
+        # Get the data type
+        datatype = data.dtype
+
+        # Cut the Matrices following what data do we have and set the GFs
+        if datatype is 'gpsrates':
+         
+            # Initialize
+            GssE = None; GdsE = None; GtsE = None
+            GssN = None; GdsN = None; GtsN = None
+            GssU = None; GdsU = None; GtsU = None
+
+            # Get the values
+            if strikeslip is not None:
+                GssE = Gss[range(0,data.vel_enu.shape[0]),:]
+                GssN = Gss[range(data.vel_enu.shape[0],data.vel_enu.shape[0]*2),:]
+                if vertical:
+                    GssU = Gss[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
+            if dipslip is not None:
+                GdsE = Gds[range(0,data.vel_enu.shape[0]),:]
+                GdsN = Gds[range(data.vel_enu.shape[0],data.vel_enu.shape[0]*2),:]
+                if vertical:
+                    GdsU = Gds[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
+            if tensile is not None:
+                GtsE = Gts[range(0,data.vel_enu.shape[0]),:]
+                GtsN = Gts[range(data.vel_enu.shape[0],data.vel_enu.shape[0]*2),:]
+                if vertical:
+                    GtsU = Gts[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
+
+            # set the GFs
+            self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU], tensile=[GtsE, GtsN, GtsU], vertical=vertical)
+
+        elif datatype is 'insarrates':
+
+            # Initialize
+            GssLOS = None; GdsLOS = None; GtsLOS = None
+
+            # Get the values
+            if strikeslip is not None: 
+                GssLOS = Gss
+            if dipslip is not None:
+                GdsLOS = Gds
+            if tensile is not None:
+                GtsLOS = Gts
+
+            # set the GFs
+            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS], vertical=True)
+        
+        # all done
+        return
+
+    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], tensile=[None, None, None], vertical=False):
         '''
         Stores the Green's functions matrices into the fault structure.
         Args:
@@ -1322,13 +1412,20 @@ class verticalfault(object):
             * strikeslip    : List of matrices of the Strikeslip Green's functions, ordered E, N, U
             * dipslip       : List of matrices of the dipslip Green's functions, ordered E, N, U
             * tensile       : List of matrices of the tensile Green's functions, ordered E, N, U
+            If you provide InSAR GFs, these need to be projected onto the LOS direction already.
         '''
 
-        # Clean up the Green's functions
-        self.G = {}
+        # Get the number of data per point
+        if data.dtype is 'insarrates':
+            data.obs_per_station = 1
+        elif data.dtype is 'gpsrates':
+            data.obs_per_station = 2
+            if vertical:
+                data.obs_per_station = 3
 
         # Create the storage for that dataset
-        self.G[data.name] = {}
+        if data.name not in self.G.keys():
+            self.G[data.name] = {}
         G = self.G[data.name]
 
         # Initializes the data vector
@@ -1853,7 +1950,7 @@ class verticalfault(object):
         # print
         print ("---------------------------------")
         print ("---------------------------------")
-        print ("Write the EDKS files and run the GFs interpolation")
+        print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
 
         # Write the geometry to the EDKS file
         self.writeEDKSgeometry()
