@@ -502,6 +502,117 @@ class verticalfault(object):
         # All done
         return
 
+    def importPatches(self, filename, origin=[45.0, 45.0]):
+        '''
+        Builds a patch geometry and the corresponding files from a relax co-seismic file type.
+        Args:
+            filename    : Input from Relax (See Barbot and Cie on the CIG website).
+            origin      : Origin of the reference frame used by relax. [lon, lat]
+        '''
+
+        # Create lists
+        self.patch = []
+        self.patchll = []
+        self.slip = []
+
+        # origin
+        x0, y0 = self.ll2xy(origin[0], origin[1])
+
+        # open/read/close the input file
+        fin = open(filename, 'r')
+        Text = fin.readlines()
+        fin.close()
+
+        # Depth array
+        D = []
+
+        # Loop over the patches
+        for text in Text:
+
+            # split
+            text = text.split()
+
+            # check if continue
+            if not text[0]=='#':
+
+                # Get values
+                slip = np.float(text[1])
+                xtl = np.float(text[2]) + x0
+                ytl = np.float(text[3]) + y0
+                depth = np.float(text[4])
+                length = np.float(text[5])
+                width = np.float(text[6])
+                strike = np.float(text[7])*np.pi/180.
+                rake = np.float(text[9])*np.pi/180.
+
+                D.append(depth)
+
+                # Build a patch with that
+                x1 = xtl
+                y1 = ytl
+                z1 = depth + width
+
+                x2 = xtl 
+                y2 = ytl
+                z2 = depth
+
+                x3 = xtl + length*np.cos(strike) 
+                y3 = ytl + length*np.sin(strike)
+                z3 = depth
+
+                x4 = xtl + length*np.cos(strike)
+                y4 = ytl + length*np.sin(strike)
+                z4 = depth + width
+
+                # Convert to lat lon
+                lon1, lat1 = self.xy2ll(x1, y1)
+                lon2, lat2 = self.xy2ll(x2, y2)
+                lon3, lat3 = self.xy2ll(x3, y3)
+                lon4, lat4 = self.xy2ll(x4, y4)
+
+                # Fill the patch
+                p = np.zeros((4, 3))
+                pll = np.zeros((4, 3))
+                p[0,:] = [x1, y1, z1]
+                p[1,:] = [x2, y2, z2]
+                p[2,:] = [x3, y3, z3]
+                p[3,:] = [x4, y4, z4]
+                pll[0,:] = [lon1, lat1, z1]
+                pll[1,:] = [lon2, lat2, z2]
+                pll[2,:] = [lon3, lat3, z3]
+                pll[3,:] = [lon4, lat4, z4]
+                self.patch.append(p)
+                self.patchll.append(pll)
+
+                # Slip
+                ss = slip*np.cos(rake)
+                ds = slip*np.sin(rake)
+                ts = 0.
+                self.slip.append([ss, ds, ts])
+
+        # Translate slip to np.array
+        self.slip = np.array(self.slip)
+
+        # Depth 
+        D = np.unique(np.array(D))
+        self.z_patches = D
+        self.depth = D.max()
+
+        # Create a trace
+        dmin = D.min()
+        self.lon = []
+        self.lat = []
+        for p in self.patchll:
+            d = p[1][2]
+            if d==dmin:
+                self.lon.append(p[1][0])
+                self.lat.append(p[1][1])
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+    
+        # All done
+        return
+
     def BuildPatchesVarResolution(self, depths, Depthpoints, Resolpoints, interpolation='linear', minpatchsize=0.1, extrap=None):
         '''
         Patchizes the fault with a variable patch size at depth.
@@ -2257,7 +2368,57 @@ class verticalfault(object):
         # all done 
         return
 
-    def plot(self,ref='utm', figure=134, add=False, maxdepth=None):
+    def associatePatch2PDFs(self, directory='.', prefix='step_001_param'):
+        '''
+        Associates a patch with a pdf called directory/prefix_{#}.dat.
+        import AltarExplore....
+        '''
+
+        # Import necessary
+        import AltarExplore as alt
+        
+        # Parameters index are in self.index_parameter
+        istrikeslip = self.index_parameter[:,0]
+        idipslip = self.index_parameter[:,1]
+        itensile = self.index_parameter[:,2]
+
+        # Create a list of slip pdfs
+        self.slippdfs = []
+        for i in range(self.slip.shape[0]):
+            sys.stdout.write('\r Patch {}/{}'.format(i,self.slip.shape[0]))
+            sys.stdout.flush()
+            # integers are needed
+            iss = np.int(istrikeslip[i])
+            ids = np.int(idipslip[i])
+            its = np.int(itensile[i])
+            # Create the file names
+            pss = None
+            pds = None
+            pts = None
+            if istrikeslip[i]< 10000:
+                pss = '{}/{}_{:03d}.dat'.format(directory, prefix, iss)
+            if idipslip[i]<10000:
+                pds = '{}/{}_{:03d}.dat'.format(directory, prefix, ids)
+            if itensile[i]<10000:
+                pts = '{}/{}_{:03d}.dat'.format(directory, prefix, its)
+            # Create the parameters
+            Pss = None; Pds = None; Pts = None
+            if pss is not None:
+                Pss = alt.parameter('{:03d}'.format(iss), pss)
+            if pds is not None:
+                Pds = alt.parameter('{:03d}'.format(ids), pds)
+            if pts is not None:
+                Pts = alt.parameter('{:03d}'.format(its), pts)
+            # Store these
+            self.slippdfs.append([Pss, Pds, Pts])
+
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+        # all done
+        return
+
+    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total'):
         '''
         Plot the available elements of the fault.
         
@@ -2306,7 +2467,11 @@ class verticalfault(object):
                 ax.plot(loni, lati, '.r')
 
         # Compute the total slip
-        self.computetotalslip()
+        if value_to_plot=='total':
+            self.computetotalslip()
+            plotval = self.totalslip
+        elif value_to_plot=='index':
+            plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
 
         # Plot the patches
         if self.patch is not None:
@@ -2328,7 +2493,7 @@ class verticalfault(object):
             
             # set color business
             cmap = plt.get_cmap('jet')
-            cNorm  = colors.Normalize(vmin=0, vmax=self.totalslip.max())
+            cNorm  = colors.Normalize(vmin=0, vmax=plotval.max())
             scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
             for p in range(len(self.patch)):
@@ -2347,12 +2512,12 @@ class verticalfault(object):
                         z.append(-1.0*self.patchll[p][i][2])
                 verts = [zip(x, y, z)]
                 rect = art3d.Poly3DCollection(verts)
-                rect.set_color(scalarMap.to_rgba(self.totalslip[p]))
+                rect.set_color(scalarMap.to_rgba(plotval[p]))
                 rect.set_edgecolors('k')
                 ax.add_collection3d(rect)
 
             # put up a colorbar        
-            scalarMap.set_array(self.totalslip)
+            scalarMap.set_array(plotval)
             plt.colorbar(scalarMap)
 
         # Depth

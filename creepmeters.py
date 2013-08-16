@@ -8,6 +8,7 @@ import numpy as np
 import pyproj as pp
 import datetime as dt
 import matplotlib.pyplot as plt
+import os
 
 class creepmeters(object):
 
@@ -72,10 +73,53 @@ class creepmeters(object):
         # All done
         return
 
+    def deleteStation(self, station):
+        '''
+        Removes a station.
+        '''
+
+        # find it
+        u = np.flatnonzero(np.array(self.station)==station)
+        
+        # delete it
+        del self.station[u]
+        self.lon = np.delete(self.lon, u)
+        self.lat = np.delete(self.lat, u)
+
+        # All done 
+        return
+
+    def readAllStations(self, directory='.'):
+        '''
+        Reads all the station files.
+        '''
+
+        for station in self.station:
+            self.readStationData(station,directory=directory)
+
+        # stations to delete
+        sta = []
+        for station in self.station:
+            if self.data[station] == {}:
+                sta.append(station)
+        for s in sta:
+            self.deleteStation(s)
+
+        # all done
+        return
+
     def readStationData(self, station, directory='.'):
         '''
         From the name of a station, reads what is in station.day.
         '''
+
+        # Filename
+        filename = '{}/{}.day'.format(directory,station)
+        if not os.path.exists(filename):
+            filename = '{}/{}.m'.format(directory,station)
+            if not os.path.exists(filename):
+                self.data[station] = {}
+                return
 
         # Create the storage
         self.data[station] = {}
@@ -84,8 +128,7 @@ class creepmeters(object):
         t = self.data[station]['Time']
         o = self.data[station]['Offset']
 
-        # open the file
-        filename = '{}/{}.day'.format(directory,station)
+        # Open
         fin = open(filename, 'r')
 
         # Read everything in it
@@ -157,6 +200,21 @@ class creepmeters(object):
         # All done
         return
 
+    def fitLinearAllStations(self, period=None, directory='.'):
+        '''
+        Fits a linear trend to all the available stations.
+        Can specify a period=[startdate, enddate]
+        ex:     fitLinearAllStation(period=[(2006,01,23), (2007,12,31)])
+        '''
+
+        # Loop 
+        for station in self.station:
+            print('Fitting Station {}'.format(station))
+            self.fitLinear(station, period=period, directory=directory)
+
+        # All done
+        return
+
     def fitLinear(self, station, period=None, directory='.'):
         '''
         Fits a linear trend onto the offsets for the station 'station'.
@@ -167,6 +225,9 @@ class creepmeters(object):
         # Check if the station has been read before
         if not (station in self.data.keys()):
             self.readStationData(station, directory=directory)
+            if not (station in self.data.keys()):
+                print('Cannot fit station {} ...'.format(station))
+                return
 
         # Creates a storage
         self.data[station]['Linear'] = {}
@@ -193,6 +254,10 @@ class creepmeters(object):
         u = np.flatnonzero(time>=date1)
         v = np.flatnonzero(time<=date2)
         w = np.intersect1d(u,v)
+        if w.shape[0]<2:
+            print('Not enough points for station {}'.format(station))
+            store['Fit'] = None
+            return
         ti = time[w]
         of = offset[w]
 
@@ -204,7 +269,7 @@ class creepmeters(object):
         A[:,0] = tr
 
         # invert
-        m = np.dot( np.dot( np.linalg.inv(np.dot(A.T, A)), A.T ), of)
+        m, res, rank, s = np.linalg.lstsq(A, of)
 
         # Stores the results
         store['Fit'] = m
@@ -236,13 +301,14 @@ class creepmeters(object):
 
         # plot fit
         if 'Linear' in self.data[station].keys():
-            v = self.data[station]['Linear']['Fit'][0]
-            c = self.data[station]['Linear']['Fit'][1]
-            date1 = self.data[station]['Linear']['Period'][0]
-            date2 = self.data[station]['Linear']['Period'][1]
-            dr1 = self.date2real(date1)
-            dr2 = self.date2real(date2)
-            plt.plot([date1, date2],[c+dr1*v, c+dr2*v], '-r')
+            if self.data[station]['Linear']['Fit'] is not None:
+                v = self.data[station]['Linear']['Fit'][0]
+                c = self.data[station]['Linear']['Fit'][1]
+                date1 = self.data[station]['Linear']['Period'][0]
+                date2 = self.data[station]['Linear']['Period'][1]
+                dr1 = self.date2real(date1)
+                dr2 = self.date2real(date2)
+                plt.plot([date1, date2],[c+dr1*v, c+dr2*v], '-r')
 
         # save
         if save is not None:
