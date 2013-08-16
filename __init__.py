@@ -16,4 +16,5 @@ from .velocitymodel import velocitymodel
 from .dippingfault import dippingfault
 from .strainfield import strainfield
 from .srcmodsolution import srcmodsolution
+from .creepmeters import creepmeters
 from timefnutils import *
