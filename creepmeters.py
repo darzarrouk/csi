@@ -60,17 +60,65 @@ class creepmeters(object):
         for t in Text:
             tex = t.split()
             self.station.append(tex[0])
-            self.lon.append(np.float(tex[1]))
-            self.lat.append(np.float(tex[2]))
+            self.lon.append(np.float(tex[2]))
+            self.lat.append(np.float(tex[1]))
 
         # translate to array
         self.lon = np.array(self.lon)
         self.lat = np.array(self.lat)
 
         # Convert to utm
-        self.ll2xy()
+        self.lonlat2xy()
 
         # All done
+        return
+
+    def position(self, station):
+        ''' 
+        Returns lon,lat of a station.
+        Args:
+            * station   : Name of a station.
+        '''
+        
+        # Find it
+        u = np.flatnonzero(np.array(self.station)==station)
+        u = u[0]
+
+        # Get lon, lat and return
+        return self.lon[u], self.lat[u]
+
+    def distance(self, station, point, direction):
+        '''
+        Computes the distance between a station and a point.
+        Args:
+            * station   : Name of a station.
+            * point     : [Lon, Lat].
+            * direction : Direction of the positive sign.
+        '''
+
+        # Check
+        if 'Distance' not in self.data[station].keys():
+            self.data[station]['Distance'] = []
+
+        # Get station lon,lat
+        lon, lat = self.position(station)
+        x, y = self.ll2xy(lon,lat)
+
+        # Transfert point
+        x0, y0 = self.ll2xy(point[0],point[1])
+
+        # Computes the sign
+        Dir = np.array([np.cos(direction*np.pi/180.), np.sin(direction*np.pi/180.)])
+        vec = np.array([x0-x, y0-y])
+        sign = np.sign(np.dot(Dir, vec))
+
+        # Compute distance
+        d = np.sqrt( (x0-x)**2 +(y0-y)**2 ) * sign
+
+        # Stores it
+        self.data[station]['Distance'].append([[lon,lat], d])
+
+        # all done
         return
 
     def deleteStation(self, station):
@@ -188,17 +236,24 @@ class creepmeters(object):
         # All done
         return
 
-    def ll2xy(self):
+    def lonlat2xy(self):
         '''
         Converts the lat lon positions into utm coordinates.
         '''
 
-        x, y = self.putm(self.lon, self.lat)
-        self.x = x/1000.
-        self.y = y/1000.
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
+
+        # all done
+        return
+
+    def ll2xy(self, lon, lat):
+
+        x, y = self.putm(lon,lat)
+        x /= 1000.
+        y /= 1000.
 
         # All done
-        return
+        return x,y
 
     def fitLinearAllStations(self, period=None, directory='.'):
         '''

@@ -711,6 +711,27 @@ class gpsrates(object):
         # All done
         return
 
+    def project2InSAR(self, los):
+        '''
+        Projects the GPS data into the InSAR Line-Of-Sight provided.
+        Args:
+            * los       : list of three components of the line-of-sight vector.
+        '''
+
+        # Create a variable for the projected gps rates
+        self.vel_los = np.zeros((self.vel_enu.shape[0]))
+
+        # Convert los to numpy array
+        los = np.array(los)
+        self.los = los
+
+        # Loop over 
+        for i in range(self.vel_enu.shape[0]):
+            self.vel_los[i] = np.dot( self.vel_enu[i,:], self.los )
+
+        # All done 
+        return
+
     def keep_stations(self, stations):
         '''
         Keeps only the stations on the arg list.
@@ -883,6 +904,84 @@ class gpsrates(object):
         # all done
         return
     
+    def remove2Dstrain(self, fault):
+        '''
+        Removes the 2D strain tensor stored in the fault given as an argument.
+        '''
+
+        # Get the size of the strain tensor
+        assert fault.strain[self.name]
+        Nh = fault.strain[self.name]
+
+        # Get the number of obs per station
+        if not hasattr(self, 'obs_per_station'):
+            if Nh == 6:
+                self.obs_per_station = 2
+            else:
+                print('Strain estimation for 3d not implemented')
+        No = self.obs_per_station
+
+        # Get the position of the center of the network
+        x0 = np.mean(self.x)
+        y0 = np.mean(self.y)
+
+        # Compute the baseline and normalize these
+        base_x = self.x - x0
+        base_y = self.y - y0
+
+        # Normalize the baselines
+        base_max = fault.StrainNormalizingFactor[self.name]
+        base_x /= base_max
+        base_y /= base_max
+
+        # Allocate a Strain base
+        H = np.zeros((No,Nh)) 
+
+        # Fill in the part that does not change
+        H[:,:No] = np.eye(No) 
+
+        # Store the transform here
+        self.Strain = np.zeros(self.vel_enu.shape) 
+
+        # Get the parameters for this data set
+        Svec = fault.polysol[self.name]
+        self.StrainTensor = Svec
+        print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name)) 
+        print('Parameters: ')
+        print('  X Translation :    {} mm/yr'.format(Svec[0]))
+        print('  Y Translation :    {} mm/yr'.format(Svec[1]))
+        print('     Strain xx  :    {} mm/yr/km'.format(Svec[2]/base_max))
+        print('     Strain xy  :    {} mm/yr/km'.format(Svec[3]/base_max))
+        print('     Strain yy  :    {} mm/yr/km'.format(Svec[4]/base_max))
+        print('     Rotation   :    {}'.format(Svec[5]))
+
+        # Loop over the station
+        for i in range(self.station.shape[0]):
+
+            # Clean the part that changes
+            H[:,No:] = 0.0
+
+            # Get the values
+            x1, y1 = base_x[i], base_y[i]
+
+            # Store the rest
+            H[0,2] = x1 
+            H[0,3] = 0.5*y1 
+            H[0,5] = 0.5*y1 
+            H[1,3] = 0.5*x1
+            H[1,4] = y1
+            H[1,5] = -0.5*y1  
+
+            # Do the transform
+            newv = np.dot(H, Svec)
+            self.Strain[i,:No] = newv
+
+            # Correct the data
+            self.vel_enu[i,:No] -= newv
+
+        # All done
+        return
+            
     def removeHelmertTransform(self, fault):
         '''
         Removes the Helmert Transform stored in the fault given as argument.
@@ -1117,7 +1216,13 @@ class gpsrates(object):
         y = self.y
 
         # Open the file
-        filename = 'edks_{}.idEN'.format(self.name)
+        if len(self.name.split())>1:
+            datname = self.name.split()[0]
+            for s in self.name.split()[1:]:
+                datname = datname+'_'+s
+        else:
+            datname = self.name
+        filename = 'edks_{}.idEN'.format(datname)
         fout = open(filename, 'w')
 
         # Write a header
@@ -1166,12 +1271,72 @@ class gpsrates(object):
         # All done 
         return
 
-    def plot(self, ref='utm', faults=None, figure=135, name=False, legendscale=10., color='b', scale=150):
+    def getRMS(self):
+        '''
+        Computes the RMS of the data and if synthetics are computed, the RMS of the residuals
+        '''
+
+        # Get the number of points
+        N = self.vel_enu.shape[0] * 3.
+
+        # RMS of the data
+        dataRMS = np.sqrt( 1./N * sum(self.vel_enu.flatten()**2) )
+
+        # Synthetics
+        if self.synth is not None:
+            synthRMS = np.sqrt( 1./N *sum( (self.vel_enu.flatten() - self.synth.flatten())**2 ) )
+            return dataRMS, synthRMS
+        else:
+            return dataRMS, 0.
+
+        # All done
+
+    def getVariance(self):
+        '''                                                                                                      
+        Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
+        '''
+        
+        # Get the number of points                                                                               
+        N = self.vel_enu.shape[0] * 3.                                                                           
+        
+        # Varianceof the data                                                                                        
+        dmean = self.vel_enu.flatten().mean()
+        dataVariance = ( 1./N * sum((self.vel_enu.flatten()-dmean)**2) ) 
+        
+        # Synthetics
+        if self.synth is not None:           
+            rmean = (self.vel_enu.flatten() - self.synth.flatten()).mean()
+            synthVariance = ( 1./N *sum( (self.vel_enu.flatten() - self.synth.flatten() - rmean)**2 ) )                
+            return dataVariance, synthVariance
+        else:
+            return dataVariance, 0.                                                                                   
+        
+        # All done       
+        
+    def getMisfit(self):
+        '''                                                                                                      
+        Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals                    
+        '''
+
+        # Misfit of the data                                                                                        
+        dataMisfit = sum((self.vel_enu.flatten()))
+
+        # Synthetics
+        if self.synth is not None:
+            synthMisfit = sum( (self.vel_enu.flatten() - self.synth.flatten()) )
+            return dataMisfit, synthMisfit
+        else:
+            return dataMisfit, 0.
+
+        # All done
+
+    def plot(self, ref='utm', faults=None, figure=135, name=False, legendscale=10., color='b', scale=150, plot_los=False):
         '''
         Args:
             * ref       : can be 'utm' or 'lonlat'.
             * figure    : number of the figure.
             * faults    : List of fault objects to plot the surface trace of a fault object (see verticalfault.py).
+            * plot_los  : Plot the los projected gps as scatter points
         '''
 
         # Import some things
@@ -1196,6 +1361,16 @@ class gpsrates(object):
                     ax.plot(fault.xf, fault.yf, '-r', label=fault.name)
                 else:
                     ax.plot(fault.lon, fault.lat, '-r', label=fault.name)
+
+        # Plot the gps projected
+        if plot_los:
+            if not hasattr(self,'los'):
+                print('Need to project the GPS first, cannot plot projected...')
+            else:
+                if ref is 'utm':
+                    ax.scatter(self.x, self.y, 100, self.vel_los, linewidth=1)
+                else:
+                    ax.scatter(self.lon, self.lat, 100, self.vel_los, linewidth=1)
 
         # Plot the GPS velocities
         if ref is 'utm':

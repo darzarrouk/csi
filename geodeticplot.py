@@ -307,6 +307,41 @@ class geodeticplot:
         # All done
         return
 
+    def gps_projected(self, gps, norm=None, colorbar=True):
+        '''
+        Args:
+            * gps       : gpsrate object
+            * norm      : List of lower and upper bound of the colorbar.
+            * colorbar  : activates the plotting of the colorbar.
+        '''
+
+        # Get the data
+        d = gps.vel_los
+
+        # Prepare the color limits
+        if norm is None:
+            vmin = d.min()
+            vmax = d.max()
+        else:
+            vmin = norm[0]
+            vmax = norm[1]
+
+        # Prepare the colormap
+        cmap = plt.get_cmap('jet')
+
+        # Plot
+        if self.ref is 'utm':
+            sc = self.carte.scatter(gps.x, gps.y, s=100, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.5)
+        else:
+            sc = self.carte.scatter(gps.lon, gps.lat, s=100, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.5)
+
+        # plot colorbar
+        if colorbar:
+            self.fig2.colorbar(sc, shrink=0.6, orientation='h')
+
+        # All done
+        return
+
     def insar_scatter(self, insar, norm=None, colorbar=True, data='data'):
         '''
         Args:

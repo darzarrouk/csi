@@ -699,6 +699,67 @@ class verticalfault(object):
         # all done
         return
 
+    def rotationHoriz(self, center, angle):
+        '''
+        Rotates the geometry of the fault around center, of an angle.
+        Args:
+            * center    : [lon,lat]
+            * angle     : degrees
+        '''
+
+        # Translate the center to x, y
+        xc, yc = self.ll2xy(center[0], center[1])
+        ref = np.array([xc, yc])
+
+        # Create the rotation matrix
+        angle = angle*np.pi/180.
+        Rot = np.array( [ [np.cos(angle), -1.0*np.sin(angle)],
+                          [np.sin(angle), np.cos(angle)] ] )
+
+        # Loop on the patches
+        for i in range(len(self.patch)):
+
+            # Get patch
+            p = self.patch[i]
+            pll = self.patchll[i]
+
+            for j in range(4):
+                x, y = np.dot( Rot, p[j][:-1] - ref )
+                p[j][0] = x + xc
+                p[j][1] = y + yc
+                lon, lat = self.xy2ll(p[j][0],p[j][1])
+                pll[j][0] = lon
+                pll[j][1] = lat
+
+        # All done 
+        return
+
+    def translationHoriz(self, dx, dy):
+        '''
+        Translates the patches.
+        Args:
+            * dx    : Translation along x (km)
+            * dy    : Translation along y (km)
+        '''
+
+        # Loop on the patches
+        for i in range(len(self.patch)):
+
+            # Get patch
+            p = self.patch[i]
+            pll = self.patchll[i]
+
+            for j in range(4):
+                p[j][0] += dx
+                p[j][1] += dy
+                lon, lat = self.xy2ll(p[j][0],p[j][1])
+                pll[j][0] = lon
+                pll[j][1] = lat
+
+        # All done 
+        return
+
+
     def mergePatches(self, p1, p2):
         '''
         Merges 2 patches that have common corners.
@@ -1693,15 +1754,25 @@ class verticalfault(object):
         N = len(self.patch)
         Nps = N*len(slipdir)
         Npo = 0
-        self.helmert = {}
         for data in datas :
             if self.poly[data.name] is 'full':
+                if not hasattr(self, 'helmert'):
+                    self.helmert = {}
                 if data.obs_per_station==3:
                     Npo += 7                    # 3D Helmert transform is 7 parameters
                     self.helmert[data.name] = 7
                 else:   
                     Npo += 4                    # 2D Helmert transform is 4 parameters
                     self.helmert[data.name] = 4
+            elif self.poly[data.name] is 'strain':
+                if not hasattr(self, 'strain'):
+                    self.strain = {}
+                if data.obs_per_station==2:
+                    Npo += 6
+                    self.strain[data.name] = 6
+                else:
+                    print('3d strain has not been implemented')
+                    return
             else:
                 Npo += (self.poly[data.name])
         Np = Nps + Npo
@@ -1764,6 +1835,11 @@ class verticalfault(object):
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         orb[:] = 1.0
                         if self.poly[data.name] >= 3:
+                            if not hasattr(self, 'OrbNormalizingFactor'):
+                                self.OrbNormalizingFactor = {}
+                            self.OrbNormalizingFactor[data.name] = {}
+                            self.OrbNormalizingFactor[data.name]['x'] = np.abs(data.x).max()
+                            self.OrbNormalizingFactor[data.name]['y'] = np.abs(data.y).max()
                             orb[:,1] = data.x/np.abs(data.x).max()
                             orb[:,2] = data.y/np.abs(data.y).max()
                         if self.poly[data.name] >= 4:
@@ -1784,7 +1860,13 @@ class verticalfault(object):
                     polend = polstart + nc
                     G[el:el+Ndlocal, polstart:polend] = orb
                     polstart += nc
-
+                if self.poly[data.name] is 'strain':
+                    orb = self.get2DstrainEst(data)
+                    if data.obs_per_station == 2:
+                        nc = 6
+                    polend = polstart + nc
+                    G[el:el+Ndlocal, polstart:polend] = orb
+                    polstart += nc
             # Update el to check where we are
             el = el + Ndlocal
             
@@ -1793,6 +1875,81 @@ class verticalfault(object):
 
         # All done
         return
+
+    def get2DstrainEst(self, data):
+        '''
+        Returns the matrix to estimate the full 2d strain tensor.
+        '''
+
+        # Check
+        assert (data.dtype is 'gpsrates')
+
+        # Get the number of gps stations
+        ns = data.station.shape[0]
+
+        # Get the data vector size
+        nd = self.d[data.name].shape[0]
+
+        # Get the number of parameters to look for
+        if data.obs_per_station==2:
+            nc = 6
+        else:
+            print('Not implemented')
+            return
+
+        # Check something
+        assert data.obs_per_station*ns==nd
+
+        # Get the center of the network
+        x0 = np.mean(data.x)
+        y0 = np.mean(data.y)
+
+        # Compute the baselines
+        base_x = data.x - x0
+        base_y = data.y - y0
+
+        # Normalize the baselines 
+        base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
+        base_x /= base_max
+        base_y /= base_max
+
+        # Store the normalizing factor
+        if not hasattr(self, 'StrainNormalizingFactor'):
+            self.StrainNormalizingFactor = {}
+        self.StrainNormalizingFactor[data.name] = base_max
+
+        # Allocate a Base
+        H = np.zeros((data.obs_per_station,nc))
+
+        # Put the transaltion in the base
+        H[:,:data.obs_per_station] = np.eye(data.obs_per_station)
+
+        # Allocate the full matrix
+        Hf = np.zeros((nd,nc))
+
+        # Loop over the stations
+        for i in range(ns):
+
+            # Clean the part that changes
+            H[:,data.obs_per_station:] = 0.0 
+
+            # Get the values
+            x1, y1 = base_x[i], base_y[i]
+
+            # Store them
+            H[0,2] = x1
+            H[0,3] = 0.5*y1
+            H[0,5] = 0.5*y1
+            H[1,3] = 0.5*x1
+            H[1,4] = y1
+            H[1,5] = -0.5*y1
+
+            # Put the lines where they should be
+            Hf[i,:] = H[0,:]
+            Hf[i+ns,:] = H[1,:]
+
+        # All done
+        return Hf
 
     def getHelmertMatrix(self, data):
         '''
@@ -1909,9 +2066,10 @@ class verticalfault(object):
         # All done
         return
 
-    def assembleCd(self, datas):
+    def assembleCd(self, datas, add_prediction=None):
         '''
         Assembles the data covariance matrixes that have been built by each data structure.
+        add_prediction: Precentage of displacement to add to the Cd diagonal to simulate a Cp (prediction error).
         '''
 
         # Check if the Green's function are ready
@@ -1926,14 +2084,54 @@ class verticalfault(object):
         # Loop over the data sets
         st = 0
         for data in datas:
+            # Fill in Cd
             se = st + self.d[data.name].shape[0]
             Cd[st:se, st:se] = data.Cd
+            # Add some Cp if asked
+            if add_prediction is not None:
+                Cd[st:se, st:se] += np.diag(self.d[data.name])*add_prediction/100.
             st += self.d[data.name].shape[0]
 
         # Store Cd in self
         self.Cd = Cd
 
         # All done
+        return
+
+    def buildCmGaussian(self, sigma, extra_params=None):
+        '''
+        Builds a diagonal Cm with sigma values on the diagonal.
+        sigma is a list of numbers, as long as you have components of slip (1, 2 or 3).
+        extra_params is a list of extra parameters.
+        '''
+    
+        # Get the number of slip directions
+        slipdir = len(self.slipdir)
+        patch = len(self.patch)
+
+        # Number of parameters
+        Np = patch*slipdir
+        if extra_params is not None:
+            Np += len(extra_params)
+
+        # Create Cm
+        Cm = np.zeros((Np, Np))
+
+        # Loop over slip dir
+        for i in range(slipdir):
+            Cmt = np.diag(sigma[i] * np.ones(len(self.patch),))
+            Cm[i*patch:(i+1)*patch,i*patch:(i+1)*patch] = Cmt
+
+        # Put the extra parameter sigma values
+        st = patch*slipdir
+        if extra_params is not None:
+            for i in range(len(extra_params)):
+                Cm[st+i, st+i] = extra_params[i]
+
+        # Stores Cm
+        self.Cm = Cm
+
+        # all done
         return
 
     def buildCm(self, sigma, lam, lam0=None, extra_params=None, lim=None):
@@ -2070,19 +2268,32 @@ class verticalfault(object):
         data.writeEDKSdata()
 
         # Create the variables
-        RectanglePropFile = 'edks_{}.END'.format(self.name)
-        ReceiverFile = 'edks_{}.idEN'.format(data.name)
+        if len(self.name.split())>1:
+            fltname = self.name.split()[0]
+            for s in self.name.split()[1:]:
+                fltname = fltname+'_'+s
+        else:
+            fltname = self.name
+        RectanglePropFile = 'edks_{}.END'.format(fltname)
+        if len(data.name.split())>1:
+            datname = data.name.split()[0]
+            for s in data.name.split()[1:]:
+                datname = datname+'_'+s
+        else:
+            datname = data.name
+        ReceiverFile = 'edks_{}.idEN'.format(datname)
+
         if data.dtype is 'insarrates':
             useRecvDir = True # True for InSAR, uses LOS information
         else:
             useRecvDir = False # False for GPS, uses ENU displacements
         EDKSunits = 1000.0
         EDKSfilename = '{}'.format(edksfilename)
-        prefix = 'edks_{}_{}'.format(self.name, data.name)
+        prefix = 'edks_{}_{}'.format(fltname, datname)
         plotGeometry = '{}'.format(plot)
 
         # Open the EDKSsubParams.py file
-        filename = 'EDKSParams_{}_{}.py'.format(self.name, data.name)
+        filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
         fout = open(filename, 'w')
 
         # Write in it
@@ -2194,12 +2405,13 @@ class verticalfault(object):
         # All done
         return x,y,z
 
-    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None):
+    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None, lonlat=None):
         ''' 
         Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
         Args:
             * box       : Can be a list of [minlon, maxlon, minlat, maxlat].
             * disk      : list of [xcenter, ycenter, radius, n]
+            * lonlat    : Arrays of lat and lon. [lon, lat]
         '''
 
         # create a fake gps object
@@ -2207,35 +2419,40 @@ class verticalfault(object):
         self.sim = gpsrates('simulation', utmzone=self.utmzone)
 
         # Create a lon lat grid
-        if (box is None) and (disk is None) :
-            lon = np.linspace(self.lon.min(), self.lon.max(), 100)
-            lat = np.linspace(self.lat.min(), self.lat.max(), 100)
-            lon, lat = np.meshgrid(lon,lat)
-            lon = lon.flatten()
-            lat = lat.flatten()
-        elif (box is not None):
-            lon = np.linspace(box[0], box[1], 100)
-            lat = np.linspace(box[2], box[3], 100)
-            lon, lat = np.meshgrid(lon,lat)
-            lon = lon.flatten()
-            lat = lat.flatten()
-        elif (disk is not None):
-            lon = []; lat = []
-            xd, yd = self.ll2xy(disk[0], disk[1])
-            xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
-            ampx = (xmax-xmin)
-            ampy = (ymax-ymin)
-            n = 0
-            while n<disk[3]:
-                x, y = np.random.rand(2)
-                x *= ampx; x -= ampx/2.; x += xd
-                y *= ampy; y -= ampy/2.; y += yd
-                if ((x-xd)**2 + (y-yd)**2) <= (disk[2]**2):
-                    lo, la = self.xy2ll(x,y)
-                    lon.append(lo); lat.append(la)
-                    n += 1
-            lon = np.array(lon); lat = np.array(lat)
+        if lonlat is None:
+            if (box is None) and (disk is None) :
+                lon = np.linspace(self.lon.min(), self.lon.max(), 100)
+                lat = np.linspace(self.lat.min(), self.lat.max(), 100)
+                lon, lat = np.meshgrid(lon,lat)
+                lon = lon.flatten()
+                lat = lat.flatten()
+            elif (box is not None):
+                lon = np.linspace(box[0], box[1], 100)
+                lat = np.linspace(box[2], box[3], 100)
+                lon, lat = np.meshgrid(lon,lat)
+                lon = lon.flatten()
+                lat = lat.flatten()
+            elif (disk is not None):
+                lon = []; lat = []
+                xd, yd = self.ll2xy(disk[0], disk[1])
+                xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
+                ampx = (xmax-xmin)
+                ampy = (ymax-ymin)
+                n = 0
+                while n<disk[3]:
+                    x, y = np.random.rand(2)
+                    x *= ampx; x -= ampx/2.; x += xd
+                    y *= ampy; y -= ampy/2.; y += yd
+                    if ((x-xd)**2 + (y-yd)**2) <= (disk[2]**2):
+                        lo, la = self.xy2ll(x,y)
+                        lon.append(lo); lat.append(la)
+                        n += 1
+                lon = np.array(lon); lat = np.array(lat)
+        else:
+            lon = np.array(lonlat[0])
+            lat = np.array(lonlat[1])
 
+        # Clean it
         if (lon.max()>360.) or (lon.min()<-180.0) or (lat.max()>90.) or (lat.min()<-90):
             self.sim.x = lon
             self.sim.y = lat

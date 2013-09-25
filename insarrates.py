@@ -162,7 +162,7 @@ class insarrates(object):
         A = scio.loadmat(filename)
         
         # Get the phase values
-        self.vel = A['velo'].flatten()*factor + step
+        self.vel = (A['velo'].flatten()+ step)*factor
         self.err = A['verr'].flatten()
         self.err[np.where(np.isnan(self.vel))] = np.nan
         self.vel[np.where(np.isnan(self.err))] = np.nan
@@ -188,8 +188,8 @@ class insarrates(object):
         # Deal with the LOS
         alpha = (heading+90.0)*np.pi/180.0
         phi = incidence*np.pi/180.0
-        Se = np.sin(alpha) * np.sin(phi)
-        Sn = np.cos(alpha) * np.sin(phi)
+        Se = -1.0 * np.sin(alpha) * np.sin(phi)
+        Sn = -1.0 * np.cos(alpha) * np.sin(phi)
         Su = np.cos(phi)
         self.los = np.ones((self.lon.shape[0],3))
         self.los[:,0] *= Se
@@ -220,8 +220,8 @@ class insarrates(object):
         fin = netcdf.netcdf_file(filename)
 
         # Get the values
-        self.vel = fin.variables['z'][:,:].flatten() * factor + step
-        self.err = np.ones((fin.variables['z'].shape)) * factor
+        self.vel = (fin.variables['z'][:,:].flatten() + step)*factor
+        self.err = np.ones((self.vel.shape)) * factor
         self.err[np.where(np.isnan(self.vel))] = np.nan
         self.vel[np.where(np.isnan(self.err))] = np.nan
 
@@ -246,8 +246,8 @@ class insarrates(object):
         # Deal with the LOS
         alpha = (heading+90.0)*np.pi/180.0
         phi = incidence*np.pi/180.0 
-        Se = np.sin(alpha) * np.sin(phi) 
-        Sn = np.cos(alpha) * np.sin(phi) 
+        Se = -1.0*np.sin(alpha) * np.sin(phi) 
+        Sn = -1.0*np.cos(alpha) * np.sin(phi) 
         Su = np.cos(phi) 
         self.los = np.ones((self.lon.shape[0],3))
         self.los[:,0] *= Se
@@ -323,10 +323,12 @@ class insarrates(object):
 
         # If more columns
         if Oo>=3:
-            orb[:,1] = self.x/np.abs(self.x).max() 
-            orb[:,2] = self.y/np.abs(self.y).max()
+            Nx = fault.OrbNormalizingFactor[self.name]['x']
+            Ny = fault.OrbNormalizingFactor[self.name]['y']
+            orb[:,1] = self.x/Nx
+            orb[:,2] = self.y/Ny
         if Oo>=4:
-            orb[:,3] = (self.x/np.abs(self.x).max())*(self.y/np.abs(self.y).max())
+            orb[:,3] = (self.x/Nx)*(self.y/Ny)
 
         # Get the correction
         self.orb = np.dot(orb,Op)
@@ -431,7 +433,13 @@ class insarrates(object):
         los = self.los
 
         # Open the file
-        filename = 'edks_{}.idEN'.format(self.name)
+        if len(self.name.split())>1:
+            datname = self.name.split()[0]
+            for s in self.name.split()[1:]:
+                datname = datname+'_'+s
+        else:
+            datname = self.name
+        filename = 'edks_{}.idEN'.format(datname)
         fout = open(filename, 'w')
 
         # Write a header
@@ -819,7 +827,66 @@ class insarrates(object):
 
         return
 
-    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal'):
+    def getRMS(self):
+        '''                                                                                                      
+        Computes the RMS of the data and if synthetics are computed, the RMS of the residuals                    
+        '''
+        
+        # Get the number of points                                                                               
+        N = self.vel.shape[0]                                                                           
+        
+        # RMS of the data                                                                                        
+        dataRMS = np.sqrt( 1./N * sum(self.vel**2) )                                               
+        
+        # Synthetics
+        if self.synth is not None:                                                                               
+            synthRMS = np.sqrt( 1./N *sum( (self.vel - self.synth)**2 ) )                
+            return dataRMS, synthRMS                                                                             
+        else:
+            return dataRMS, 0.                                                                                   
+        
+        # All done                                                                                               
+                                                                                                                 
+    def getVariance(self):
+        '''                                                                                                      
+        Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
+        '''
+
+        # Get the number of points                                                                               
+        N = self.vel.shape[0]
+        
+        # Varianceof the data                                                                                        
+        dmean = self.vel.mean()
+        dataVariance = ( 1./N * sum((self.vel-dmean)**2) )
+
+        # Synthetics
+        if self.synth is not None:
+            rmean = (self.vel - self.synth).mean()
+            synthVariance = ( 1./N *sum( (self.vel - self.synth - rmean)**2 ) )
+            return dataVariance, synthVariance
+        else:
+            return dataVariance, 0.
+
+        # All done  
+
+    def getMisfit(self):
+        '''                                                                                                      
+        Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals                    
+        '''
+
+        # Misfit of the data                                                                                        
+        dataMisfit = sum((self.vel))
+
+        # Synthetics
+        if self.synth is not None:
+            synthMisfit =  sum( (self.vel - self.synth) )
+            return dataMisfit, synthMisfit
+        else:
+            return dataMisfit, 0.
+
+        # All done  
+
+    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='data'):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -830,6 +897,12 @@ class insarrates(object):
             * gps       : superpose a GPS dataset.
             * decim     : plot the insar following the decimation process of varres.
         '''
+
+        # select data to plt
+        if data is 'data':
+            z = self.vel
+        elif data is 'synth':
+            z = self.synth
 
         # Create the figure
         fig = plt.figure(figure)
@@ -861,11 +934,19 @@ class insarrates(object):
                 else:
                         ax.quiver(g.lon, g.lat, g.vel_enu[:,0], g.vel_enu[:,1])
 
+        # Norm 
+        if norm is None:
+            vmin = z.min()
+            vmax = z.max()
+        else:
+            vmin = norm[0]
+            vmax = norm[1]
+
         # prepare a color map for insar
         import matplotlib.colors as colors
         import matplotlib.cm as cmx
         cmap = plt.get_cmap('jet')
-        cNorm  = colors.Normalize(vmin=self.vel.min(), vmax=self.vel.max())
+        cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
         # Plot the decimation process
@@ -888,18 +969,18 @@ class insarrates(object):
                 y.append(self.xycorner[i,3])
                 verts = [zip(x, y)]
                 rect = colls.PolyCollection(verts)
-                rect.set_color(scalarMap.to_rgba(self.vel[i]))
+                rect.set_color(scalarMap.to_rgba(z[i]))
                 rect.set_edgecolors('k')
                 ax.add_collection(rect)
 
         # Plot the insar
         if ref is 'utm':
-            ax.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, vmin=self.vel.min(), vmax=self.vel.max(), linewidths=0.)
+            ax.scatter(self.x, self.y, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
         else:
-            ax.scatter(self.lon, self.lat, s=10, c=self.vel, cmap=cmap, vmin=self.vel.min(), vmax=self.vel.max(), linewidths=0.)
+            ax.scatter(self.lon, self.lat, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
 
         # Colorbar
-        scalarMap.set_array(self.vel)
+        scalarMap.set_array(z)
         plt.colorbar(scalarMap)
 
         # Axis
@@ -910,3 +991,62 @@ class insarrates(object):
 
         # All done
         return
+
+    def write2grd(self, fname, oversample=1, data='data', interp=100):
+        '''
+        Uses surface to write the output to a grd file.
+        Args:
+            * fname     : Filename
+            * oversample: Oversampling factor.
+            * data      : can be 'data' or 'synth'.
+            * interp    : Number of points along lon and lat.
+        '''
+
+        # Get variables
+        x = self.lon
+        y = self.lat
+        if data is 'data':
+            z = self.vel
+        elif data is 'synth':
+            z = self.synth
+
+        # Write these to a dummy file
+        fout = open('xyz.xyz', 'w')
+        for i in range(x.shape[0]):
+            fout.write('{} {} {} \n'.format(x[i], y[i], z[i]))
+        fout.close()
+
+        # Import subprocess
+        import subprocess as subp
+
+        # Get Rmin/Rmax/Rmin/Rmax
+        lonmin = x.min()
+        lonmax = x.max()
+        latmin = y.min()
+        latmax = y.max()
+        R = '-R{}/{}/{}/{}'.format(lonmin, lonmax, latmin, latmax)
+
+        # Create the -I string
+        Nlon = int(interp)*int(oversample)
+        Nlat = Nlon
+        I = '-I{}+/{}+'.format(Nlon,Nlat)
+
+        # Create the G string
+        G = '-G'+fname
+
+        # Create the command
+        com = ['surface', R, I, G]
+
+        # open stdin and stdout
+        fin = open('xyz.xyz', 'r')
+
+        # Execute command
+        subp.call(com, stdin=fin)
+
+        # CLose the files
+        fin.close()
+
+        # All done
+        return
+        
+

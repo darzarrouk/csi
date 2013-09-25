@@ -100,9 +100,13 @@ class multifaultsolve(object):
 
         # Store the guys
         for fault in faults:
+            # get the good indexes
             st = self.fault_indexes[fault.name][0]
             se = self.fault_indexes[fault.name][1]
+            # Store the G matrix
             self.G[:,st:se] = fault.Gassembled
+            # Keep track of indexing
+            self.affectIndexParameters(fault)
 
         # self ready
         self.ready = True
@@ -205,6 +209,30 @@ class multifaultsolve(object):
         # All done
         return
 
+    def affectIndexParameters(self, fault):
+        ''' 
+        Build the index parameter for a fault.
+        '''
+ 
+        # Get indexes
+        st = self.fault_indexes[fault.name][0]
+        se = self.fault_indexes[fault.name][1]
+
+        # Save the fault indexes
+        fault.index_parameter = np.zeros((fault.slip.shape))
+        fault.index_parameter[:,:] = 9999999
+        if 's' in fault.slipdir:
+            fault.index_parameter[:,0] = range(st, st+fault.slip.shape[0])
+            st += fault.slip.shape[0]
+        if 'd' in fault.slipdir:
+            fault.index_parameter[:,1] = range(st, st+fault.slip.shape[0])
+            st += fault.slip.shape[0]
+        if 'u' in fault.slipdir:
+            fault.index_parameter[:,2] = range(st, st+fault.slip.shape[0])
+
+        # All done 
+        return 
+
     def distributem(self):
         '''
         After computing the m_post model, this routine distributes the m parameters to the faults.
@@ -218,22 +246,13 @@ class multifaultsolve(object):
             
             print ("Distribute the slip values to fault {}".format(fault.name))
 
-            # Affect the model parameters
+            # Store the mpost
             st = self.fault_indexes[fault.name][0]
             se = self.fault_indexes[fault.name][1]
             fault.mpost = self.mpost[st:se]
-            
-            # Save the fault indexes
-            fault.index_parameter = np.zeros((fault.slip.shape))
-            fault.index_parameter[:,:] = 9999999
-            if 's' in fault.slipdir:
-                fault.index_parameter[:,0] = range(st, st+fault.slip.shape[0])
-                st += fault.slip.shape[0]
-            if 'd' in fault.slipdir:
-                fault.index_parameter[:,1] = range(st, st+fault.slip.shape[0])
-                st += fault.slip.shape[0]
-            if 'u' in fault.slipdir:
-                fault.index_parameter[:,2] = range(st, st+fault.slip.shape[0])
+
+            # Affect the indexes
+            self.affectIndexParameters(fault)
 
             # put the slip values in slip
             st = 0
@@ -263,7 +282,13 @@ class multifaultsolve(object):
                             st += fault.poly[dset]
                     elif (fault.poly[dset].__class__ is str):
                         if fault.poly[dset] is 'full':
-                            nh = fault.helmert['GPS']
+                            nh = fault.helmert[dset]
+                            se = st + nh
+                            fault.polysol[dset] = fault.mpost[st:se]
+                            fault.polysolindex[dset] = range(st,se)
+                            st += nh
+                        if fault.poly[dset] is 'strain':
+                            nh = fault.strain[dset]
                             se = st + nh
                             fault.polysol[dset] = fault.mpost[st:se]
                             fault.polysolindex[dset] = range(st,se)
@@ -336,6 +361,63 @@ class multifaultsolve(object):
 
         # All done
         return       
+    
+    def UnregularizedLeastSquareSoln(self, mprior=None):
+        ''' 
+        Solves the unregularized generalized least-square problem using the following formula (Tarantolla, 2005, "Inverse Problem Theory", SIAM):
+        
+            m_post = m_prior + (G.T * Cd-1 * G)-1 * G.T * Cd-1 * (d - G*m_prior)
+
+        Args:
+
+            * mprior        : A Priori model. If None, then mprior = np.zeros((Nm,)).
+
+        '''
+
+        # Assert 
+        assert self.ready, 'You need to assemble the GFs'
+
+        # Import things
+        import scipy.linalg as scilin
+
+        # Print
+        print ("---------------------------------")
+        print ("---------------------------------")
+        print ("Computing the Unregularized Least Square Solution")
+
+        # Get the matrixes and vectors
+        G = self.G
+        d = self.d
+        Cd = self.Cd
+
+        # Get the number of model parameters
+        Nm = G.shape[1]
+
+        # Check If Cm is symmetric and positive definite
+        if (Cd.transpose() != Cd).all():
+            print("Cd is not symmetric, Return...")
+            return
+
+        # Get the inverse of Cd
+        print ("Computing the inverse of the data covariance")
+        iCd = scilin.inv(Cd)
+
+        # Construct mprior
+        if mprior is None:
+            mprior = np.zeros((Nm,))
+
+        # Compute mpost
+        print ("Computing m_post")
+        One = scilin.inv(np.dot(  np.dot(G.T, iCd), G ) )
+        Res = d - np.dot( G, mprior )
+        Two = np.dot( np.dot( G.T, iCd ), Res )
+        mpost = mprior + np.dot( One, Two )
+
+        # Store m_post
+        self.mpost = mpost
+
+        # All done
+        return
 
     def GeneralizedLeastSquareSoln(self, mprior=None):
         ''' 
