@@ -904,9 +904,9 @@ class gpsrates(object):
         # all done
         return
     
-    def remove2Dstrain(self, fault):
+    def compute2Dstrain(self, fault):
         '''
-        Removes the 2D strain tensor stored in the fault given as an argument.
+        Computes the 2D strain tensor stored in the fault given as an argument.
         '''
 
         # Get the size of the strain tensor
@@ -976,13 +976,24 @@ class gpsrates(object):
             newv = np.dot(H, Svec)
             self.Strain[i,:No] = newv
 
-            # Correct the data
-            self.vel_enu[i,:No] -= newv
+        # All done
+        return
+         
+    def remove2Dstrain(self, fault):
+        '''
+        Computess the 2D strain and removes it.
+        '''
+
+        # Computes the strain
+        self.compute2Dstrain(fault)
+
+        # Correct 
+        self.vel_enu = self.vel_enu - self.Strain
 
         # All done
         return
-            
-    def removeHelmertTransform(self, fault):
+
+    def computeHelmertTransform(self, fault):
         '''
         Removes the Helmert Transform stored in the fault given as argument.
         '''
@@ -1051,6 +1062,20 @@ class gpsrates(object):
 
             # Correct the data
             self.vel_enu[i,:No] -= newv
+
+        # All done
+        return
+
+    def removeHelmertTransform(self, fault):
+        '''
+        Computess the Helmert and removes it.
+        '''
+
+        # Computes the strain
+        self.computeHelmertTransform(fault)
+
+        # Correct 
+        self.vel_enu = self.vel_enu - self.HelmTransform
 
         # All done
         return
@@ -1195,9 +1220,16 @@ class gpsrates(object):
                 if op_synth.size >2*Nd:
                     self.synth[:,2] += op_synth[2*Nd:3*Nd]
 
-            if (self.name in fault.polysol.keys()) and (include_poly):
-                gpsref = fault.polysol[self.name]
-                if gpsref is not None:
+            if (self.name in fault.poly.keys()) and (include_poly):
+                gpsref = fault.poly[self.name]
+                if type(gpsref) is str:
+                    if gpsref is 'strain':
+                        self.compute2Dstrain(fault)
+                        self.synth = self.synth + self.Strain
+                    elif gpsref is 'full':
+                        self.computeHelmertTransform(fault)
+                        self.synth = self.synth + self.HelmTransform
+                elif type(gpsref) is float:
                     self.synth[:,0] += gpsref[0]
                     self.synth[:,1] += gpsref[1]
                     if len(gpsref)==3:
@@ -1239,13 +1271,21 @@ class gpsrates(object):
         # All done
         return
 
-    def writetofile(self, filename, data='data'):
+    def write2file(self, namefile=None, data='data'):
         '''
         Args:
-            * filename  : Name of the output file.
+            * namefile  : Name of the output file.
             * data      : data or synth.
 
         '''
+
+        # Determine file name
+        if namefile is None:
+            filename = ''
+            for a in self.name.split():
+                filename = filename+a+'_'
+            filename = filename+data+'.dat'
+
         print ("Write {} set {} to file {}".format(data, self.name, filename))
 
         # open the file
@@ -1254,15 +1294,19 @@ class gpsrates(object):
         # write a header
         fout.write('# Name lon lat v_east v_north v_up e_east e_north e_up \n')
 
+        # Get the data 
+        if data is 'data':
+            z = self.vel_enu
+        elif data is 'synth':
+            z = self.synth
+        else:
+            print('Unknown data type to write...')
+            return
+
         # Loop over stations
         for i in range(len(self.station)):
-            if data is 'data':
-                fout.write('{} {} {} {} {} {} {} {} {} \n'.format(self.station[i], self.lon[i], self.lat[i], 
-                                                        self.vel_enu[i,0], self.vel_enu[i,1], self.vel_enu[i,2],
-                                                        self.err_enu[i,0], self.err_enu[i,1], self.err_enu[i,2]))
-            elif data is 'synth':
-                fout.write('{} {} {} {} {} {} {} {} {} \n'.format(self.station[i], self.lon[i], self.lat[i],
-                                                        self.synth[i,0], self.synth[i,1], self.synth[i,2],
+            fout.write('{} {} {} {} {} {} {} {} {} \n'.format(self.station[i], self.lon[i], self.lat[i], 
+                                                        z[i,0], z[i,1], z[i,2],
                                                         self.err_enu[i,0], self.err_enu[i,1], self.err_enu[i,2]))
         
         # Close file

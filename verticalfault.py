@@ -2089,7 +2089,7 @@ class verticalfault(object):
             Cd[st:se, st:se] = data.Cd
             # Add some Cp if asked
             if add_prediction is not None:
-                Cd[st:se, st:se] += np.diag(self.d[data.name])*add_prediction/100.
+                Cd[st:se, st:se] += np.diag((self.d[data.name]*add_prediction/100.)**2)
             st += self.d[data.name].shape[0]
 
         # Store Cd in self
