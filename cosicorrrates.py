@@ -31,12 +31,14 @@ class cosicorrrates(object):
         self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
 
         # Initialize some things
-        self.vel = None
-        self.synth = None
-        self.err = None
+        self.east = None
+        self.north = None
+        self.synth_east = None
+        self.synth_north = None
+        self.err_east = None
+        self.err_north = None
         self.lon = None
         self.lat = None
-        self.los = None
         self.corner = None
         self.xycorner = None
         self.Cd = None
@@ -144,64 +146,6 @@ class cosicorrrates(object):
         # All done
         return
 
-    def read_from_mat(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.115):
-        '''
-        Reads velocity map from a mat file.
-        Args:
-            * filename  : Name of the input file
-            * factor    : scale by a factor.
-            * step      : add a step.
-        '''
-
-        # Initialize values
-        self.vel = []
-        self.lon = []
-        self.lat = []
-        self.err = []
-        self.los = []
-
-        # Open the input file
-        import scipy.io as scio
-        A = scio.loadmat(filename)
-        
-        # Get the phase values
-        self.vel = (A['velo'].flatten()+ step)*factor
-        self.err = A['verr'].flatten()
-        self.err[np.where(np.isnan(self.vel))] = np.nan
-        self.vel[np.where(np.isnan(self.err))] = np.nan
-
-        # Deal with lon/lat
-        Lon = A['posx'].flatten()
-        Lat = A['posy'].flatten()
-        Lon,Lat = np.meshgrid(Lon,Lat)
-        w,l = Lon.shape
-        self.lon = Lon.reshape((w*l,)).flatten()
-        self.lat = Lat.reshape((w*l,)).flatten()
-
-        # Keep the non-nan pixels
-        u = np.flatnonzero(np.isfinite(self.vel))
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.vel = self.vel[u]
-        self.err = self.err[u]
-
-        # Convert to utm
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
-
-        # Deal with the LOS
-        alpha = (heading+90.0)*np.pi/180.0
-        phi = incidence*np.pi/180.0
-        Se = -1.0 * np.sin(alpha) * np.sin(phi)
-        Sn = -1.0 * np.cos(alpha) * np.sin(phi)
-        Su = np.cos(phi)
-        self.los = np.ones((self.lon.shape[0],3))
-        self.los[:,0] *= Se
-        self.los[:,1] *= Sn
-        self.los[:,2] *= Su
-
-        # All done
-        return
-
     def read_from_grd(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.1):
         '''
         Reads velocity map from a grd file.
@@ -210,6 +154,9 @@ class cosicorrrates(object):
             * factor    : scale by a factor
             * step      : add a value.
         '''
+
+        print('Not implemented, do it later')
+        return
 
         # Initialize values
         self.vel = []
@@ -285,11 +232,13 @@ class cosicorrrates(object):
         self.lat = self.lat[u]
         self.x = self.x[u]
         self.y = self.y[u]
-        self.vel = self.vel[u,:]
-        self.err = self.err[u,:]
-        self.los = self.los[u,:]
-        if self.synth is not None:
-            self.synth = self.synth[u,:]
+        self.east = self.east[u]
+        self.north = self.north[u]
+        self.err_east = self.err_east[u]
+        self.err_north = self.err_north[u]
+        if self.east_synth is not None:
+            self.east_synth = self.east_synth[u]
+            self.north_synth = self.north_synth[u]
         if self.corner is not None:
             self.corner = self.corner[u,:]
             self.xycorner = self.xycorner[u,:]
@@ -306,6 +255,9 @@ class cosicorrrates(object):
         '''
         Removes a polynomial from the parameters that are in a fault.
         '''
+
+        print('Not modified, do it later')
+        return
 
         # Get the number
         Oo = fault.polysol[self.name].shape[0]
@@ -351,6 +303,9 @@ class cosicorrrates(object):
             * include_poly  : if a polynomial function has been estimated, include it.
         '''
 
+        print('Not modified, do it later')
+        return
+
         # Build synthetics
         self.buildsynth(faults, direction=direction, include_poly=include_poly)
 
@@ -368,6 +323,9 @@ class cosicorrrates(object):
             * direction     : Direction of slip to use.
             * include_poly  : if a polynomial function has been estimated, include it.
         '''
+
+        print('Not modified, do it later')
+        return
 
         # Number of data
         Nd = self.vel.shape[0]
@@ -428,6 +386,9 @@ class cosicorrrates(object):
         This routine prepares the data file as input for EDKS.
         '''
 
+        print('Not modified, do it later')
+        return
+
         # Get the x and y positions
         x = self.x
         y = self.y
@@ -466,6 +427,9 @@ class cosicorrrates(object):
             * u         : Index of the pixel to reject.
         '''
 
+        print('Not modified, do it later')
+        return
+
         self.lon = np.delete(self.lon, u)
         self.lat = np.delete(self.lat, u)
         self.x = np.delete(self.x, u)
@@ -495,6 +459,9 @@ class cosicorrrates(object):
             * dis       : Threshold distance.
             * faults    : list of fault objects.
         '''
+
+        print('Not modified, do it later')
+        return
 
         # Variables to trim are  self.corner,
         # self.xycorner, self.Cd, (self.synth)
@@ -541,6 +508,9 @@ class cosicorrrates(object):
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
         '''
+
+        print('Not modified, do it later')
+        return
 
         # the profiles are in a dictionary
         if not hasattr(self, 'profiles'):
@@ -654,6 +624,9 @@ class cosicorrrates(object):
         Writes the profile named 'name' to the ascii file filename.
         '''
 
+        print('Not modified, do it later')
+        return
+
         # open a file
         fout = open(filename, 'w')
 
@@ -705,6 +678,9 @@ class cosicorrrates(object):
             * name      : Name of the profile.
             * legendscale: Length of the legend arrow.
         '''
+
+        print('Not modified, do it later')
+        return
 
         # open a figure
         fig = plt.figure()
@@ -778,6 +754,9 @@ class cosicorrrates(object):
             * fault     : fault object from verticalfault.
         '''
 
+        print('Not modified, do it later')
+        return
+
         # Grab the fault trace
         xf = fault.xf
         yf = fault.yf
@@ -834,7 +813,10 @@ class cosicorrrates(object):
         '''                                                                                                      
         Computes the RMS of the data and if synthetics are computed, the RMS of the residuals                    
         '''
-        
+
+        print('Not modified, do it later')
+        return        
+
         # Get the number of points                                                                               
         N = self.vel.shape[0]                                                                           
         
@@ -854,6 +836,9 @@ class cosicorrrates(object):
         '''                                                                                                      
         Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
         '''
+
+        print('Not modified, do it later')
+        return
 
         # Get the number of points                                                                               
         N = self.vel.shape[0]
@@ -877,6 +862,9 @@ class cosicorrrates(object):
         Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals                    
         '''
 
+        print('Not modified, do it later')
+        return
+
         # Misfit of the data                                                                                        
         dataMisfit = sum((self.vel))
 
@@ -889,7 +877,7 @@ class cosicorrrates(object):
 
         # All done  
 
-    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='data'):
+    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='total'):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -899,13 +887,20 @@ class cosicorrrates(object):
             * figure    : number of the figure.
             * gps       : superpose a GPS dataset.
             * decim     : plot the insar following the decimation process of varres.
+            * data      : can be 'total', 'east', 'north', 'synth_east', synth_north'
         '''
 
         # select data to plt
-        if data is 'data':
-            z = self.vel
-        elif data is 'synth':
-            z = self.synth
+        if data is 'total':
+            z = np.sqrt(self.east**2 + self.north**2)
+        elif data is 'east':
+            z = self.east
+        elif data is 'north':
+            z = self.north
+        elif data is 'synth_east':
+            z = self.err_east
+        elif data is 'synth_north':
+            z = self.err_north
 
         # Create the figure
         fig = plt.figure(figure)
@@ -977,10 +972,11 @@ class cosicorrrates(object):
                 ax.add_collection(rect)
 
         # Plot the insar
-        if ref is 'utm':
-            ax.scatter(self.x, self.y, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
-        else:
-            ax.scatter(self.lon, self.lat, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
+        if not decim:
+            if ref is 'utm':
+                ax.scatter(self.x, self.y, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
+            else:
+                ax.scatter(self.lon, self.lat, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
 
         # Colorbar
         scalarMap.set_array(z)
@@ -1004,6 +1000,9 @@ class cosicorrrates(object):
             * data      : can be 'data' or 'synth'.
             * interp    : Number of points along lon and lat.
         '''
+
+        print('Not modified, do it later')
+        return
 
         # Get variables
         x = self.lon

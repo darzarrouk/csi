@@ -138,6 +138,9 @@ class insarrates(object):
             nd = self.vel.size
             self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))*factor
 
+        # Store the factor
+        self.factor = factor
+
         # All done
         return
 
@@ -196,6 +199,9 @@ class insarrates(object):
         self.los[:,1] *= Sn
         self.los[:,2] *= Su
 
+        # Store the factor
+        self.factor = factor
+
         # All done
         return
 
@@ -253,6 +259,9 @@ class insarrates(object):
         self.los[:,0] *= Se
         self.los[:,1] *= Sn
         self.los[:,2] *= Su
+
+        # Store the factor
+        self.factor = factor
 
         # All done
         return
@@ -319,16 +328,17 @@ class insarrates(object):
         print('Correcting insar rate {} from polynomial function: {}'.format(self.name, tuple(Op[i] for i in range(Oo))))
 
         # Fill in the first columns
-        orb[:,0] = 1.
+        orb[:,0] = 1.*self.factor
 
         # If more columns
         if Oo>=3:
             Nx = fault.OrbNormalizingFactor[self.name]['x']
             Ny = fault.OrbNormalizingFactor[self.name]['y']
-            orb[:,1] = self.x/Nx
-            orb[:,2] = self.y/Ny
+            x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
+            orb[:,1] = (self.x-x0)/(Nx-x0)
+            orb[:,2] = (self.y-y0)/(Ny-y0)
         if Oo>=4:
-            orb[:,3] = (self.x/Nx)*(self.y/Ny)
+            orb[:,3] = (self.x-x0)/(Nx-x0) * (self.y-y0)/(Ny-y0)
 
         # Get the correction
         self.orb = np.dot(orb,Op)

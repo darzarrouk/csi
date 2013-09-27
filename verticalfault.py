@@ -108,6 +108,9 @@ class verticalfault(object):
         self.lon = np.array(Lon)
         self.lat = np.array(Lat)
 
+        # utmize
+        self.trace2xy()
+
         # All done
         return
 
@@ -1833,17 +1836,19 @@ class verticalfault(object):
                             orb[2*nn:3*nn, 2] = 1.0
                     elif data.dtype is 'insarrates':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
-                        orb[:] = 1.0
+                        orb[:] = 1.0 * data.factor
                         if self.poly[data.name] >= 3:
                             if not hasattr(self, 'OrbNormalizingFactor'):
                                 self.OrbNormalizingFactor = {}
                             self.OrbNormalizingFactor[data.name] = {}
                             self.OrbNormalizingFactor[data.name]['x'] = np.abs(data.x).max()
                             self.OrbNormalizingFactor[data.name]['y'] = np.abs(data.y).max()
-                            orb[:,1] = data.x/np.abs(data.x).max()
-                            orb[:,2] = data.y/np.abs(data.y).max()
+                            x0 = data.x[0]; y0 = data.y[0]
+                            self.OrbNormalizingFactor[data.name]['ref'] = [x0, y0]
+                            orb[:,1] = (data.x-x0)/(np.abs(data.x-x0)).max()
+                            orb[:,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
                         if self.poly[data.name] >= 4:
-                            orb[:,3] = (data.x/np.abs(data.x).max())*(data.y/np.abs(data.y).max())
+                            orb[:,3] = (data.x-x0)/(np.abs(data.x-x0)).max() * (data.y-y0)/(np.abs(data.y-y0)).max()
 
                     # Put it into G for as much observable per station we have
                     polend = polstart + self.poly[data.name]
