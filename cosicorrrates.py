@@ -155,25 +155,26 @@ class cosicorrrates(object):
             * step      : add a value.
         '''
 
-        print('Not implemented, do it later')
-        return
-
         # Initialize values
-        self.vel = []
+        self.east = []
+        self.north = []
         self.lon = []
         self.lat = []
-        self.err = []
-        self.los = []
+        self.err_east = []
+        self.err_north = []
 
         # Open the input file
         import scipy.io.netcdf as netcdf
-        fin = netcdf.netcdf_file(filename)
+        feast = netcdf.netcdf_file(filename+'_east.grd')
+        fnorth= netcdf.netcdf_file(filename+'_north.grd')
 
         # Get the values
-        self.vel = (fin.variables['z'][:,:].flatten() + step)*factor
-        self.err = np.ones((self.vel.shape)) * factor
-        self.err[np.where(np.isnan(self.vel))] = np.nan
-        self.vel[np.where(np.isnan(self.err))] = np.nan
+        self.east = (feast.variables['z'][:,:].flatten() + step)*factor
+        self.north = (fnorth.variables['z'][:,:].flatten() + step)*factor
+        self.err_east = np.ones((self.east.shape)) * factor
+        self.err_north = np.ones((self.north.shape)) * factor
+        self.err_east[np.where(np.isnan(self.east))] = np.nan
+        self.err_north[np.where(np.isnan(self.north))] = np.nan
 
         # Deal with lon/lat
         Lon = fin.variables['x'][:]
@@ -187,22 +188,13 @@ class cosicorrrates(object):
         u = np.flatnonzero(np.isfinite(self.vel))
         self.lon = self.lon[u]
         self.lat = self.lat[u]
-        self.vel = self.vel[u]
-        self.err = self.err[u]
+        self.east = self.east[u]
+        self.north = self.north[u]
+        self.err_east = self.err_east[u]
+        self.err_north = self.err_north[u]
 
         # Convert to utm
         self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
-
-        # Deal with the LOS
-        alpha = (heading+90.0)*np.pi/180.0
-        phi = incidence*np.pi/180.0 
-        Se = -1.0*np.sin(alpha) * np.sin(phi) 
-        Sn = -1.0*np.cos(alpha) * np.sin(phi) 
-        Su = np.cos(phi) 
-        self.los = np.ones((self.lon.shape[0],3))
-        self.los[:,0] *= Se
-        self.los[:,1] *= Sn
-        self.los[:,2] *= Su
 
         # All done
         return
