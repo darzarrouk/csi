@@ -33,8 +33,8 @@ class cosicorrrates(object):
         # Initialize some things
         self.east = None
         self.north = None
-        self.synth_east = None
-        self.synth_north = None
+        self.east_synth = None
+        self.north_synth = None
         self.err_east = None
         self.err_north = None
         self.lon = None
@@ -85,8 +85,8 @@ class cosicorrrates(object):
         print ("Read from file {} into data set {}".format(filename, self.name))
 
         # Open the file
-        fin = open(filename+'.txt','r')
-        fsp = open(filename+'.rsp','r')
+        fin = open(filename+'.txt', 'r')
+        fsp = open(filename+'.rsp', 'r')
 
         # Read it all
         A = fin.readlines()
@@ -111,7 +111,9 @@ class cosicorrrates(object):
             self.err_east.append(np.float(tmp[5]))
             self.err_north.append(np.float(tmp[6]))
             tmp = B[i].split()
-            self.corner.append([np.float(tmp[6]), np.float(tmp[7]), np.float(tmp[8]), np.float(tmp[9])])    
+            self.corner.append([np.float(tmp[6]), np.float(tmp[7]), 
+                                np.float(tmp[8]), np.float(tmp[9])])
+
 
         # Make arrays
         self.east = factor * (np.array(self.east) + step)
@@ -140,8 +142,12 @@ class cosicorrrates(object):
 
         # Read the covariance
         if cov:
-            nd = self.vel.size
-            self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))*factor
+            nd = self.east.size + self.north.size
+            self.Cd = np.fromfile(filename + '.cov', dtype=np.float32).reshape((nd,nd))
+            self.Cd *= factor
+
+        # Store the factor
+        self.factor = factor
 
         # All done
         return
@@ -199,6 +205,7 @@ class cosicorrrates(object):
         # All done
         return
 
+
     def select_pixels(self, minlon, maxlon, minlat, maxlat):
         ''' 
         Select the pixels in a box defined by min and max, lat and lon.
@@ -220,6 +227,7 @@ class cosicorrrates(object):
         u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon))
 
         # Select the stations
+        npts = self.lon.size
         self.lon = self.lon[u]
         self.lat = self.lat[u]
         self.x = self.x[u]
@@ -237,9 +245,10 @@ class cosicorrrates(object):
 
         # Deal with the covariance matrix
         if self.Cd is not None:
-            Cdt = self.Cd[u,:]
-            self.Cd = Cdt[:,u]
-
+            indCd = np.hstack((u, u+npts))
+            Cdt = self.Cd[indCd,:]
+            self.Cd = Cdt[:,indCd]
+        
         # All done
         return
 
@@ -248,40 +257,40 @@ class cosicorrrates(object):
         Removes a polynomial from the parameters that are in a fault.
         '''
 
-        print('Not modified, do it later')
-        return
-
         # Get the number
         Oo = fault.polysol[self.name].shape[0]
-        assert ( (Oo==1) or (Oo==3) or (Oo==4) ), 'Number of polynomial parameters can be 1, 3 or 4.'
+        assert Oo == 6, 'Non 3rd-order poly for cosicorr'  
 
         # Get the parameters
         Op = fault.polysol[self.name]
 
         # Create the transfer matrix
-        Nd = self.vel.shape[0]
-        orb = np.zeros((Nd, Oo))
+        numPoints = self.east.shape[0]
+        numDat = numPoints * self.obs_per_station
+        orb = np.zeros((numDat, Oo))
 
         # Print Something
-        print('Correcting insar rate {} from polynomial function: {}'.format(self.name, tuple(Op[i] for i in range(Oo))))
+        print('Correcting cosicorr {} from polynomial function: {}'.format(
+              self.name, tuple(Op[i] for i in range(Oo))))
 
-        # Fill in the first columns
-        orb[:,0] = 1.
+        # Fill in constant terms
+        orb[:numPoints,0] = 1.0
+        orb[numPoints:,3] = 1.0
 
-        # If more columns
-        if Oo>=3:
-            Nx = fault.OrbNormalizingFactor[self.name]['x']
-            Ny = fault.OrbNormalizingFactor[self.name]['y']
-            orb[:,1] = self.x/Nx
-            orb[:,2] = self.y/Ny
-        if Oo>=4:
-            orb[:,3] = (self.x/Nx)*(self.y/Ny)
+        # Fill in higher order polynomials
+        Nx = fault.OrbNormalizingFactor[self.name]['x']
+        Ny = fault.OrbNormalizingFactor[self.name]['y']
+        orb[:numPoints,1] = self.x / Nx
+        orb[:numPoints,2] = self.y / Ny
+        orb[numPoints:,4] = self.x / Nx
+        orb[numPoints:,5] = self.y / Ny        
 
         # Get the correction
-        self.orb = np.dot(orb,Op)
+        self.orb = np.dot(orb, Op)
 
-        # Correct
-        self.vel -= self.orb
+        # Correct data
+        self.east -= self.orb[:numPoints]
+        self.north -= self.orb[numPoints:]
 
         # All done
         return
@@ -295,7 +304,7 @@ class cosicorrrates(object):
             * include_poly  : if a polynomial function has been estimated, include it.
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         # Build synthetics
@@ -316,14 +325,12 @@ class cosicorrrates(object):
             * include_poly  : if a polynomial function has been estimated, include it.
         '''
 
-        print('Not modified, do it later')
-        return
-
-        # Number of data
-        Nd = self.vel.shape[0]
+        # Number of data points
+        Nd = self.lon.shape[0]
 
         # Clean synth
-        self.synth = np.zeros((self.vel.shape))
+        self.east_synth = np.zeros((Nd,))
+        self.north_synth = np.zeros((Nd,))
 
         # Loop on each fault
         for fault in faults:
@@ -334,18 +341,21 @@ class cosicorrrates(object):
             if ('s' in direction) and ('strikeslip' in G.keys()):
                 Gs = G['strikeslip']
                 Ss = fault.slip[:,0]
-                losss_synth = np.dot(Gs,Ss)
-                self.synth += losss_synth
+                ss_synth = np.dot(Gs, Ss)
+                self.east_synth += ss_synth[:Nd]
+                self.north_synth += ss_synth[Nd:]
             if ('d' in direction) and ('dipslip' in G.keys()):
                 Gd = G['dipslip']
                 Sd = fault.slip[:,1]
-                losds_synth = np.dot(Gd, Sd)
-                self.synth += losds_synth
+                sd_synth = np.dot(Gd, Sd)
+                self.east_synth += sd_synth[:Nd]
+                self.north_synth += sd_synth[Nd:]
             if ('t' in direction) and ('tensile' in G.keys()):
                 Gt = G['tensile']
                 St = fault.slip[:,2]
-                losop_synth = np.dot(Gt, St)
-                self.synth += losop_synth
+                st_synth = np.dot(Gt, St)
+                self.east_synth += st_synth[:Nd]
+                self.north_synth += st_synth[Nd:]
 
             if include_poly:
                 if (self.name in fault.polysol.keys()):
@@ -378,7 +388,7 @@ class cosicorrrates(object):
         This routine prepares the data file as input for EDKS.
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         # Get the x and y positions
@@ -419,16 +429,15 @@ class cosicorrrates(object):
             * u         : Index of the pixel to reject.
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         self.lon = np.delete(self.lon, u)
         self.lat = np.delete(self.lat, u)
         self.x = np.delete(self.x, u)
         self.y = np.delete(self.y, u)
-        self.err = np.delete(self.err, u)
-        self.los = np.delete(self.los, u, axis=0)
-        self.vel = np.delete(self.vel, u)
+        self.err_east = np.delete(self.err_east, u)
+        self.err_north = np.delete(self.err_north, u)
 
         if self.Cd is not None:
             self.Cd = np.delete(self.Cd, u, axis=0)
@@ -438,8 +447,11 @@ class cosicorrrates(object):
             self.corner = np.delete(self.corner, u, axis=0)
             self.xycorner = np.delete(self.xycorner, u, axis=0)
 
-        if self.synth is not None:
-            self.synth = np.delete(self.synth, u, axis=0)
+        if self.east_synth is not None:
+            self.east_synth = np.delete(self.east_synth, u, axis=0)
+
+        if self.north_synth is not None:
+            self.north_synth = np.delete(self.north_synth, u, axis=0)
 
         # All done
         return
@@ -451,9 +463,6 @@ class cosicorrrates(object):
             * dis       : Threshold distance.
             * faults    : list of fault objects.
         '''
-
-        print('Not modified, do it later')
-        return
 
         # Variables to trim are  self.corner,
         # self.xycorner, self.Cd, (self.synth)
@@ -501,7 +510,7 @@ class cosicorrrates(object):
             * width             : Width of the profile.
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         # the profiles are in a dictionary
@@ -616,7 +625,7 @@ class cosicorrrates(object):
         Writes the profile named 'name' to the ascii file filename.
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         # open a file
@@ -671,7 +680,7 @@ class cosicorrrates(object):
             * legendscale: Length of the legend arrow.
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         # open a figure
@@ -746,7 +755,7 @@ class cosicorrrates(object):
             * fault     : fault object from verticalfault.
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         # Grab the fault trace
@@ -806,7 +815,7 @@ class cosicorrrates(object):
         Computes the RMS of the data and if synthetics are computed, the RMS of the residuals                    
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return        
 
         # Get the number of points                                                                               
@@ -829,7 +838,7 @@ class cosicorrrates(object):
         Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         # Get the number of points                                                                               
@@ -854,7 +863,7 @@ class cosicorrrates(object):
         Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals                    
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         # Misfit of the data                                                                                        
@@ -993,7 +1002,7 @@ class cosicorrrates(object):
             * interp    : Number of points along lon and lat.
         '''
 
-        print('Not modified, do it later')
+        raise NotImplementedError('do it later')
         return
 
         # Get variables

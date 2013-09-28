@@ -533,6 +533,71 @@ class geodeticplot:
         # All done
         return
 
+    def cosicorr_decimate(self, corr, norm=None, colorbar=True, data='dataEast'):
+        ''' 
+        Args:
+            * insar     : insar object from insarrates.
+            * norm      : lower and upper bound of the colorbar.
+            * colorbar  : plot the colorbar (True/False).
+            * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast',
+                          or 'res'.
+        '''
+
+        # Choose the data
+        if data is 'dataEast':
+            d = corr.east
+        elif data is 'dataNorth':
+            d = corr.north
+        elif data is 'synthEast':
+            d = corr.east_synth
+        elif data is 'synthNorth':
+            d = corr.north_synth
+        else:
+            print('unknown data type')
+            return
+
+        # Prepare the colorlimits
+        if norm is None:
+            vmin = d.min()
+            vmax = d.max()
+        else:
+            vmin = norm[0]
+            vmax = norm[1]
+
+        # Prepare the colormap
+        cmap = plt.get_cmap('jet')
+        cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+
+        for i in range(corr.xycorner.shape[0]):
+            x = []
+            y = []
+            # upper left
+            x.append(corr.xycorner[i,0])
+            y.append(corr.xycorner[i,1])
+            # upper right
+            x.append(corr.xycorner[i,2])
+            y.append(corr.xycorner[i,1])
+            # down right
+            x.append(corr.xycorner[i,2])
+            y.append(corr.xycorner[i,3])
+            # down left
+            x.append(corr.xycorner[i,0])
+            y.append(corr.xycorner[i,3])
+            verts = [zip(x, y)]
+            rect = colls.PolyCollection(verts)
+            rect.set_color(scalarMap.to_rgba(d[i]))
+            rect.set_edgecolors('k')
+            self.carte.add_collection(rect)
+
+        # plot colorbar
+        if colorbar:
+            scalarMap.set_array(d)
+            plt.colorbar(scalarMap)
+
+        # All done
+        return
+
     def slipdirection(self, fault, linewidth=1., color='k', scale=1.):
         '''
         Plots the segment in slip direction of the fault.

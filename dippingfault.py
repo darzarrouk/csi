@@ -1,15 +1,18 @@
 '''
-A class that deals with dipping faults.
+A class that deals with vertical faults.
 
 Written by R. Jolivet, April 2013
 '''
-import copy
+
+# Externals
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
+import scipy.interpolate as sciint
+import copy
 import sys
 
-# Personal
+# Personals
 major, minor, micro, release, serial = sys.version_info
 if major==2:
     import okada4py as ok
@@ -49,8 +52,7 @@ class dippingfault(object):
         # Allocate depth and number of patches
         self.top = None             # Depth of the top of the fault
         self.depth = None           # Depth of the bottom of the fault
-        self.numz = None            # Number of patches at depth
-        self.dip = None             # Fault dip
+        self.numz = None
 
         # Allocate patches
         self.patch = None
@@ -70,6 +72,13 @@ class dippingfault(object):
 
         # All done
         return
+
+    def duplicateFault(self):
+        '''
+        Returns a copy of the fault.
+        '''
+
+        return copy.deepcopy(self)
 
     def initializeslip(self, n=None):
         '''
@@ -99,47 +108,47 @@ class dippingfault(object):
         self.lon = np.array(Lon)
         self.lat = np.array(Lat)
 
-        # All done
-        return
-
-    def setdip(self, dip):
-        '''
-        Sets the dip of the fault.
-        Args:
-            * dip           : Dip angle.
-        '''
-
-        # Set dip
-        self.dip = dip
-
-        # if depth is set 
-        if self.depth is not None:
-            self.vertdepth = self.depth/np.cos(np.pi/2. - self.dip*np.pi/180.)
+        # utmize
+        self.trace2xy()
 
         # All done
         return
 
-    def setvertdepth(self, vertdepth, top=0, num=5):
+    def addfaults(self, filename):
         '''
-        Set the maximum depth of the fault patches.
+        Add some other faults to plot with the modeled one.
 
         Args:
-            * vertdepth         : Depth of the fault patches before rotation.
-            * num           : Number of fault patches at depth.
+            * filename      : Name of the fault file (GMT lon lat format).
         '''
 
-        # Set depth
-        self.top = top
-        self.vertdepth = vertdepth
-        self.numz = num
+        # Allocate a list 
+        self.addfaults = []
 
-        # if dip is set
-        if self.dip is not None:
-            self.depth = self.vertdepth*np.cos(np.pi/2. - self.dip*np.pi/180.)
+        # Read the file
+        fin = open(filename, 'r')
+        A = fin.readline()
+        tmpflt=[]
+        while len(A.split()) > 0:
+            if A.split()[0] is '>':
+                if len(tmpflt) > 0:
+                    self.addfaults.append(np.array(tmpflt))
+                tmpflt = []
+            else:
+                lon = float(A.split()[0])
+                lat = float(A.split()[1])
+                tmpflt.append([lon,lat])
+            A = fin.readline()
+        fin.close()
 
+        # Convert to utm
+        self.addfaultsxy = []
+        for fault in self.addfaults:
+            x,y = self.ll2xy(fault[:,0], fault[:,1])
+            self.addfaultsxy.append([x,y])
+        
         # All done
         return
-
 
     def setdepth(self, depth, top=0, num=5):
         '''
@@ -154,10 +163,6 @@ class dippingfault(object):
         self.top = top
         self.depth = depth
         self.numz = num
-
-        # if dip is set
-        if self.dip is not None:
-            self.vertdepth = self.depth/np.cos(np.pi/2. - self.dip*np.pi/180.)
 
         # All done
         return
@@ -326,7 +331,7 @@ class dippingfault(object):
         self.yi = np.array(self.yi)
 
         # Build the corresponding lon lat arrays
-        self.loni, self.lati = self.xy2ll(self.xi*1000., self.yi*1000.)
+        self.loni, self.lati = self.xy2ll(self.xi, self.yi)
 
         # All done
         return
@@ -352,14 +357,12 @@ class dippingfault(object):
             return pointwise(xs) #array(map(pointwise, array(xs)))
         return ufunclike
     
-    def discretize(self, every=2, tol=0.5, method='linear', fracstep=5.):
+    def discretize(self, every=2, tol=0.5, fracstep=0.2): 
         '''
         Refine the surface fault trace prior to divide it into patches.
         Args:
             * every         : Spacing between each point.
             * tol           : Tolerance in the spacing.
-            * method        : Interpolation method. Can be 'linear','nearest', 'zero', 'slinear', 'quadratic' or 'cubic'. Default is 'linear'.
-            * fracstep      : Jumping factor. The smallest, the bigger the jumps.
         '''
 
         # print
@@ -376,38 +379,57 @@ class dippingfault(object):
         od = np.argsort(self.xf)
         self.inter = scint.interp1d(self.xf[od], self.yf[od], bounds_error=False)
     
-        # Loop to get equally spaced points
-        xi = [self.xf[od][0]]                             # Interpolated x fault
-        yi = [self.yf[od][0]]                             # Interpolated y fault
-        xt = xi[-1]                                       # Starting point
-        while xt<self.xf[od][-1]:
-            # First guess
-            xt = xi[-1] + every/2.
-            # First guess of y
-            yt = self.inter(xt)
-            # Compute the distance between the two successive points
-            d = np.sqrt((xt-xi[-1])**2 + (yt-yi[-1])**2)
-            while np.abs(d-every)>tol:
-                if (xt>xi[-1]) and ((d-every)>0):       # In that case, reduce xt
-                    xt = xt - d/fracstep
-                elif (xt>xi[-1]) and ((d-every)<0):     # In that case, increase xt
-                    xt = xt + d/fracstep
-                # Get corresponding yt
-                yt = self.inter(xt)
-                # New distance
-                d = np.sqrt((xt-xi[-1])**2 + (yt-yi[-1])**2)
-            # When d-every<tol, store the xt and yt values, if they are non-nan
-            if np.isfinite(xt) and np.isfinite(yt):
+        # Initialize the list of equally spaced points
+        xi = [self.xf[od][0]]                               # Interpolated x fault
+        yi = [self.yf[od][0]]                               # Interpolated y fault
+        xlast = self.xf[od][-1]                             # Last point
+        ylast = self.yf[od][-1]
+
+        # First guess for the next point
+        xt = xi[-1] + every * fracstep 
+        # Check if first guess is in the domain
+        if xt>xlast:
+            xt = xlast
+        # Get the corresponding yt
+        yt = self.inter(xt)
+            
+        # While the last point is not the last wanted point
+        while (xi[-1] < xlast):
+            if (xt==xlast):         # I am at the end
                 xi.append(xt)
                 yi.append(yt)
+            else:                   # I am not at the end
+                # I compute the distance between me and the last accepted point
+                d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
+                # Check if I am in the tolerated range
+                if np.abs(d-every)<tol:
+                    xi.append(xt)
+                    yi.append(yt)
+                else:
+                    # While I am to far away from my goal and I did not pass the last x
+                    while ((np.abs(d-every)>tol) and (xt<xlast)):
+                        # I add the distance*frac that I need to go
+                        xt -= (d-every)*fracstep
+                        if (xt>xlast):          # If I passed the last point
+                            xt = xlast
+                        elif (xt<xi[-1]):       # If I passed the previous point
+                            xt = xi[-1] + every
+                        # I compute the corresponding yt
+                        yt = self.inter(xt)
+                        # I compute the corresponding distance
+                        d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
+                    # When I stepped out of that loop, append
+                    xi.append(xt)
+                    yi.append(yt)
+            # Next guess for the loop
+            xt = xi[-1] + every * fracstep
 
         # Store the result in self
         self.xi = np.array(xi)
         self.yi = np.array(yi)
 
         # Compute the lon/lat
-        if self.utmzone is not None:
-            self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
+        self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
 
         # All done
         return
@@ -419,12 +441,15 @@ class dippingfault(object):
         '''
 
         # If the maximum depth and the number of patches is not set
-        assert self.vertdepth is not None, "Please set dip, depth and number of patches."
+        if self.depth is None:
+            print("Depth and number of patches are not set.")
+            print("Please use setdepth to define maximum depth and number of patches")
+            return
 
-        print ("Build patches for fault {} between depths: {}, {}".format(self.name, self.top, self.vertdepth))
+        print ("Build patches for fault {} between depths: {}, {}".format(self.name, self.top, self.depth))
 
         # Define the depth vector
-        z = np.linspace(self.top, self.vertdepth, num=self.numz+1)
+        z = np.linspace(self.top, self.depth, num=self.numz+1)
         self.z_patches = z
 
         # If the discretization is not done
@@ -465,88 +490,589 @@ class dippingfault(object):
                 p[0,:] = [x1, y1, z[j]]
                 pll[0,:] = [lon1, lat1, z[j]]
                 p[1,:] = [x2, y2, z[j+1]]
-                pll[1,:] = [lon2, lat2, z[j]]
+                pll[1,:] = [lon2, lat2, z[j+1]]
                 p[2,:] = [x3, y3, z[j+1]]
                 pll[2,:] = [lon3, lat3, z[j+1]]
                 p[3,:] = [x4, y4, z[j]]
-                pll[3,:] = [lon4, lat4, z[j+1]]
+                pll[3,:] = [lon4, lat4, z[j]]
                 self.patch.append(p)
                 self.patchll.append(pll)
                 self.slip.append([0.0, 0.0, 0.0])
 
-        # Say that the fault is vertical
-        self.vertical = True
+        # Translate slip to np.array
+        self.slip = np.array(self.slip)
+
+        # All done
+        return
+
+    def importPatches(self, filename, origin=[45.0, 45.0]):
+        '''
+        Builds a patch geometry and the corresponding files from a relax co-seismic file type.
+        Args:
+            filename    : Input from Relax (See Barbot and Cie on the CIG website).
+            origin      : Origin of the reference frame used by relax. [lon, lat]
+        '''
+
+        # Create lists
+        self.patch = []
+        self.patchll = []
+        self.slip = []
+
+        # origin
+        x0, y0 = self.ll2xy(origin[0], origin[1])
+
+        # open/read/close the input file
+        fin = open(filename, 'r')
+        Text = fin.readlines()
+        fin.close()
+
+        # Depth array
+        D = []
+
+        # Loop over the patches
+        for text in Text:
+
+            # split
+            text = text.split()
+
+            # check if continue
+            if not text[0]=='#':
+
+                # Get values
+                slip = np.float(text[1])
+                xtl = np.float(text[2]) + x0
+                ytl = np.float(text[3]) + y0
+                depth = np.float(text[4])
+                length = np.float(text[5])
+                width = np.float(text[6])
+                strike = np.float(text[7])*np.pi/180.
+                rake = np.float(text[9])*np.pi/180.
+
+                D.append(depth)
+
+                # Build a patch with that
+                x1 = xtl
+                y1 = ytl
+                z1 = depth + width
+
+                x2 = xtl 
+                y2 = ytl
+                z2 = depth
+
+                x3 = xtl + length*np.cos(strike) 
+                y3 = ytl + length*np.sin(strike)
+                z3 = depth
+
+                x4 = xtl + length*np.cos(strike)
+                y4 = ytl + length*np.sin(strike)
+                z4 = depth + width
+
+                # Convert to lat lon
+                lon1, lat1 = self.xy2ll(x1, y1)
+                lon2, lat2 = self.xy2ll(x2, y2)
+                lon3, lat3 = self.xy2ll(x3, y3)
+                lon4, lat4 = self.xy2ll(x4, y4)
+
+                # Fill the patch
+                p = np.zeros((4, 3))
+                pll = np.zeros((4, 3))
+                p[0,:] = [x1, y1, z1]
+                p[1,:] = [x2, y2, z2]
+                p[2,:] = [x3, y3, z3]
+                p[3,:] = [x4, y4, z4]
+                pll[0,:] = [lon1, lat1, z1]
+                pll[1,:] = [lon2, lat2, z2]
+                pll[2,:] = [lon3, lat3, z3]
+                pll[3,:] = [lon4, lat4, z4]
+                self.patch.append(p)
+                self.patchll.append(pll)
+
+                # Slip
+                ss = slip*np.cos(rake)
+                ds = slip*np.sin(rake)
+                ts = 0.
+                self.slip.append([ss, ds, ts])
 
         # Translate slip to np.array
         self.slip = np.array(self.slip)
 
-        # Rotate patches to have the good dip
-        self.rotatepatches()
-        self.vertical = False
+        # Depth 
+        D = np.unique(np.array(D))
+        self.z_patches = D
+        self.depth = D.max()
+
+        # Create a trace
+        dmin = D.min()
+        self.lon = []
+        self.lat = []
+        for p in self.patchll:
+            d = p[1][2]
+            if d==dmin:
+                self.lon.append(p[1][0])
+                self.lat.append(p[1][1])
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+    
+        # All done
+        return
+
+    def BuildPatchesVarResolution(self, depths, Depthpoints, Resolpoints, interpolation='linear', minpatchsize=0.1, extrap=None):
+        '''
+        Patchizes the fault with a variable patch size at depth.
+        The variable patch size is given by the respoints table.
+        Depthpoints = [depth1, depth2, depth3, ...., depthN]
+        Resolpoints = [Resol1, Resol2, Resol3, ...., ResolN]
+        The final resolution is interpolated given the 'interpolation' method.
+        Interpolation can be 'linear', 'cubic'.
+        '''
+
+        print('Build fault patches for fault {} between {} and {} km deep, with a variable resolution'.format(self.name, self.top, self.depth))
+
+        # Define the depth vector
+        z = np.array(depths)
+        self.z_patches = z
+
+        # Interpolate the resolution
+        fint = sciint.interp1d(Depthpoints, Resolpoints, kind=interpolation)
+        resol = fint(z)
+
+        # build lists for storing things
+        self.patch = []
+        self.patchll = []
+        self.slip = []
+
+        # iterate over the depths 
+        for j in range(len(z)-1):
+
+            # discretize the fault at the desired resolution
+            print('Discretizing at depth {}'.format(z[j]))
+            self.discretize(every=np.floor(resol[j]), tol=resol[j]/20., fracstep=resol[j]/1000.)
+            if extrap is not None:
+                self.extrapolate(length_added=extrap[0], extrap=extrap[1])
+
+            # iterate over the discretized fault
+            for i in range(len(self.xi)-1):
+                # First corner
+                x1 = self.xi[i]
+                y1 = self.yi[i]
+                lon1 = self.loni[i]
+                lat1 = self.lati[i]
+                # Second corner
+                x2 = self.xi[i]
+                y2 = self.yi[i]
+                lon2 = self.loni[i]
+                lat2 = self.lati[i]
+                # Third corner
+                x3 = self.xi[i+1]
+                y3 = self.yi[i+1]
+                lon3 = self.loni[i+1]
+                lat3 = self.lati[i+1]
+                # Fourth corner
+                x4 = self.xi[i+1]
+                y4 = self.yi[i+1]
+                lon4 = self.loni[i+1]
+                lat4 = self.lati[i+1]
+                # build patches
+                p = np.zeros((4,3))
+                pll = np.zeros((4,3))
+                # fill them
+                p[0,:] = [x1, y1, z[j]]
+                pll[0,:] = [lon1, lat1, z[j]]
+                p[1,:] = [x2, y2, z[j+1]]
+                pll[1,:] = [lon2, lat2, z[j+1]]
+                p[2,:] = [x3, y3, z[j+1]]
+                pll[2,:] = [lon3, lat3, z[j+1]]
+                p[3,:] = [x4, y4, z[j]]
+                pll[3,:] = [lon4, lat4, z[j]]
+                psize = np.sqrt( (x3-x2)**2 + (y3-y2)**2 )
+                if psize>minpatchsize:
+                    self.patch.append(p)
+                    self.patchll.append(pll)
+                    self.slip.append([0.0, 0.0, 0.0])
+                else:           # Increase the size of the previous patch
+                    self.patch[-1][2,:] = [x3, y3, z[j+1]]
+                    self.patch[-1][3,:] = [x4, y4, z[j]]
+                    self.patchll[-1][2,:] = [lon3, lat3, z[j+1]]
+                    self.patchll[-1][3,:] = [lon4, lat4, z[j]]
+
+
+        # Translate slip into a np.array
+        self.slip = np.array(self.slip)
+
+        # all done
+        return
+
+    def rotationHoriz(self, center, angle):
+        '''
+        Rotates the geometry of the fault around center, of an angle.
+        Args:
+            * center    : [lon,lat]
+            * angle     : degrees
+        '''
+
+        # Translate the center to x, y
+        xc, yc = self.ll2xy(center[0], center[1])
+        ref = np.array([xc, yc])
+
+        # Create the rotation matrix
+        angle = angle*np.pi/180.
+        Rot = np.array( [ [np.cos(angle), -1.0*np.sin(angle)],
+                          [np.sin(angle), np.cos(angle)] ] )
+
+        # Loop on the patches
+        for i in range(len(self.patch)):
+
+            # Get patch
+            p = self.patch[i]
+            pll = self.patchll[i]
+
+            for j in range(4):
+                x, y = np.dot( Rot, p[j][:-1] - ref )
+                p[j][0] = x + xc
+                p[j][1] = y + yc
+                lon, lat = self.xy2ll(p[j][0],p[j][1])
+                pll[j][0] = lon
+                pll[j][1] = lat
+
+        # All done 
+        return
+
+    def translationHoriz(self, dx, dy):
+        '''
+        Translates the patches.
+        Args:
+            * dx    : Translation along x (km)
+            * dy    : Translation along y (km)
+        '''
+
+        # Loop on the patches
+        for i in range(len(self.patch)):
+
+            # Get patch
+            p = self.patch[i]
+            pll = self.patchll[i]
+
+            for j in range(4):
+                p[j][0] += dx
+                p[j][1] += dy
+                lon, lat = self.xy2ll(p[j][0],p[j][1])
+                pll[j][0] = lon
+                pll[j][1] = lat
+
+        # All done 
+        return
+
+
+    def mergePatches(self, p1, p2):
+        '''
+        Merges 2 patches that have common corners.
+        Args:
+            * p1    : index of the patch #1.
+            * p2    : index of the patch #2.
+        '''
+
+        print('Merging patches {} and {} into patch {}'.format(p1,p2,p1))
+
+        # Get the patches
+        patch1 = self.patch[p1]
+        patch2 = self.patch[p2]
+        patch1ll = self.patchll[p1]
+        patch2ll = self.patchll[p2]
+
+        # Create the newpatches
+        newpatch = np.zeros((4,3))
+        newpatchll = np.zeros((4,3))
+
+        # determine which corners are in common, needs at least two
+        if ((patch1[0]==patch2[1]).all() and (patch1[3]==patch2[2]).all()):     # patch2 is above patch1
+            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:] 
+            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
+            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
+            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
+        elif ((patch1[3]==patch2[0]).all() and (patch1[2]==patch2[1]).all()):   # patch2 is on the right of patch1
+            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
+            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
+            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
+            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
+        elif ((patch1[1]==patch2[0]).all() and (patch1[2]==patch2[3]).all()):   # patch2 is under patch1
+            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
+            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
+            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
+            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
+        elif ((patch1[0]==patch2[3]).all() and (patch1[1]==patch2[2]).all()):   # patch2 is on the left of patch1
+            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:]
+            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
+            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
+            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
+        else:
+            print('Patches do not have common corners...')
+            return
+
+        # Replace the patch 1 by the new patch
+        self.patch[p1] = newpatch
+        self.patchll[p1] = newpatchll
+
+        # Delete the patch 2
+        self.deletepatch(p2)
 
         # All done
         return
 
-    def rotatepatches(self):
+
+    def readPatchesFromFile(self, filename):
         '''
-        Rotates the existing patches.
+        Read the patches from a GMT formatted file.
+        Args:   
+            * filename  : Name of the file.
         '''
 
-        # Assert dip is set
-        assert self.dip, "Please specify dip angle."
+        # create the lists
+        self.patch = []
+        self.patchll = []
+        self.index_parameter = []
+        self.slip = []
 
-        # build the unit vector of the axis of rotation
-        D, P = self.surfacetrace2director()
+        # open the file
+        fin = open(filename, 'r')
 
-        # Rotation
-        theta = np.pi/2 - self.dip*np.pi/180.
+        # read all the lines
+        A = fin.readlines()
 
-        # Rotate all the points of all the patches
-        self.patchvert = copy.copy(self.patch)
-        self.patchrot = []
-        for p in self.patch:
-            pr = []
-            for pp in p:
-                pr.append(self.rotpoint(pp, D, P, theta))
-            self.patchrot.append(np.array(pr))
+        # Loop over the file
+        i = 0
+        while i<len(A):
+            
+            # Assert it works
+            assert A[i].split()[0] is '>', 'Not a patch, reformat your file...'
+            # Get the Patch Id
+            self.index_parameter.append([np.int(A[i].split()[3]),np.int(A[i].split()[4]),np.int(A[i].split()[5])])
+            # Get the slip value
+            if len(A[i].split()>7):
+                slip = np.array([np.float(A[i].split()[7]), np.float(A[i].split()[8]), np.float(A[i].split()[9])])
+            else:
+                slip = np.array([0.0, 0.0, 0.0])
+            self.slip.append(slip)
+            # build patches
+            p = np.zeros((4,3))
+            pll = np.zeros((4,3))
+            # get the values
+            lon1, lat1, z1 = A[i+1].split()
+            lon2, lat2, z2 = A[i+2].split()
+            lon3, lat3, z3 = A[i+3].split()
+            lon4, lat4, z4 = A[i+4].split()
+            # Pass as floating point
+            lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1)
+            lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
+            # Pass as floating point
+            lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1)
+            lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
+            lon3 = float(lon3); lat3 = float(lat3); z3 = float(z3)
+            lon4 = float(lon4); lat4 = float(lat4); z4 = float(z4)
+            # Store theme
+            pll[0,:] = [lon1, lat1, z1]
+            pll[1,:] = [lon2, lat2, z2]
+            pll[2,:] = [lon3, lat3, z3]
+            pll[3,:] = [lon4, lat4, z4]
+            # translate to utm
+            x1, y1 = self.ll2xy(lon1, lat1)
+            x2, y2 = self.ll2xy(lon2, lat2)
+            x3, y3 = self.ll2xy(lon3, lat3)
+            x4, y4 = self.ll2xy(lon4, lat4)
+            # Put these in m
+            x1 /= 1000.; y1 /= 1000.
+            x2 /= 1000.; y2 /= 1000.
+            x3 /= 1000.; y3 /= 1000.
+            x4 /= 1000.; y4 /= 1000.
+            # Store them
+            p[0,:] = [x1, y1, z1]
+            p[1,:] = [x2, y2, z2]
+            p[2,:] = [x3, y3, z3]
+            p[3,:] = [x4, y4, z4]
+            # Store these in the lists
+            self.patch.append(p)
+            self.patchll.append(pll)
+            # increase i
+            i += 5
 
-        # replace patch by the rotated
-        self.patch = self.patchrot
-        del self.patchrot
+        # Close the file
+        fin.close()
+
+        # Translate slip to np.array
+        self.slip = np.array(self.slip)
+        self.index_parameter = np.array(self.index_parameter)
 
         # All done
         return
 
-    def surfacetrace2director(self):
+    def writePatches2File(self, filename, add_slip=None, scale=1.0):
         '''
-        Computes an average vector director for the surface trace.
+        Writes the patch corners in a file that can be used in psxyz.
+        Args:
+            * filename      : Name of the file.
+            * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total.
+            * scale         : Multiply the slip value by a factor.
         '''
 
-        # Gets the equation
-        G = np.vstack((self.xf, np.ones((self.xf.shape)))).T
-        m = np.linalg.lstsq(G, self.yf)
-        a = m[0][0]
-        b = m[0][1]
+        # Write something
+        print('Writing geometry to file {}'.format(filename))
 
-        # Take two points
-        A = [self.xf.min(), a*self.xf.min()+b, 0]
-        B = [self.xf.max(), a*self.xf.max()+b, 0]
+        # Open the file
+        fout = open(filename, 'w')
 
-        # Vector director
-        u = A[0] - B[0]
-        v = A[1] - B[1]
-        w = 0
+        # Loop over the patches
+        for p in range(len(self.patchll)):
 
-        # Norm 
-        n = np.sqrt(u**2 + v**2 + w**2)
+            # Select the string for the color
+            string = '  '
+            if add_slip is not None:
+                if add_slip is 'strikeslip':
+                    slp = self.slip[p,0]*scale
+                    string = '-Z{}'.format(slp)
+                elif add_slip is 'dipslip':
+                    slp = self.slip[p,1]*scale
+                    string = '-Z{}'.format(slp)
+                elif add_slip is 'total':
+                    slp = np.sqrt(self.slip[p,0]**2 + self.slip[p,1]**2)*scale
+                    string = '-Z{}'.format(slp)
 
-        # Normalize
-        u /= n
-        v /= n
-        w = 0
+            # Put the parameter number in the file as well if it exists
+            parameter = ' ' 
+            if hasattr(self,'index_parameter'):
+                i = np.int(self.index_parameter[p,0])
+                j = np.int(self.index_parameter[p,1])
+                k = np.int(self.index_parameter[p,2])
+                parameter = '# {} {} {} '.format(i,j,k)
+
+            # Put the slip value
+            slipstring = ' # {} {} {} '.format(self.slip[p,0], self.slip[p,1], self.slip[p,2])
+
+            # Write the string to file
+            fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
+
+            # Write the 4 patch corners (the order is to be GMT friendly)
+            p = self.patchll[p]
+            pp=p[1]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+            pp=p[0]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+            pp=p[3]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+            pp=p[2]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+
+        # Close th file
+        fout.close()
+
+        # All done 
+        return
+
+    def getslip(self, p):
+        '''
+        Returns the slip vector for a patch.
+        '''
+        
+        # output index
+        io = None
+
+        # Find the index of the patch
+        for i in range(len(self.patch)):
+            if (self.patch[i]==p).all():
+                io = i
 
         # All done
-        return [u, v, w], A
+        return self.slip[io,:]
+
+    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False):
+        '''
+        Write a psxyz compatible file to draw lines starting from the center of each patch, 
+        indicating the direction of slip.
+        Tensile slip is not used...
+        scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+        '''
+
+        # Copmute the slip direction
+        self.computeSlipDirection(scale=scale, factor=factor)
+
+        # Write something
+        print('Writing slip direction to file {}'.format(filename))
+
+        # Open the file
+        fout = open(filename, 'w')
+
+        # Loop over the patches
+        for p in self.slipdirection:
+            
+            # Write the > sign to the file
+            fout.write('> \n')
+
+            # Get the center of the patch
+            xc, yc, zc = p[0]
+            lonc, latc = self.xy2ll(xc, yc)
+            if neg_depth:
+                zc = -1.0*zc
+            fout.write('{} {} {} \n'.format(lonc, latc, zc))
+
+            # Get the end of the vector
+            xc, yc, zc = p[1]
+            lonc, latc = self.xy2ll(xc, yc)
+            if neg_depth:
+                zc = -1.0*zc
+            fout.write('{} {} {} \n'.format(lonc, latc, zc))
+
+        # Close file
+        fout.close()
+
+        # all done
+        return
+
+    def computeSlipDirection(self, scale=1.0, factor=1.0):
+        '''
+        Computes the segment indicating the slip direction.
+        scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+        '''
+
+        # Create the array
+        self.slipdirection = []
+
+        # Loop over the patches
+        for p in self.patch:  
+            
+            # Get some geometry
+            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
+            # Get the slip vector
+            slip = self.getslip(p) 
+            rake = np.arctan(slip[1]/slip[0])
+
+            # Compute the vector
+            x = np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake) 
+            y = np.cos(strike)*np.cos(rake) - np.sin(strike)*np.cos(dip)*np.sin(rake)
+            z = np.sin(dip)*np.sin(rake)
+        
+            # Scale these
+            if scale.__class__ is float:
+                sca = scale
+            elif scale.__class__ is str:
+                if scale is 'total':
+                    sca = np.sqrt(slip[0]**2 + slip[1]**2 + slip[2]**2)*factor
+                elif scale is 'strikeslip':
+                    sca = slip[0]*factor
+                elif scale is 'dipslip':
+                    sca = slip[1]*factor
+                elif scale is 'tensile':
+                    sca = slip[2]*factor
+                else:
+                    print('Unknown Slip Direction in computeSlipDirection')
+                    sys.exit(1)
+            x *= sca
+            y *= sca
+            z *= sca
+        
+            # update point 
+            xe = xc + x
+            ye = yc + y
+            ze = zc + z                                                                          
+ 
+            # Append
+            self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])
+
+        # All done
+        return
 
     def deletepatch(self, patch):
         '''
@@ -556,13 +1082,30 @@ class dippingfault(object):
         '''
 
         # Remove the patch
-        if patch.__class__ is int:
-            del self.patch[patch]
-            self.slip = np.delete(self.slip, patch, axis=0)
-        elif patch.__class__ is list:
-            for p in patch:
-                del self.patch[p]
-                self.slip = np.delete(self.slip, p, axis=0)
+        del self.patch[patch]
+        del self.patchll[patch]
+        self.slip = np.delete(self.slip, patch, axis=0)
+
+        # All done
+        return
+
+    def deletepatches(self, tutu):
+        '''
+        Deletes a list of patches.
+        '''
+
+        while len(tutu)>0:
+
+            # Get index to delete
+            i = tutu.pop()
+
+            # delete it
+            self.deletepatch(i)
+
+            # Upgrade list
+            for u in range(len(tutu)):
+                if tutu[u]>i:
+                    tutu[u] -= 1
 
         # All done
         return
@@ -595,12 +1138,15 @@ class dippingfault(object):
         '''
         Returns the patch geometry as needed for okada85.
         Args:
-            * patch         : index of the wanted patch.
+            * patch         : index of the wanted patch or patch;
             * center        : if true, returns the coordinates of the center of the patch. if False, returns the UL corner.
         '''
 
         # Get the patch
-        p = self.patch[patch]
+        if patch.__class__ is int:
+            p = self.patch[patch]
+        else:
+            p = patch
 
         # Get the UL corner of the patch
         if center:
@@ -692,7 +1238,8 @@ class dippingfault(object):
         The Green's function matrix is stored in a dictionary. Each entry of the dictionary is named after the corresponding dataset. Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
         '''
 
-        print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
+        print ("Building Green's functions for the data set {} of type {}".format(
+               data.name, data.dtype))
 
         # Get the number of data
         Nd = data.lon.shape[0]
@@ -705,13 +1252,17 @@ class dippingfault(object):
             if vertical:
                 data.obs_per_station = 3
                 Ndt += data.lon.shape[0]
+        elif data.dtype is 'cosicorrrates':
+            Ndt = 2 * Nd
+            data.obs_per_station = 2
 
         # Get the number of parameters
         Np = len(self.patch)
-        Npt = len(self.patch)*len(slipdir)
+        Npt = len(self.patch) * len(slipdir)
 
         # Initializes a space in the dictionary to store the green's function
-        self.G[data.name] = {}
+        if data.name not in self.G.keys():
+            self.G[data.name] = {}
         G = self.G[data.name]
         if 's' in slipdir:
             G['strikeslip'] = np.zeros((Ndt, Np))
@@ -720,7 +1271,7 @@ class dippingfault(object):
         if 't' in slipdir:
             G['tensile'] = np.zeros((Ndt, Np))
 
-        # Initializes the data vector
+        # Initializes the data vector and the data covariance
         if data.dtype is 'insarrates':
             self.d[data.name] = data.vel
             vertical = True                 # In InSAR, you need to use the vertical, no matter what....
@@ -730,9 +1281,12 @@ class dippingfault(object):
             else:
                 self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
 
+        elif data.dtype is 'cosicorrrates':
+            self.d[data.name] = np.hstack((data.east.flatten(), data.north.flatten()))
+
         # Initialize the slip vector
         SLP = []
-        if 's' in slipdir:              # If strike slip is aksed
+        if 's' in slipdir:              # If strike slip is asked
             SLP.append(1.0)
         else:                           # Else
             SLP.append(0.0)
@@ -763,7 +1317,7 @@ class dippingfault(object):
                 op = op[:,0:2]
 
             # Organize the response
-            if data.dtype is 'gpsrates':            # If GPS type, just put them in the good format
+            if data.dtype in ['gpsrates', 'cosicorrrates']:
                 ss = ss.T.flatten()
                 ds = ds.T.flatten()
                 op = op.T.flatten()
@@ -794,7 +1348,245 @@ class dippingfault(object):
         # All done
         return
 
-    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], tensile=[None, None, None], vertical=True):
+    def saveGFs(self, dtype='d'):
+        '''
+        Saves the Green's functions in different files
+        Args:
+            dtype       : Format of the binary data saved.
+        '''
+
+        # Print stuff
+        print('Writing Greens functions to file for fault {}'.format(self.name))
+
+        # Loop over the keys in self.G
+        for data in self.G.keys(): 
+
+            # Get the Green's function
+            G = self.G[data]
+
+            # StrikeSlip Component
+            if 'strikeslip' in G.keys():
+                gss = G['strikeslip'].flatten()
+                filename = '{}_{}_SS.gf'.format(self.name, data)
+                gss = gss.astype(dtype)
+                gss.tofile(filename)
+
+            # DipSlip Component
+            if 'dipslip' in G.keys():
+                gds = G['dipslip'].flatten()
+                filename = '{}_{}_DS.gf'.format(self.name, data)
+                gds = gds.astype(dtype)
+                gds.tofile(filename)
+
+            # Tensile
+            if 'tensile' in G.keys():
+                gts = G['tensile'].flatten()
+                filename = '{}_{}_TS.gf'.format(self.name, data)
+                gts = gts.astype(dtype)
+                gts.tofile(filename)
+
+        # All done
+        return
+
+    def differentiateGFs(self, datas):
+        '''
+        Uses the Delaunay triangulation to prepare a differential Green's function matrix, data vector
+        and data covariance matrix.
+        Args:   
+            * datas         : List of dataset concerned
+        '''
+
+        # Create temporary Green's function, data and Cd dictionaries to hold the new ones
+        Gdiff = {}
+        ddiff = {}
+
+        # Loop over the datasets
+        for data in datas:
+
+            # Check something
+            if data.dtype is not 'gpsrates':
+                print('This has not been implemented for other data set than gpsrates')
+                return
+
+            # Get the GFs, the data and the data covariance
+            G = self.G[data.name]
+            d = self.d[data.name]
+            Cd = data.Cd
+
+            # Get some size informations
+            nstation = data.station.shape[0]
+            lengthd = d.shape[0]
+            if (lengthd == 3*nstation):
+               vertical = True
+               ncomp = 3
+            else:
+               vertical = False
+               ncomp = 2
+
+            # Get the couples
+            edges = data.triangle['Edges']
+
+            # How many lines/columns ?
+            Nd = edges.shape[0]
+            k = G.keys()[0]
+            Np = G[k].shape[1]
+
+            # Create the spaces
+            Gdiff[data.name] = {}
+            for key in G.keys():
+                Gdiff[data.name][key] = np.zeros((Nd*ncomp, Np))
+            ddiff[data.name] = np.zeros((Nd*ncomp,))
+            Cddiff = np.zeros((Nd*ncomp, Nd*ncomp))
+
+            # Loop over the lines of Edges
+            for i in range(Nd):
+
+                # Get the couple
+                m = edges[i][0]
+                n = edges[i][1]
+
+                # Deal with the GFs
+                for key in G.keys():
+                    # East component
+                    Line1 = G[key][m,:]
+                    Line2 = G[key][n,:]
+                    Gdiff[data.name][key][i,:] = Line1 - Line2
+                    # North Component
+                    Line1 = G[key][m+nstation,:]
+                    Line2 = G[key][n+nstation,:]
+                    Gdiff[data.name][key][i+Nd,:] = Line1 - Line2
+                    # Vertical
+                    if vertical:
+                        Line1 = G[key][m+2*nstation,:]
+                        Line2 = G[key][n+2*nstation,:]
+                        Gdiff[data.name][key][i+2*Nd,:] = Line1 - Line2
+
+                # Deal with the data vector
+                # East
+                d1 = d[m]
+                d2 = d[n]
+                ddiff[data.name][i] = d1 - d2
+                # North
+                d1 = d[m+nstation]
+                d2 = d[n+nstation]
+                ddiff[data.name][i+Nd] = d1 - d2
+                # Vertical
+                if vertical:
+                    d1 = d[m+2*nstation]
+                    d2 = d[n+2*nstation]
+                    ddiff[data.name][i+2*Nd] = d1 - d2
+
+                # Deal with the Covariance (Only diagonal, for now)
+                # East
+                cd1 = Cd[m,m]
+                cd2 = Cd[n,n]
+                Cddiff[i,i] = cd1+cd2
+                # North
+                cd1 = Cd[m+nstation,m+nstation]
+                cd2 = Cd[n+nstation,n+nstation]
+                Cddiff[i+Nd,i+Nd] = cd1+cd2
+                # Vertical
+                if vertical:
+                    cd1 = Cd[m+2*nstation,m+2*nstation]
+                    cd2 = Cd[n+2*nstation,n+2*nstation]
+                    Cddiff[i+2*Nd,i+2*Nd] = cd1+cd2
+
+            # Once the data loop is done, store Cd
+            data.Cd = Cddiff
+
+        # Once it is all done, store G and d
+        self.G = Gdiff
+        self.d = ddiff
+
+        # All done
+        return
+
+    def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None, vertical=False, dtype='d'):
+        '''
+        Sets the Green's functions from binary files. Be carefull, these have to be in the 
+        good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and 
+        if insar, GF are projected already)
+        Args:
+            * data          : Data structure from gpsrates or insarrates.
+            * strikeslip    : File containing the Green's functions for strikeslip displacements.
+            * dipslip       : File containing the Green's functions for dipslip displacements.
+            * tensile       : File containing the Green's functions for tensile displacements.
+            * vertical      : Deal with the UP component (gps: default is false, insar, it will be true anyway).
+            * dtype         : Type of binary data.
+        '''
+
+        print('---------------------------------')
+        print('---------------------------------')
+        print("Set up Green's functions for fault {} from files {}, {} and {}".format(self.name, strikeslip, dipslip, tensile))
+
+        # Get the number of patches
+        Npatchs = len(self.patch)
+
+        # Read the files and reshape the GFs
+        if strikeslip is not None:
+            Gss = np.fromfile(strikeslip, dtype=dtype)
+            ndl = int(Gss.shape[0]/Npatchs)
+            Gss = Gss.reshape((ndl, Npatchs))
+        if dipslip is not None:
+            Gds = np.fromfile(dipslip, dtype=dtype)
+            ndl = int(Gds.shape[0]/Npatchs)
+            Gds = Gds.reshape((ndl, Npatchs))
+        if tensile is not None:
+            Gts = np.fromfile(tensile, dtype=dtype)
+            ndl = int(Gts.shape[0]/Npatchs)
+            Gts = Gts.reshape((ndl, Npatchs))
+
+        # Get the data type
+        datatype = data.dtype
+
+        # Cut the Matrices following what data do we have and set the GFs
+        if datatype is 'gpsrates':
+         
+            # Initialize
+            GssE = None; GdsE = None; GtsE = None
+            GssN = None; GdsN = None; GtsN = None
+            GssU = None; GdsU = None; GtsU = None
+
+            # Get the values
+            if strikeslip is not None:
+                GssE = Gss[range(0,data.vel_enu.shape[0]),:]
+                GssN = Gss[range(data.vel_enu.shape[0],data.vel_enu.shape[0]*2),:]
+                if vertical:
+                    GssU = Gss[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
+            if dipslip is not None:
+                GdsE = Gds[range(0,data.vel_enu.shape[0]),:]
+                GdsN = Gds[range(data.vel_enu.shape[0],data.vel_enu.shape[0]*2),:]
+                if vertical:
+                    GdsU = Gds[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
+            if tensile is not None:
+                GtsE = Gts[range(0,data.vel_enu.shape[0]),:]
+                GtsN = Gts[range(data.vel_enu.shape[0],data.vel_enu.shape[0]*2),:]
+                if vertical:
+                    GtsU = Gts[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
+
+            # set the GFs
+            self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU], tensile=[GtsE, GtsN, GtsU], vertical=vertical)
+
+        elif datatype is 'insarrates':
+
+            # Initialize
+            GssLOS = None; GdsLOS = None; GtsLOS = None
+
+            # Get the values
+            if strikeslip is not None: 
+                GssLOS = Gss
+            if dipslip is not None:
+                GdsLOS = Gds
+            if tensile is not None:
+                GtsLOS = Gts
+
+            # set the GFs
+            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS], vertical=True)
+        
+        # all done
+        return
+
+    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], tensile=[None, None, None], vertical=False):
         '''
         Stores the Green's functions matrices into the fault structure.
         Args:
@@ -802,13 +1594,22 @@ class dippingfault(object):
             * strikeslip    : List of matrices of the Strikeslip Green's functions, ordered E, N, U
             * dipslip       : List of matrices of the dipslip Green's functions, ordered E, N, U
             * tensile       : List of matrices of the tensile Green's functions, ordered E, N, U
+            If you provide InSAR GFs, these need to be projected onto the LOS direction already.
         '''
 
-        # Clean up the Green's functions
-        self.G = {}
+        # Get the number of data per point
+        if data.dtype is 'insarrates':
+            data.obs_per_station = 1
+        elif data.dtype is 'gpsrates':
+            data.obs_per_station = 2
+            if vertical:
+                data.obs_per_station = 3
+        elif data.dtype is 'cosicorrrates':
+            data.obs_per_station = 2
 
         # Create the storage for that dataset
-        self.G[data.name] = {}
+        if data.name not in self.G.keys():
+            self.G[data.name] = {}
         G = self.G[data.name]
 
         # Initializes the data vector
@@ -820,6 +1621,10 @@ class dippingfault(object):
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
                 self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
+
+        elif data.dtype is 'cosicorrrates':
+            self.d[data.name] = np.hstack((data.east.T.flatten(), data.north.T.flatten()))
+            
 
         # StrikeSlip
         if len(strikeslip) == 3:            # GPS case
@@ -923,6 +1728,8 @@ class dippingfault(object):
                               1 -> estimate a constant offset
                               3 -> estimate z = ax + by + c
                               4 -> estimate z = axy + bx + cy + d
+                              'full' -> Only for GPS, estimates a rotation, translation and scaling with 
+                                        respect to the center of the network (Helmert transform).
             * slipdir       : which directions of slip to include. can be any combination of s, d and t.
         '''
 
@@ -938,19 +1745,52 @@ class dippingfault(object):
         self.poly = {}
 
         # Set poly right
-        if (polys.__class__ is float) or (polys.__class__ is int):
+        if polys.__class__ is not list:
             for data in datas:
-                self.poly[data.name] = polys*data.obs_per_station
+                if polys.__class__ is not str:
+                    self.poly[data.name] = polys*data.obs_per_station
+                else:
+                    if data.dtype is 'gpsrates':
+                        self.poly[data.name] = polys
+                    else:
+                        print('Data type must be gpsrates to implement a Helmert transform')
+                        return
         elif polys.__class__ is list:
             for d in range(len(datas)):
-                self.poly[datas[d].name] = polys[d]*data.obs_per_station
+                if polys[d].__class__ is not str:
+                    self.poly[datas[d].name] = polys[d]*datas[d].obs_per_station
+                else:
+                    if datas[d].dtype is 'gpsrates':
+                        self.poly[datas[d].name] = polys[d]
+                    else:
+                        print('Data type must be gpsrates to implement a Helmert transform')
+                        return
 
         # Get the number of parameters
         N = len(self.patch)
         Nps = N*len(slipdir)
         Npo = 0
         for data in datas :
-            Npo += (self.poly[data.name])
+            if self.poly[data.name] is 'full':
+                if not hasattr(self, 'helmert'):
+                    self.helmert = {}
+                if data.obs_per_station==3:
+                    Npo += 7                    # 3D Helmert transform is 7 parameters
+                    self.helmert[data.name] = 7
+                else:   
+                    Npo += 4                    # 2D Helmert transform is 4 parameters
+                    self.helmert[data.name] = 4
+            elif self.poly[data.name] is 'strain':
+                if not hasattr(self, 'strain'):
+                    self.strain = {}
+                if data.obs_per_station==2:
+                    Npo += 6
+                    self.strain[data.name] = 6
+                else:
+                    print('3d strain has not been implemented')
+                    return
+            else:
+                Npo += (self.poly[data.name])
         Np = Nps + Npo
 
         # Get the number of data
@@ -970,10 +1810,16 @@ class dippingfault(object):
         # Allocate G and d
         G = np.zeros((Nd, Np))
 
+        # Create the list of data names, to keep track of it
+        self.datanames = []
+
         # loop over the datasets
         el = 0
         polstart = Nps
         for data in datas:
+
+            # Keep data name
+            self.datanames.append(data.name)
 
             # print
             print("Dealing with {} of type {}".format(data.name, data.dtype))
@@ -992,28 +1838,60 @@ class dippingfault(object):
             G[el:el+Ndlocal,0:Nps] = Glocal
 
             # Build the polynomial function
-            if self.poly[data.name] > 0:
-                if data.dtype is 'gpsrates':
-                    orb = np.zeros((Ndlocal, self.poly[data.name]))
-                    nn = Ndlocal/data.obs_per_station
-                    orb[:nn, 0] = 1.0
-                    orb[nn:2*nn, 1] = 1.0
-                    if data.obs_per_station == 3:
-                        orb[2*nn:3*nn, 2] = 1.0
-                elif data.dtype is 'insarrates':
-                    orb = np.zeros((Ndlocal, self.poly[data.name]))
-                    orb[:] = 1.0
-                    if self.poly[data.name] >= 3:
-                        orb[:,1] = data.x/np.abs(data.x).max()
-                        orb[:,2] = data.y/np.abs(data.y).max()
-                    if self.poly[data.name] >= 4:
-                        orb[:,3] = (data.x/np.abs(data.x).max())*(data.y/np.abs(data.y).max())
+            if self.poly[data.name].__class__ is not str:
+                if self.poly[data.name] > 0:
 
-                # Put it into G for as much observable per station we have
-                polend = polstart + self.poly[data.name]
-                G[el:el+Ndlocal, polstart:polend] = orb
-                polstart += self.poly[data.name]
+                    if data.dtype is 'gpsrates':
+                        orb = np.zeros((Ndlocal, self.poly[data.name]))
+                        nn = Ndlocal/data.obs_per_station
+                        orb[:nn, 0] = 1.0
+                        orb[nn:2*nn, 1] = 1.0
+                        if data.obs_per_station == 3:
+                            orb[2*nn:3*nn, 2] = 1.0
 
+                    elif data.dtype is 'insarrates':
+                        orb = np.zeros((Ndlocal, self.poly[data.name]))
+                        orb[:] = 1.0 * data.factor
+                        if self.poly[data.name] >= 3:
+                            if not hasattr(self, 'OrbNormalizingFactor'):
+                                self.OrbNormalizingFactor = {}
+                            self.OrbNormalizingFactor[data.name] = {}
+                            self.OrbNormalizingFactor[data.name]['x'] = np.abs(data.x).max()
+                            self.OrbNormalizingFactor[data.name]['y'] = np.abs(data.y).max()
+                            x0 = data.x[0]; y0 = data.y[0]
+                            self.OrbNormalizingFactor[data.name]['ref'] = [x0, y0]
+                            orb[:,1] = (data.x-x0)/(np.abs(data.x-x0)).max()
+                            orb[:,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
+                        if self.poly[data.name] >= 4:
+                            orb[:,3] = ((data.x-x0)/(np.abs(data.x-x0)).max() * 
+                                        (data.y-y0)/(np.abs(data.y-y0)).max())
+
+                    elif data.dtype is 'cosicorrrates':
+                        orb = np.zeros((Ndlocal, self.poly[data.name]))
+                        assert False
+
+                    # Put it into G for as much observable per station we have
+                    polend = polstart + self.poly[data.name]
+                    G[el:el+Ndlocal, polstart:polend] = orb
+                    polstart += self.poly[data.name]
+            else:
+                if self.poly[data.name] is 'full':
+                    orb = self.getHelmertMatrix(data)
+                    if data.obs_per_station==3:
+                        nc = 7
+                    elif data.obs_per_station==2:
+                        nc = 4
+                    # Put it into G for as much observable per station we have
+                    polend = polstart + nc
+                    G[el:el+Ndlocal, polstart:polend] = orb
+                    polstart += nc
+                if self.poly[data.name] is 'strain':
+                    orb = self.get2DstrainEst(data)
+                    if data.obs_per_station == 2:
+                        nc = 6
+                    polend = polstart + nc
+                    G[el:el+Ndlocal, polstart:polend] = orb
+                    polstart += nc
             # Update el to check where we are
             el = el + Ndlocal
             
@@ -1022,6 +1900,153 @@ class dippingfault(object):
 
         # All done
         return
+
+    def get2DstrainEst(self, data):
+        '''
+        Returns the matrix to estimate the full 2d strain tensor.
+        '''
+
+        # Check
+        assert (data.dtype is 'gpsrates')
+
+        # Get the number of gps stations
+        ns = data.station.shape[0]
+
+        # Get the data vector size
+        nd = self.d[data.name].shape[0]
+
+        # Get the number of parameters to look for
+        if data.obs_per_station==2:
+            nc = 6
+        else:
+            print('Not implemented')
+            return
+
+        # Check something
+        assert data.obs_per_station*ns==nd
+
+        # Get the center of the network
+        x0 = np.mean(data.x)
+        y0 = np.mean(data.y)
+
+        # Compute the baselines
+        base_x = data.x - x0
+        base_y = data.y - y0
+
+        # Normalize the baselines 
+        base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
+        base_x /= base_max
+        base_y /= base_max
+
+        # Store the normalizing factor
+        if not hasattr(self, 'StrainNormalizingFactor'):
+            self.StrainNormalizingFactor = {}
+        self.StrainNormalizingFactor[data.name] = base_max
+
+        # Allocate a Base
+        H = np.zeros((data.obs_per_station,nc))
+
+        # Put the transaltion in the base
+        H[:,:data.obs_per_station] = np.eye(data.obs_per_station)
+
+        # Allocate the full matrix
+        Hf = np.zeros((nd,nc))
+
+        # Loop over the stations
+        for i in range(ns):
+
+            # Clean the part that changes
+            H[:,data.obs_per_station:] = 0.0 
+
+            # Get the values
+            x1, y1 = base_x[i], base_y[i]
+
+            # Store them
+            H[0,2] = x1
+            H[0,3] = 0.5*y1
+            H[0,5] = 0.5*y1
+            H[1,3] = 0.5*x1
+            H[1,4] = y1
+            H[1,5] = -0.5*y1
+
+            # Put the lines where they should be
+            Hf[i,:] = H[0,:]
+            Hf[i+ns,:] = H[1,:]
+
+        # All done
+        return Hf
+
+    def getHelmertMatrix(self, data):
+        '''
+        Returns a Helmert matrix for a gps data set.
+        '''
+
+        # Check
+        assert (data.dtype is 'gpsrates')
+
+        # Get the number of stations
+        ns = data.station.shape[0]
+
+        # Get the data vector size
+        nd = self.d[data.name].shape[0]
+
+        # Get the number of helmert transform parameters
+        if data.obs_per_station==3:
+            nc = 7
+        else:
+            nc = 4
+
+        # Check something
+        assert data.obs_per_station*ns==nd
+
+        # Get the position of the center of the network
+        x0 = np.mean(data.x)
+        y0 = np.mean(data.y)
+        z0 = 0              # We do not deal with the altitude of the stations yet (later)
+
+        # Compute the baselines
+        base_x = data.x - x0
+        base_y = data.y - y0
+        base_z = 0
+
+        # Normalize the baselines
+        base_x_max = np.abs(base_x).max(); base_x /= base_x_max
+        base_y_max = np.abs(base_y).max(); base_y /= base_y_max
+
+        # Allocate a Helmert base
+        H = np.zeros((data.obs_per_station,nc))
+        
+        # put the translation in it (that part never changes)
+        H[:,:data.obs_per_station] = np.eye(data.obs_per_station)
+
+        # Allocate the full matrix
+        Hf = np.zeros((nd,nc))
+
+        # Loop over the stations
+        for i in range(ns):
+
+            # Clean the part that changes
+            H[:,data.obs_per_station:] = 0.0
+
+            # Put the rotation components and the scale components
+            x1, y1, z1 = base_x[i], base_y[i], base_z
+            if nc==7:
+                H[:,3:6] = np.array([[0.0, -z1, y1],
+                                     [z1, 0.0, -x1],
+                                     [-y1, x1, 0.0]])
+                H[:,7] = np.array([x1, y1, z1])
+            else:
+                H[:,2] = np.array([y1, -x1])
+                H[:,3] = np.array([x1, y1])
+
+            # put the lines where they should be
+            Hf[i,:] = H[0]
+            Hf[i+ns,:] = H[1]
+            if nc==7:
+                Hf[i+2*ns,:] = H[2]
+
+        # all done 
+        return Hf
 
     def assembled(self, datas):
         ''' 
@@ -1066,9 +2091,10 @@ class dippingfault(object):
         # All done
         return
 
-    def assembleCd(self, datas):
+    def assembleCd(self, datas, add_prediction=None):
         '''
         Assembles the data covariance matrixes that have been built by each data structure.
+        add_prediction: Precentage of displacement to add to the Cd diagonal to simulate a Cp (prediction error).
         '''
 
         # Check if the Green's function are ready
@@ -1083,14 +2109,54 @@ class dippingfault(object):
         # Loop over the data sets
         st = 0
         for data in datas:
+            # Fill in Cd
             se = st + self.d[data.name].shape[0]
             Cd[st:se, st:se] = data.Cd
+            # Add some Cp if asked
+            if add_prediction is not None:
+                Cd[st:se, st:se] += np.diag((self.d[data.name]*add_prediction/100.)**2)
             st += self.d[data.name].shape[0]
 
         # Store Cd in self
         self.Cd = Cd
 
         # All done
+        return
+
+    def buildCmGaussian(self, sigma, extra_params=None):
+        '''
+        Builds a diagonal Cm with sigma values on the diagonal.
+        sigma is a list of numbers, as long as you have components of slip (1, 2 or 3).
+        extra_params is a list of extra parameters.
+        '''
+    
+        # Get the number of slip directions
+        slipdir = len(self.slipdir)
+        patch = len(self.patch)
+
+        # Number of parameters
+        Np = patch*slipdir
+        if extra_params is not None:
+            Np += len(extra_params)
+
+        # Create Cm
+        Cm = np.zeros((Np, Np))
+
+        # Loop over slip dir
+        for i in range(slipdir):
+            Cmt = np.diag(sigma[i] * np.ones(len(self.patch),))
+            Cm[i*patch:(i+1)*patch,i*patch:(i+1)*patch] = Cmt
+
+        # Put the extra parameter sigma values
+        st = patch*slipdir
+        if extra_params is not None:
+            for i in range(len(extra_params)):
+                Cm[st+i, st+i] = extra_params[i]
+
+        # Stores Cm
+        self.Cm = Cm
+
+        # all done
         return
 
     def buildCm(self, sigma, lam, lam0=None, extra_params=None, lim=None):
@@ -1218,7 +2284,7 @@ class dippingfault(object):
         # print
         print ("---------------------------------")
         print ("---------------------------------")
-        print ("Write the EDKS files and run the GFs interpolation")
+        print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
 
         # Write the geometry to the EDKS file
         self.writeEDKSgeometry()
@@ -1226,21 +2292,42 @@ class dippingfault(object):
         # Write the data to the EDKS file
         data.writeEDKSdata()
 
+        # Create the variables
+        if len(self.name.split())>1:
+            fltname = self.name.split()[0]
+            for s in self.name.split()[1:]:
+                fltname = fltname+'_'+s
+        else:
+            fltname = self.name
+        RectanglePropFile = 'edks_{}.END'.format(fltname)
+        if len(data.name.split())>1:
+            datname = data.name.split()[0]
+            for s in data.name.split()[1:]:
+                datname = datname+'_'+s
+        else:
+            datname = data.name
+        ReceiverFile = 'edks_{}.idEN'.format(datname)
+
+        if data.dtype is 'insarrates':
+            useRecvDir = True # True for InSAR, uses LOS information
+        else:
+            useRecvDir = False # False for GPS, uses ENU displacements
+        EDKSunits = 1000.0
+        EDKSfilename = '{}'.format(edksfilename)
+        prefix = 'edks_{}_{}'.format(fltname, datname)
+        plotGeometry = '{}'.format(plot)
+
         # Open the EDKSsubParams.py file
-        filename = 'EDKSParams_{}_{}.py'.format(self.name, data.name)
+        filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
         fout = open(filename, 'w')
 
         # Write in it
         fout.write("# File with the rectangles properties\n")
-        fout.write("RectanglesPropFile = 'edks_{}.END'\n".format(self.name))
+        fout.write("RectanglesPropFile = '{}'\n".format(RectanglePropFile))
         fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
-        fout.write("ReceiverFile = 'edks_{}.idEN'\n".format(data.name))
+        fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
         fout.write("# read receiver direction (# not yet implemented)\n")
-        if data.dtype is 'insarrates':
-            fout.write("useRecvDir = True # True for InSAR, uses LOS information\n")
-        else:
-            fout.write("useRecvDir = False # False for GPS, uses ENU displacements\n")
-
+        fout.write("useRecvDir = {} # True for InSAR, uses LOS information\n".format(useRecvDir))
         fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
         if amax is None:
             fout.write("Amax = None # None computes Amax automatically. \n")
@@ -1249,14 +2336,19 @@ class dippingfault(object):
 
         fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
         fout.write("EDKSfilename = '{}'\n".format(edksfilename))
-        fout.write("prefix = 'edks_{}_{}'\n".format(self.name, data.name))
+        fout.write("prefix = '{}'\n".format(prefix))
         fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
         
         # Close the file
         fout.close()
 
+        # Build usefull outputs
+        parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
+        parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
+        method_par = dict(zip(parNames, parValues))
+
         # All done
-        return filename
+        return filename, RectanglePropFile, ReceiverFile, method_par
 
     def writeEDKSgeometry(self, ref=None):
         '''
@@ -1287,15 +2379,15 @@ class dippingfault(object):
 
         # Loop over the patches
         for p in range(len(self.patch)):
-            x, y, z, width, length, strike, dip = self.getpatchgeometry(p)
+            x, y, z, width, length, strike, dip = self.getpatchgeometry(p, center=True)
             strike = strike*180./np.pi
             dip = dip*180./np.pi
             lon, lat = self.xy2ll(x,y)
             if ref is not None:
                 x -= refx
                 y -= refy
-            flld.write('{} {} {} {} {} {} {} {:5i}\n'.format(lon,lat,z,strike,dip,length,width,p))
-            fend.write('{} {} {} {} {} {} {} {:5i} \n'.format(x,y,z,strike,dip,length,width,p))
+            flld.write('{} {} {} {} {} {} {} {:5d} \n'.format(lon,lat,z,strike,dip,length,width,p))
+            fend.write('{} {} {} {} {} {} {} {:5d} \n'.format(x,y,z,strike,dip,length,width,p))
 
         # Close the files
         flld.close()
@@ -1338,12 +2430,13 @@ class dippingfault(object):
         # All done
         return x,y,z
 
-    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None):
+    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None, lonlat=None):
         ''' 
         Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
         Args:
             * box       : Can be a list of [minlon, maxlon, minlat, maxlat].
             * disk      : list of [xcenter, ycenter, radius, n]
+            * lonlat    : Arrays of lat and lon. [lon, lat]
         '''
 
         # create a fake gps object
@@ -1351,35 +2444,40 @@ class dippingfault(object):
         self.sim = gpsrates('simulation', utmzone=self.utmzone)
 
         # Create a lon lat grid
-        if (box is None) and (disk is None) :
-            lon = np.linspace(self.lon.min(), self.lon.max(), 100)
-            lat = np.linspace(self.lat.min(), self.lat.max(), 100)
-            lon, lat = np.meshgrid(lon,lat)
-            lon = lon.flatten()
-            lat = lat.flatten()
-        elif (box is not None):
-            lon = np.linspace(box[0], box[1], 100)
-            lat = np.linspace(box[2], box[3], 100)
-            lon, lat = np.meshgrid(lon,lat)
-            lon = lon.flatten()
-            lat = lat.flatten()
-        elif (disk is not None):
-            lon = []; lat = []
-            xd, yd = self.ll2xy(disk[0], disk[1])
-            xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
-            ampx = (xmax-xmin) 
-            ampy = (ymax-ymin)
-            n = 0
-            while n<disk[3]:
-                x, y = np.random.rand(2)
-                x *= ampx; x -= ampx/2.; x += xd
-                y *= ampy; y -= ampy/2.; y += yd
-                if ((x-xd)**2 + (y-yd)**2) <= (disk[2]**2):
-                    lo, la = self.xy2ll(x,y)
-                    lon.append(lo); lat.append(la)
-                    n += 1
-            lon = np.array(lon); lat = np.array(lat)
+        if lonlat is None:
+            if (box is None) and (disk is None) :
+                lon = np.linspace(self.lon.min(), self.lon.max(), 100)
+                lat = np.linspace(self.lat.min(), self.lat.max(), 100)
+                lon, lat = np.meshgrid(lon,lat)
+                lon = lon.flatten()
+                lat = lat.flatten()
+            elif (box is not None):
+                lon = np.linspace(box[0], box[1], 100)
+                lat = np.linspace(box[2], box[3], 100)
+                lon, lat = np.meshgrid(lon,lat)
+                lon = lon.flatten()
+                lat = lat.flatten()
+            elif (disk is not None):
+                lon = []; lat = []
+                xd, yd = self.ll2xy(disk[0], disk[1])
+                xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
+                ampx = (xmax-xmin)
+                ampy = (ymax-ymin)
+                n = 0
+                while n<disk[3]:
+                    x, y = np.random.rand(2)
+                    x *= ampx; x -= ampx/2.; x += xd
+                    y *= ampy; y -= ampy/2.; y += yd
+                    if ((x-xd)**2 + (y-yd)**2) <= (disk[2]**2):
+                        lo, la = self.xy2ll(x,y)
+                        lon.append(lo); lat.append(la)
+                        n += 1
+                lon = np.array(lon); lat = np.array(lat)
+        else:
+            lon = np.array(lonlat[0])
+            lat = np.array(lonlat[1])
 
+        # Clean it
         if (lon.max()>360.) or (lon.min()<-180.0) or (lat.max()>90.) or (lat.min()<-90):
             self.sim.x = lon
             self.sim.y = lat
@@ -1395,7 +2493,7 @@ class dippingfault(object):
         # Create the station name array
         self.sim.station = []
         for i in range(len(self.sim.x)):
-            name = '{:04i}'.format(i)
+            name = '{:04d}'.format(i)
             self.sim.station.append(name)
         self.sim.station = np.array(self.sim.station)
 
@@ -1441,7 +2539,128 @@ class dippingfault(object):
         # All done
         return
 
-    def plot(self,ref='utm', figure=134):
+    def ExtractAlongStrikeVariations(self, depth=0.5, origin=None, filename='alongstrike.dat', orientation=0.0):
+        '''
+        Extract the Along Strike Variations of the creep at a given depth
+        Args:
+            depth   : Depth at which we extract the along strike variations of slip.
+            origin  : Computes a distance from origin. Give [lon, lat].
+            filename: Saves to a file.
+            orientation: defines the direction of positive distances.
+        '''
+
+        # Dictionary to store these guys
+        if not hasattr(self, 'AlongStrike'):
+            self.AlongStrike = {}
+
+        # Creates the List where we will store things
+        # For each patch, it will be [lon, lat, strike-slip, dip-slip, tensile, distance]
+        Var = []
+
+        # Creates the orientation vector
+        Dir = np.array([np.cos(orientation*np.pi/180.), np.sin(orientation*np.pi/180.)])
+
+        # initialize the origin
+        x0 = 0
+        y0 = 0
+        if origin is not None:
+            x0, y0 = self.ll2xy(origin[0], origin[1])
+
+        # open the output file
+        fout = open(filename, 'w')
+        fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) \n')
+
+        # Loop over the patches
+        for p in self.patch:
+
+            # Get depth range
+            dmin = np.min([p[i][2] for i in range(4)])
+            dmax = np.max([p[i][2] for i in range(4)])
+
+            # If good depth, keep it
+            if ((depth>=dmin) & (depth<=dmax)):
+                
+                # Get the slip
+                slip = self.getslip(p)
+
+                # Get patch center
+                xc, yc, zc = self.getcenter(p)
+                lonc, latc = self.xy2ll(xc, yc)
+
+                # Computes the horizontal distance
+                vec = np.array([x0-xc, y0-yc])
+                sign = np.sign( np.dot(Dir,vec) )
+                dist = sign * np.sqrt( (xc-x0)**2 + (yc-y0)**2 )
+
+                # Assemble
+                o = [lonc, latc, slip[0], slip[1], slip[2], dist]
+
+                # write output
+                fout.write('{} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], dist))
+
+                # append
+                Var.append(o)
+
+        # Close the file
+        fout.close()
+
+        # Stores it 
+        self.AlongStrike['Depth {}'.format(depth)] = np.array(Var)
+
+        # all done 
+        return
+
+    def associatePatch2PDFs(self, directory='.', prefix='step_001_param'):
+        '''
+        Associates a patch with a pdf called directory/prefix_{#}.dat.
+        import AltarExplore....
+        '''
+
+        # Import necessary
+        import AltarExplore as alt
+        
+        # Parameters index are in self.index_parameter
+        istrikeslip = self.index_parameter[:,0]
+        idipslip = self.index_parameter[:,1]
+        itensile = self.index_parameter[:,2]
+
+        # Create a list of slip pdfs
+        self.slippdfs = []
+        for i in range(self.slip.shape[0]):
+            sys.stdout.write('\r Patch {}/{}'.format(i,self.slip.shape[0]))
+            sys.stdout.flush()
+            # integers are needed
+            iss = np.int(istrikeslip[i])
+            ids = np.int(idipslip[i])
+            its = np.int(itensile[i])
+            # Create the file names
+            pss = None
+            pds = None
+            pts = None
+            if istrikeslip[i]< 10000:
+                pss = '{}/{}_{:03d}.dat'.format(directory, prefix, iss)
+            if idipslip[i]<10000:
+                pds = '{}/{}_{:03d}.dat'.format(directory, prefix, ids)
+            if itensile[i]<10000:
+                pts = '{}/{}_{:03d}.dat'.format(directory, prefix, its)
+            # Create the parameters
+            Pss = None; Pds = None; Pts = None
+            if pss is not None:
+                Pss = alt.parameter('{:03d}'.format(iss), pss)
+            if pds is not None:
+                Pds = alt.parameter('{:03d}'.format(ids), pds)
+            if pts is not None:
+                Pts = alt.parameter('{:03d}'.format(its), pts)
+            # Store these
+            self.slippdfs.append([Pss, Pds, Pts])
+
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+        # all done
+        return
+
+    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total'):
         '''
         Plot the available elements of the fault.
         
@@ -1473,6 +2692,13 @@ class dippingfault(object):
         else:
             ax.plot(self.lon, self.lat,'-b')
 
+        if add and (ref is 'utm'):
+            for fault in self.addfaultsxy:
+                ax.plot(fault[:,0], fault[:,1], '-k')
+        elif add and (ref is not 'utm'):
+            for fault in self.addfaults:
+                ax.plot(fault[:,0], fault[:,1], '-k')
+
         # Plot the discretized trace
         if self.xi is not None:
             if ref is 'utm':
@@ -1483,7 +2709,11 @@ class dippingfault(object):
                 ax.plot(loni, lati, '.r')
 
         # Compute the total slip
-        self.computetotalslip()
+        if value_to_plot=='total':
+            self.computetotalslip()
+            plotval = self.totalslip
+        elif value_to_plot=='index':
+            plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
 
         # Plot the patches
         if self.patch is not None:
@@ -1494,7 +2724,7 @@ class dippingfault(object):
             import matplotlib.cm as cmx
             
             # set z axis
-            ax.set_zlim3d([-1.0*(self.vertdepth+5), 0])
+            ax.set_zlim3d([-1.0*(self.depth+5), 0])
             zticks = []
             zticklabels = []
             for z in self.z_patches:
@@ -1505,7 +2735,7 @@ class dippingfault(object):
             
             # set color business
             cmap = plt.get_cmap('jet')
-            cNorm  = colors.Normalize(vmin=0, vmax=self.totalslip.max())
+            cNorm  = colors.Normalize(vmin=0, vmax=plotval.max())
             scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
             for p in range(len(self.patch)):
@@ -1513,80 +2743,32 @@ class dippingfault(object):
                 x = []
                 y = []
                 z = []
-                xv = []
-                yv = []
-                zv = []
                 for i in range(ncorners):
                     if ref is 'utm':
                         x.append(self.patch[p][i][0])
                         y.append(self.patch[p][i][1])
                         z.append(-1.0*self.patch[p][i][2])
-                        if self.vertical is False:
-                            xv.append(self.patchvert[p][i][0])
-                            yv.append(self.patchvert[p][i][1])
-                            zv.append(-1.0*self.patchvert[p][i][2])
                     else:
                         x.append(self.patchll[p][i][0])
                         y.append(self.patchll[p][i][1])
                         z.append(-1.0*self.patchll[p][i][2])
                 verts = [zip(x, y, z)]
                 rect = art3d.Poly3DCollection(verts)
-                rect.set_color(scalarMap.to_rgba(self.totalslip[p]))
+                rect.set_color(scalarMap.to_rgba(plotval[p]))
                 rect.set_edgecolors('k')
                 ax.add_collection3d(rect)
-                if self.vertical is False:
-                    vverts = [zip(xv, yv, zv)]
-                    rect = art3d.Poly3DCollection(vverts)
-                    rect.set_color(scalarMap.to_rgba(self.totalslip[p]))
-                    rect.set_edgecolors('k')
-                    ax.add_collection3d(rect)
 
             # put up a colorbar        
-            scalarMap.set_array(self.totalslip)
+            scalarMap.set_array(plotval)
             plt.colorbar(scalarMap)
+
+        # Depth
+        if maxdepth is not None:
+            ax.set_zlim3d([-1.0*maxdepth, 0])
 
         # show
         plt.show()
 
         # All done
         return
-
-    def rotpoint(self,A,D,P,theta):
-        '''
-        Rotates the point A.
-        The rotation is around a line defined by its director vector <u,v,w>
-        and a point <a,b,c>.
-        The rotation angle is thetha.
-        Args:
-            * A     : POint to rotate.
-            * D     : Vector director (3 values).
-            * P     : Point (3 values).
-            * theta : Rotation angle, in rad.
-        '''
-
-        # Define values
-        u = D[0]
-        v = D[1]
-        w = D[2]
-
-        a = P[0]
-        b = P[1]
-        c = P[2]
-
-        x = A[0]
-        y = A[1]
-        z = A[2]
-
-        L = u**2 + v**2 + w**2
-
-        # Rotated point
-        xr = (a*(v**2 + w**2) - u*(b*v + c*w - u*x - v*y - w*z)) * (1-np.cos(theta)) + L*x*np.cos(theta) + np.sqrt(L)*(b*w - c*v + v*z -w*y)*np.sin(theta)
-        xr /= L
-        yr = (b*(u**2 + w**2) - v*(a*u + c*w - u*x - v*y - w*z)) * (1-np.cos(theta)) + L*y*np.cos(theta) + np.sqrt(L)*(c*u - a*w + w*x -u*z)*np.sin(theta)
-        yr /= L
-        zr = (c*(u**2 + v**2) - w*(a*u + b*v - u*x - v*y - w*z)) * (1-np.cos(theta)) + L*z*np.cos(theta) + np.sqrt(L)*(a*v - b*u + u*y - v*x)*np.sin(theta)
-        zr /= L
-
-        # All done
-        return [xr, yr, zr]
 

@@ -1238,7 +1238,8 @@ class verticalfault(object):
         The Green's function matrix is stored in a dictionary. Each entry of the dictionary is named after the corresponding dataset. Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
         '''
 
-        print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
+        print ("Building Green's functions for the data set {} of type {}".format(
+               data.name, data.dtype))
 
         # Get the number of data
         Nd = data.lon.shape[0]
@@ -1251,10 +1252,13 @@ class verticalfault(object):
             if vertical:
                 data.obs_per_station = 3
                 Ndt += data.lon.shape[0]
+        elif data.dtype is 'cosicorrrates':
+            Ndt = 2 * Nd
+            data.obs_per_station = 2
 
         # Get the number of parameters
         Np = len(self.patch)
-        Npt = len(self.patch)*len(slipdir)
+        Npt = len(self.patch) * len(slipdir)
 
         # Initializes a space in the dictionary to store the green's function
         if data.name not in self.G.keys():
@@ -1277,9 +1281,12 @@ class verticalfault(object):
             else:
                 self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
 
+        elif data.dtype is 'cosicorrrates':
+            self.d[data.name] = np.hstack((data.east.flatten(), data.north.flatten()))
+
         # Initialize the slip vector
         SLP = []
-        if 's' in slipdir:              # If strike slip is aksed
+        if 's' in slipdir:              # If strike slip is asked
             SLP.append(1.0)
         else:                           # Else
             SLP.append(0.0)
@@ -1310,7 +1317,7 @@ class verticalfault(object):
                 op = op[:,0:2]
 
             # Organize the response
-            if data.dtype is 'gpsrates':            # If GPS type, just put them in the good format
+            if data.dtype in ['gpsrates', 'cosicorrrates']:
                 ss = ss.T.flatten()
                 ds = ds.T.flatten()
                 op = op.T.flatten()
@@ -1597,6 +1604,8 @@ class verticalfault(object):
             data.obs_per_station = 2
             if vertical:
                 data.obs_per_station = 3
+        elif data.dtype is 'cosicorrrates':
+            data.obs_per_station = 2
 
         # Create the storage for that dataset
         if data.name not in self.G.keys():
@@ -1612,6 +1621,10 @@ class verticalfault(object):
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
                 self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
+
+        elif data.dtype is 'cosicorrrates':
+            self.d[data.name] = np.hstack((data.east.T.flatten(), data.north.T.flatten()))
+            
 
         # StrikeSlip
         if len(strikeslip) == 3:            # GPS case
@@ -1753,9 +1766,11 @@ class verticalfault(object):
                         print('Data type must be gpsrates to implement a Helmert transform')
                         return
 
-        # Get the number of parameters
-        N = len(self.patch)
-        Nps = N*len(slipdir)
+        # Number of patches
+        Npatch = len(self.patch)
+        # Total number of slip values we're estimating
+        Nps = Npatch * len(slipdir)
+        # Now add polygons
         Npo = 0
         for data in datas :
             if self.poly[data.name] is 'full':
@@ -1811,22 +1826,23 @@ class verticalfault(object):
             # print
             print("Dealing with {} of type {}".format(data.name, data.dtype))
 
-            # Get the corresponding G
+            # Get the corresponding G for this dataset
             Ndlocal = self.d[data.name].shape[0]
             Glocal = np.zeros((Ndlocal, Nps))
             
-            # Fill Glocal
+            # Fill Glocal by looping over the slip modes in sliplist
             ec = 0
             for sp in sliplist:
-                Glocal[:,ec:ec+N] = self.G[data.name][sp]
-                ec += N
+                Glocal[:,ec:ec+Npatch] = self.G[data.name][sp]
+                ec += Npatch
 
             # Put Glocal into the big G
-            G[el:el+Ndlocal,0:Nps] = Glocal
+            G[el:el+Ndlocal,:Nps] = Glocal
 
             # Build the polynomial function
             if self.poly[data.name].__class__ is not str:
                 if self.poly[data.name] > 0:
+
                     if data.dtype is 'gpsrates':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         nn = Ndlocal/data.obs_per_station
@@ -1834,6 +1850,7 @@ class verticalfault(object):
                         orb[nn:2*nn, 1] = 1.0
                         if data.obs_per_station == 3:
                             orb[2*nn:3*nn, 2] = 1.0
+
                     elif data.dtype is 'insarrates':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         orb[:] = 1.0 * data.factor
@@ -1848,7 +1865,30 @@ class verticalfault(object):
                             orb[:,1] = (data.x-x0)/(np.abs(data.x-x0)).max()
                             orb[:,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
                         if self.poly[data.name] >= 4:
-                            orb[:,3] = (data.x-x0)/(np.abs(data.x-x0)).max() * (data.y-y0)/(np.abs(data.y-y0)).max()
+                            orb[:,3] = ((data.x-x0)/(np.abs(data.x-x0)).max() * 
+                                        (data.y-y0)/(np.abs(data.y-y0)).max())
+
+                    elif data.dtype is 'cosicorrrates':
+                        basePoly = self.poly[data.name] / data.obs_per_station
+                        assert basePoly == 3, 'only support 3rd order poly for cosicorr'
+                        # For cosicorr, Ndlocal = 2 * numPoints (for east and north)
+                        orb = np.zeros((Ndlocal, self.poly[data.name]))
+                        numPoints = Ndlocal // data.obs_per_station
+                        if not hasattr(self, 'OrbNormalizingFactor'):
+                            self.OrbNormalizingFactor = {}
+                        self.OrbNormalizingFactor[data.name] = {}
+                        self.OrbNormalizingFactor[data.name]['x'] = np.abs(data.x).max()
+                        self.OrbNormalizingFactor[data.name]['y'] = np.abs(data.y).max()
+                        x0 = data.x[0]; y0 = data.y[0]
+                        self.OrbNormalizingFactor[data.name]['ref'] = [x0, y0]
+                        # Set east displacement polynomials
+                        orb[:numPoints,0] = 1.0 * data.factor
+                        orb[:numPoints,1] = (data.x-x0)/(np.abs(data.x-x0)).max()
+                        orb[:numPoints,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
+                        # Set north displacement polynomials
+                        orb[numPoints:,3] = 1.0 * data.factor
+                        orb[numPoints:,4] = (data.x-x0)/(np.abs(data.x-x0)).max()
+                        orb[numPoints:,5] = (data.y-y0)/(np.abs(data.y-y0)).max()
 
                     # Put it into G for as much observable per station we have
                     polend = polstart + self.poly[data.name]
