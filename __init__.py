@@ -18,4 +18,5 @@ from .strainfield import strainfield
 from .srcmodsolution import srcmodsolution
 from .creepmeters import creepmeters
 from .cosicorrrates import cosicorrrates
+from .faultwithdip import faultwithdip
 from timefnutils import *

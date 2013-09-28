@@ -17,7 +17,7 @@ major, minor, micro, release, serial = sys.version_info
 if major==2:
     import okada4py as ok
 
-class verticalfault(object):
+class faultwithdip(object):
 
     def __init__(self, name, utmzone=None):
         '''
@@ -150,19 +150,20 @@ class verticalfault(object):
         # All done
         return
 
-    def setdepth(self, depth, top=0, num=5):
+    def setdepth(self, nump, width, top=0):
         '''
         Set the maximum depth of the fault patches.
 
         Args:
-            * depth         : Depth of the fault patches.
-            * num           : Number of fault patches at depth.
+            * nump          : Number of fault patches at depth.
+            * width         : Width of the fault patches
+            * top           : depth of the top row
         '''
 
         # Set depth
         self.top = top
-        self.depth = depth
-        self.numz = num
+        self.numz = nump
+        self.width = width
 
         # All done
         return
@@ -245,118 +246,121 @@ class verticalfault(object):
         # Transpose and return
         return self.putm(x*1000., y*1000., inverse=True)
 
-    def extrapolate(self, length_added=50, tol=2., fracstep=5., extrap='ud'):
-        ''' 
-        Extrapolates the surface trace. This is usefull when building deep patches for interseismic loading.
+    def buildPatches(self, dip, dipdirection, every=10):
+        '''
+        Builds a dipping fault.
         Args:
-            * length_added  : Length to add when extrapolating.
-            * tol           : Tolerance to find the good length.
-            * fracstep      : control each jump size.
-            * extrap        : if u in extrap -> extrapolates at the end
-                              if d in extrap -> extrapolates at the beginning
-                              default is 'ud'
+            * dip           : Dip angle
+            * dipdirection  : Direction towards which the fault dips.
         '''
 
-        # print 
-        print ("Extrapolating the fault for {} km".format(length_added))
+        # Print
+        print("Building a dipping fault")
+        print("         Dip Angle       : {} degrees".format(dip))
+        print("         Dip Direction   : {} degrees From North".format(dipdirection))
 
-        # Check if the fault has been interpolated before
-        if self.xi is None:
-            print ("Run the discretize() routine first")
-            return
+        # Initialize the structures
+        self.patch = []
+        self.patchll = []
+        self.slip = []
+        self.patchdip = []
 
-        # Build the interpolation routine
-        import scipy.interpolate as scint
-        fi = scint.interp1d(self.xi, self.yi)
+        # Discretize the surface trace of the fault
+        self.discretize(every=every)
 
-        # Build the extrapolation routine
-        fx = self.extrap1d(fi)
+        # degree to rad
+        dip = (dip)*np.pi/180.
+        dipdirection = (-1.0*dipdirection+90)*np.pi/180.
 
-        # make lists
-        self.xi = self.xi.tolist()
-        self.yi = self.yi.tolist()
+        # initialize the depth of the top row
+        self.zi = np.ones((self.xi.shape))*self.top
 
-        if 'd' in extrap:
-        
-            # First guess for first point
-            xt = self.xi[0] - length_added/2.
-            yt = fx(xt)
-            d = np.sqrt( (xt-self.xi[0])**2 + (yt-self.yi[0])**2)
+        # set a marker
+        D = []
 
-            # Loop to find the best distance
-            while np.abs(d-length_added)>tol:
-                # move up or down
-                if (d-length_added)>0:
-                    xt = xt + d/fracstep
-                else:
-                    xt = xt - d/fracstep
-                # Get the corresponding yt
-                yt = fx(xt)
-                # New distance
-                d = np.sqrt( (xt-self.xi[0])**2 + (yt-self.yi[0])**2) 
-        
-            # prepend the thing
-            self.xi.reverse()
-            self.xi.append(xt)
-            self.xi.reverse()
-            self.yi.reverse()
-            self.yi.append(yt)
-            self.yi.reverse()
+        # Loop over the depths
+        for i in range(self.numz):
 
-        if 'u' in extrap:
+            # Get the top of the row
+            xt = self.xi
+            yt = self.yi
+            lont, latt = self.putm(xt*1000., yt*1000., inverse=True)
+            zt = self.zi
 
-            # First guess for the last point
-            xt = self.xi[-1] + length_added/2.
-            yt = fx(xt)
-            d = np.sqrt( (xt-self.xi[-1])**2 + (yt-self.yi[-1])**2)
+            # Compute the bottom row
+            xb = xt + self.width*np.cos(dip)*np.cos(dipdirection)
+            yb = yt + self.width*np.cos(dip)*np.sin(dipdirection)
+            lonb, latb = self.putm(xb*1000., yb*1000., inverse=True)
+            zb = zt + self.width*np.sin(dip)
 
-            # Loop to find the best distance
-            while np.abs(d-length_added)>tol:
-                # move up or down
-                if (d-length_added)<0:
-                    xt = xt + d/fracstep
-                else:
-                    xt = xt - d/fracstep
-                # Get the corresponding yt
-                yt = fx(xt)
-                # New distance
-                d = np.sqrt( (xt-self.xi[-1])**2 + (yt-self.yi[-1])**2)
+            # fill D
+            D.append(zb.max())
 
-            # Append the result
-            self.xi.append(xt)
-            self.yi.append(yt)
+            # Build the patches by linking the points together
+            for j in range(xt.shape[0]-1):
+                # 1st corner
+                x1 = xt[j]
+                y1 = yt[j]
+                z1 = zt[j]
+                lon1 = lont[j]
+                lat1 = latt[j]
+                # 2nd corner
+                x2 = xt[j+1]
+                y2 = yt[j+1]
+                z2 = zt[j+1]
+                lon2 = lont[j+1]
+                lat2 = latt[j+1]
+                # 3rd corner
+                x3 = xb[j+1]
+                y3 = yb[j+1]
+                z3 = zb[j+1]
+                lon3 = lonb[j+1]
+                lat3 = latb[j+1]
+                # 4th corner 
+                x4 = xb[j]
+                y4 = yb[j]
+                z4 = zb[j]
+                lon4 = lonb[j]
+                lat4 = latb[j]
+                # Store these
+                p = [ [x1, y1, z1],
+                      [x2, y2, z2],
+                      [x3, y3, z3],
+                      [x4, y4, z4] ]
+                pll = [ [lon1, lat1, z1],
+                        [lon2, lat2, z2],
+                        [lon3, lat3, z3],
+                        [lon4, lat4, z4] ]
+                p = np.array(p)
+                pll = np.array(pll)
+                # fill in the lists
+                self.patch.append(p)
+                self.patchll.append(pll)
+                self.slip.append([0.0, 0.0, 0.0])
+                self.patchdip.append(dip)
 
-        # Make them array again
-        self.xi = np.array(self.xi)
-        self.yi = np.array(self.yi)
+            # upgrade xi
+            self.xi = xb
+            self.yi = yb
+            self.zi = zb
 
-        # Build the corresponding lon lat arrays
-        self.loni, self.lati = self.xy2ll(self.xi, self.yi)
+        # set depth
+        D = np.array(D)
+        self.z_patches = D
+        self.depth = D.max()
 
+        # Translate slip into an array
+        self.slip = np.array(self.slip)
+
+        # Re-discretoze to get the original fault
+        self.discretize(every=every)
+
+        # Compute the equivalent rectangles
+        self.computeEquivRectangle()
+    
         # All done
         return
 
-    def extrap1d(self,interpolator):
-        '''
-        Linear extrapolation routine. Found on StackOverflow by sastanin.
-        '''
-
-        # import a bunch of stuff
-        from scipy import arange, array, exp
-
-        xs = interpolator.x
-        ys = interpolator.y
-        def pointwise(x):
-            if x < xs[0]:
-                return ys[0]+(x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
-            elif x > xs[-1]:
-                return ys[-1]+(x-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
-            else:
-                return interpolator(x)
-        def ufunclike(xs):
-            return pointwise(xs) #array(map(pointwise, array(xs)))
-        return ufunclike
-    
     def discretize(self, every=2, tol=0.5, fracstep=0.2): 
         '''
         Refine the surface fault trace prior to divide it into patches.
@@ -364,9 +368,6 @@ class verticalfault(object):
             * every         : Spacing between each point.
             * tol           : Tolerance in the spacing.
         '''
-
-        # print
-        print("Discretizing the fault {} every {} km".format(self.name, every))
 
         # Check if the fault is in UTM coordinates
         if self.xf is None:
@@ -430,77 +431,6 @@ class verticalfault(object):
 
         # Compute the lon/lat
         self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
-
-        # All done
-        return
-
-    def build_patches(self):
-        '''
-        Builds rectangular patches from the discretized fault.
-        A patch is a list of 4 corners.
-        '''
-
-        # If the maximum depth and the number of patches is not set
-        if self.depth is None:
-            print("Depth and number of patches are not set.")
-            print("Please use setdepth to define maximum depth and number of patches")
-            return
-
-        print ("Build patches for fault {} between depths: {}, {}".format(self.name, self.top, self.depth))
-
-        # Define the depth vector
-        z = np.linspace(self.top, self.depth, num=self.numz+1)
-        self.z_patches = z
-
-        # If the discretization is not done
-        if self.xi is None:
-            self.discretize()
-
-        # Define a patch list
-        self.patch = []
-        self.patchll = []
-        self.slip = []
-
-        # Iterate over the surface discretized fault points
-        for i in range(len(self.xi)-1):
-            # First corner
-            x1 = self.xi[i]
-            y1 = self.yi[i]
-            lon1 = self.loni[i]
-            lat1 = self.lati[i]
-            # Second corner
-            x2 = self.xi[i]
-            y2 = self.yi[i]
-            lon2 = self.loni[i]
-            lat2 = self.lati[i]
-            # Third corner
-            x3 = self.xi[i+1]
-            y3 = self.yi[i+1]
-            lon3 = self.loni[i+1]
-            lat3 = self.lati[i+1]
-            # Fourth corner
-            x4 = self.xi[i+1]
-            y4 = self.yi[i+1]
-            lon4 = self.loni[i+1]
-            lat4 = self.lati[i+1]
-            # iterate at depth
-            for j in range(len(z)-1):
-                p = np.zeros((4,3))
-                pll = np.zeros((4,3))
-                p[0,:] = [x1, y1, z[j]]
-                pll[0,:] = [lon1, lat1, z[j]]
-                p[1,:] = [x2, y2, z[j+1]]
-                pll[1,:] = [lon2, lat2, z[j+1]]
-                p[2,:] = [x3, y3, z[j+1]]
-                pll[2,:] = [lon3, lat3, z[j+1]]
-                p[3,:] = [x4, y4, z[j]]
-                pll[3,:] = [lon4, lat4, z[j]]
-                self.patch.append(p)
-                self.patchll.append(pll)
-                self.slip.append([0.0, 0.0, 0.0])
-
-        # Translate slip to np.array
-        self.slip = np.array(self.slip)
 
         # All done
         return
@@ -616,209 +546,6 @@ class verticalfault(object):
         # All done
         return
 
-    def BuildPatchesVarResolution(self, depths, Depthpoints, Resolpoints, interpolation='linear', minpatchsize=0.1, extrap=None):
-        '''
-        Patchizes the fault with a variable patch size at depth.
-        The variable patch size is given by the respoints table.
-        Depthpoints = [depth1, depth2, depth3, ...., depthN]
-        Resolpoints = [Resol1, Resol2, Resol3, ...., ResolN]
-        The final resolution is interpolated given the 'interpolation' method.
-        Interpolation can be 'linear', 'cubic'.
-        '''
-
-        print('Build fault patches for fault {} between {} and {} km deep, with a variable resolution'.format(self.name, self.top, self.depth))
-
-        # Define the depth vector
-        z = np.array(depths)
-        self.z_patches = z
-
-        # Interpolate the resolution
-        fint = sciint.interp1d(Depthpoints, Resolpoints, kind=interpolation)
-        resol = fint(z)
-
-        # build lists for storing things
-        self.patch = []
-        self.patchll = []
-        self.slip = []
-
-        # iterate over the depths 
-        for j in range(len(z)-1):
-
-            # discretize the fault at the desired resolution
-            print('Discretizing at depth {}'.format(z[j]))
-            self.discretize(every=np.floor(resol[j]), tol=resol[j]/20., fracstep=resol[j]/1000.)
-            if extrap is not None:
-                self.extrapolate(length_added=extrap[0], extrap=extrap[1])
-
-            # iterate over the discretized fault
-            for i in range(len(self.xi)-1):
-                # First corner
-                x1 = self.xi[i]
-                y1 = self.yi[i]
-                lon1 = self.loni[i]
-                lat1 = self.lati[i]
-                # Second corner
-                x2 = self.xi[i]
-                y2 = self.yi[i]
-                lon2 = self.loni[i]
-                lat2 = self.lati[i]
-                # Third corner
-                x3 = self.xi[i+1]
-                y3 = self.yi[i+1]
-                lon3 = self.loni[i+1]
-                lat3 = self.lati[i+1]
-                # Fourth corner
-                x4 = self.xi[i+1]
-                y4 = self.yi[i+1]
-                lon4 = self.loni[i+1]
-                lat4 = self.lati[i+1]
-                # build patches
-                p = np.zeros((4,3))
-                pll = np.zeros((4,3))
-                # fill them
-                p[0,:] = [x1, y1, z[j]]
-                pll[0,:] = [lon1, lat1, z[j]]
-                p[1,:] = [x2, y2, z[j+1]]
-                pll[1,:] = [lon2, lat2, z[j+1]]
-                p[2,:] = [x3, y3, z[j+1]]
-                pll[2,:] = [lon3, lat3, z[j+1]]
-                p[3,:] = [x4, y4, z[j]]
-                pll[3,:] = [lon4, lat4, z[j]]
-                psize = np.sqrt( (x3-x2)**2 + (y3-y2)**2 )
-                if psize>minpatchsize:
-                    self.patch.append(p)
-                    self.patchll.append(pll)
-                    self.slip.append([0.0, 0.0, 0.0])
-                else:           # Increase the size of the previous patch
-                    self.patch[-1][2,:] = [x3, y3, z[j+1]]
-                    self.patch[-1][3,:] = [x4, y4, z[j]]
-                    self.patchll[-1][2,:] = [lon3, lat3, z[j+1]]
-                    self.patchll[-1][3,:] = [lon4, lat4, z[j]]
-
-
-        # Translate slip into a np.array
-        self.slip = np.array(self.slip)
-
-        # all done
-        return
-
-    def rotationHoriz(self, center, angle):
-        '''
-        Rotates the geometry of the fault around center, of an angle.
-        Args:
-            * center    : [lon,lat]
-            * angle     : degrees
-        '''
-
-        # Translate the center to x, y
-        xc, yc = self.ll2xy(center[0], center[1])
-        ref = np.array([xc, yc])
-
-        # Create the rotation matrix
-        angle = angle*np.pi/180.
-        Rot = np.array( [ [np.cos(angle), -1.0*np.sin(angle)],
-                          [np.sin(angle), np.cos(angle)] ] )
-
-        # Loop on the patches
-        for i in range(len(self.patch)):
-
-            # Get patch
-            p = self.patch[i]
-            pll = self.patchll[i]
-
-            for j in range(4):
-                x, y = np.dot( Rot, p[j][:-1] - ref )
-                p[j][0] = x + xc
-                p[j][1] = y + yc
-                lon, lat = self.xy2ll(p[j][0],p[j][1])
-                pll[j][0] = lon
-                pll[j][1] = lat
-
-        # All done 
-        return
-
-    def translationHoriz(self, dx, dy):
-        '''
-        Translates the patches.
-        Args:
-            * dx    : Translation along x (km)
-            * dy    : Translation along y (km)
-        '''
-
-        # Loop on the patches
-        for i in range(len(self.patch)):
-
-            # Get patch
-            p = self.patch[i]
-            pll = self.patchll[i]
-
-            for j in range(4):
-                p[j][0] += dx
-                p[j][1] += dy
-                lon, lat = self.xy2ll(p[j][0],p[j][1])
-                pll[j][0] = lon
-                pll[j][1] = lat
-
-        # All done 
-        return
-
-
-    def mergePatches(self, p1, p2):
-        '''
-        Merges 2 patches that have common corners.
-        Args:
-            * p1    : index of the patch #1.
-            * p2    : index of the patch #2.
-        '''
-
-        print('Merging patches {} and {} into patch {}'.format(p1,p2,p1))
-
-        # Get the patches
-        patch1 = self.patch[p1]
-        patch2 = self.patch[p2]
-        patch1ll = self.patchll[p1]
-        patch2ll = self.patchll[p2]
-
-        # Create the newpatches
-        newpatch = np.zeros((4,3))
-        newpatchll = np.zeros((4,3))
-
-        # determine which corners are in common, needs at least two
-        if ((patch1[0]==patch2[1]).all() and (patch1[3]==patch2[2]).all()):     # patch2 is above patch1
-            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:] 
-            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
-            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
-            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
-        elif ((patch1[3]==patch2[0]).all() and (patch1[2]==patch2[1]).all()):   # patch2 is on the right of patch1
-            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
-            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
-            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
-            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
-        elif ((patch1[1]==patch2[0]).all() and (patch1[2]==patch2[3]).all()):   # patch2 is under patch1
-            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
-            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
-            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
-            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
-        elif ((patch1[0]==patch2[3]).all() and (patch1[1]==patch2[2]).all()):   # patch2 is on the left of patch1
-            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:]
-            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
-            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
-            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
-        else:
-            print('Patches do not have common corners...')
-            return
-
-        # Replace the patch 1 by the new patch
-        self.patch[p1] = newpatch
-        self.patchll[p1] = newpatchll
-
-        # Delete the patch 2
-        self.deletepatch(p2)
-
-        # All done
-        return
-
-
     def readPatchesFromFile(self, filename):
         '''
         Read the patches from a GMT formatted file.
@@ -933,13 +660,14 @@ class verticalfault(object):
         # All done
         return
 
-    def writePatches2File(self, filename, add_slip=None, scale=1.0):
+    def writePatches2File(self, filename, add_slip=None, scale=1.0, patch='normal'):
         '''
         Writes the patch corners in a file that can be used in psxyz.
         Args:
             * filename      : Name of the file.
             * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total.
             * scale         : Multiply the slip value by a factor.
+            * patch         : Can be 'normal' or 'equiv'
         '''
 
         # Write something
@@ -979,7 +707,10 @@ class verticalfault(object):
             fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
 
             # Write the 4 patch corners (the order is to be GMT friendly)
-            p = self.patchll[p]
+            if patch in ('normal'):
+                p = self.patchll[p]
+            elif patch in ('equiv'):
+                p = self.equivpatchll[p]
             pp=p[1]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
             pp=p[0]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
             pp=p[3]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
@@ -1163,19 +894,93 @@ class verticalfault(object):
         # All done
         return
 
+    def computeArea(self):
+        '''
+        Computes the area of all rectangles.
+        '''
+
+        # Area
+        self.area = []
+
+        # Loop
+        for p in self.equivpatch:
+
+            # get points
+            p1 = p[0]
+            p2 = p[1]
+            p3 = p[2]
+
+            # computes distances
+            d1 = np.sqrt( (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2 + (p1[2]-p2[2])**2 )
+            d2 = np.sqrt( (p3[0]-p2[0])**2 + (p3[1]-p2[1])**2 + (p3[2]-p2[2])**2 )
+            self.area.append(d1*d2)
+
+        # all done
+        return
+
+    def computeEquivRectangle(self):
+        '''
+        Computes the equivalent rectangle patches and stores these into self.equivpatch
+        '''
+        
+        # Initialize the equivalent structure
+        self.equivpatch = []
+        self.equivpatchll = []
+
+        # Loop on the patches
+        for u in range(len(self.patch)):
+            p = self.patch[u]
+            # 1. Get the two top points
+            pt1 = p[0]; x1, y1, z1 = pt1 
+            pt2 = p[1]; x2, y2, z2 = pt2
+            # 2. Get the azimuth of this patch
+            az = np.arctan((x2-x1)/(y2-y1)) + np.pi/2.
+            # 3. Get the dip of this patch 
+            dip = self.patchdip[u]     
+            # 4. compute the position of the bottom corners  
+            x3 = x2 + self.width*np.cos(dip)*np.cos(az)
+            y3 = y2 + self.width*np.cos(dip)*np.sin(az)
+            z3 = z2 + self.width*np.sin(dip)
+            x4 = x1 + self.width*np.cos(dip)*np.cos(az)
+            y4 = y1 + self.width*np.cos(dip)*np.sin(az)
+            z4 = z1 + self.width*np.sin(dip)
+            pt3 = [x3, y3, z3]
+            pt4 = [x4, y4, z4]
+            # set up the patch
+            self.equivpatch.append(np.array([pt1, pt2, pt3, pt4]))
+            # Deal with the lon lat
+            lon1, lat1 = self.putm(x1*1000., y1*1000., inverse=True)
+            lon2, lat2 = self.putm(x2*1000., y2*1000., inverse=True)
+            lon3, lat3 = self.putm(x3*1000., y3*1000., inverse=True)
+            lon4, lat4 = self.putm(x4*1000., y4*1000., inverse=True)
+            pt1 = [lon1, lat1, z1]
+            pt2 = [lon2, lat2, z2]
+            pt3 = [lon3, lat3, z3]
+            pt4 = [lon4, lat4, z4]
+            # set up the patchll
+            self.equivpatchll.append(np.array([pt1, pt2, pt3, pt4]))
+
+        # All done
+        return
+
     def getpatchgeometry(self, patch, center=False):
         '''
         Returns the patch geometry as needed for okada85.
         Args:
             * patch         : index of the wanted patch or patch;
             * center        : if true, returns the coordinates of the center of the patch. if False, returns the UL corner.
+
+        When we build the fault, the patches are not exactly rectangular. Therefore, this routine will return the rectangle that matches with the two shallowest points and that has an average dip angle to match with the other corners.
         '''
 
         # Get the patch
         if patch.__class__ is int:
-            p = self.patch[patch]
+            u = patch
         else:
-            p = patch
+            u = [self.patch == patch]
+
+        # Get the four corners of the rectangle
+        p = self.equivpatch[u]
 
         # Get the UL corner of the patch
         if center:
@@ -1267,8 +1072,7 @@ class verticalfault(object):
         The Green's function matrix is stored in a dictionary. Each entry of the dictionary is named after the corresponding dataset. Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
         '''
 
-        print ("Building Green's functions for the data set {} of type {}".format(
-               data.name, data.dtype))
+        print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
 
         # Get the number of data
         Nd = data.lon.shape[0]
@@ -1287,7 +1091,7 @@ class verticalfault(object):
 
         # Get the number of parameters
         Np = len(self.patch)
-        Npt = len(self.patch) * len(slipdir)
+        Npt = len(self.patch)*len(slipdir)
 
         # Initializes a space in the dictionary to store the green's function
         if data.name not in self.G.keys():
@@ -1315,7 +1119,7 @@ class verticalfault(object):
 
         # Initialize the slip vector
         SLP = []
-        if 's' in slipdir:              # If strike slip is asked
+        if 's' in slipdir:              # If strike slip is aksed
             SLP.append(1.0)
         else:                           # Else
             SLP.append(0.0)
@@ -1346,7 +1150,7 @@ class verticalfault(object):
                 op = op[:,0:2]
 
             # Organize the response
-            if data.dtype in ['gpsrates', 'cosicorrrates']:
+            if data.dtype in ['gpsrates', 'cosicorrrates']:    # If GPS type, just put them in the good format
                 ss = ss.T.flatten()
                 ds = ds.T.flatten()
                 op = op.T.flatten()
@@ -1413,119 +1217,6 @@ class verticalfault(object):
                 filename = '{}_{}_TS.gf'.format(self.name, data)
                 gts = gts.astype(dtype)
                 gts.tofile(filename)
-
-        # All done
-        return
-
-    def differentiateGFs(self, datas):
-        '''
-        Uses the Delaunay triangulation to prepare a differential Green's function matrix, data vector
-        and data covariance matrix.
-        Args:   
-            * datas         : List of dataset concerned
-        '''
-
-        # Create temporary Green's function, data and Cd dictionaries to hold the new ones
-        Gdiff = {}
-        ddiff = {}
-
-        # Loop over the datasets
-        for data in datas:
-
-            # Check something
-            if data.dtype is not 'gpsrates':
-                print('This has not been implemented for other data set than gpsrates')
-                return
-
-            # Get the GFs, the data and the data covariance
-            G = self.G[data.name]
-            d = self.d[data.name]
-            Cd = data.Cd
-
-            # Get some size informations
-            nstation = data.station.shape[0]
-            lengthd = d.shape[0]
-            if (lengthd == 3*nstation):
-               vertical = True
-               ncomp = 3
-            else:
-               vertical = False
-               ncomp = 2
-
-            # Get the couples
-            edges = data.triangle['Edges']
-
-            # How many lines/columns ?
-            Nd = edges.shape[0]
-            k = G.keys()[0]
-            Np = G[k].shape[1]
-
-            # Create the spaces
-            Gdiff[data.name] = {}
-            for key in G.keys():
-                Gdiff[data.name][key] = np.zeros((Nd*ncomp, Np))
-            ddiff[data.name] = np.zeros((Nd*ncomp,))
-            Cddiff = np.zeros((Nd*ncomp, Nd*ncomp))
-
-            # Loop over the lines of Edges
-            for i in range(Nd):
-
-                # Get the couple
-                m = edges[i][0]
-                n = edges[i][1]
-
-                # Deal with the GFs
-                for key in G.keys():
-                    # East component
-                    Line1 = G[key][m,:]
-                    Line2 = G[key][n,:]
-                    Gdiff[data.name][key][i,:] = Line1 - Line2
-                    # North Component
-                    Line1 = G[key][m+nstation,:]
-                    Line2 = G[key][n+nstation,:]
-                    Gdiff[data.name][key][i+Nd,:] = Line1 - Line2
-                    # Vertical
-                    if vertical:
-                        Line1 = G[key][m+2*nstation,:]
-                        Line2 = G[key][n+2*nstation,:]
-                        Gdiff[data.name][key][i+2*Nd,:] = Line1 - Line2
-
-                # Deal with the data vector
-                # East
-                d1 = d[m]
-                d2 = d[n]
-                ddiff[data.name][i] = d1 - d2
-                # North
-                d1 = d[m+nstation]
-                d2 = d[n+nstation]
-                ddiff[data.name][i+Nd] = d1 - d2
-                # Vertical
-                if vertical:
-                    d1 = d[m+2*nstation]
-                    d2 = d[n+2*nstation]
-                    ddiff[data.name][i+2*Nd] = d1 - d2
-
-                # Deal with the Covariance (Only diagonal, for now)
-                # East
-                cd1 = Cd[m,m]
-                cd2 = Cd[n,n]
-                Cddiff[i,i] = cd1+cd2
-                # North
-                cd1 = Cd[m+nstation,m+nstation]
-                cd2 = Cd[n+nstation,n+nstation]
-                Cddiff[i+Nd,i+Nd] = cd1+cd2
-                # Vertical
-                if vertical:
-                    cd1 = Cd[m+2*nstation,m+2*nstation]
-                    cd2 = Cd[n+2*nstation,n+2*nstation]
-                    Cddiff[i+2*Nd,i+2*Nd] = cd1+cd2
-
-            # Once the data loop is done, store Cd
-            data.Cd = Cddiff
-
-        # Once it is all done, store G and d
-        self.G = Gdiff
-        self.d = ddiff
 
         # All done
         return
@@ -1650,10 +1341,8 @@ class verticalfault(object):
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
                 self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
-
         elif data.dtype is 'cosicorrrates':
             self.d[data.name] = np.hstack((data.east.T.flatten(), data.north.T.flatten()))
-            
 
         # StrikeSlip
         if len(strikeslip) == 3:            # GPS case
@@ -1795,11 +1484,9 @@ class verticalfault(object):
                         print('Data type must be gpsrates to implement a Helmert transform')
                         return
 
-        # Number of patches
-        Npatch = len(self.patch)
-        # Total number of slip values we're estimating
-        Nps = Npatch * len(slipdir)
-        # Now add polygons
+        # Get the number of parameters
+        N = len(self.patch)
+        Nps = N*len(slipdir)
         Npo = 0
         for data in datas :
             if self.poly[data.name] is 'full':
@@ -1855,23 +1542,22 @@ class verticalfault(object):
             # print
             print("Dealing with {} of type {}".format(data.name, data.dtype))
 
-            # Get the corresponding G for this dataset
+            # Get the corresponding G
             Ndlocal = self.d[data.name].shape[0]
             Glocal = np.zeros((Ndlocal, Nps))
             
-            # Fill Glocal by looping over the slip modes in sliplist
+            # Fill Glocal
             ec = 0
             for sp in sliplist:
-                Glocal[:,ec:ec+Npatch] = self.G[data.name][sp]
-                ec += Npatch
+                Glocal[:,ec:ec+N] = self.G[data.name][sp]
+                ec += N
 
             # Put Glocal into the big G
-            G[el:el+Ndlocal,:Nps] = Glocal
+            G[el:el+Ndlocal,0:Nps] = Glocal
 
             # Build the polynomial function
             if self.poly[data.name].__class__ is not str:
                 if self.poly[data.name] > 0:
-
                     if data.dtype is 'gpsrates':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         nn = Ndlocal/data.obs_per_station
@@ -1879,7 +1565,6 @@ class verticalfault(object):
                         orb[nn:2*nn, 1] = 1.0
                         if data.obs_per_station == 3:
                             orb[2*nn:3*nn, 2] = 1.0
-
                     elif data.dtype is 'insarrates':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         orb[:] = 1.0 * data.factor
@@ -1894,9 +1579,7 @@ class verticalfault(object):
                             orb[:,1] = (data.x-x0)/(np.abs(data.x-x0)).max()
                             orb[:,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
                         if self.poly[data.name] >= 4:
-                            orb[:,3] = ((data.x-x0)/(np.abs(data.x-x0)).max() * 
-                                        (data.y-y0)/(np.abs(data.y-y0)).max())
-
+                            orb[:,3] = (data.x-x0)/(np.abs(data.x-x0)).max() * (data.y-y0)/(np.abs(data.y-y0)).max()
                     elif data.dtype is 'cosicorrrates':
                         basePoly = self.poly[data.name] / data.obs_per_station
                         assert basePoly == 3, 'only support 3rd order poly for cosicorr'
@@ -2588,128 +2271,7 @@ class verticalfault(object):
         # All done
         return
 
-    def ExtractAlongStrikeVariations(self, depth=0.5, origin=None, filename='alongstrike.dat', orientation=0.0):
-        '''
-        Extract the Along Strike Variations of the creep at a given depth
-        Args:
-            depth   : Depth at which we extract the along strike variations of slip.
-            origin  : Computes a distance from origin. Give [lon, lat].
-            filename: Saves to a file.
-            orientation: defines the direction of positive distances.
-        '''
-
-        # Dictionary to store these guys
-        if not hasattr(self, 'AlongStrike'):
-            self.AlongStrike = {}
-
-        # Creates the List where we will store things
-        # For each patch, it will be [lon, lat, strike-slip, dip-slip, tensile, distance]
-        Var = []
-
-        # Creates the orientation vector
-        Dir = np.array([np.cos(orientation*np.pi/180.), np.sin(orientation*np.pi/180.)])
-
-        # initialize the origin
-        x0 = 0
-        y0 = 0
-        if origin is not None:
-            x0, y0 = self.ll2xy(origin[0], origin[1])
-
-        # open the output file
-        fout = open(filename, 'w')
-        fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) \n')
-
-        # Loop over the patches
-        for p in self.patch:
-
-            # Get depth range
-            dmin = np.min([p[i][2] for i in range(4)])
-            dmax = np.max([p[i][2] for i in range(4)])
-
-            # If good depth, keep it
-            if ((depth>=dmin) & (depth<=dmax)):
-                
-                # Get the slip
-                slip = self.getslip(p)
-
-                # Get patch center
-                xc, yc, zc = self.getcenter(p)
-                lonc, latc = self.xy2ll(xc, yc)
-
-                # Computes the horizontal distance
-                vec = np.array([x0-xc, y0-yc])
-                sign = np.sign( np.dot(Dir,vec) )
-                dist = sign * np.sqrt( (xc-x0)**2 + (yc-y0)**2 )
-
-                # Assemble
-                o = [lonc, latc, slip[0], slip[1], slip[2], dist]
-
-                # write output
-                fout.write('{} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], dist))
-
-                # append
-                Var.append(o)
-
-        # Close the file
-        fout.close()
-
-        # Stores it 
-        self.AlongStrike['Depth {}'.format(depth)] = np.array(Var)
-
-        # all done 
-        return
-
-    def associatePatch2PDFs(self, directory='.', prefix='step_001_param'):
-        '''
-        Associates a patch with a pdf called directory/prefix_{#}.dat.
-        import AltarExplore....
-        '''
-
-        # Import necessary
-        import AltarExplore as alt
-        
-        # Parameters index are in self.index_parameter
-        istrikeslip = self.index_parameter[:,0]
-        idipslip = self.index_parameter[:,1]
-        itensile = self.index_parameter[:,2]
-
-        # Create a list of slip pdfs
-        self.slippdfs = []
-        for i in range(self.slip.shape[0]):
-            sys.stdout.write('\r Patch {}/{}'.format(i,self.slip.shape[0]))
-            sys.stdout.flush()
-            # integers are needed
-            iss = np.int(istrikeslip[i])
-            ids = np.int(idipslip[i])
-            its = np.int(itensile[i])
-            # Create the file names
-            pss = None
-            pds = None
-            pts = None
-            if istrikeslip[i]< 10000:
-                pss = '{}/{}_{:03d}.dat'.format(directory, prefix, iss)
-            if idipslip[i]<10000:
-                pds = '{}/{}_{:03d}.dat'.format(directory, prefix, ids)
-            if itensile[i]<10000:
-                pts = '{}/{}_{:03d}.dat'.format(directory, prefix, its)
-            # Create the parameters
-            Pss = None; Pds = None; Pts = None
-            if pss is not None:
-                Pss = alt.parameter('{:03d}'.format(iss), pss)
-            if pds is not None:
-                Pds = alt.parameter('{:03d}'.format(ids), pds)
-            if pts is not None:
-                Pts = alt.parameter('{:03d}'.format(its), pts)
-            # Store these
-            self.slippdfs.append([Pss, Pds, Pts])
-
-        sys.stdout.write('\n')
-        sys.stdout.flush()
-
-        # all done
-        return
-
-    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total'):
+    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False):
         '''
         Plot the available elements of the fault.
         
@@ -2806,6 +2368,27 @@ class verticalfault(object):
                 rect.set_color(scalarMap.to_rgba(plotval[p]))
                 rect.set_edgecolors('k')
                 ax.add_collection3d(rect)
+
+            if equiv:
+                for p in range(len(self.equivpatch)): 
+                    ncorners = len(self.equivpatch[0])                                                                
+                    x = []                                                                                       
+                    y = []
+                    z = []
+                    for i in range(ncorners):                                                                    
+                        if ref is 'utm':
+                            x.append(self.equivpatch[p][i][0])                                                        
+                            y.append(self.equivpatch[p][i][1])                                                        
+                            z.append(-1.0*self.equivpatch[p][i][2])                                                   
+                        else: 
+                            x.append(self.equivpatchll[p][i][0])                                                      
+                            y.append(self.equivpatchll[p][i][1])                                                      
+                            z.append(-1.0*self.equivpatchll[p][i][2])
+                    verts = [zip(x, y, z)]
+                    rect = art3d.Poly3DCollection(verts)                                                         
+                    rect.set_color(scalarMap.to_rgba(plotval[p]))
+                    rect.set_edgecolors('r')                                                                     
+                    ax.add_collection3d(rect)               
 
             # put up a colorbar        
             scalarMap.set_array(plotval)

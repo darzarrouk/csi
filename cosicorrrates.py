@@ -429,19 +429,21 @@ class cosicorrrates(object):
             * u         : Index of the pixel to reject.
         '''
 
-        raise NotImplementedError('do it later')
-        return
-
         self.lon = np.delete(self.lon, u)
         self.lat = np.delete(self.lat, u)
         self.x = np.delete(self.x, u)
         self.y = np.delete(self.y, u)
+        self.east = np.delete(self.east, u)
+        self.north = np.delete(self.north, u)
         self.err_east = np.delete(self.err_east, u)
         self.err_north = np.delete(self.err_north, u)
 
         if self.Cd is not None:
             self.Cd = np.delete(self.Cd, u, axis=0)
             self.Cd = np.delete(self.Cd, u, axis=1)
+            nd = self.east.shape[0]
+            self.Cd = np.delete(self.Cd, u+nd, axis=0)
+            self.Cd = np.delete(self.Cd, u+nd, axis=1)
 
         if self.corner is not None:
             self.corner = np.delete(self.corner, u, axis=0)
