@@ -62,6 +62,33 @@ class geodeticplot:
         # All done
         return
 
+    def savefig(self, prefix, mapaxis='equal', dpi=None, bbox_inches=None):
+        '''
+        Save to file.
+        '''
+
+        # Change axis of the map
+        self.carte.axis(mapaxis)
+
+        # Save
+        if dpi is None:
+            self.fig1.savefig('%s_fig1.pdf' % (prefix))
+            self.fig2.savefig('%s_fig2.pdf' % (prefix))
+        else:
+            self.fig1.savefig('%s_fig1.png' % (prefix), dpi=dpi, bbox_inches=bbox_inches)
+            self.fig2.savefig('%s_fig2.png' % (prefix), dpi=dpi, bbox_inches=bbox_inches)
+
+        # All done
+        return
+
+    def clf(self):
+        '''
+        Clears the figures
+        '''
+        self.fig1.clf()
+        self.fig2.clf()
+        return
+
     def titlemap(self, titre):
         '''
         Sets the title of the map.
@@ -552,6 +579,10 @@ class geodeticplot:
             d = corr.east_synth
         elif data is 'synthNorth':
             d = corr.north_synth
+        elif data is 'resEast':
+            d = corr.east - corr.east_synth
+        elif data is 'resNorth':
+            d = corr.north - corr.north_synth
         else:
             print('unknown data type')
             return

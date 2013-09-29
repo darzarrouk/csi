@@ -322,15 +322,20 @@ class faultwithdip(object):
                 z4 = zb[j]
                 lon4 = lonb[j]
                 lat4 = latb[j]
+                # Set points
+                if y1>y2:
+                    p2 = [x1, y1, z1]; p2ll = [lon1, lat1, z1]
+                    p1 = [x2, y2, z2]; p1ll = [lon2, lat2, z2]
+                    p4 = [x3, y3, z3]; p4ll = [lon3, lat3, z3]
+                    p3 = [x4, y4, z4]; p3ll = [lon4, lat4, z4]
+                else:
+                    p1 = [x1, y1, z1]; p1ll = [lon1, lat1, z1]
+                    p2 = [x2, y2, z2]; p2ll = [lon2, lat2, z2]
+                    p3 = [x3, y3, z3]; p3ll = [lon3, lat3, z3]
+                    p4 = [x4, y4, z4]; p4ll = [lon4, lat4, z4]
                 # Store these
-                p = [ [x1, y1, z1],
-                      [x2, y2, z2],
-                      [x3, y3, z3],
-                      [x4, y4, z4] ]
-                pll = [ [lon1, lat1, z1],
-                        [lon2, lat2, z2],
-                        [lon3, lat3, z3],
-                        [lon4, lat4, z4] ]
+                p = [p1, p2, p3, p4]
+                pll = [p1ll, p2ll, p3ll, p4ll]
                 p = np.array(p)
                 pll = np.array(pll)
                 # fill in the lists
@@ -930,13 +935,16 @@ class faultwithdip(object):
         # Loop on the patches
         for u in range(len(self.patch)):
             p = self.patch[u]
+            p1, p2, p3, p4 = self.patch[u]
             # 1. Get the two top points
             pt1 = p[0]; x1, y1, z1 = pt1 
             pt2 = p[1]; x2, y2, z2 = pt2
             # 2. Get the azimuth of this patch
-            az = np.arctan((x2-x1)/(y2-y1)) + np.pi/2.
+            az = np.arctan2((x2-x1),(y2-y1)) 
             # 3. Get the dip of this patch 
-            dip = self.patchdip[u]     
+            dip1 = np.arcsin((p4[2]-p1[2])/np.sqrt( (p1[0] - p4[0])**2 + (p1[1]-p4[1])**2 + (p1[2]-p4[2])**2 ))
+            dip2 = np.arcsin((p3[2]-p2[2])/np.sqrt( (p2[0] - p3[0])**2 + (p2[1]-p3[1])**2 + (p2[2]-p3[2])**2 ))
+            dip = (dip1+dip2)/2.
             # 4. compute the position of the bottom corners  
             x3 = x2 + self.width*np.cos(dip)*np.cos(az)
             y3 = y2 + self.width*np.cos(dip)*np.sin(az)
@@ -980,7 +988,7 @@ class faultwithdip(object):
             u = [self.patch == patch]
 
         # Get the four corners of the rectangle
-        p = self.equivpatch[u]
+        p1, p2, p3, p4 = self.equivpatch[u]
 
         # Get the UL corner of the patch
         if center:
@@ -988,21 +996,21 @@ class faultwithdip(object):
             x2 = (p[1,1] + p[2,1])/2.
             x3 = (p[1,2] + p[0,2])/2.
         else:
-            x1 = p[0,0]
-            x2 = p[0,1]
-            x3 = p[0,2]
+            x1 = p2[0]
+            x2 = p2[1]
+            x3 = p2[2]
 
         # Get the patch width (this fault is vertical for now)
-        width = p[2,2] - p[0,2]
+        width = np.sqrt( (p4[0] - p1[0])**2 + (p4[1] - p1[1])**2 + (p4[2] - p1[2])**2 )   
 
         # Get the length
-        length = np.sqrt( (p[2,0] - p[1,0])**2 + (p[2,1] - p[1,1])**2 )
+        length = np.sqrt( (p2[0] - p1[0])**2 + (p2[1] - p1[1])**2 )
 
         # Get the strike
-        strike = np.arctan( (p[2,0] - p[1,0])/(p[2,1] - p[1,1]) ) + np.pi
+        strike = np.arctan2( (p1[0] - p2[0]),(p1[1] - p2[1]) )
 
         # Set the dip
-        dip = np.pi*90. / 180.
+        dip = np.arcsin( (p4[2] - p1[2])/width )
 
         # All done
         return x1, x2, x3, width, length, strike, dip
@@ -1589,18 +1597,18 @@ class faultwithdip(object):
                         if not hasattr(self, 'OrbNormalizingFactor'):
                             self.OrbNormalizingFactor = {}
                         self.OrbNormalizingFactor[data.name] = {}
-                        self.OrbNormalizingFactor[data.name]['x'] = np.abs(data.x).max()
-                        self.OrbNormalizingFactor[data.name]['y'] = np.abs(data.y).max()
                         x0 = data.x[0]; y0 = data.y[0]
+                        self.OrbNormalizingFactor[data.name]['x'] = np.abs(data.x-x0).max()
+                        self.OrbNormalizingFactor[data.name]['y'] = np.abs(data.y-y0).max()
                         self.OrbNormalizingFactor[data.name]['ref'] = [x0, y0]
                         # Set east displacement polynomials
                         orb[:numPoints,0] = 1.0 * data.factor
-                        orb[:numPoints,1] = (data.x-x0)/(np.abs(data.x-x0)).max()
-                        orb[:numPoints,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
+                        orb[:numPoints,1] = (data.x-x0)/self.OrbNormalizingFactor[data.name]['x']
+                        orb[:numPoints,2] = (data.y-y0)/self.OrbNormalizingFactor[data.name]['y']
                         # Set north displacement polynomials
                         orb[numPoints:,3] = 1.0 * data.factor
-                        orb[numPoints:,4] = (data.x-x0)/(np.abs(data.x-x0)).max()
-                        orb[numPoints:,5] = (data.y-y0)/(np.abs(data.y-y0)).max()
+                        orb[numPoints:,4] = (data.x-x0)/self.OrbNormalizingFactor[data.name]['x']
+                        orb[numPoints:,5] = (data.y-y0)/self.OrbNormalizingFactor[data.name]['y']
 
                     # Put it into G for as much observable per station we have
                     polend = polstart + self.poly[data.name]

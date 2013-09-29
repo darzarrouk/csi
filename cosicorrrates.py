@@ -274,16 +274,17 @@ class cosicorrrates(object):
               self.name, tuple(Op[i] for i in range(Oo))))
 
         # Fill in constant terms
-        orb[:numPoints,0] = 1.0
-        orb[numPoints:,3] = 1.0
+        orb[:numPoints,0] = 1.0*self.factor
+        orb[numPoints:,3] = 1.0*self.factor
 
         # Fill in higher order polynomials
+        x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
         Nx = fault.OrbNormalizingFactor[self.name]['x']
         Ny = fault.OrbNormalizingFactor[self.name]['y']
-        orb[:numPoints,1] = self.x / Nx
-        orb[:numPoints,2] = self.y / Ny
-        orb[numPoints:,4] = self.x / Nx
-        orb[numPoints:,5] = self.y / Ny        
+        orb[:numPoints,1] = (self.x - x0) / Nx
+        orb[:numPoints,2] = (self.y - y0) / Ny
+        orb[numPoints:,4] = (self.x - x0) / Nx
+        orb[numPoints:,5] = (self.y - y0) / Ny        
 
         # Get the correction
         self.orb = np.dot(orb, Op)
@@ -316,7 +317,7 @@ class cosicorrrates(object):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', include_poly=False):
+    def buildsynth(self, faults, direction='sd'):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
@@ -356,17 +357,6 @@ class cosicorrrates(object):
                 st_synth = np.dot(Gt, St)
                 self.east_synth += st_synth[:Nd]
                 self.north_synth += st_synth[Nd:]
-
-            if include_poly:
-                if (self.name in fault.polysol.keys()):
-                    sarorb = fault.polysol[self.name]
-                    if sarorb is not None:
-                        self.synth += sarorb[0]
-                        if sarorb.size >= 3:
-                            self.synth += sarorb[1] * data.x/np.abs(data.x).max()
-                            self.synth += sarorb[2] * data.y/np.abs(data.y).max() 
-                        if sarorb.size >= 4:
-                            self.synth += sarorb[3] * (data.x/np.abs(data.x).max())*(data.y/np.abs(data.y).max())
 
         # All done
         return
