@@ -148,6 +148,9 @@ class cosicorrrates(object):
 
         # Store the factor
         self.factor = factor
+    
+        # Save number of observations per station
+        self.obs_per_station = 2
 
         # All done
         return
@@ -296,6 +299,56 @@ class cosicorrrates(object):
         # All done
         return
 
+
+    def removeRamp(self, order=3, maskPoly=None):
+        '''
+        Pre-remove a ramp from the data that fall outside of mask. If no mask is provided,
+        we use all the points to fit a mask.
+        '''
+
+        assert order == 1 or order == 3, 'unsupported order for ramp removal'
+        
+        # Define normalized coordinates
+        x0, y0 = self.x[0], self.y[0]
+        xd = self.x - x0
+        yd = self.y - y0
+        normX = np.abs(xd).max()
+        normY = np.abs(yd).max()
+        
+        # Find points that fall outside of mask
+        east = self.east.copy()
+        north = self.north.copy()
+        if maskPoly is not None:
+            path = Path(maskPoly)
+            mask = path.contains_points(zip(self.x, self.y))
+            badIndices = mask.nonzero()[0]
+            xd = xd[~badIndices]
+            yd = yd[~badIndices]
+            east = east[~badIndices]
+            north = north[~badIndices]
+            
+        # Construct ramp design matrix
+        nPoints = east.shape[0]
+        nDat = 2 * nPoints
+        nPar = 2 * order
+        Gramp = np.zeros((nDat,nPar))
+        if order == 1:
+            Gramp[:nPoints,0] = 1.0
+            Gramp[nPoints:,1] = 1.0
+        else:
+            Gramp[:nPoints,0] = 1.0
+            Gramp[:nPoints,1] = xd / normX
+            Gramp[:nPoints,2] = yd / normY
+            Gramp[nPoints:,3] = 1.0
+            Gramp[nPoints:,4] = xd / normX
+            Gramp[nPoints:,5] = yd / normY
+
+        # Estimate ramp parameters
+        d = np.hstack((east,north))
+        m_ramp = np.linalg.lstsq(Gramp, d)[0]
+        
+
+
     def removeSynth(self, faults, direction='sd', include_poly=False):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
@@ -317,7 +370,7 @@ class cosicorrrates(object):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd'):
+    def buildsynth(self, faults, direction='sd', include_poly=False):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
@@ -357,6 +410,23 @@ class cosicorrrates(object):
                 st_synth = np.dot(Gt, St)
                 self.east_synth += st_synth[:Nd]
                 self.north_synth += st_synth[Nd:]
+
+            if include_poly:
+                if (self.name in fault.polysol.keys()):
+                    # Get the orbital parameters
+                    orb = fault.polysol[self.name]
+                    # Get orbit reference point and normalizing factors
+                    x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
+                    normX = fault.OrbNormalizingFactor[self.name]['x']
+                    normY = fault.OrbNormalizingFactor[self.name]['y']
+                    if orb is not None:
+                        assert orb.shape[0] == 6, 'wrong orbit shape for cosicorr'
+                        self.east_synth += orb[0]
+                        self.east_synth += orb[1] * (self.x - x0) / normX
+                        self.east_synth += orb[2] * (self.y - y0) / normY
+                        self.north_synth += orb[3]
+                        self.north_synth += orb[4] * (self.x - x0) / normX
+                        self.north_synth += orb[5] * (self.y - y0) / normY
 
         # All done
         return

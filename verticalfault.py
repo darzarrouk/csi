@@ -1611,11 +1611,29 @@ class verticalfault(object):
 
             # set the GFs
             self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS], vertical=True)
-        
+
+        elif datatype is 'cosicorrrates':
+            
+            # Initialize
+            GssLOS = None; GdsLOS = None; GtsLOS = None
+
+            # Get the values
+            if strikeslip is not None:
+                GssLOS = Gss
+            if dipslip is not None:
+                GdsLOS = Gds
+            if tensile is not None:
+                GtsLOS = Gts
+
+            # set the GFs
+            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], 
+                        tensile=[GtsLOS], vertical=False)
+
         # all done
         return
 
-    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], tensile=[None, None, None], vertical=False):
+    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], 
+               tensile=[None, None, None], vertical=False):
         '''
         Stores the Green's functions matrices into the fault structure.
         Args:
@@ -1905,24 +1923,28 @@ class verticalfault(object):
                         numPoints = Ndlocal // data.obs_per_station
                         if not hasattr(self, 'OrbNormalizingFactor'):
                             self.OrbNormalizingFactor = {}
+                        x0 = data.x[0]
+                        y0 = data.y[0]
+                        normX = np.abs(data.x - x0).max()
+                        normY = np.abs(data.y - y0).max()
                         self.OrbNormalizingFactor[data.name] = {}
-                        self.OrbNormalizingFactor[data.name]['x'] = np.abs(data.x).max()
-                        self.OrbNormalizingFactor[data.name]['y'] = np.abs(data.y).max()
-                        x0 = data.x[0]; y0 = data.y[0]
                         self.OrbNormalizingFactor[data.name]['ref'] = [x0, y0]
+                        self.OrbNormalizingFactor[data.name]['x'] = normX
+                        self.OrbNormalizingFactor[data.name]['y'] = normY
                         # Set east displacement polynomials
-                        orb[:numPoints,0] = 1.0 * data.factor
-                        orb[:numPoints,1] = (data.x-x0)/(np.abs(data.x-x0)).max()
-                        orb[:numPoints,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
+                        orb[:numPoints,0] = data.factor
+                        orb[:numPoints,1] = data.factor * (data.x - x0) / normX
+                        orb[:numPoints,2] = data.factor * (data.y - y0) / normY
                         # Set north displacement polynomials
-                        orb[numPoints:,3] = 1.0 * data.factor
-                        orb[numPoints:,4] = (data.x-x0)/(np.abs(data.x-x0)).max()
-                        orb[numPoints:,5] = (data.y-y0)/(np.abs(data.y-y0)).max()
+                        orb[numPoints:,3] = data.factor
+                        orb[numPoints:,4] = data.factor * (data.x - x0) / normX 
+                        orb[numPoints:,5] = data.factor * (data.y - y0) / normY
 
                     # Put it into G for as much observable per station we have
                     polend = polstart + self.poly[data.name]
                     G[el:el+Ndlocal, polstart:polend] = orb
                     polstart += self.poly[data.name]
+
             else:
                 if self.poly[data.name] is 'full':
                     orb = self.getHelmertMatrix(data)

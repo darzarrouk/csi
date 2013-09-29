@@ -923,7 +923,7 @@ class faultwithdip(object):
         # all done
         return
 
-    def computeEquivRectangle(self):
+    def computeEquivRectangle(self, strikeDir='south'):
         '''
         Computes the equivalent rectangle patches and stores these into self.equivpatch
         '''
@@ -940,18 +940,33 @@ class faultwithdip(object):
             pt1 = p[0]; x1, y1, z1 = pt1 
             pt2 = p[1]; x2, y2, z2 = pt2
             # 2. Get the azimuth of this patch
-            az = np.arctan2((x2-x1),(y2-y1)) 
+            #az = np.arctan2((x2-x1),(y2-y1)) 
+            az = np.arctan2(y2-y1, x2-x1)
             # 3. Get the dip of this patch 
-            dip1 = np.arcsin((p4[2]-p1[2])/np.sqrt( (p1[0] - p4[0])**2 + (p1[1]-p4[1])**2 + (p1[2]-p4[2])**2 ))
-            dip2 = np.arcsin((p3[2]-p2[2])/np.sqrt( (p2[0] - p3[0])**2 + (p2[1]-p3[1])**2 + (p2[2]-p3[2])**2 ))
-            dip = (dip1+dip2)/2.
+            dip1 = np.arcsin((p4[2] - p1[2]) / np.sqrt((p1[0] - p4[0])**2 
+                           + (p1[1] - p4[1])**2 + (p1[2] - p4[2])**2))
+            dip2 = np.arcsin((p3[2] - p2[2]) / np.sqrt( (p2[0] - p3[0])**2 
+                           + (p2[1] - p3[1])**2 + (p2[2] - p3[2])**2))
+            dip = 0.5 * (dip1 + dip2)
+
             # 4. compute the position of the bottom corners  
-            x3 = x2 + self.width*np.cos(dip)*np.cos(az)
-            y3 = y2 + self.width*np.cos(dip)*np.sin(az)
-            z3 = z2 + self.width*np.sin(dip)
-            x4 = x1 + self.width*np.cos(dip)*np.cos(az)
-            y4 = y1 + self.width*np.cos(dip)*np.sin(az)
-            z4 = z1 + self.width*np.sin(dip)
+            #x3 = x2 + self.width*np.cos(dip)*np.cos(az)
+            #y3 = y2 + self.width*np.cos(dip)*np.sin(az)
+            #z3 = z2 + self.width*np.sin(dip)
+            #x4 = x1 + self.width*np.cos(dip)*np.cos(az)
+            #y4 = y1 + self.width*np.cos(dip)*np.sin(az)
+            #z4 = z1 + self.width*np.sin(dip)
+            wc = self.width * np.cos(dip)
+            ws = self.width * np.sin(dip)
+            halfPi = 0.5 * np.pi
+            x3 = x2 + wc * np.cos(az + halfPi)
+            y3 = y2 + wc * np.sin(az + halfPi)
+            z3 = z2 + ws
+            x4 = x1 + wc * np.cos(az + halfPi)
+            y4 = y1 + wc * np.sin(az + halfPi)
+            z4 = z1 + ws
+
+
             pt3 = [x3, y3, z3]
             pt4 = [x4, y4, z4]
             # set up the patch
@@ -976,9 +991,12 @@ class faultwithdip(object):
         Returns the patch geometry as needed for okada85.
         Args:
             * patch         : index of the wanted patch or patch;
-            * center        : if true, returns the coordinates of the center of the patch. if False, returns the UL corner.
+            * center        : if true, returns the coordinates of the center of the patch. 
+                              if False, returns the UL corner.
 
-        When we build the fault, the patches are not exactly rectangular. Therefore, this routine will return the rectangle that matches with the two shallowest points and that has an average dip angle to match with the other corners.
+        When we build the fault, the patches are not exactly rectangular. Therefore, 
+        this routine will return the rectangle that matches with the two shallowest 
+        points and that has an average dip angle to match with the other corners.
         '''
 
         # Get the patch
@@ -1124,6 +1142,7 @@ class faultwithdip(object):
         elif data.dtype is 'cosicorrrates':
             vertical=False
             self.d[data.name] = np.hstack((data.east.flatten(), data.north.flatten()))
+            assert self.d[data.name].shape[0] == Ndt, 'd vector and numObs do not match'
 
         # Initialize the slip vector
         SLP = []
@@ -1149,20 +1168,26 @@ class faultwithdip(object):
             sys.stdout.flush()
             
             # get the surface displacement corresponding to unit slip
+            # ss,ds,op will all have shape (Nd,3) for 3 components
             ss, ds, op = self.slip2dis(data, p, slip=SLP)
 
             # Do we keep the verticals
             if not vertical:
+                # Just get horizontal components
                 ss = ss[:,0:2]
                 ds = ds[:,0:2]
                 op = op[:,0:2]
 
             # Organize the response
-            if data.dtype in ['gpsrates', 'cosicorrrates']:    # If GPS type, just put them in the good format
+            if data.dtype in ['gpsrates', 'cosicorrrates']:
+                # If GPS type, construct a flat vector with east displacements first, then
+                # north, then vertical
                 ss = ss.T.flatten()
                 ds = ds.T.flatten()
                 op = op.T.flatten()
-            elif data.dtype is 'insarrates':        # If InSAR, do the dot product with the los
+
+            elif data.dtype is 'insarrates':
+                # If InSAR, do the dot product with the los
                 ss_los = []
                 ds_los = []
                 op_los = []
@@ -1310,6 +1335,26 @@ class faultwithdip(object):
 
             # set the GFs
             self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS], vertical=True)
+
+        elif datatype is 'cosicorrrates':
+            
+            # Initialize
+            GssLOS = None; GdsLOS = None; GtsLOS = None
+
+            # Get the values
+            if strikeslip is not None:
+                GssLOS = Gss
+            if dipslip is not None:
+                GdsLOS = Gds
+            if tensile is not None:
+                GtsLOS = Gts
+
+            # set the GFs
+            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], 
+                        tensile=[GtsLOS], vertical=False)
+
+        # all done
+        return
         
         # all done
         return
@@ -1588,32 +1633,38 @@ class faultwithdip(object):
                             orb[:,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
                         if self.poly[data.name] >= 4:
                             orb[:,3] = (data.x-x0)/(np.abs(data.x-x0)).max() * (data.y-y0)/(np.abs(data.y-y0)).max()
+
                     elif data.dtype is 'cosicorrrates':
-                        basePoly = self.poly[data.name] / data.obs_per_station
+
+                        basePoly = self.poly[data.name] / 2
                         assert basePoly == 3, 'only support 3rd order poly for cosicorr'
                         # For cosicorr, Ndlocal = 2 * numPoints (for east and north)
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         numPoints = Ndlocal // data.obs_per_station
                         if not hasattr(self, 'OrbNormalizingFactor'):
                             self.OrbNormalizingFactor = {}
+                        x0 = data.x[0]
+                        y0 = data.y[0]
+                        normX = np.abs(data.x - x0).max()
+                        normY = np.abs(data.y - y0).max()
                         self.OrbNormalizingFactor[data.name] = {}
-                        x0 = data.x[0]; y0 = data.y[0]
-                        self.OrbNormalizingFactor[data.name]['x'] = np.abs(data.x-x0).max()
-                        self.OrbNormalizingFactor[data.name]['y'] = np.abs(data.y-y0).max()
                         self.OrbNormalizingFactor[data.name]['ref'] = [x0, y0]
+                        self.OrbNormalizingFactor[data.name]['x'] = normX
+                        self.OrbNormalizingFactor[data.name]['y'] = normY
                         # Set east displacement polynomials
-                        orb[:numPoints,0] = 1.0 * data.factor
-                        orb[:numPoints,1] = (data.x-x0)/self.OrbNormalizingFactor[data.name]['x']
-                        orb[:numPoints,2] = (data.y-y0)/self.OrbNormalizingFactor[data.name]['y']
+                        orb[:numPoints,0] = data.factor
+                        orb[:numPoints,1] = data.factor * (data.x - x0) / normX
+                        orb[:numPoints,2] = data.factor * (data.y - y0) / normY
                         # Set north displacement polynomials
-                        orb[numPoints:,3] = 1.0 * data.factor
-                        orb[numPoints:,4] = (data.x-x0)/self.OrbNormalizingFactor[data.name]['x']
-                        orb[numPoints:,5] = (data.y-y0)/self.OrbNormalizingFactor[data.name]['y']
+                        orb[numPoints:,3] = data.factor
+                        orb[numPoints:,4] = data.factor * (data.x - x0) / normX 
+                        orb[numPoints:,5] = data.factor * (data.y - y0) / normY
 
                     # Put it into G for as much observable per station we have
                     polend = polstart + self.poly[data.name]
                     G[el:el+Ndlocal, polstart:polend] = orb
                     polstart += self.poly[data.name]
+
             else:
                 if self.poly[data.name] is 'full':
                     orb = self.getHelmertMatrix(data)
@@ -2170,7 +2221,8 @@ class faultwithdip(object):
         # All done
         return x,y,z
 
-    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None, lonlat=None):
+    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None, lonlat=None,
+                          slipVec=None):
         ''' 
         Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
         Args:
@@ -2250,6 +2302,12 @@ class faultwithdip(object):
 
         # import stuff
         import sys
+
+        # Load the slip values if provided
+        if slipVec is not None:
+            nPatches = len(self.patch)
+            assert slipVec.shape == (nPatches,3), 'mismatch in shape for input slip vector'
+            self.slip = slipVec
 
         # Loop over the patches
         for p in range(len(self.patch)):

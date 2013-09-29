@@ -29,8 +29,8 @@ class geodeticplot:
 
         # Set the axes
         if ref is 'utm':
-            faille.set_xlabel('Northing (km)')
-            faille.set_ylabel('Easting (km)')
+            faille.set_xlabel('Easting (km)')
+            faille.set_ylabel('Northing (km)')
             carte.set_xlabel('Easting (km)')
             carte.set_ylabel('Northing (km)')
         else:
@@ -177,7 +177,8 @@ class geodeticplot:
         # All done
         return
 
-    def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True, plot_on_2d=False, revmap=False):
+    def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True, 
+                     plot_on_2d=False, revmap=False):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -213,9 +214,9 @@ class geodeticplot:
 
         # set color business
         if revmap:
-            cmap = plt.get_cmap('jet_r')
+            cmap = plt.get_cmap('seismic_r')
         else:
-            cmap = plt.get_cmap('jet')
+            cmap = plt.get_cmap('seismic')
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
@@ -567,7 +568,7 @@ class geodeticplot:
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
             * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast',
-                          or 'res'.
+                          'resEast', or 'resNorth'
         '''
 
         # Choose the data
@@ -596,7 +597,7 @@ class geodeticplot:
             vmax = norm[1]
 
         # Prepare the colormap
-        cmap = plt.get_cmap('jet')
+        cmap = plt.get_cmap('seismic')
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
