@@ -19,4 +19,5 @@ from .srcmodsolution import srcmodsolution
 from .creepmeters import creepmeters
 from .cosicorrrates import cosicorrrates
 from .faultwithdip import faultwithdip
+from .faultwithvaryingdip import faultwithvaryingdip
 from timefnutils import *

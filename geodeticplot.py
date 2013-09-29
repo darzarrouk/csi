@@ -365,7 +365,7 @@ class geodeticplot:
 
         # plot colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.6, orientation='h')
+            self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
 
         # All done
         return
@@ -405,7 +405,7 @@ class geodeticplot:
 
         # plot colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.6, orientation='h')
+            self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
 
         # All done
         return
@@ -436,7 +436,7 @@ class geodeticplot:
                 sc = self.carte.scatter(earthquakes.lon, earthquakes.lat, s=markersize, c=color, vmin=vmin, vmax=vmax)
 
             if colorbar:
-                self.fig2.colorbar(sc, shrink=0.6, orientation='h')
+                self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
 
         # plot the earthquakes in the volume if ask
         if '3d' in plot:
@@ -446,7 +446,7 @@ class geodeticplot:
                 sc = self.faille.scatter3D(earthquakes.lon, earthquakes.lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax)
 
             if colorbar:
-                self.fig1.colorbar(sc, shrink=0.6, orientation='h')
+                self.fig1.colorbar(sc, shrink=0.6, orientation='horizontal')
          
         # All done
         return
@@ -495,7 +495,7 @@ class geodeticplot:
 
         # plot colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.6, orientation='h')
+            self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
 
         # All done
         return
