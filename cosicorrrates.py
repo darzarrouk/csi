@@ -8,6 +8,7 @@ import numpy as np
 import pyproj as pp
 import shapely.geometry as geom
 import matplotlib.pyplot as plt
+from scipy.linalg import block_diag
 
 class cosicorrrates(object):
 
@@ -262,32 +263,34 @@ class cosicorrrates(object):
 
         # Get the number
         Oo = fault.polysol[self.name].shape[0]
-        assert Oo == 6, 'Non 3rd-order poly for cosicorr'  
+        assert Oo == 6 or Oo == 12, 'Non 3rd or 4th-order poly for cosicorr'  
+        basePoly = Oo // 2
+        numPoints = self.east.shape[0]
 
         # Get the parameters
         Op = fault.polysol[self.name]
 
-        # Create the transfer matrix
-        numPoints = self.east.shape[0]
-        numDat = numPoints * self.obs_per_station
-        orb = np.zeros((numDat, Oo))
-
-        # Print Something
-        print('Correcting cosicorr {} from polynomial function: {}'.format(
-              self.name, tuple(Op[i] for i in range(Oo))))
-
-        # Fill in constant terms
-        orb[:numPoints,0] = 1.0*self.factor
-        orb[numPoints:,3] = 1.0*self.factor
-
-        # Fill in higher order polynomials
+        # Get normalizing factors
         x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
-        Nx = fault.OrbNormalizingFactor[self.name]['x']
-        Ny = fault.OrbNormalizingFactor[self.name]['y']
-        orb[:numPoints,1] = (self.x - x0) / Nx
-        orb[:numPoints,2] = (self.y - y0) / Ny
-        orb[numPoints:,4] = (self.x - x0) / Nx
-        orb[numPoints:,5] = (self.y - y0) / Ny        
+        normX = fault.OrbNormalizingFactor[self.name]['x']
+        normY = fault.OrbNormalizingFactor[self.name]['y']
+
+        # Pre-compute distance- and order-dependent functional forms
+        f1 = self.factor * np.ones((numPoints,))
+        f2 = self.factor * (self.x - x0) / normX
+        f3 = self.factor * (self.y - y0) / normY
+        f4 = self.factor * (self.x - x0) * (self.y - y0) / (normX*normY)
+        f5 = self.factor * (self.x - x0)**2 / normX**2
+        f6 = self.factor * (self.y - y0)**2 / normY**2
+        polyFuncs = [f1, f2, f3, f4, f5, f6]
+
+        # Fill in orb matrix given an order
+        orb = np.zeros((numPoints, basePoly))
+        for ind in xrange(basePoly):
+            orb[:,ind] = polyFuncs[ind]
+
+        # Block diagonal for both components
+        orb = block_diag(orb, orb)
 
         # Get the correction
         self.orb = np.dot(orb, Op)

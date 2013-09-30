@@ -9,6 +9,7 @@ import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
 import scipy.interpolate as sciint
+from scipy.linalg import block_diag
 import copy
 import sys
 
@@ -1632,14 +1633,17 @@ class faultwithdip(object):
                             orb[:,1] = (data.x-x0)/(np.abs(data.x-x0)).max()
                             orb[:,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
                         if self.poly[data.name] >= 4:
-                            orb[:,3] = (data.x-x0)/(np.abs(data.x-x0)).max() * (data.y-y0)/(np.abs(data.y-y0)).max()
+                            orb[:,3] = ((data.x-x0)/(np.abs(data.x-x0)).max() * 
+                                        (data.y-y0)/(np.abs(data.y-y0)).max())
 
                     elif data.dtype is 'cosicorrrates':
 
                         basePoly = self.poly[data.name] / 2
-                        assert basePoly == 3, 'only support 3rd order poly for cosicorr'
-                        # For cosicorr, Ndlocal = 2 * numPoints (for east and north)
-                        orb = np.zeros((Ndlocal, self.poly[data.name]))
+                        assert basePoly == 3 or basePoly == 6, """
+                            only support 3rd or 4th order poly for cosicorr
+                            """
+
+                        # Compute normalizing factors
                         numPoints = Ndlocal // data.obs_per_station
                         if not hasattr(self, 'OrbNormalizingFactor'):
                             self.OrbNormalizingFactor = {}
@@ -1647,18 +1651,28 @@ class faultwithdip(object):
                         y0 = data.y[0]
                         normX = np.abs(data.x - x0).max()
                         normY = np.abs(data.y - y0).max()
+                        # Save them for later
                         self.OrbNormalizingFactor[data.name] = {}
                         self.OrbNormalizingFactor[data.name]['ref'] = [x0, y0]
                         self.OrbNormalizingFactor[data.name]['x'] = normX
                         self.OrbNormalizingFactor[data.name]['y'] = normY
-                        # Set east displacement polynomials
-                        orb[:numPoints,0] = data.factor
-                        orb[:numPoints,1] = data.factor * (data.x - x0) / normX
-                        orb[:numPoints,2] = data.factor * (data.y - y0) / normY
-                        # Set north displacement polynomials
-                        orb[numPoints:,3] = data.factor
-                        orb[numPoints:,4] = data.factor * (data.x - x0) / normX 
-                        orb[numPoints:,5] = data.factor * (data.y - y0) / normY
+
+                        # Pre-compute position-dependent functional forms
+                        f1 = data.factor * np.ones((numPoints,))
+                        f2 = data.factor * (data.x - x0) / normX
+                        f3 = data.factor * (data.y - y0) / normY
+                        f4 = data.factor * (data.x - x0) * (data.y - y0) / (normX*normY)
+                        f5 = data.factor * (data.x - x0)**2 / normX**2
+                        f6 = data.factor * (data.y - y0)**2 / normY**2
+                        polyFuncs = [f1, f2, f3, f4, f5, f6]
+
+                        # Fill in orb matrix given an order
+                        orb = np.zeros((numPoints, basePoly))
+                        for ind in xrange(basePoly):
+                            orb[:,ind] = polyFuncs[ind]
+
+                        # Block diagonal for both components
+                        orb = block_diag(orb, orb)
 
                     # Put it into G for as much observable per station we have
                     polend = polstart + self.poly[data.name]
@@ -1691,6 +1705,14 @@ class faultwithdip(object):
 
         # All done
         return
+
+    @staticmethod
+    def constructRampPolynomial(x, order=0):
+        """
+        Compute position-dependent and order-dependent functional form for ramp polynomial.
+        """
+        pass               
+ 
 
     def get2DstrainEst(self, data):
         '''

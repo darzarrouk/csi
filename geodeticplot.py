@@ -561,7 +561,8 @@ class geodeticplot:
         # All done
         return
 
-    def cosicorr_decimate(self, corr, norm=None, colorbar=True, data='dataEast'):
+    def cosicorr_decimate(self, corr, norm=None, colorbar=True, data='dataEast',
+                          plotType='rect'):
         ''' 
         Args:
             * insar     : insar object from insarrates.
@@ -569,6 +570,7 @@ class geodeticplot:
             * colorbar  : plot the colorbar (True/False).
             * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast',
                           'resEast', or 'resNorth'
+            * plotType  : plot either rectangular patches (rect) or scatter (scatter)
         '''
 
         # Choose the data
@@ -601,26 +603,35 @@ class geodeticplot:
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
-        for i in range(corr.xycorner.shape[0]):
-            x = []
-            y = []
-            # upper left
-            x.append(corr.xycorner[i,0])
-            y.append(corr.xycorner[i,1])
-            # upper right
-            x.append(corr.xycorner[i,2])
-            y.append(corr.xycorner[i,1])
-            # down right
-            x.append(corr.xycorner[i,2])
-            y.append(corr.xycorner[i,3])
-            # down left
-            x.append(corr.xycorner[i,0])
-            y.append(corr.xycorner[i,3])
-            verts = [zip(x, y)]
-            rect = colls.PolyCollection(verts)
-            rect.set_color(scalarMap.to_rgba(d[i]))
-            rect.set_edgecolors('k')
-            self.carte.add_collection(rect)
+        if plotType is 'rect':
+            for i in range(corr.xycorner.shape[0]):
+                x = []
+                y = []
+                # upper left
+                x.append(corr.xycorner[i,0])
+                y.append(corr.xycorner[i,1])
+                # upper right
+                x.append(corr.xycorner[i,2])
+                y.append(corr.xycorner[i,1])
+                # down right
+                x.append(corr.xycorner[i,2])
+                y.append(corr.xycorner[i,3])
+                # down left
+                x.append(corr.xycorner[i,0])
+                y.append(corr.xycorner[i,3])
+                verts = [zip(x, y)]
+                rect = colls.PolyCollection(verts)
+                rect.set_color(scalarMap.to_rgba(d[i]))
+                rect.set_edgecolors('k')
+                self.carte.add_collection(rect)
+            
+        elif plotType is 'scatter':
+            for i in range(corr.x.size):
+                color = scalarMap.to_rgba(d[i])
+                self.carte.plot(corr.x[i], corr.y[i], 'o', color=color)
+
+        else:
+            assert False, 'unsupported plot type. Must be rect or scatter'
 
         # plot colorbar
         if colorbar:
