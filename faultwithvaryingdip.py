@@ -2400,7 +2400,7 @@ class faultwithvaryingdip(object):
         sys.stdout.flush()
 
         # All done
-        return
+        return 
 
     def computetotalslip(self):
         '''

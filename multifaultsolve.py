@@ -71,6 +71,14 @@ class multifaultsolve(object):
         # Initialize things
         self.fault_indexes = None
 
+        # Store an array of the patch areas
+        patchAreas = []
+        for fault in faults:
+            for patchIndex in range(len(fault.patch)):
+                width,length = fault.getpatchgeometry(patchIndex)[3:5]
+                patchAreas.append(1000.0*width * 1000.0*length)
+        self.patchAreas = np.array(patchAreas)
+
         # All done
         return
 
@@ -484,6 +492,91 @@ class multifaultsolve(object):
         # All done
         return
 
+    def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10.0):
+        """ 
+        Solves the least squares problem:
+    
+            min (d - G*m).T * Cd-1 * (d - G*m) + m.T * Cm-1 * m
+            subject to:
+                Mw <= Mw_bound
+
+        Args:
+            mprior          : a priori model; if None, mprior = np.zeros((Nm,))
+        """
+        assert self.ready, 'You need to assemble the GFs'
+
+        # Import things
+        import scipy.linalg as scilin
+        from scipy.optimize import minimize
+        
+        # Print
+        print ("---------------------------------")
+        print ("---------------------------------")
+        print ("Computing the Constrained least squares solution")
+
+        # Get the matrixes and vectors
+        G = self.G
+        d = self.d
+        Cd = self.Cd
+        Cm = self.Cm
+
+        # Get the number of model parameters
+        Nm = Cm.shape[0]
+        Npatch = len(self.patchAreas)
+
+        # Check If Cm is symmetric and positive definite
+        if (Cm.transpose() != Cm).all():
+            print("Cm is not symmetric, Return...")
+            return
+
+        # Get the inverse of Cm
+        print ("Computing the inverse of the model covariance")
+        iCm = scilin.inv(Cm)
+
+        # Check If Cm is symmetric and positive definite
+        if (Cd.transpose() != Cd).all():
+            print("Cd is not symmetric, Return...")
+            return
+
+        # Get the inverse of Cd
+        print ("Computing the inverse of the data covariance")
+        iCd = scilin.inv(Cd)
+
+        # Construct mprior
+        if mprior is None:
+            mprior = np.zeros((Nm,))
+
+        # Define the cost function
+        def costFunction(m, G, d, iCd, iCm, mprior):
+            dataMisfit = d - np.dot(G,m)
+            dataLikely = np.dot(dataMisfit, np.dot(iCd, dataMisfit))
+            priorMisfit = m - mprior
+            priorLikely = np.dot(priorMisfit, np.dot(iCm, priorMisfit))
+            return 0.5 * dataLikely + 0.5 * priorLikely
+
+        # Define the moment magnitude inequality constraint function
+        def computeMwDiff(m, Mw_thresh, patchAreas, Npatch):
+            shearModulus = 22.5e9
+            moment = shearModulus * np.dot(patchAreas, m[:Npatch])
+            Mw = 2.0 / 3.0 * np.log10(moment) - 6.0
+            return np.array([Mw_thresh - Mw])
+
+        # Define the constraints dictionary
+        constraints = {'type': 'ineq',
+                       'fun': computeMwDiff,
+                       'args': (Mw_thresh, self.patchAreas, Npatch)}
+
+        # Call solver
+        res = minimize(costFunction, np.ones((Nm,)), args=(G,d,iCd,iCm,mprior),
+                       constraints=constraints, method='COBYLA', options={'disp': True})
+
+        # Store result
+        self.mpost = res.x
+
+        # All done
+        return
+
+
     def writeGFs2BinaryFile(self, outfile='GF.dat', dtype='f'):
         '''
         Writes the assembled GFs to the file outfile.
@@ -719,5 +812,29 @@ class multifaultsolve(object):
 
         # All done
         return
-    
+
+
+    def writePatchAreasFile(self, outfile='PatchAreas.dat', dtype='d', 
+                            npadStart=None, npadEnd=None):
+        """
+        Write a binary file for the patch areas to be read into altar.
+
+        Args:
+            * outfile               : output file name
+            * dtype                 : output data type
+            * npadStart             : number of starting zeros to pad output
+            * npadEnd               : number of ending zeros to pad output
+        """
+        # Construct output vector of patch areas
+        vout = self.patchAreas.astype(dtype)
+        if npadStart is not None:
+            vpad = np.zeros((npadStart,), dtype=dtype)
+            vout = np.hstack((vpad, vout))
+        if npadEnd is not None:
+            vpad = np.zeros((npadEnd,), dtype=dtype)
+            vout = np.hstack((vout, vpad))
+
+        # Write to file and return
+        vout.tofile(outfile)
+        return
 

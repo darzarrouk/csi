@@ -214,9 +214,9 @@ class geodeticplot:
 
         # set color business
         if revmap:
-            cmap = plt.get_cmap('seismic_r')
+            cmap = plt.get_cmap('jet_r')
         else:
-            cmap = plt.get_cmap('seismic')
+            cmap = plt.get_cmap('jet')
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
@@ -562,7 +562,7 @@ class geodeticplot:
         return
 
     def cosicorr_decimate(self, corr, norm=None, colorbar=True, data='dataEast',
-                          plotType='rect'):
+                          plotType='rect', gmtCmap=None):
         ''' 
         Args:
             * insar     : insar object from insarrates.
@@ -599,7 +599,14 @@ class geodeticplot:
             vmax = norm[1]
 
         # Prepare the colormap
-        cmap = plt.get_cmap('seismic')
+        if gmtCmap is not None:
+            try:
+                import basemap_utils as bu
+                cmap = bu.gmtColormap(gmtCmap)
+            except ImportError:
+                cmap = plt.get_cmap('jet') 
+        else:
+            cmap = plt.get_cmap('jet')
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
