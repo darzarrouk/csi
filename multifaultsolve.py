@@ -492,7 +492,7 @@ class multifaultsolve(object):
         # All done
         return
 
-    def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10.0):
+    def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10.0, bounds=None):
         """ 
         Solves the least squares problem:
     
@@ -548,6 +548,9 @@ class multifaultsolve(object):
 
         # Define the cost function
         def costFunction(m, G, d, iCd, iCm, mprior):
+            """
+            Compute data + prior misfits.
+            """
             dataMisfit = d - np.dot(G,m)
             dataLikely = np.dot(dataMisfit, np.dot(iCd, dataMisfit))
             priorMisfit = m - mprior
@@ -556,6 +559,9 @@ class multifaultsolve(object):
 
         # Define the moment magnitude inequality constraint function
         def computeMwDiff(m, Mw_thresh, patchAreas, Npatch):
+            """
+            Ahhhhh hard coded shear modulus.
+            """
             shearModulus = 22.5e9
             moment = shearModulus * np.dot(patchAreas, m[:Npatch])
             Mw = 2.0 / 3.0 * np.log10(moment) - 6.0
@@ -568,7 +574,8 @@ class multifaultsolve(object):
 
         # Call solver
         res = minimize(costFunction, np.ones((Nm,)), args=(G,d,iCd,iCm,mprior),
-                       constraints=constraints, method='COBYLA', options={'disp': True})
+                       constraints=constraints, method='SLSQP', bounds=bounds,
+                       options={'disp': True})
 
         # Store result
         self.mpost = res.x

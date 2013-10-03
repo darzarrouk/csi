@@ -14,7 +14,7 @@ import numpy as np
 
 class geodeticplot:
 
-    def __init__(self, figure=130, ref='utm'):
+    def __init__(self, figure=130, ref='utm', pbaspect=None):
         '''
         Args:
             * figure        : Number of the figure.
@@ -117,6 +117,40 @@ class geodeticplot:
         self.faille.view_init(elevation,azimuth)
         #all done
         return
+
+    def equalize3dAspect(self):
+        """
+        Make the 3D axes have equal aspect. Not working yet (maybe never).
+        """
+        #self.faille.set_aspect('equal')
+        xlim = self.faille.get_xlim3d()
+        ylim = self.faille.get_ylim3d()
+        zlim = self.faille.get_zlim3d()
+
+        x_range = xlim[1] - xlim[0]
+        y_range = ylim[1] - ylim[0]
+        z_range = zlim[1] - zlim[0]
+
+        x0 = 0.5 * (xlim[1] + xlim[0])
+        y0 = 0.5 * (ylim[1] + ylim[0])
+        z0 = 0.5 * (zlim[1] + zlim[0])
+
+        max_range = 0.5 * np.array([x_range, y_range, z_range]).max()
+
+        self.faille.set_xlim3d([x0-max_range, x0+max_range])
+        self.faille.set_ylim3d([y0-max_range, y0+max_range])
+        #max_range *= 0.35
+        #self.faille.set_zlim3d([z0-max_range, z0+max_range])
+        self.faille.set_zlim3d(zlim)
+
+        self.fig1.set_size_inches((14,6))
+
+
+        #for direction in (-1, 1):
+        #    for point in np.diag(direction * max_range * np.array([1,1,1])):
+        #        self.faille.plot([point[0]+x0], [point[1]+y0], [point[2]+z0], 'w')
+        
+        return 
 
     def set_xymap(self, xlim, ylim):
         '''
@@ -604,9 +638,9 @@ class geodeticplot:
                 import basemap_utils as bu
                 cmap = bu.gmtColormap(gmtCmap)
             except ImportError:
-                cmap = plt.get_cmap('jet') 
+                cmap = plt.get_cmap('seismic') 
         else:
-            cmap = plt.get_cmap('jet')
+            cmap = plt.get_cmap('seismic')
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 

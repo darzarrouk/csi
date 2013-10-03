@@ -801,7 +801,7 @@ class faultwithvaryingdip(object):
 
         # Find the index of the patch
         for i in range(len(self.patch)):
-            if (self.patch[i]==p).all():
+            if (self.patch[i] == p).all():
                 io = i
 
         # All done
@@ -860,12 +860,12 @@ class faultwithvaryingdip(object):
         self.slipdirection = []
 
         # Loop over the patches
-        for p in self.patch:  
+        for p in range(len(self.patch)):  
             
             # Get some geometry
             xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
             # Get the slip vector
-            slip = self.getslip(p) 
+            slip = self.getslip(self.patch[p]) 
             rake = np.arctan(slip[1]/slip[0])
 
             # Compute the vector
@@ -1074,9 +1074,9 @@ class faultwithvaryingdip(object):
 
         # Get the UL corner of the patch
         if center:
-            x1 = (p[1,0] + p[2,0])/2.
-            x2 = (p[1,1] + p[2,1])/2.
-            x3 = (p[1,2] + p[0,2])/2.
+            x1 = 0.5 * (p1[0] + p2[0])
+            x2 = 0.5 * (p1[1] + p2[1])
+            x3 = 0.5 * (p1[2] + p3[2])
         else:
             x1 = p2[0]
             x2 = p2[1]
@@ -1382,7 +1382,8 @@ class faultwithvaryingdip(object):
                     GtsU = Gts[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
 
             # set the GFs
-            self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU], tensile=[GtsE, GtsN, GtsU], vertical=vertical)
+            self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU], 
+                        tensile=[GtsE, GtsN, GtsU], vertical=vertical)
 
         elif datatype is 'insarrates':
 
@@ -1398,7 +1399,8 @@ class faultwithvaryingdip(object):
                 GtsLOS = Gts
 
             # set the GFs
-            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS], vertical=True)
+            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS], 
+                        vertical=True)
 
         elif datatype is 'cosicorrrates':
             
@@ -1420,9 +1422,6 @@ class faultwithvaryingdip(object):
         # all done
         return
         
-        # all done
-        return
-
     def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], tensile=[None, None, None], vertical=False):
         '''
         Stores the Green's functions matrices into the fault structure.
@@ -2382,6 +2381,7 @@ class faultwithvaryingdip(object):
         # Load the slip values if provided
         if slipVec is not None:
             nPatches = len(self.patch)
+            print(nPatches, slipVec.shape)
             assert slipVec.shape == (nPatches,3), 'mismatch in shape for input slip vector'
             self.slip = slipVec
 

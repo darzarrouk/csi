@@ -451,15 +451,9 @@ class cosicorrrates(object):
         This routine prepares the data file as input for EDKS.
         '''
 
-        raise NotImplementedError('do it later')
-        return
-
         # Get the x and y positions
         x = self.x
         y = self.y
-
-        # Get LOS informations
-        los = self.los
 
         # Open the file
         if len(self.name.split())>1:
@@ -472,11 +466,11 @@ class cosicorrrates(object):
         fout = open(filename, 'w')
 
         # Write a header
-        fout.write("id E N E_los N_los U_los\n")
+        fout.write("id E N \n")
 
         # Loop over the data locations
         for i in range(len(x)):
-            string = '{:5d} {} {} {} {} {} \n'.format(i, x[i], y[i], los[i,0], los[i,1], los[i,2])
+            string = '{:5d} {} {} \n'.format(i, x[i], y[i])
             fout.write(string)
 
         # Close the file
