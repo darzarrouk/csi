@@ -156,7 +156,7 @@ class cosicorrrates(object):
         # All done
         return
 
-    def read_from_grd(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.1):
+    def read_from_grd(self, filename, factor=1.0, step=0.0, cov=False):
         '''
         Reads velocity map from a grd file.
         Args:
@@ -164,6 +164,8 @@ class cosicorrrates(object):
             * factor    : scale by a factor
             * step      : add a value.
         '''
+
+        print ("Read from file {} into data set {}".format(filename, self.name))
 
         # Initialize values
         self.east = []
@@ -176,26 +178,30 @@ class cosicorrrates(object):
         # Open the input file
         import scipy.io.netcdf as netcdf
         feast = netcdf.netcdf_file(filename+'_east.grd')
-        fnorth= netcdf.netcdf_file(filename+'_north.grd')
+        fnorth = netcdf.netcdf_file(filename+'_north.grd')
 
         # Get the values
-        self.east = (feast.variables['z'][:,:].flatten() + step)*factor
-        self.north = (fnorth.variables['z'][:,:].flatten() + step)*factor
+        self.east = (feast.variables['z'][:].flatten() + step)*factor
+        self.north = (fnorth.variables['z'][:].flatten() + step)*factor
         self.err_east = np.ones((self.east.shape)) * factor
         self.err_north = np.ones((self.north.shape)) * factor
         self.err_east[np.where(np.isnan(self.east))] = np.nan
         self.err_north[np.where(np.isnan(self.north))] = np.nan
 
         # Deal with lon/lat
-        Lon = fin.variables['x'][:]
-        Lat = fin.variables['y'][:]
+        Lon = feast.variables['x'][:]
+        Lat = feast.variables['y'][:]
+        self.lonarr = Lon.copy()
+        self.latarr = Lat.copy()
         Lon, Lat = np.meshgrid(Lon,Lat)
         w, l = Lon.shape
         self.lon = Lon.reshape((w*l,)).flatten()
         self.lat = Lat.reshape((w*l,)).flatten()
+        self.grd_shape = (w,l)
 
         # Keep the non-nan pixels only
-        u = np.flatnonzero(np.isfinite(self.vel))
+        u = np.isfinite(self.east)
+        u *= np.isfinite(self.north)
         self.lon = self.lon[u]
         self.lat = self.lat[u]
         self.east = self.east[u]
@@ -205,6 +211,50 @@ class cosicorrrates(object):
 
         # Convert to utm
         self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
+
+        # Read the covariance
+        if cov:
+            nd = self.east.size + self.north.size
+            self.Cd = np.fromfile(filename + '.cov', dtype=np.float32).reshape((nd,nd))
+            self.Cd *= factor
+
+        # Store the factor
+        self.factor = factor
+    
+        # Save number of observations per station
+        self.obs_per_station = 2
+
+        # All done
+        return
+
+    
+    def read_with_reader(self, readerFunc, filePrefix, factor=1.0, cov=False):
+        '''
+        Read data from a *.txt file using a user provided reading function. Assume the user
+        knows what they are doing and are returning the correct values.
+        '''
+
+        lon,lat,east,north,east_err,north_err = readerFunc(filePrefix + '.txt')
+        self.lon = lon
+        self.lat = lat
+        self.east = factor * east
+        self.north = factor * north
+        self.err_east = factor * east_err
+        self.err_north = factor * north_err
+
+        # Convert to utm
+        self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
+
+        # Read the covariance 
+        if cov:
+            nd = self.east.size + self.north.size
+            self.Cd = np.fromfile(filePrefix + '.cov', dtype=np.float32).reshape((nd,nd))
+
+        # Store the factor
+        self.factor = factor
+
+        # Save number of observations per station
+        self.obs_per_station = 2
 
         # All done
         return

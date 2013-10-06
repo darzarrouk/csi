@@ -492,7 +492,8 @@ class multifaultsolve(object):
         # All done
         return
 
-    def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10.0, bounds=None):
+    def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10.0, bounds=None,
+                                   method='SLSQP'):
         """ 
         Solves the least squares problem:
     
@@ -502,12 +503,19 @@ class multifaultsolve(object):
 
         Args:
             mprior          : a priori model; if None, mprior = np.zeros((Nm,))
+            Mw_thresh       : upper bound on moment magnitude
+            bounds          : list of tuple bounds for every parameter
+            method          : solver for constrained minimization: SLSQP or COBYLA
+                              SLSQP is recommended
         """
         assert self.ready, 'You need to assemble the GFs'
 
         # Import things
         import scipy.linalg as scilin
         from scipy.optimize import minimize
+
+        # Check the provided method is valid
+        assert method == 'SLSQP' or method == 'COBYLA', 'unsupported minimizing method'
         
         # Print
         print ("---------------------------------")
@@ -574,7 +582,7 @@ class multifaultsolve(object):
 
         # Call solver
         res = minimize(costFunction, np.ones((Nm,)), args=(G,d,iCd,iCm,mprior),
-                       constraints=constraints, method='SLSQP', bounds=bounds,
+                       constraints=constraints, method=method, bounds=bounds,
                        options={'disp': True})
 
         # Store result

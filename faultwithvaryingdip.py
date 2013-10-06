@@ -12,6 +12,7 @@ import scipy.interpolate as sciint
 from scipy.linalg import block_diag
 import copy
 import sys
+import os
 
 # Personals
 major, minor, micro, release, serial = sys.version_info
@@ -1278,11 +1279,12 @@ class faultwithvaryingdip(object):
         # All done
         return
 
-    def saveGFs(self, dtype='d'):
+    def saveGFs(self, dtype='d', outputDir='.'):
         '''
         Saves the Green's functions in different files
         Args:
             dtype       : Format of the binary data saved.
+            outputDir   : Directory to save binary data.
         '''
 
         # Print stuff
@@ -1299,21 +1301,21 @@ class faultwithvaryingdip(object):
                 gss = G['strikeslip'].flatten()
                 filename = '{}_{}_SS.gf'.format(self.name, data)
                 gss = gss.astype(dtype)
-                gss.tofile(filename)
+                gss.tofile(os.path.join(outputDir, filename))
 
             # DipSlip Component
             if 'dipslip' in G.keys():
                 gds = G['dipslip'].flatten()
                 filename = '{}_{}_DS.gf'.format(self.name, data)
                 gds = gds.astype(dtype)
-                gds.tofile(filename)
+                gds.tofile(os.path.join(outputDir, filename))
 
             # Tensile
             if 'tensile' in G.keys():
                 gts = G['tensile'].flatten()
                 filename = '{}_{}_TS.gf'.format(self.name, data)
                 gts = gts.astype(dtype)
-                gts.tofile(filename)
+                gts.tofile(os.path.join(outputDir, filename))
 
         # All done
         return
