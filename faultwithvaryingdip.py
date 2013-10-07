@@ -1309,10 +1309,6 @@ class faultwithvaryingdip(object):
 
             # DipSlip Component
             if 'dipslip' in G.keys():
-                diff = G['strikeslip'] - G['dipslip']
-                plt.imshow(diff, interpolation='nearest', aspect='auto', cmap='jet')
-                plt.colorbar(); plt.show()
-                assert False
                 gds = G['dipslip'].flatten()
                 filename = '{}_{}_DS.gf'.format(self.name, data)
                 gds = gds.astype(dtype)
