@@ -20,4 +20,5 @@ from .creepmeters import creepmeters
 from .cosicorrrates import cosicorrrates
 from .faultwithdip import faultwithdip
 from .faultwithvaryingdip import faultwithvaryingdip
+from .faultpostproc import faultpostproc
 from timefnutils import *

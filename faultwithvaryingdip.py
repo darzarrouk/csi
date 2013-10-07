@@ -635,6 +635,9 @@ class faultwithvaryingdip(object):
         # read all the lines
         A = fin.readlines()
 
+        # depth
+        D = 0.0
+
         # Loop over the file
         i = 0
         while i<len(A):
@@ -644,19 +647,20 @@ class faultwithvaryingdip(object):
             # Get the Patch Id
             self.index_parameter.append([np.int(A[i].split()[3]),np.int(A[i].split()[4]),np.int(A[i].split()[5])])
             # Get the slip value
-            if len(A[i].split()>7):
+            if len(A[i].split())>7:
                 slip = np.array([np.float(A[i].split()[7]), np.float(A[i].split()[8]), np.float(A[i].split()[9])])
             else:
                 slip = np.array([0.0, 0.0, 0.0])
             self.slip.append(slip)
-            # build patches
-            p = np.zeros((4,3))
-            pll = np.zeros((4,3))
             # get the values
             lon1, lat1, z1 = A[i+1].split()
             lon2, lat2, z2 = A[i+2].split()
             lon3, lat3, z3 = A[i+3].split()
             lon4, lat4, z4 = A[i+4].split()
+            # Depth
+            mm = min([float(z1), float(z2), float(z3), float(z4)])
+            if D<mm:
+                D=mm
             # Pass as floating point
             lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1)
             lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
@@ -665,26 +669,27 @@ class faultwithvaryingdip(object):
             lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
             lon3 = float(lon3); lat3 = float(lat3); z3 = float(z3)
             lon4 = float(lon4); lat4 = float(lat4); z4 = float(z4)
-            # Store theme
-            pll[0,:] = [lon1, lat1, z1]
-            pll[1,:] = [lon2, lat2, z2]
-            pll[2,:] = [lon3, lat3, z3]
-            pll[3,:] = [lon4, lat4, z4]
             # translate to utm
             x1, y1 = self.ll2xy(lon1, lat1)
             x2, y2 = self.ll2xy(lon2, lat2)
             x3, y3 = self.ll2xy(lon3, lat3)
             x4, y4 = self.ll2xy(lon4, lat4)
-            # Put these in m
-            x1 /= 1000.; y1 /= 1000.
-            x2 /= 1000.; y2 /= 1000.
-            x3 /= 1000.; y3 /= 1000.
-            x4 /= 1000.; y4 /= 1000.
-            # Store them
-            p[0,:] = [x1, y1, z1]
-            p[1,:] = [x2, y2, z2]
-            p[2,:] = [x3, y3, z3]
-            p[3,:] = [x4, y4, z4]
+            # Set points
+            if y1>y2:
+                p2 = [x1, y1, z1]; p2ll = [lon1, lat1, z1]
+                p1 = [x2, y2, z2]; p1ll = [lon2, lat2, z2]
+                p4 = [x3, y3, z3]; p4ll = [lon3, lat3, z3]
+                p3 = [x4, y4, z4]; p3ll = [lon4, lat4, z4]
+            else:
+                p1 = [x1, y1, z1]; p1ll = [lon1, lat1, z1]
+                p2 = [x2, y2, z2]; p2ll = [lon2, lat2, z2]
+                p3 = [x3, y3, z3]; p3ll = [lon3, lat3, z3]
+                p4 = [x4, y4, z4]; p4ll = [lon4, lat4, z4]
+            # Store these
+            p = [p1, p2, p3, p4]
+            pll = [p1ll, p2ll, p3ll, p4ll]
+            p = np.array(p)
+            pll = np.array(pll)
             # Store these in the lists
             self.patch.append(p)
             self.patchll.append(pll)
@@ -694,9 +699,16 @@ class faultwithvaryingdip(object):
         # Close the file
         fin.close()
 
+        # depth
+        self.depth = D
+        self.z_patches = np.linspace(0,D,5)
+
         # Translate slip to np.array
         self.slip = np.array(self.slip)
         self.index_parameter = np.array(self.index_parameter)
+
+        # Compute equivalent patches
+        self.computeEquivRectangle()
 
         # All done
         return
@@ -1005,7 +1017,6 @@ class faultwithvaryingdip(object):
             pt1 = p[0]; x1, y1, z1 = pt1 
             pt2 = p[1]; x2, y2, z2 = pt2
             # 2. Get the azimuth of this patch
-            #az = np.arctan2((x2-x1),(y2-y1)) 
             az = np.arctan2(y2-y1, x2-x1)
             # 3. Get the dip of this patch 
             dip1 = np.arcsin((p4[2] - p1[2]) / np.sqrt((p1[0] - p4[0])**2 
@@ -1013,16 +1024,10 @@ class faultwithvaryingdip(object):
             dip2 = np.arcsin((p3[2] - p2[2]) / np.sqrt( (p2[0] - p3[0])**2 
                            + (p2[1] - p3[1])**2 + (p2[2] - p3[2])**2))
             dip = 0.5 * (dip1 + dip2)
-
             # 4. compute the position of the bottom corners  
-            #x3 = x2 + self.width*np.cos(dip)*np.cos(az)
-            #y3 = y2 + self.width*np.cos(dip)*np.sin(az)
-            #z3 = z2 + self.width*np.sin(dip)
-            #x4 = x1 + self.width*np.cos(dip)*np.cos(az)
-            #y4 = y1 + self.width*np.cos(dip)*np.sin(az)
-            #z4 = z1 + self.width*np.sin(dip)
-            wc = self.width * np.cos(dip)
-            ws = self.width * np.sin(dip)
+            width = np.sqrt((p1[0] - p4[0])**2 + (p1[1] - p4[1])**2 + (p1[2] - p4[2])**2)
+            wc = width * np.cos(dip)
+            ws = width * np.sin(dip)
             halfPi = 0.5 * np.pi
             x3 = x2 + wc * np.cos(az + halfPi)
             y3 = y2 + wc * np.sin(az + halfPi)
@@ -1030,8 +1035,6 @@ class faultwithvaryingdip(object):
             x4 = x1 + wc * np.cos(az + halfPi)
             y4 = y1 + wc * np.sin(az + halfPi)
             z4 = z1 + ws
-
-
             pt3 = [x3, y3, z3]
             pt4 = [x4, y4, z4]
             # set up the patch
@@ -1075,9 +1078,7 @@ class faultwithvaryingdip(object):
 
         # Get the UL corner of the patch
         if center:
-            x1 = 0.5 * (p1[0] + p2[0])
-            x2 = 0.5 * (p1[1] + p2[1])
-            x3 = 0.5 * (p1[2] + p3[2])
+            x1, x2, x3 = self.getcenter(self.equivpatch[u])
         else:
             x1 = p2[0]
             x2 = p2[1]
@@ -1346,6 +1347,7 @@ class faultwithvaryingdip(object):
         Npatchs = len(self.patch)
 
         # Read the files and reshape the GFs
+        Gss = None; Gds = None; Gts = None
         if strikeslip is not None:
             Gss = np.fromfile(strikeslip, dtype=dtype)
             ndl = int(Gss.shape[0]/Npatchs)
@@ -1409,21 +1411,9 @@ class faultwithvaryingdip(object):
                         vertical=True)
 
         elif datatype is 'cosicorrrates':
-            
-            # Initialize
-            GssLOS = None; GdsLOS = None; GtsLOS = None
-
-            # Get the values
-            if strikeslip is not None:
-                GssLOS = Gss
-            if dipslip is not None:
-                GdsLOS = Gds
-            if tensile is not None:
-                GtsLOS = Gts
-
-            # set the GFs
-            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], 
-                        tensile=[GtsLOS], vertical=vertical)
+            # Don't need to do anything special here. The GF arrays we read in are
+            # already in the right shape.
+            self.setGFs(data, strikeslip=[Gss], dipslip=[Gds], tensile=[Gts], vertical=vertical)
 
         # all done
         return
@@ -2252,7 +2242,14 @@ class faultwithvaryingdip(object):
         '''
 
         # Filename
-        filename = 'edks_{}'.format(self.name)
+        if len(self.name.split())>1:
+            fltname = self.name.split()[0]
+            for s in self.name.split()[1:]:
+                fltname = fltname+'_'+s
+        else:
+            fltname = self.name
+        print(fltname)
+        filename = 'edks_{}'.format(fltname)
 
         # Open the output file
         flld = open(filename+'.lonlatdepth','w')
@@ -2291,7 +2288,7 @@ class faultwithvaryingdip(object):
         '''
 
         # Get the patches
-        patch = self.patch
+        patch = self.equivpatch
 
         # Initialize a list
         center = []
@@ -2306,15 +2303,18 @@ class faultwithvaryingdip(object):
 
     def getcenter(self, p):
         ''' 
-        Get the center of one patch.
+        Get the center of one rectangular patch.
         Args:
             * p    : Patch geometry.
         '''
     
         # Get center
-        x = (p[1][0] + p[2][0])/2.
-        y = (p[1][1] + p[2][1])/2.
-        z = (p[1][2] + p[0][2])/2.
+        p1, p2, p3, p4 = p
+
+        # Compute the center
+        x = p1[0] + (p3[0] - p1[0])/2.
+        y = p1[1] + (p3[1] - p1[1])/2.
+        z = p1[2] + (p3[2] - p1[2])/2.
 
         # All done
         return x,y,z

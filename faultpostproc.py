@@ -10,6 +10,7 @@ import shapely.geometry as geom
 import matplotlib.pyplot as plt
 from scipy.linalg import block_diag
 import sys
+import os
 
 class faultpostproc(object):
 
@@ -27,6 +28,11 @@ class faultpostproc(object):
         self.fault = fault
         self.utmzone = utmzone
         self.Mu = Mu
+
+        # Determine number of patches along-strike and along-dip
+        self.numPatches = len(self.fault.patch)
+        self.numDepthPatches = self.fault.numz
+        self.numStrikePatches = self.numPatches // self.numDepthPatches
 
         print ("---------------------------------")
         print ("---------------------------------")
@@ -304,6 +310,50 @@ class faultpostproc(object):
 
         # All done
         return Mo, Mw
+
+    def integratedMomentWithDepth(self, plotOutput=None):
+        '''
+        Computes the cumulative moment with depth by summing the moment per row of
+        patches.
+        '''
+        depths = []; moments = []
+        for depthIndex in range(self.numDepthPatches):
+            # Sum moment for current row of patches
+            rowMoment = 0.0
+            for strikeIndex in range(self.numStrikePatches):
+                patchIndex = depthIndex * self.numStrikePatches + strikeIndex
+                rowMoment += self.computePatchMoment(patchIndex)
+            # Convert to scalar moment
+            rowMo = np.sqrt(0.5 * np.sum(rowMoment**2))
+            # Add to list of moments
+            moments.append(rowMo)
+            # Store the patch center depth
+            patch_z = self.fault.getpatchgeometry(patchIndex, center=True)[2]
+            depths.append(patch_z)
+
+        # Compute cumulative sums and convert to moment magnitude
+        moments = np.array(moments)
+        Mws = 2.0 / 3.0 * (np.log10(moments) - 9.1)
+        sumMoments = np.cumsum(moments)
+        sumMws = 2.0 / 3.0 * (np.log10(sumMoments) - 9.1)
+
+        if plotOutput is not None:
+            fig = plt.figure(figsize=(12,8))
+            ax1 = fig.add_subplot(121)
+            ax2 = fig.add_subplot(122)
+            for ax,dat in [(ax1, Mws), (ax2, sumMws)]:
+                ax.plot(dat, depths, '-o')
+                ax.grid(True)
+                ax.set_xlabel('Moment magnitude', fontsize=16)
+                ax.set_ylabel('Depth (km)', fontsize=16)
+                ax.tick_params(labelsize=16)
+                ax.set_ylim(ax.get_ylim()[::-1])
+            ax1.set_title('Moment magnitude vs. depth', fontsize=18)
+            ax2.set_title('Integrated moment magnitude vs. depth', fontsize=18)
+            fig.savefig(os.path.join(plotOutput, 'depthMomentDistribution.png'),
+                        dpi=400, bbox_inches='tight')
+
+        return depths, sumMoments, sumMws
 
     def write2GCMT(self, form='full', filename=None):
         '''

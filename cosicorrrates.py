@@ -157,7 +157,63 @@ class cosicorrrates(object):
         # All done
         return
 
-    def read_from_grd(self, filename, factor=1.0, step=0.0, cov=False):
+    def read_from_xyz(self, filename, factor=1.0, step=0.0, header=0):
+        '''
+        Reads the maps from a xyz file
+        lon lat east north east_err north_err
+        Args:
+            * filename  : name of the input file.
+            * factor    : scale by a factor.
+            * step      : add a value.
+        '''
+
+        # Initialize values
+        self.east = []
+        self.north = []
+        self.lon = []
+        self.lat = []
+        self.err_east = []
+        self.err_north = []
+
+        # Open the file and read
+        fin = open(filename, 'r')
+        A = fin.readlines()
+        fin.close()
+
+        # remove the header lines
+        A = A[header:]
+
+        # Loop 
+        for line in A:
+            l = line.split()
+            self.lon.append(np.float(l[0]))
+            self.lat.append(np.float(l[1]))
+            self.east.append(np.float(l[2]))
+            self.north.append(np.float(l[3]))
+            self.err_east.append(np.float(l[4]))
+            self.err_north.append(np.float(l[5]))
+        
+        # Make arrays
+        self.east = factor * (np.array(self.east) + step)
+        self.north = factor * (np.array(self.north) + step)
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+        self.err_east = np.array(self.err_east) * factor
+        self.err_north = np.array(self.err_north) * factor
+
+        # Compute lon lat to utm
+        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
+
+        # Store the factor
+        self.factor = factor
+   
+        # Save number of observations per station
+        self.obs_per_station = 2
+
+        # All done
+        return       
+
+    def read_from_grd(self, filename, factor=1.0, step=0.0, cov=False, flip=False):
         '''
         Reads velocity map from a grd file.
         Args:
@@ -200,6 +256,10 @@ class cosicorrrates(object):
         self.lat = Lat.reshape((w*l,)).flatten()
         self.grd_shape = (w,l)
 
+        # Flip if necessary
+        if flip:
+            Lat = np.flipud(Lat)
+
         # Keep the non-nan pixels only
         u = np.isfinite(self.east)
         u *= np.isfinite(self.north)
@@ -219,8 +279,9 @@ class cosicorrrates(object):
             self.Cd = np.fromfile(filename + '.cov', dtype=np.float32).reshape((nd,nd))
             self.Cd *= factor
 
-        # Store the factor
+        # Store the factor and step
         self.factor = factor
+        self.step = step
     
         # Save number of observations per station
         self.obs_per_station = 2
@@ -627,9 +688,6 @@ class cosicorrrates(object):
             * width             : Width of the profile.
         '''
 
-        raise NotImplementedError('do it later')
-        return
-
         # the profiles are in a dictionary
         if not hasattr(self, 'profiles'):
             self.profiles = {}
@@ -686,29 +744,32 @@ class cosicorrrates(object):
         boxll.append([lon3, lat3])
         boxll.append([lon4, lat4])
 
-        # Get the InSAR points in this box.
-        # 1. import shapely and nxutils
+        # Get the points in this box.
+        # 1. import shapely and path
         import shapely.geometry as geom
-        import matplotlib.nxutils as mnu
+        import matplotlib.path as path
 
-        # 2. Create an array with the InSAR positions
-        SARXY = np.vstack((self.x, self.y)).T
+        # 2. Create an array with the points positions
+        COSIXY = np.vstack((self.x, self.y)).T
 
-        # 3. Find those who are inside
-        Bol = mnu.points_inside_poly(SARXY, box)
+        # 3. Create a box
+        rect = path.Path(box, closed=True)
 
-        # 4. Get these values
+        # 4. Find those who are inside
+        Bol = rect.contains_points(COSIXY)
+
+        # 5. Get these values
         xg = self.x[Bol]
         yg = self.y[Bol]
-        vel = self.vel[Bol]
-        err = self.err[Bol]
+        east = self.east[Bol]
+        north = self.north[Bol]
 
-        # 5. Get the sign of the scalar product between the line and the point
+        # 6. Get the sign of the scalar product between the line and the point
         vec = np.array([xe1-xc, ye1-yc])
-        sarxy = np.vstack((xg-xc, yg-yc)).T
-        sign = np.sign(np.dot(sarxy, vec))
+        cosixy = np.vstack((xg-xc, yg-yc)).T
+        sign = np.sign(np.dot(cosixy, vec))
 
-        # 6. Compute the distance (along, across profile) and get the velocity
+        # 7. Compute the distance (along, across profile) and get the velocity
         # Create the list that will hold these values
         Dacros = []; Dalong = []; V = []; E = []
         # Build lines of the profile
@@ -721,6 +782,14 @@ class cosicorrrates(object):
             Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
             Dacros.append(Lalong.distance(PP.geoms[p]))
 
+        # 8. Compute the fault Normal/Parallel displacements
+        Vec1 = np.array([x2-x1, y2-y1])
+        Vec1 = Vec1/np.sqrt( Vec1[0]**2 + Vec1[1]**2 )
+        FPar = np.dot([[east[i], north[i]] for i in range(east.shape[0])], Vec1)
+        Vec2 = np.array([x4-x1, y4-y1])
+        Vec2 = Vec2/np.sqrt( Vec2[0]**2 + Vec2[1]**2 )
+        FNor = np.dot([[east[i], north[i]] for i in range(east.shape[0])], Vec2)
+
         # Store it in the profile list
         self.profiles[name] = {}
         dic = self.profiles[name]
@@ -728,11 +797,17 @@ class cosicorrrates(object):
         dic['Length'] = length
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
-        dic['LOS Velocity'] = vel
-        dic['LOS Error'] = err
+        dic['East'] = east
+        dic['North'] = north
+        dic['Fault Normal'] = FNor
+        dic['Fault Parallel'] = FPar
         dic['Distance'] = np.array(Dalong)
         dic['Normal Distance'] = np.array(Dacros)
         dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
+        lone1, late1 = self.putm(xe1*1000., ye1*1000., inverse=True)
+        lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
+        dic['EndPointsLL'] = [[lone1, late1], 
+                            [lone2, late2]]
 
         # All done
         return
@@ -741,9 +816,6 @@ class cosicorrrates(object):
         '''
         Writes the profile named 'name' to the ascii file filename.
         '''
-
-        raise NotImplementedError('do it later')
-        return
 
         # open a file
         fout = open(filename, 'w')
@@ -756,8 +828,8 @@ class cosicorrrates(object):
         fout.write('# Profile Generated with StaticInv\n')
         fout.write('# Center: {} {} \n'.format(dic['Center'][0], dic['Center'][1]))
         fout.write('# Endpoints: \n')
-        fout.write('#           {} {} \n'.format(dic['EndPoints'][0][0], dic['EndPoints'][0][1]))
-        fout.write('#           {} {} \n'.format(dic['EndPoints'][1][0], dic['EndPoints'][1][1]))
+        fout.write('#           {} {} \n'.format(dic['EndPointsLL'][0][0], dic['EndPointsLL'][0][1]))
+        fout.write('#           {} {} \n'.format(dic['EndPointsLL'][1][0], dic['EndPointsLL'][1][1]))
         fout.write('# Box Points: \n')
         fout.write('#           {} {} \n'.format(dic['Box'][0][0],dic['Box'][0][1]))
         fout.write('#           {} {} \n'.format(dic['Box'][1][0],dic['Box'][1][1]))
@@ -778,10 +850,12 @@ class cosicorrrates(object):
         # Write the values
         for i in range(len(dic['Distance'])):
             d = dic['Distance'][i]
-            Vp = dic['LOS Velocity'][i]
-            Ep = dic['LOS Error'][i]
-            if np.isfinite(Vp):
-                fout.write('{} {} {} \n'.format(d, Vp, Ep))
+            Ep = dic['East'][i]
+            Np = dic['North'][i]
+            Fn = dic['Fault Normal'][i]
+            Fp = dic['Fault Parallel'][i]
+            if np.isfinite(Ep):
+                fout.write('{} {} {} {} {} \n'.format(d, Ep, Np, Fn, Fp))
 
         # Close the file
         fout.close()
@@ -789,7 +863,7 @@ class cosicorrrates(object):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None):
+    def plotprofile(self, name, legendscale=5., fault=None):
         '''
         Plot profile.
         Args:
@@ -797,25 +871,28 @@ class cosicorrrates(object):
             * legendscale: Length of the legend arrow.
         '''
 
-        raise NotImplementedError('do it later')
-        return
-
         # open a figure
         fig = plt.figure()
-        carte = fig.add_subplot(121)
-        prof = fig.add_subplot(122)
+        carteEst = fig.add_subplot(221)
+        carteNord = fig.add_subplot(222)
+        prof = fig.add_subplot(212)
 
         # Prepare a color map for insar
         import matplotlib.colors as colors
         import matplotlib.cm as cmx
         cmap = plt.get_cmap('jet')
-        cNorm = colors.Normalize(vmin=self.vel.min(), vmax=self.vel.max())
-        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+        cNormE = colors.Normalize(vmin=self.east.min(), vmax=self.east.max())
+        scalarMapE = cmx.ScalarMappable(norm=cNormE, cmap=cmap)
+        cNormN = colors.Normalize(vmin=self.north.min(), vmax=self.north.max())
+        scalarMapN = cmx.ScalarMappable(norm=cNormN, cmap=cmap)
 
         # plot the InSAR Points on the Map
-        carte.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, vmin=self.vel.min(), vmax=self.vel.max(), linewidths=0.0)
-        scalarMap.set_array(self.vel) 
-        plt.colorbar(scalarMap)
+        carteEst.scatter(self.x, self.y, s=10, c=self.east, cmap=cmap, vmin=self.east.min(), vmax=self.east.max(), linewidths=0.0)
+        scalarMapE.set_array(self.east)
+        plt.colorbar(scalarMapE, orientation='horizontal', shrink=0.5)
+        carteNord.scatter(self.x, self.y, s=10, c=self.north, cmap=cmap, vmin=self.north.min(), vmax=self.north.max(), linewidth=0.0)
+        scalarMapN.set_array(self.north) 
+        plt.colorbar(scalarMapN,  orientation='horizontal', shrink=0.)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
@@ -826,17 +903,20 @@ class cosicorrrates(object):
             bb[i,1] = y
         bb[4,0] = bb[0,0]
         bb[4,1] = bb[0,1]
-        carte.plot(bb[:,0], bb[:,1], '.k')
-        carte.plot(bb[:,0], bb[:,1], '-k')
+        carteEst.plot(bb[:,0], bb[:,1], '.k')
+        carteEst.plot(bb[:,0], bb[:,1], '-k')
+        carteNord.plot(bb[:,0], bb[:,1], '.k')
+        carteNord.plot(bb[:,0], bb[:,1], '-k')
 
         # plot the selected stations on the map
         # Later
 
         # plot the profile
         x = self.profiles[name]['Distance']
-        y = self.profiles[name]['LOS Velocity']
-        ey = self.profiles[name]['LOS Error']
-        p = prof.errorbar(x, y, yerr=ey, label='los velocity', marker='.', linestyle='')
+        Ep = self.profiles[name]['Fault Normal']
+        Np = self.profiles[name]['Fault Parallel']
+        pe = prof.plot(x, Ep, label='Fault Normal displacement', marker='.', color='r', linestyle='')
+        pn = prof.plot(x, Np, label='Fault Par. displacement', marker='.', color='b', linestyle='')
 
         # If a fault is here, plot it
         if fault is not None:
@@ -845,7 +925,8 @@ class cosicorrrates(object):
                 fault = [fault]
             # Loop on the faults
             for f in fault:
-                carte.plot(f.xf, f.yf, '-')
+                carteEst.plot(f.xf, f.yf, '-')
+                carteNord.plot(f.xf, f.yf, '-')
                 # Get the distance
                 d = self.intersectProfileFault(name, f)
                 if d is not None:
@@ -853,10 +934,12 @@ class cosicorrrates(object):
                     prof.plot([d, d], [ymin, ymax], '--', label=f.name)
 
         # plot the legend
-        prof.legend()
+        legend = prof.legend()
+        legend.draggable = True
 
         # axis of the map
-        carte.axis('equal')
+        carteEst.axis('equal')
+        carteNord.axis('equal')
 
         # Show to screen 
         plt.show()
@@ -872,9 +955,6 @@ class cosicorrrates(object):
             * fault     : fault object from verticalfault.
         '''
 
-        raise NotImplementedError('do it later')
-        return
-
         # Grab the fault trace
         xf = fault.xf
         yf = fault.yf
@@ -889,9 +969,7 @@ class cosicorrrates(object):
         Lp = geom.LineString(prof['EndPoints'])
 
         # Build a linestring with the fault
-        ff = []
-        for i in range(len(xf)):
-            ff.append([xf[i], yf[i]])
+        ff = [[xf[i], yf[i]] for i in range(xf.shape[0])]
         Lf = geom.LineString(ff)
 
         # Get the intersection
@@ -1119,22 +1197,28 @@ class cosicorrrates(object):
             * interp    : Number of points along lon and lat.
         '''
 
-        raise NotImplementedError('do it later')
-        return
+        print('---------------------------------')
+        print('---------------------------------')
+        print('Write in grd format to files {}_east.grd and {}_north.grd'.format(fname, fname))
 
         # Get variables
         x = self.lon
         y = self.lat
         if data is 'data':
-            z = self.vel
+            e = self.east
+            n = self.north
         elif data is 'synth':
-            z = self.synth
+            e = self.synth_east
+            n = self.synth_north
 
         # Write these to a dummy file
-        fout = open('xyz.xyz', 'w')
+        foute = open('east.xyz', 'w')
+        foutn = open('north.xyz', 'w')
         for i in range(x.shape[0]):
-            fout.write('{} {} {} \n'.format(x[i], y[i], z[i]))
-        fout.close()
+            foute.write('{} {} {} \n'.format(x[i], y[i], e[i]))
+            foutn.write('{} {} {} \n'.format(x[i], y[i], n[i]))
+        foute.close()
+        foutn.close()
 
         # Import subprocess
         import subprocess as subp
@@ -1152,21 +1236,24 @@ class cosicorrrates(object):
         I = '-I{}+/{}+'.format(Nlon,Nlat)
 
         # Create the G string
-        G = '-G'+fname
+        Ge = '-G'+fname+'_east.grd'
+        Gn = '-G'+fname+'_north.grd'
 
         # Create the command
-        com = ['surface', R, I, G]
+        come = ['surface', R, I, Ge]
+        comn = ['surface', R, I, Gn]
 
         # open stdin and stdout
-        fin = open('xyz.xyz', 'r')
+        fine = open('east.xyz', 'r')
+        finn = open('north.xyz', 'r')
 
         # Execute command
-        subp.call(com, stdin=fin)
+        subp.call(come, stdin=fine)
+        subp.call(comn, stdin=finn)
 
         # CLose the files
-        fin.close()
+        fine.close()
+        finn.close()
 
         # All done
         return
-        
-
