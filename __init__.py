@@ -21,4 +21,5 @@ from .cosicorrrates import cosicorrrates
 from .faultwithdip import faultwithdip
 from .faultwithvaryingdip import faultwithvaryingdip
 from .faultpostproc import faultpostproc
+from .fault3D import fault3D
 from timefnutils import *
