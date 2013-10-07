@@ -1179,6 +1179,9 @@ class faultwithvaryingdip(object):
         elif data.dtype is 'cosicorrrates':
             Ndt = 2 * Nd
             data.obs_per_station = 2
+            if vertical:
+                Ndt += Nd
+                data.obs_per_station += 1
 
         # Get the number of parameters
         Np = len(self.patch)
@@ -1205,8 +1208,9 @@ class faultwithvaryingdip(object):
             else:
                 self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
         elif data.dtype is 'cosicorrrates':
-            vertical=False
             self.d[data.name] = np.hstack((data.east.flatten(), data.north.flatten()))
+            if vertical:
+                self.d[data.name] = np.hstack((self.d[data.name], np.zeros((Nd,))))
             assert self.d[data.name].shape[0] == Ndt, 'd vector and numObs do not match'
 
         # Initialize the slip vector
@@ -1305,6 +1309,10 @@ class faultwithvaryingdip(object):
 
             # DipSlip Component
             if 'dipslip' in G.keys():
+                diff = G['strikeslip'] - G['dipslip']
+                plt.imshow(diff, interpolation='nearest', aspect='auto', cmap='jet')
+                plt.colorbar(); plt.show()
+                assert False
                 gds = G['dipslip'].flatten()
                 filename = '{}_{}_DS.gf'.format(self.name, data)
                 gds = gds.astype(dtype)
@@ -1419,12 +1427,13 @@ class faultwithvaryingdip(object):
 
             # set the GFs
             self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], 
-                        tensile=[GtsLOS], vertical=False)
+                        tensile=[GtsLOS], vertical=vertical)
 
         # all done
         return
         
-    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], tensile=[None, None, None], vertical=False):
+    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], 
+               tensile=[None, None, None], vertical=False):
         '''
         Stores the Green's functions matrices into the fault structure.
         Args:
@@ -1444,6 +1453,8 @@ class faultwithvaryingdip(object):
                 data.obs_per_station = 3
         elif data.dtype is 'cosicorrrates':
             data.obs_per_station = 2
+            if vertical:
+                data.obs_per_station += 1
 
         # Create the storage for that dataset
         if data.name not in self.G.keys():
@@ -1461,6 +1472,9 @@ class faultwithvaryingdip(object):
                 self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
         elif data.dtype is 'cosicorrrates':
             self.d[data.name] = np.hstack((data.east.T.flatten(), data.north.T.flatten()))
+            if vertical:
+                self.d[data.name] = np.hstack((self.d[data.name],
+                                               np.zeros_like(data.east.T.ravel())))
 
         # StrikeSlip
         if len(strikeslip) == 3:            # GPS case
@@ -1511,7 +1525,7 @@ class faultwithvaryingdip(object):
                 ds.append(U_ds)
                 nd += 1
             if nd > 0:
-                ds = np.array(ss)
+                ds = np.array(ds)
                 ds = ds.reshape((nd*d, m))
                 G['dipslip'] = ds
         
@@ -1701,10 +1715,17 @@ class faultwithvaryingdip(object):
 
                     elif data.dtype is 'cosicorrrates':
 
-                        basePoly = self.poly[data.name] / 2
+                        basePoly = self.poly[data.name] / data.obs_per_station
                         assert basePoly == 3 or basePoly == 6, """
                             only support 3rd or 4th order poly for cosicorr
                             """
+
+                        # In case vertical is True, make sure we only include polynomials
+                        # for horizontals
+                        if basePoly == 3:
+                            self.poly[data.name] = 6
+                        else:
+                            self.poly[data.name] = 12
 
                         # Compute normalizing factors
                         numPoints = Ndlocal // data.obs_per_station
@@ -1736,6 +1757,10 @@ class faultwithvaryingdip(object):
 
                         # Block diagonal for both components
                         orb = block_diag(orb, orb)
+
+                        # Check to see if we're including verticals
+                        if data.obs_per_station == 3:
+                            orb = np.vstack((orb, np.zeros((numPoints, 2*basePoly))))
 
                     # Put it into G for as much observable per station we have
                     polend = polstart + self.poly[data.name]

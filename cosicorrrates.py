@@ -36,6 +36,7 @@ class cosicorrrates(object):
         self.north = None
         self.east_synth = None
         self.north_synth = None
+        self.up_synth = None
         self.err_east = None
         self.err_north = None
         self.lon = None
@@ -423,7 +424,7 @@ class cosicorrrates(object):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', include_poly=False):
+    def buildsynth(self, faults, direction='sd', include_poly=False, vertical=False):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
@@ -438,6 +439,7 @@ class cosicorrrates(object):
         # Clean synth
         self.east_synth = np.zeros((Nd,))
         self.north_synth = np.zeros((Nd,))
+        self.up_synth = np.zeros((Nd,))
 
         # Loop on each fault
         for fault in faults:
@@ -450,19 +452,25 @@ class cosicorrrates(object):
                 Ss = fault.slip[:,0]
                 ss_synth = np.dot(Gs, Ss)
                 self.east_synth += ss_synth[:Nd]
-                self.north_synth += ss_synth[Nd:]
+                self.north_synth += ss_synth[Nd:2*Nd]
+                if vertical:
+                    self.up_synth += ss_synth[2*Nd:]
             if ('d' in direction) and ('dipslip' in G.keys()):
                 Gd = G['dipslip']
                 Sd = fault.slip[:,1]
                 sd_synth = np.dot(Gd, Sd)
                 self.east_synth += sd_synth[:Nd]
-                self.north_synth += sd_synth[Nd:]
+                self.north_synth += sd_synth[Nd:2*Nd]
+                if vertical:
+                    self.up_synth += sd_synth[2*Nd:]
             if ('t' in direction) and ('tensile' in G.keys()):
                 Gt = G['tensile']
                 St = fault.slip[:,2]
                 st_synth = np.dot(Gt, St)
                 self.east_synth += st_synth[:Nd]
-                self.north_synth += st_synth[Nd:]
+                self.north_synth += st_synth[Nd:2*Nd]
+                if vertical:
+                    self.up_synth += st_synth[2*Nd:]
 
             if include_poly:
                 if (self.name in fault.polysol.keys()):
