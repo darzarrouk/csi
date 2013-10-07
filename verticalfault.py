@@ -1728,7 +1728,7 @@ class verticalfault(object):
                 ds.append(U_ds)
                 nd += 1
             if nd > 0:
-                ds = np.array(ss)
+                ds = np.array(ds)
                 ds = ds.reshape((nd*d, m))
                 G['dipslip'] = ds
         
