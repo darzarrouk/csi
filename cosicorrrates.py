@@ -246,23 +246,26 @@ class cosicorrrates(object):
         self.err_north[np.where(np.isnan(self.north))] = np.nan
 
         # Deal with lon/lat
-        Lon = feast.variables['x'][:]
-        Lat = feast.variables['y'][:]
-        self.lonarr = Lon.copy()
-        self.latarr = Lat.copy()
+        if 'x' in feast.variables.keys():
+            Lon = feast.variables['x'][:]
+            Lat = feast.variables['y'][:]
+        elif 'x_range' in feast.variables.keys():
+            LonS, LonE = feast.variables['x_range'][:]
+            LatS, LatE = feast.variables['y_range'][:]
+            nLon, nLat = feast.variables['dimension'][:]
+            Lon = np.linspace(LonS, LonE, num=nLon)
+            Lat = np.linspace(LatS, LatE, num=nLat)
         Lon, Lat = np.meshgrid(Lon,Lat)
-        w, l = Lon.shape
-        self.lon = Lon.reshape((w*l,)).flatten()
-        self.lat = Lat.reshape((w*l,)).flatten()
-        self.grd_shape = (w,l)
 
         # Flip if necessary
         if flip:
             Lat = np.flipud(Lat)
+        w, l = Lon.shape
+        self.lon = Lon.reshape((w*l,)).flatten()
+        self.lat = Lat.reshape((w*l,)).flatten()
 
         # Keep the non-nan pixels only
-        u = np.isfinite(self.east)
-        u *= np.isfinite(self.north)
+        u = np.flatnonzero(np.isfinite(self.east))
         self.lon = self.lon[u]
         self.lat = self.lat[u]
         self.east = self.east[u]
@@ -272,12 +275,6 @@ class cosicorrrates(object):
 
         # Convert to utm
         self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
-
-        # Read the covariance
-        if cov:
-            nd = self.east.size + self.north.size
-            self.Cd = np.fromfile(filename + '.cov', dtype=np.float32).reshape((nd,nd))
-            self.Cd *= factor
 
         # Store the factor and step
         self.factor = factor
