@@ -288,7 +288,7 @@ class fault3D(object):
         # all done
         return
 
-    def buildPatches(self, dip, dipdirection, every=10):
+    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001):
         '''
         Builds a dipping fault.
         Args:
@@ -394,6 +394,9 @@ class fault3D(object):
                     p3 = [x3, y3, z3]; p3ll = [lon3, lat3, z3]
                     p4 = [x4, y4, z4]; p4ll = [lon4, lat4, z4]
                 # Store these
+                psize = np.sqrt( (x2-x1)**2 + (y2-y1)**2 )
+                if psize<minpatchsize:           # Increase the size of the previous patch
+                    continue                # Breaks the loop and trashes the patch
                 p = [p1, p2, p3, p4]
                 pll = [p1ll, p2ll, p3ll, p4ll]
                 p = np.array(p)

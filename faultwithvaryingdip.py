@@ -2315,7 +2315,7 @@ class faultwithvaryingdip(object):
         x = p1[0] + (p3[0] - p1[0])/2.
         y = p1[1] + (p3[1] - p1[1])/2.
         z = p1[2] + (p3[2] - p1[2])/2.
-
+        
         # All done
         return x,y,z
 
