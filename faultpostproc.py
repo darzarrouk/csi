@@ -31,8 +31,9 @@ class faultpostproc(object):
 
         # Determine number of patches along-strike and along-dip
         self.numPatches = len(self.fault.patch)
-        self.numDepthPatches = self.fault.numz
-        self.numStrikePatches = self.numPatches / self.numDepthPatches
+        if self.fault.numz is not None:
+            self.numDepthPatches = self.fault.numz
+            self.numStrikePatches = self.numPatches / self.numDepthPatches
 
         print ("---------------------------------")
         print ("---------------------------------")
