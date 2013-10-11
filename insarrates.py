@@ -315,7 +315,8 @@ class insarrates(object):
 
         # Get the number
         Oo = fault.polysol[self.name].shape[0]
-        assert ( (Oo==1) or (Oo==3) or (Oo==4) ), 'Number of polynomial parameters can be 1, 3 or 4.'
+        assert ( (Oo==1) or (Oo==3) or (Oo==4) ), \
+            'Number of polynomial parameters can be 1, 3 or 4.'
 
         # Get the parameters
         Op = fault.polysol[self.name]
@@ -328,20 +329,22 @@ class insarrates(object):
         print('Correcting insar rate {} from polynomial function: {}'.format(self.name, tuple(Op[i] for i in range(Oo))))
 
         # Fill in the first columns
-        orb[:,0] = 1.*self.factor
+        orb[:,0] = 1.0
 
         # If more columns
-        if Oo>=3:
-            Nx = fault.OrbNormalizingFactor[self.name]['x']
-            Ny = fault.OrbNormalizingFactor[self.name]['y']
+        if Oo >= 3:
+            normX = fault.OrbNormalizingFactor[self.name]['x']
+            normY = fault.OrbNormalizingFactor[self.name]['y']
             x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
-            orb[:,1] = (self.x-x0)/(Nx-x0)
-            orb[:,2] = (self.y-y0)/(Ny-y0)
-        if Oo>=4:
-            orb[:,3] = (self.x-x0)/(Nx-x0) * (self.y-y0)/(Ny-y0)
+            orb[:,1] = (self.x - x0) / normX
+            orb[:,2] = (self.y - y0) / normY
+        if Oo >= 4:
+            orb[:,3] = orb[:,1] * orb[:,2]
+        # Scale everything by the data factor
+        orb *= self.factor
 
         # Get the correction
-        self.orb = np.dot(orb,Op)
+        self.orb = np.dot(orb, Op)
 
         # Correct
         self.vel -= self.orb
@@ -406,14 +409,19 @@ class insarrates(object):
 
             if include_poly:
                 if (self.name in fault.polysol.keys()):
+                    # Get the orbital parameters
                     sarorb = fault.polysol[self.name]
+                    # Get reference point and normalizing factors
+                    x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
+                    normX = fault.OrbNormalizingFactor[self.name]['x']
+                    normY = fault.OrbNormalizingFactor[self.name]['y']
                     if sarorb is not None:
                         self.synth += sarorb[0]
                         if sarorb.size >= 3:
-                            self.synth += sarorb[1] * data.x/np.abs(data.x).max()
-                            self.synth += sarorb[2] * data.y/np.abs(data.y).max() 
+                            self.synth += sarorb[1] * (self.x - x0) / normX
+                            self.synth += sarorb[2] * (self.y - y0) / normY
                         if sarorb.size >= 4:
-                            self.synth += sarorb[3] * (data.x/np.abs(data.x).max())*(data.y/np.abs(data.y).max())
+                            self.synth += sarorb[3] * (self.x-x0)*(self.y-y0)/(normX*normY)
 
         # All done
         return

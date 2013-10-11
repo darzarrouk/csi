@@ -301,7 +301,7 @@ class faultwithvaryingdip(object):
         # all done
         return
 
-    def buildPatches(self, dip, dipdirection, every=10):
+    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001):
         '''
         Builds a dipping fault.
         Args:
@@ -399,6 +399,9 @@ class faultwithvaryingdip(object):
                     p3 = [x3, y3, z3]; p3ll = [lon3, lat3, z3]
                     p4 = [x4, y4, z4]; p4ll = [lon4, lat4, z4]
                 # Store these
+                psize = np.sqrt( (x2-x1)**2 + (y2-y1)**2 )
+                if psize<minpatchsize:           # Increase the size of the previous patch
+                    continue                # Breaks the loop and trashes the patch
                 p = [p1, p2, p3, p4]
                 pll = [p1ll, p2ll, p3ll, p4ll]
                 p = np.array(p)
@@ -1676,6 +1679,7 @@ class faultwithvaryingdip(object):
             # Build the polynomial function
             if self.poly[data.name].__class__ is not str:
                 if self.poly[data.name] > 0:
+
                     if data.dtype is 'gpsrates':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         nn = Ndlocal/data.obs_per_station
@@ -1683,21 +1687,30 @@ class faultwithvaryingdip(object):
                         orb[nn:2*nn, 1] = 1.0
                         if data.obs_per_station == 3:
                             orb[2*nn:3*nn, 2] = 1.0
+
                     elif data.dtype is 'insarrates':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
-                        orb[:] = 1.0 * data.factor
+                        orb[:,0] = 1.0
                         if self.poly[data.name] >= 3:
+                            # Compute normalizing factors
                             if not hasattr(self, 'OrbNormalizingFactor'):
                                 self.OrbNormalizingFactor = {}
                             self.OrbNormalizingFactor[data.name] = {}
-                            self.OrbNormalizingFactor[data.name]['x'] = np.abs(data.x).max()
-                            self.OrbNormalizingFactor[data.name]['y'] = np.abs(data.y).max()
-                            x0 = data.x[0]; y0 = data.y[0]
+                            x0 = data.x[0]
+                            y0 = data.y[0]
+                            normX = np.abs(data.x - x0).max()
+                            normY = np.abs(data.y - y0).max()
+                            # Save them for later
+                            self.OrbNormalizingFactor[data.name]['x'] = normX
+                            self.OrbNormalizingFactor[data.name]['y'] = normY
                             self.OrbNormalizingFactor[data.name]['ref'] = [x0, y0]
-                            orb[:,1] = (data.x-x0)/(np.abs(data.x-x0)).max()
-                            orb[:,2] = (data.y-y0)/(np.abs(data.y-y0)).max()
+                            # Fill in functionals
+                            orb[:,1] = (data.x - x0) / normX
+                            orb[:,2] = (data.y - y0) / normY
                         if self.poly[data.name] >= 4:
-                            orb[:,3] = (data.x-x0)/(np.abs(data.x-x0)).max() * (data.y-y0)/(np.abs(data.y-y0)).max()
+                            orb[:,3] = orb[:,1] * orb[:,2]
+                        # Scale everything by the data factor
+                        orb *= data.factor
 
                     elif data.dtype is 'cosicorrrates':
 

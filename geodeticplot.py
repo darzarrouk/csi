@@ -534,7 +534,8 @@ class geodeticplot:
         # All done
         return
 
-    def insar_decimate(self, insar, norm=None, colorbar=True, data='data'):
+    def insar_decimate(self, insar, norm=None, colorbar=True, data='data',
+                       plotType='rect', gmtCmap=None):
         ''' 
         Args:
             * insar     : insar object from insarrates.
@@ -543,53 +544,70 @@ class geodeticplot:
             * data      : plot either 'data' or 'synth' or 'res'.
         '''
 
-        # Prepare the colorlimits
-        if norm is None:
-            vmin = insar.vel.min()
-            vmax = insar.vel.max()
-        else:
-            vmin = norm[0]
-            vmax = norm[1]
-
-        # Prepare the colormap
-        cmap = plt.get_cmap('jet')
-        cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
-        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
-
-        if data is 'data':
+        # Choose data type
+        if data == 'data':
             d = insar.vel
-        elif data is 'synth':
+        elif data == 'synth':
             d = insar.synth
-        elif data is 'res':
+        elif data == 'res':
             d = insar.vel - insar.synth
         else:
             print('Unknown data type')
             return
 
-        for i in range(insar.xycorner.shape[0]):
-            x = []
-            y = []
-            # upper left
-            x.append(insar.xycorner[i,0])
-            y.append(insar.xycorner[i,1])
-            # upper right
-            x.append(insar.xycorner[i,2])
-            y.append(insar.xycorner[i,1])
-            # down right
-            x.append(insar.xycorner[i,2])
-            y.append(insar.xycorner[i,3])
-            # down left
-            x.append(insar.xycorner[i,0])
-            y.append(insar.xycorner[i,3])
-            verts = [zip(x, y)]
-            rect = colls.PolyCollection(verts)
-            rect.set_color(scalarMap.to_rgba(d[i]))
-            rect.set_edgecolors('k')
-            self.carte.add_collection(rect)
+        # Prepare the colorlimits
+        if norm is None:
+            vmin = d.min()
+            vmax = d.max()
+        else:
+            vmin = norm[0]
+            vmax = norm[1]
+
+        # Prepare the colormap
+        if gmtCmap is not None:
+            try:
+                import basemap_utils as bu
+                cmap = bu.gmtColormap(gmtCmap)
+            except ImportError:
+                cmap = plt.get_cmap('seismic') 
+        else:
+            cmap = plt.get_cmap('seismic')
+        cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+
+        if plotType is 'rect':
+            for i in range(insar.xycorner.shape[0]):
+                x = []
+                y = []
+                # upper left
+                x.append(insar.xycorner[i,0])
+                y.append(insar.xycorner[i,1])
+                # upper right
+                x.append(insar.xycorner[i,2])
+                y.append(insar.xycorner[i,1])
+                # down right
+                x.append(insar.xycorner[i,2])
+                y.append(insar.xycorner[i,3])
+                # down left
+                x.append(insar.xycorner[i,0])
+                y.append(insar.xycorner[i,3])
+                verts = [zip(x, y)]
+                rect = colls.PolyCollection(verts)
+                rect.set_color(scalarMap.to_rgba(d[i]))
+                rect.set_edgecolors('k')
+                self.carte.add_collection(rect)
+            
+        elif plotType is 'scatter':
+            for i in range(insar.x.size):
+                color = scalarMap.to_rgba(d[i])
+                self.carte.plot(insar.x[i], insar.y[i], 'o', color=color)
+
+        else:
+            assert False, 'unsupported plot type. Must be rect or scatter'
 
         # plot colorbar
         if colorbar:
-            scalarMap.set_array(insar.vel)
+            scalarMap.set_array(d)
             plt.colorbar(scalarMap)
 
         # All done
@@ -608,17 +626,17 @@ class geodeticplot:
         '''
 
         # Choose the data
-        if data is 'dataEast':
+        if data == 'dataEast':
             d = corr.east
-        elif data is 'dataNorth':
+        elif data == 'dataNorth':
             d = corr.north
-        elif data is 'synthEast':
+        elif data == 'synthEast':
             d = corr.east_synth
-        elif data is 'synthNorth':
+        elif data == 'synthNorth':
             d = corr.north_synth
-        elif data is 'resEast':
+        elif data == 'resEast':
             d = corr.east - corr.east_synth
-        elif data is 'resNorth':
+        elif data == 'resNorth':
             d = corr.north - corr.north_synth
         else:
             print('unknown data type')
