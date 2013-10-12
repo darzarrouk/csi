@@ -236,6 +236,7 @@ class cosicorrrates(object):
         import scipy.io.netcdf as netcdf
         feast = netcdf.netcdf_file(filename+'_east.grd')
         fnorth = netcdf.netcdf_file(filename+'_north.grd')
+        self.grd_shape = feast.variables['z'][:].shape
 
         # Get the values
         self.east = (feast.variables['z'][:].flatten() + step)*factor
@@ -255,6 +256,8 @@ class cosicorrrates(object):
             nLon, nLat = feast.variables['dimension'][:]
             Lon = np.linspace(LonS, LonE, num=nLon)
             Lat = np.linspace(LatS, LatE, num=nLat)
+        self.lonarr = Lon.copy()
+        self.latarr = Lat.copy()
         Lon, Lat = np.meshgrid(Lon,Lat)
 
         # Flip if necessary
