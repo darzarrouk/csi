@@ -1275,7 +1275,7 @@ class gpsrates(object):
         '''
         Args:
             * namefile  : Name of the output file.
-            * data      : data or synth.
+            * data      : data, synth, strain.
 
         '''
 
@@ -1299,6 +1299,8 @@ class gpsrates(object):
             z = self.vel_enu
         elif data is 'synth':
             z = self.synth
+        elif data is 'strain':
+            z = self.Strain
         else:
             print('Unknown data type to write...')
             return
