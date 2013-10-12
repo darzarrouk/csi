@@ -2256,7 +2256,6 @@ class fault3D(object):
                 fltname = fltname+'_'+s
         else:
             fltname = self.name
-        print(fltname)
         filename = 'edks_{}'.format(fltname)
 
         # Open the output file
