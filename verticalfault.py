@@ -336,6 +336,30 @@ class verticalfault(object):
         # All done
         return
 
+    def computeArea(self):
+        '''
+        Computes the area of all rectangles.
+        '''
+
+        # Area
+        self.area = []
+
+        # Loop
+        for p in self.patch:
+
+            # get points
+            p1 = p[0]
+            p2 = p[1]
+            p3 = p[2]
+
+            # computes distances
+            d1 = np.sqrt( (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2 + (p1[2]-p2[2])**2 )
+            d2 = np.sqrt( (p3[0]-p2[0])**2 + (p3[1]-p2[1])**2 + (p3[2]-p2[2])**2 )
+            self.area.append(d1*d2)
+
+        # all done
+        return
+
     def extrap1d(self,interpolator):
         '''
         Linear extrapolation routine. Found on StackOverflow by sastanin.
@@ -2295,8 +2319,6 @@ class verticalfault(object):
             yd = (np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())/(np.unique(self.centers[:,1]).size)
             zd = (np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())/(np.unique(self.centers[:,2]).size)
             lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
-        print ("Lambda0 = {}".format(lam0))
-        C = (sigma*lam0/lam)**2
 
         # Creates the principal Cm matrix
         Np = len(self.patch)*len(slipdir)
@@ -2305,24 +2327,41 @@ class verticalfault(object):
         Cmt = np.zeros((len(self.patch), len(self.patch)))
         Cm = np.zeros((Np, Np))
 
-        # Loop over the patches
-        i = 0
-        for p1 in self.patch:
-            j = 0
-            for p2 in self.patch:
-                # Compute the distance
-                d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
-                # Compute Cm
-                Cmt[i,j] = C * np.exp( -1.0*d/lam)
-                Cmt[j,i] = C * np.exp( -1.0*d/lam)
-                # Upgrade counter
-                j += 1
-            # upgrade counter
-            i += 1
+        # Build the sigma and lambda lists
+        if type(sigma) is not list:
+            s = []; l = []
+            for sl in range(len(slipdir)):
+                s.append(sigma)
+                l.append(lam)
+            sigma = s
+            lam = l
+        assert (type(sigma) is list), 'Sigma is not a list, why???'
+        if type(sigma) is list:
+            assert(len(sigma)==len(lam)), 'Sigma and lambda must have the same length'
+            assert(len(sigma)==len(slipdir)), 'Need one value of sigma and one value of lambda per slip direction'
 
-        # Store that into Cm
+        # Loop over the slipdirections
         st = 0
-        for i in range(len(slipdir)):
+        for sl in range(len(slipdir)):
+            # pick the right values
+            la = lam[sl]
+            C = (sigma[sl]*lam0/la)**2
+            # Loop over the patches
+            i = 0
+            for p1 in self.patch:
+                j = 0
+                for p2 in self.patch:
+                    # Compute the distance
+                    d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
+                    # Compute Cm
+                    Cmt[i,j] = C * np.exp( -1.0*d/la)
+                    Cmt[j,i] = C * np.exp( -1.0*d/la)
+                    # Upgrade counter
+                    j += 1
+                # upgrade counter
+                i += 1
+
+            # Store that into Cm
             se = st + len(self.patch)
             Cm[st:se, st:se] = Cmt
             st += len(self.patch)

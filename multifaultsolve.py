@@ -571,8 +571,11 @@ class multifaultsolve(object):
             Ahhhhh hard coded shear modulus.
             """
             shearModulus = 22.5e9
-            moment = shearModulus * np.dot(patchAreas, m[:Npatch])
-            Mw = 2.0 / 3.0 * np.log10(moment) - 6.0
+            moment = shearModulus * np.abs(np.dot(patchAreas, m[:Npatch]))
+            if moment>0.:
+                Mw = 2.0 / 3.0 * np.log10(moment) - 6.0
+            else:
+                Mw = -6.0
             return np.array([Mw_thresh - Mw])
 
         # Define the constraints dictionary
@@ -581,7 +584,7 @@ class multifaultsolve(object):
                        'args': (Mw_thresh, self.patchAreas, Npatch)}
 
         # Call solver
-        res = minimize(costFunction, np.ones((Nm,)), args=(G,d,iCd,iCm,mprior),
+        res = minimize(costFunction, mprior, args=(G,d,iCd,iCm,mprior),
                        constraints=constraints, method=method, bounds=bounds,
                        options={'disp': True})
 
@@ -591,6 +594,29 @@ class multifaultsolve(object):
         # All done
         return
 
+    def writeMpost2File(self, outfile):
+        '''
+        Writes the solution to a file.
+        '''
+    
+        # Check
+        assert (hasattr(self, 'mpost')), 'Compute mpost first, you idiot...'
+
+        # Open file
+        fout = open(outfile, 'w')
+
+        # Write header
+        fout.write('# Param Number | Mean (mm/yr) | Std (mm/yr) \n')
+
+        # Loop over mpost
+        for i in range(self.mpost.shape[0]):
+            fout.write('{:3d} {} 0.0000 \n'.format(i, self.mpost[i]))
+    
+        # Close file
+        fout.close()
+
+        # All done
+        return
 
     def writeGFs2BinaryFile(self, outfile='GF.dat', dtype='f'):
         '''
