@@ -877,7 +877,7 @@ class fault3D(object):
             xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
             # Get the slip vector
             slip = self.getslip(self.patch[p]) 
-            rake = np.arctan(slip[1]/slip[0])
+            rake = np.arctan2(slip[1],slip[0])
 
             # Compute the vector
             x = np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake) 
