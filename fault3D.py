@@ -882,7 +882,7 @@ class fault3D(object):
             # Compute the vector
             x = np.sin(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake) 
             y = np.cos(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake)
-            z = -1.0*np.sin(dip)*np.sin(rake)
+            z = np.sin(dip)*np.sin(rake)
         
             # Scale these
             if scale.__class__ is float:
