@@ -205,7 +205,8 @@ class insarrates(object):
         # All done
         return
 
-    def read_from_grd(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.1):
+    def read_from_grd(self, filename, factor=1.0, step=0.0, incidence=None, heading=None,
+                      los=None):
         '''
         Reads velocity map from a grd file.
         Args:
@@ -213,6 +214,8 @@ class insarrates(object):
             * factor    : scale by a factor
             * step      : add a value.
         '''
+
+        print ("Read from file {} into data set {}".format(filename, self.name))
 
         # Initialize values
         self.vel = []
@@ -250,15 +253,22 @@ class insarrates(object):
         self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
 
         # Deal with the LOS
-        alpha = (heading+90.0)*np.pi/180.0
-        phi = incidence*np.pi/180.0 
-        Se = -1.0*np.sin(alpha) * np.sin(phi) 
-        Sn = -1.0*np.cos(alpha) * np.sin(phi) 
-        Su = np.cos(phi) 
         self.los = np.ones((self.lon.shape[0],3))
-        self.los[:,0] *= Se
-        self.los[:,1] *= Sn
-        self.los[:,2] *= Su
+        if heading is not None and incidence is not None and los is None:
+            alpha = (heading+90.0)*np.pi/180.0
+            phi = incidence*np.pi/180.0 
+            Se = -1.0*np.sin(alpha) * np.sin(phi) 
+            Sn = -1.0*np.cos(alpha) * np.sin(phi) 
+            Su = np.cos(phi) 
+            self.los[:,0] *= Se
+            self.los[:,1] *= Sn
+            self.los[:,2] *= Su
+        elif los is not None:
+            self.los[:,0] *= los[0]
+            self.los[:,1] *= los[1]
+            self.los[:,2] *= los[2]
+        else:
+            assert False, 'not enough information to compute LOS'
 
         # Store the factor
         self.factor = factor
