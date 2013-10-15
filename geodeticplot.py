@@ -223,13 +223,13 @@ class geodeticplot:
         '''
 
         # Get slip
-        if slip is 'strikeslip':
+        if slip in ('strikeslip'):
             slip = fault.slip[:,0]
-        elif slip is 'dipslip':
+        elif slip in ('dipslip'):
             slip = fault.slip[:,1]
-        elif slip is 'opening':
+        elif slip in ('opening'):
             slip = fault.slip[:,2]
-        elif slip is 'total':
+        elif slip in ('total'):
             slip = np.sqrt(fault.slip[:,0]**2 + fault.slip[:,1]**2 + fault.slip[:,2]**2)
         else:
             print ("Unknown slip direction")

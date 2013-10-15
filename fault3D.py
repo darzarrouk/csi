@@ -877,24 +877,24 @@ class fault3D(object):
             xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
             # Get the slip vector
             slip = self.getslip(self.patch[p]) 
-            rake = np.arctan(slip[1]/slip[0])
+            rake = np.arctan2(slip[1],slip[0])
 
             # Compute the vector
-            x = np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake) 
-            y = np.cos(strike)*np.cos(rake) - np.sin(strike)*np.cos(dip)*np.sin(rake)
-            z = np.sin(dip)*np.sin(rake)
+            x = np.sin(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake) 
+            y = np.cos(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake)
+            z = -1.0*np.sin(dip)*np.sin(rake)
         
             # Scale these
             if scale.__class__ is float:
                 sca = scale
             elif scale.__class__ is str:
-                if scale is 'total':
+                if scale in ('total'):
                     sca = np.sqrt(slip[0]**2 + slip[1]**2 + slip[2]**2)*factor
-                elif scale is 'strikeslip':
+                elif scale in ('strikeslip'):
                     sca = slip[0]*factor
-                elif scale is 'dipslip':
+                elif scale in ('dipslip'):
                     sca = slip[1]*factor
-                elif scale is 'tensile':
+                elif scale in ('tensile'):
                     sca = slip[2]*factor
                 else:
                     print('Unknown Slip Direction in computeSlipDirection')
