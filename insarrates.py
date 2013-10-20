@@ -237,6 +237,8 @@ class insarrates(object):
         # Deal with lon/lat
         Lon = fin.variables['x'][:]
         Lat = fin.variables['y'][:]
+        self.lonarr = Lon.copy()
+        self.latarr = Lat.copy()
         Lon, Lat = np.meshgrid(Lon,Lat)
         w, l = Lon.shape
         self.lon = Lon.reshape((w*l,)).flatten()

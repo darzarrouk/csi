@@ -89,10 +89,12 @@ class faultwithvaryingdip(object):
             * n     : Number of slip values. If None, it'll take the number of patches.
         '''
 
-        if n is None:
-            n = len(self.patch)
+        # Deprecate?
+        #if n is None:
+        #    n = len(self.patch)
 
-        self.slip = np.array(())
+        n = len(self.patch)
+        self.slip = np.zeros((n,3))
 
         # All done
         return
