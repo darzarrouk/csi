@@ -243,6 +243,7 @@ class insarrates(object):
         w, l = Lon.shape
         self.lon = Lon.reshape((w*l,)).flatten()
         self.lat = Lat.reshape((w*l,)).flatten()
+        self.grd_shape = Lon.shape
 
         # Keep the non-nan pixels only
         u = np.flatnonzero(np.isfinite(self.vel))
@@ -382,13 +383,14 @@ class insarrates(object):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', include_poly=False):
+    def buildsynth(self, faults, direction='sd', include_poly=False, vertical=True):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
             * faults        : List of faults.
             * direction     : Direction of slip to use.
             * include_poly  : if a polynomial function has been estimated, include it.
+            * vertical      : always True - used here for consistency among data types
         '''
 
         # Number of data

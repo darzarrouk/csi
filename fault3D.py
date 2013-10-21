@@ -92,7 +92,7 @@ class fault3D(object):
         if n is None:
             n = len(self.patch)
 
-        self.slip = np.array(())
+        self.slip = np.zeros((n,3))
 
         # All done
         return

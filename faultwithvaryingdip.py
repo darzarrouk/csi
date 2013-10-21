@@ -95,6 +95,7 @@ class faultwithvaryingdip(object):
 
         n = len(self.patch)
         self.slip = np.zeros((n,3))
+        #self.slip = np.array(())
 
         # All done
         return

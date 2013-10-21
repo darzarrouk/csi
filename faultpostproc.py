@@ -179,8 +179,9 @@ class faultpostproc(object):
         if u.ndim == 2:
             mt = self.Mu * (np.dot(u, n.T) + np.dot(n, u.T))
         elif u.ndim == 3:
-            n = np.tile(n, (1,1,u.shape[2]))
-            nT = np.transpose(n, (1,0,2))
+            # Careful about tiling - result is already transposed
+            nT = np.tile(n, (1,1,u.shape[2]))
+            n = np.transpose(nT, (1,0,2))
             uT = np.transpose(u, (1,0,2))
             # Tricky 3D multiplication
             mt = self.Mu * ((u[:,:,None]*nT).sum(axis=1) + (n[:,:,None]*uT).sum(axis=1))
@@ -299,7 +300,7 @@ class faultpostproc(object):
         # All done 
         return
 
-    def computeCentroidLonLatDepth(self):
+    def computeCentroidLonLatDepth(self, plotOutput=None):
         '''
         Computes the equivalent centroid location.
         Take from Theoretical Global Seismology, Dahlen & Tromp. pp. 169
@@ -340,6 +341,23 @@ class faultpostproc(object):
         # Convert to lon lat
         lonc, latc = self.putm(xc*1000., yc*1000., inverse=True)
         self.centroidll = [lonc, latc, zc]
+
+        # Plot scatter
+        if plotOutput is not None:
+            assert isinstance(xc, np.ndarray), 'cannot make scatter plots with one value'
+            fig = plt.figure(figsize=(14,8))
+            ax1 = fig.add_subplot(121)
+            ax2 = fig.add_subplot(122)
+            for ax,datPair,ylabel in [(ax1,(xc,yc),'Northing'), (ax2,(xc,zc),'Depth (km)')]:
+                ax.plot(datPair[0], datPair[1], '.b', alpha=0.7)
+                ax.set_ylabel(ylabel, fontsize=18)
+                ax.set_xlabel('Easting', fontsize=18)
+                ax.tick_params(labelsize=18)
+                ax.grid(True)
+            ax1.plot(self.fault.xf, self.fault.yf, '-r', linewidth=3)
+            ax2.set_ylim(ax2.get_ylim()[::-1])
+            fig.savefig(os.path.join(plotOutput, 'centroidDists.png'), dpi=400, 
+                        bbox_inches='tight')
 
         return lonc, latc, zc
 
@@ -394,9 +412,6 @@ class faultpostproc(object):
             plotOutput                      output directory for figures
             numDepthBins                    number of bins to group patch depths
         '''
-
-        # Check to see we have compute moment tensor
-        assert hasattr(self, 'Maki'), 'Compute the Moment Tensor first'
 
         # Collect all patch depths
         patchDepths = np.empty((self.numPatches,))
