@@ -485,7 +485,7 @@ class cosicorrrates(object):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', include_poly=False, vertical=False):
+    def buildsynth(self, faults, direction='sd', poly=None, vertical=False):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
@@ -533,25 +533,43 @@ class cosicorrrates(object):
                 if vertical:
                     self.up_synth += st_synth[2*Nd:]
 
-            if include_poly:
+            if poly == 'build' or poly == 'include':
                 if (self.name in fault.polysol.keys()):
                     # Get the orbital parameters
                     orb = fault.polysol[self.name]
+                    assert orb is not None, 'no orbit solution computed'
+                    assert orb.size in [6,12], 'wrong orbit shape for cosicorr'
                     # Get orbit reference point and normalizing factors
                     x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
                     normX = fault.OrbNormalizingFactor[self.name]['x']
                     normY = fault.OrbNormalizingFactor[self.name]['y']
-                    if orb is not None:
-                        assert orb.shape[0] == 6, 'wrong orbit shape for cosicorr'
-                        self.east_synth += orb[0]
-                        self.east_synth += orb[1] * (self.x - x0) / normX
-                        self.east_synth += orb[2] * (self.y - y0) / normY
-                        self.north_synth += orb[3]
-                        self.north_synth += orb[4] * (self.x - x0) / normX
-                        self.north_synth += orb[5] * (self.y - y0) / normY
+                    # Build the reference polynomials
+                    f1 = self.factor * np.ones((self.x.size,))
+                    f2 = self.factor * (self.x - x0) / normX
+                    f3 = self.factor * (self.y - y0) / normY
+                    f4 = self.factor * (self.x - x0) * (self.y - y0) / (normX*normY)
+                    f5 = self.factor * (self.x - x0)**2 / normX**2
+                    f6 = self.factor * (self.y - y0)**2 / normY**2
+                    # Make the polynomial fields
+                    if orb.size == 6:
+                        polyModelEast = orb[0] + orb[1]*f2 + orb[2]*f3
+                        polyModelNorth = orb[3] + orb[4]*f2 + orb[5]*f3
+                    else:
+                        polyModelEast = (orb[0] + orb[1]*f2 + orb[2]*f3 
+                                       + orb[3]*f4 + orb[4]*f5 + orb[5]*f6)
+                        polyModelNorth = (orb[6] + orb[7]*f2 + orb[8]*f3 
+                                        + orb[9]*f4 + orb[10]*f5 + orb[11]*f6)
+
+                if poly == 'include':
+                    self.east_synth += polyModelEast
+                    self.north_synth += polyModelNorth
 
         # All done
-        return
+        if poly == 'build':
+            return polyModelEast, polyModelNorth
+        else:
+            return
+
 
     def ll2xy(self):
         '''

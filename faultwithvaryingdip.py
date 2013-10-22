@@ -748,7 +748,8 @@ class faultwithvaryingdip(object):
         # All done
         return
 
-    def writePatches2File(self, filename, add_slip=None, scale=1.0, patch='normal'):
+    def writePatches2File(self, filename, add_slip=None, scale=1.0, patch='normal',
+                          stdh5=None, decim=1):
         '''
         Writes the patch corners in a file that can be used in psxyz.
         Args:
@@ -756,6 +757,8 @@ class faultwithvaryingdip(object):
             * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total.
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
+            * stdh5         : name of h5 file for computing standard deviation
+            # decim         : decimation factor for samples
         '''
 
         # Write something
@@ -764,20 +767,36 @@ class faultwithvaryingdip(object):
         # Open the file
         fout = open(filename, 'w')
 
+        # If an h5 file is specified, open it
+        if stdh5 is not None:
+            import h5py
+            h5fid = h5py.File(stdh5, 'r')
+            samples = h5fid['samples'].value[::decim,:]
+
         # Loop over the patches
-        for p in range(len(self.patchll)):
+        nPatches = len(self.patch)
+        for p in range(nPatches):
 
             # Select the string for the color
             string = '  '
             if add_slip is not None:
                 if add_slip is 'strikeslip':
-                    slp = self.slip[p,0]*scale
+                    if stdh5 is not None:
+                        slp = np.std(samples[:,p])
+                    else:
+                        slp = self.slip[p,0]*scale
                     string = '-Z{}'.format(slp)
                 elif add_slip is 'dipslip':
-                    slp = self.slip[p,1]*scale
+                    if stdh5 is not None:
+                        slp = np.std(samples[:,p+nPatches])
+                    else:
+                        slp = self.slip[p,1]*scale
                     string = '-Z{}'.format(slp)
                 elif add_slip is 'total':
-                    slp = np.sqrt(self.slip[p,0]**2 + self.slip[p,1]**2)*scale
+                    if stdh5 is not None:
+                        slp = np.std(samples[:,p]**2 + samples[:,p+nPatches]**2)
+                    else:
+                        slp = np.sqrt(self.slip[p,0]**2 + self.slip[p,1]**2)*scale
                     string = '-Z{}'.format(slp)
 
             # Put the parameter number in the file as well if it exists
@@ -806,6 +825,10 @@ class faultwithvaryingdip(object):
 
         # Close th file
         fout.close()
+
+        # Close h5 file if it is open
+        if stdh5 is not None:
+            h5fid.close()
 
         # All done 
         return

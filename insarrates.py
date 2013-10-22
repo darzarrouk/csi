@@ -383,13 +383,13 @@ class insarrates(object):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', include_poly=False, vertical=True):
+    def buildsynth(self, faults, direction='sd', poly=None, vertical=True):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
             * faults        : List of faults.
             * direction     : Direction of slip to use.
-            * include_poly  : if a polynomial function has been estimated, include it.
+            * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
         '''
 
@@ -421,7 +421,7 @@ class insarrates(object):
                 losop_synth = np.dot(Gt, St)
                 self.synth += losop_synth
 
-            if include_poly:
+            if poly == 'build' or poly == 'include':
                 if (self.name in fault.polysol.keys()):
                     # Get the orbital parameters
                     sarorb = fault.polysol[self.name]
@@ -430,15 +430,22 @@ class insarrates(object):
                     normX = fault.OrbNormalizingFactor[self.name]['x']
                     normY = fault.OrbNormalizingFactor[self.name]['y']
                     if sarorb is not None:
-                        self.synth += sarorb[0]
+                        polyModel = sarorb[0]
                         if sarorb.size >= 3:
-                            self.synth += sarorb[1] * (self.x - x0) / normX
-                            self.synth += sarorb[2] * (self.y - y0) / normY
+                            polyModel += sarorb[1] * (self.x - x0) / normX
+                            polyModel += sarorb[2] * (self.y - y0) / normY
                         if sarorb.size >= 4:
-                            self.synth += sarorb[3] * (self.x-x0)*(self.y-y0)/(normX*normY)
+                            polyModel += sarorb[3] * (self.x-x0)*(self.y-y0)/(normX*normY)
+
+                if poly == 'include':
+                    self.synth += polyModel
 
         # All done
-        return
+        if poly == 'build':
+            return polyModel
+        else:
+            return
+
 
     def ll2xy(self):
         '''

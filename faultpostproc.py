@@ -21,6 +21,7 @@ class faultpostproc(object):
             * fault         : Fault object
             * Mu            : Shear modulus. Default is 24e9 GPa, because it is the PREM value for the upper 15km.
             * utmzone       : UTM zone. Default is 10 (Western US).
+            * samplesh5     : file name of h5 file containing samples
         '''
 
         # Initialize the data set 
