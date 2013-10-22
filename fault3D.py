@@ -60,6 +60,7 @@ class fault3D(object):
         self.patch = None
         self.slip = None
         self.totalslip = None
+        self.Cm        = None
 
         # Create a dictionary for the Green's functions and the data vector
         self.G = {}
@@ -614,7 +615,7 @@ class fault3D(object):
         # All done
         return
 
-    def readPatchesFromFile(self, filename):
+    def readPatchesFromFile(self, filename, Cm=None):
         '''
         Read the patches from a GMT formatted file.
         Args:   
@@ -626,9 +627,14 @@ class fault3D(object):
         self.patchll = []
         self.index_parameter = []
         self.slip = []
+        self.Cm   = []
 
-        # open the file
-        fin = open(filename, 'r')
+        # open the files
+        fin = open(filename, 'r') 
+        
+        # Assign posterior covariances
+        if Cm!=None: # Slip
+            self.Cm   = np.array(Cm)
 
         # read all the lines
         A = fin.readlines()
@@ -702,7 +708,7 @@ class fault3D(object):
         self.z_patches = np.linspace(0,D,5)
 
         # Translate slip to np.array
-        self.slip = np.array(self.slip)
+        self.slip = np.array(self.slip)        
         self.index_parameter = np.array(self.index_parameter)
 
         # Compute equivalent patches
@@ -839,7 +845,7 @@ class fault3D(object):
         # All done
         return self.slip[io,:]
 
-    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False):
+    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False, ellipse=False):
         '''
         Write a psxyz compatible file to draw lines starting from the center of each patch, 
         indicating the direction of slip.
@@ -848,7 +854,7 @@ class fault3D(object):
         '''
 
         # Copmute the slip direction
-        self.computeSlipDirection(scale=scale, factor=factor)
+        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse)
 
         # Write something
         print('Writing slip direction to file {}'.format(filename))
@@ -879,10 +885,81 @@ class fault3D(object):
         # Close file
         fout.close()
 
-        # all done
+        if ellipse:
+            # Open the file
+            fout = open('ellipse_'+filename, 'w')
+
+            # Loop over the patches
+            for e in self.ellipse:
+                
+                # Get ellipse points
+                ex, ey, ez = e[:,0],e[:,1],e[:,2]
+                
+                # Conversion to geographical coordinates
+                lone,late = self.putm(ex*1000.,ey*1000.,inverse=True)
+                
+                # Write the > sign to the file
+                fout.write('> \n')
+                
+                for lon,lat,z in zip(lone,late,ez):
+                    fout.write('{} {} {} \n'.format(lon, lat, -1.*z))
+            # Close file
+            fout.close()            
+
+        # All done
         return
 
-    def computeSlipDirection(self, scale=1.0, factor=1.0):
+    def getEllipse(self,patch,ellipseCenter=None,Npoints=10):
+        '''
+        Compute the ellipse error given Cm for a given patch
+        args:
+               (optional) center  : center of the ellipse
+               (optional) Npoints : number of points on the ellipse
+        '''
+
+        # Get Cm
+        Cm = np.diag(self.Cm[patch,:2])
+        Cm[0,1]=Cm[1,0]=self.Cm[patch,2]
+        
+        # Get strike and dip
+        xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True) 
+        dip    *= np.pi/180.
+        strike *= np.pi/180.    
+        if ellipseCenter!=None:
+            xc,yc,zc = ellipseCenter
+        
+        # Compute eigenvalues/eigenvectors
+        D,V=np.linalg.eig(Cm)
+        v1 = V[:,0]
+        a  = np.sqrt(D[0])
+        b  = np.sqrt(D[1])
+        phi   = np.arctan2(v1[1],v1[0])
+        theta = np.linspace(0,2*np.pi,Npoints);
+    
+        # The ellipse in x and y coordinates
+        Ex = a*np.cos(theta)
+        Ey = b*np.sin(theta)
+    
+        # Correlation Rotation     
+        R  = np.array([[np.cos(phi),-np.sin(phi)],[np.sin(phi),np.cos(phi)]])
+        RE = np.dot(R,np.array([Ex,Ey]))    
+        
+        # Strike/Dip rotation
+        ME = np.array([RE[0,:],RE[1,:]*np.cos(dip),RE[1,:]*np.sin(dip)])
+        R  = np.array([[np.sin(strike),-np.cos(strike),0.],
+                       [np.cos(strike),np.sin(strike) ,0.],
+                       [      0.      ,      0.       ,1.]])
+        RE = np.dot(R,ME).T
+        
+        # Translation on Fault
+        RE[:,0] += xc
+        RE[:,1] += yc
+        RE[:,2] += zc
+        
+        # All done
+        return RE
+
+    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False):
         '''
         Computes the segment indicating the slip direction.
         scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
@@ -890,12 +967,17 @@ class fault3D(object):
 
         # Create the array
         self.slipdirection = []
+        
+        # Check Cm if ellipse
+        if ellipse:
+            self.ellipse = []
+            assert(self.Cm!=None), 'Provide Cm values'
 
         # Loop over the patches
         for p in range(len(self.patch)):  
             
             # Get some geometry
-            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
+            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True) 
             # Get the slip vector
             slip = self.getslip(self.patch[p]) 
             rake = np.arctan2(slip[1],slip[0])
@@ -929,8 +1011,12 @@ class fault3D(object):
             ye = yc + y
             ze = zc + z                                                                          
  
-            # Append
+            # Append ellipse 
+            self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze]))
+
+            # Append slip direction
             self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])
+            
 
         # All done
         return
