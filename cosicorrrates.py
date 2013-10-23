@@ -771,7 +771,7 @@ class cosicorrrates(object):
         COSIXY = np.vstack((self.x, self.y)).T
 
         # 3. Create a box
-        rect = path.Path(box, closed=True)
+        rect = path.Path(box, closed=False)
 
         # 4. Find those who are inside
         Bol = rect.contains_points(COSIXY)

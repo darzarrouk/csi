@@ -205,20 +205,23 @@ class gpsrates(object):
         boxll.append([lon4, lat4])
 
         # Get the GPSs in this box.
-        # 1. import shapely and nxutils
+        # 1. import shapely and path
         import shapely.geometry as geom
-        import matplotlib.nxutils as mnu
+        import matplotlib.path as path
 
         # 2. Create an array with the GPS positions
         GPSXY = np.vstack((self.x, self.y)).T
 
-        # 3. Find those who are inside
-        Bol = mnu.points_inside_poly(GPSXY, box)
+        # 3. Create a box
+        rect = path.Path(box, closed=False)
         
+        # 4. Find those who are inside
+        Bol = rect.contains_points(GPSXY)
+
         # 4. Get these GPS
         xg = self.x[Bol]
         yg = self.y[Bol]
-        vel = values[Bol,:]
+        vel = self.vel_enu[Bol,:]
         err = self.err_enu[Bol,:]
         names = self.station[Bol]
 
@@ -266,6 +269,10 @@ class gpsrates(object):
         dic['Normal Distance'] = np.array(Dacros)
         dic['Stations'] = names
         dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
+        lone1, late1 = self.putm(xe1*1000., ye1*1000., inverse=True)
+        lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
+        dic['EndPointsLL'] = [[lone1, late1],
+                              [lone2, late2]]
     
         # all done
         return
@@ -286,8 +293,8 @@ class gpsrates(object):
         fout.write('# Profile Generated with StaticInv\n')
         fout.write('# Center: {} {} \n'.format(dic['Center'][0], dic['Center'][1]))
         fout.write('# Endpoints: \n')
-        fout.write('#           {} {} \n'.format(dic['EndPoints'][0][0], dic['EndPoints'][0][1]))
-        fout.write('#           {} {} \n'.format(dic['EndPoints'][1][0], dic['EndPoints'][1][1]))
+        fout.write('#           {} {} \n'.format(dic['EndPointsLL'][0][0], dic['EndPointsLL'][0][1]))
+        fout.write('#           {} {} \n'.format(dic['EndPointsLL'][1][0], dic['EndPointsLL'][1][1]))
         fout.write('# Box Points: \n')
         fout.write('#           {} {} \n'.format(dic['Box'][0][0],dic['Box'][0][1]))
         fout.write('#           {} {} \n'.format(dic['Box'][1][0],dic['Box'][1][1]))
@@ -351,9 +358,6 @@ class gpsrates(object):
         carte.plot(bb[:,0], bb[:,1], '.k')
         carte.plot(bb[:,0], bb[:,1], '-k')
 
-        # plot the selected stations on the map
-        # Later
-
         # plot the profile
         x = self.profiles[name]['Distance']
         y = self.profiles[name]['Parallel Velocity']
@@ -362,6 +366,17 @@ class gpsrates(object):
         y = self.profiles[name]['Normal Velocity']
         ey = self.profiles[name]['Normal Error']
         q = prof.errorbar(x, y, yerr=ey, label='Fault normal velocity', marker='.', linestyle='')
+
+        # Plot the center of the profile
+        lonc, latc = self.profiles[name]['Center']
+        xc, yc = self.putm(lonc, latc)
+        xc /= 1000.; yc /= 1000.
+        carte.plot(xc, yc, '.r', markersize=20)
+
+        # Plot the central line of the profile
+        xe1, ye1 = self.profiles[name]['EndPoints'][0]
+        xe2, ye2 = self.profiles[name]['EndPoints'][1]
+        carte.plot([xe1, xe2], [ye1, ye2], '--k')
 
         # If a fault is here, plot it
         if fault is not None:

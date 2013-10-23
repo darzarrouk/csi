@@ -845,7 +845,7 @@ class fault3D(object):
         # All done
         return self.slip[io,:]
 
-    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False, ellipse=False):
+    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False, ellipse=None):
         '''
         Write a psxyz compatible file to draw lines starting from the center of each patch, 
         indicating the direction of slip.
@@ -885,7 +885,7 @@ class fault3D(object):
         # Close file
         fout.close()
 
-        if ellipse:
+        if ellipse is not None:
             # Open the file
             fout = open('ellipse_'+filename, 'w')
 
@@ -902,14 +902,15 @@ class fault3D(object):
                 fout.write('> \n')
                 
                 for lon,lat,z in zip(lone,late,ez):
-                    fout.write('{} {} {} \n'.format(lon, lat, -1.*z))
+                    fout.write('{} {} {} \n'.format(lon, lat, z))
+
             # Close file
             fout.close()            
 
         # All done
         return
 
-    def getEllipse(self,patch,ellipseCenter=None,Npoints=10):
+    def getEllipse(self,patch,ellipseCenter=None,Npoints=20, factor=1.0, conf=1.0):
         '''
         Compute the ellipse error given Cm for a given patch
         args:
@@ -918,21 +919,19 @@ class fault3D(object):
         '''
 
         # Get Cm
-        Cm = np.diag(self.Cm[patch,:2])
+        Cm = np.diag(self.Cm[patch,:2]**2)
         Cm[0,1]=Cm[1,0]=self.Cm[patch,2]
         
         # Get strike and dip
-        xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True) 
-        dip    *= np.pi/180.
-        strike *= np.pi/180.    
+        xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(patch, center=True) 
         if ellipseCenter!=None:
             xc,yc,zc = ellipseCenter
         
         # Compute eigenvalues/eigenvectors
         D,V=np.linalg.eig(Cm)
         v1 = V[:,0]
-        a  = np.sqrt(D[0])
-        b  = np.sqrt(D[1])
+        a  = np.sqrt(D[0])*factor*conf
+        b  = np.sqrt(D[1])*factor*conf
         phi   = np.arctan2(v1[1],v1[0])
         theta = np.linspace(0,2*np.pi,Npoints);
     
@@ -945,7 +944,7 @@ class fault3D(object):
         RE = np.dot(R,np.array([Ex,Ey]))    
         
         # Strike/Dip rotation
-        ME = np.array([RE[0,:],RE[1,:]*np.cos(dip),RE[1,:]*np.sin(dip)])
+        ME = np.array([RE[0,:],-RE[1,:]*np.cos(dip),-RE[1,:]*np.sin(dip)])
         R  = np.array([[np.sin(strike),-np.cos(strike),0.],
                        [np.cos(strike),np.sin(strike) ,0.],
                        [      0.      ,      0.       ,1.]])
@@ -959,7 +958,7 @@ class fault3D(object):
         # All done
         return RE
 
-    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False):
+    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=None):
         '''
         Computes the segment indicating the slip direction.
         scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
@@ -969,7 +968,7 @@ class fault3D(object):
         self.slipdirection = []
         
         # Check Cm if ellipse
-        if ellipse:
+        if ellipse is not None:
             self.ellipse = []
             assert(self.Cm!=None), 'Provide Cm values'
 
@@ -1011,8 +1010,9 @@ class fault3D(object):
             ye = yc + y
             ze = zc + z                                                                          
  
-            # Append ellipse 
-            self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze]))
+            # Append ellipse
+            if ellipse is not None:
+                self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze], factor=factor, conf=ellipse))
 
             # Append slip direction
             self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])
