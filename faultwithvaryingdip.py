@@ -794,7 +794,7 @@ class faultwithvaryingdip(object):
                     string = '-Z{}'.format(slp)
                 elif add_slip is 'total':
                     if stdh5 is not None:
-                        slp = np.std(samples[:,p]**2 + samples[:,p+nPatches]**2)
+                        slp = np.std(np.sqrt(samples[:,p]**2 + samples[:,p+nPatches]**2))
                     else:
                         slp = np.sqrt(self.slip[p,0]**2 + self.slip[p,1]**2)*scale
                     string = '-Z{}'.format(slp)

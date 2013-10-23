@@ -269,8 +269,7 @@ class faultpostproc(object):
             ax.set_xlabel('Moment magnitude', fontsize=18)
             ax.set_ylabel('Normalized count', fontsize=18)
             ax.tick_params(labelsize=18)
-            fig.savefig(os.path.join(plotHist, 'momentMagHist.png'), dpi=400, 
-                        bbox_inches='tight')
+            fig.savefig(os.path.join(plotHist, 'momentMagHist.pdf'))
             fig.clf()
 
         # All done
@@ -301,7 +300,7 @@ class faultpostproc(object):
         # All done 
         return
 
-    def computeCentroidLonLatDepth(self, plotOutput=None):
+    def computeCentroidLonLatDepth(self, plotOutput=None, xyzOutput=None):
         '''
         Computes the equivalent centroid location.
         Take from Theoretical Global Seismology, Dahlen & Tromp. pp. 169
@@ -359,6 +358,13 @@ class faultpostproc(object):
             ax2.set_ylim(ax2.get_ylim()[::-1])
             fig.savefig(os.path.join(plotOutput, 'centroidDists.png'), dpi=400, 
                         bbox_inches='tight')
+
+        # Write points out
+        if xyzOutput is not None:
+            fid = open(os.path.join(xyzOutput, 'centroids.xyz'), 'w')
+            for lon,lat,z in zip(*self.centroidll):
+                fid.write('%15.9f%15.9f%12.6f\n' % (lon, lat, z))
+            fid.close()
 
         return lonc, latc, zc
 
@@ -475,8 +481,7 @@ class faultpostproc(object):
                     ax.set_ylim(ax.get_ylim()[::-1])
                 ax1.set_title('Potency vs. depth', fontsize=18)
                 ax2.set_title('Integrated Potency vs. depth', fontsize=18)
-                fig.savefig(os.path.join(plotOutput, 'depthPotencyDistribution.png'),
-                            dpi=400, bbox_inches='tight')
+                fig.savefig(os.path.join(plotOutput, 'depthPotencyDistribution.pdf'))
 
             else:
       
@@ -502,8 +507,7 @@ class faultpostproc(object):
                 ax.set_ylabel('Depth (km)', fontsize=18)
                 ax.tick_params(labelsize=18)
                 ax.grid(True)
-                fig.savefig(os.path.join(plotOutput, 'depthPotencyDistribution.png'),
-                            dpi=400, bbox_inches='tight')
+                fig.savefig(os.path.join(plotOutput, 'depthPotencyDistribution.pdf'))
 
         return
 

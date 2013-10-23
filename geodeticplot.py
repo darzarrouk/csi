@@ -251,7 +251,7 @@ class geodeticplot:
             cmap = plt.get_cmap('jet_r')
         else:
             cmap = plt.get_cmap('jet')
-        Norm  = colors.Normalize(vmin=vmin, vmax=vmax)
+        cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
         for p in range(len(fault.patch)):

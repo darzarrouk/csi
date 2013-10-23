@@ -7,7 +7,7 @@ Written by R. Jolivet, April 2013.
 import numpy as np
 import pyproj as pp
 import datetime as dt
-import sopac as sopac
+#import sopac as sopac
 import StaticInv.gpsstation as gpssta
 import sys
 
