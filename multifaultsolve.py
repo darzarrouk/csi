@@ -241,7 +241,7 @@ class multifaultsolve(object):
         # All done 
         return 
 
-    def distributem(self):
+    def distributem(self, verbose=False):
         '''
         After computing the m_post model, this routine distributes the m parameters to the faults.
         '''
@@ -251,8 +251,9 @@ class multifaultsolve(object):
 
         # Loop over the faults
         for fault in faults:
-            
-            print ("Distribute the slip values to fault {}".format(fault.name))
+
+            if verbose:            
+                print("Distribute the slip values to fault {}".format(fault.name))
 
             # Store the mpost
             st = self.fault_indexes[fault.name][0]

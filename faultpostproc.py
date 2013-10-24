@@ -244,7 +244,7 @@ class faultpostproc(object):
         # All done
         return Mo
 
-    def computeMagnitude(self, plotHist=None):
+    def computeMagnitude(self, plotHist=None, outputSamp=None):
         '''
         Computes the moment magnitude.
         '''
@@ -271,6 +271,11 @@ class faultpostproc(object):
             ax.tick_params(labelsize=18)
             fig.savefig(os.path.join(plotHist, 'momentMagHist.pdf'))
             fig.clf()
+
+        # Write out the samples
+        if outputSamp is not None:
+            with open(os.path.join(outputSamp, 'momentMagSamples.dat'), 'w') as ofid:
+                self.Mw.tofile(ofid)
 
         # All done
         return Mw
@@ -409,7 +414,7 @@ class faultpostproc(object):
         # All done
         return Mo, Mw
 
-    def integratedPotencyWithDepth(self, plotOutput=None, numDepthBins=5):
+    def integratedPotencyWithDepth(self, plotOutput=None, numDepthBins=5, outputSamp=None):
         '''
         Computes the cumulative moment with depth by summing the moment per row of
         patches. If the moments were computed with mutiple samples, we form histograms of 
@@ -492,7 +497,8 @@ class faultpostproc(object):
                     # Get the histogram for the current depth
                     key = 'depthBin_%03d' % (depthIndex)
                     zbindict = potencyDict[key]
-                    n, bins = zbindict['count'], zbindict['bins']
+                    nref, bins = zbindict['count'], zbindict['bins']
+                    n = nref.copy()
                     # Shift the histogram to the current depth and scale it
                     n /= n.max() / (0.5 * dz)
                     n -= binDepths[depthIndex]
@@ -509,7 +515,26 @@ class faultpostproc(object):
                 ax.grid(True)
                 fig.savefig(os.path.join(plotOutput, 'depthPotencyDistribution.pdf'))
 
+        # Save histogram for every depth bin
+        if outputSamp is not None:
+            assert self.samplesh5 is not None, 'cannot output only one sample'
+            import h5py
+            outfid = h5py.File(os.path.join(outputSamp, 'depthPotencyHistograms.h5'), 'w') 
+            for depthIndex in range(numDepthBins):
+                # Get the histogram for the current depth
+                key = 'depthBin_%03d' % (depthIndex)
+                zbindict = potencyDict[key]
+                n, bins = zbindict['count'], zbindict['bins']
+                # Save to h5
+                depthSamp = outfid.create_dataset('depth_%fkm' % (binDepths[depthIndex]), 
+                                                  (n.size,3), 'd')
+                depthSamp[:,0] = bins
+                depthSamp[:,1] = n
+                depthSamp[:,2] = meanLogPotency[depthIndex]
+            outfid.close()
+    
         return
+
 
     def write2GCMT(self, form='full', filename=None):
         '''
