@@ -288,22 +288,33 @@ class faultpostproc(object):
         # Get Maki 
         Maki = self.Maki
 
-        # Create new tensor
-        M = np.zeros_like(Maki)
-
-        # Shuffle things around following Aki & Richard, Second edition, pp 113
-        M[0,0,...] = Maki[2,2,...]
-        M[1,0,...] = M[0,1,...] = Maki[0,2,...]
-        M[2,0,...] = M[0,2,...] = -1.0*Maki[1,2,...]
-        M[1,1,...] = Maki[0,0,...]
-        M[2,1,...] = M[1,2,...] = -1.0*Maki[1,0,...]
-        M[2,2,...] = Maki[1,1,...]
+        # Transform
+        M = self._aki2harvard(Maki)
 
         # Store it
         self.Mharvard = M
 
         # All done 
         return
+
+    def _aki2harvard(self, Min):
+        '''
+        Transform the moment from the Aki convention to the Harvard convention.
+        '''
+
+        # Create new tensor
+        M = np.zeros_like(Min)
+
+        # Shuffle things around following Aki & Richard, Second edition, pp 113
+        M[0,0,...] = Min[2,2,...]
+        M[1,0,...] = M[0,1,...] = Min[0,2,...]
+        M[2,0,...] = M[0,2,...] = -1.0*Min[1,2,...]
+        M[1,1,...] = Min[0,0,...]
+        M[2,1,...] = M[1,2,...] = -1.0*Min[1,0,...]
+        M[2,2,...] = Min[1,1,...]
+
+        # All done
+        return M
 
     def computeCentroidLonLatDepth(self, plotOutput=None, xyzOutput=None):
         '''
@@ -413,6 +424,54 @@ class faultpostproc(object):
 
         # All done
         return Mo, Mw
+
+    def computeMomentAngularDifference(self, Mout, form='harvard'):
+        '''
+        Computes the difference in angle between the moment Mout and the moment.
+        Mout: full moment in harvard convention.
+        '''
+
+        # import stuff
+        from numpy.linalg import eigh
+
+        # Get Mout in the righ tconvention
+        if form is 'aki':
+            Mout = self._aki2harvard(Mout)
+
+        # Calculate the Eigenvectors for Mout
+        V,S    = eigh(Mout)
+        inds   = np.argsort(V)
+        S      = S[:,inds]
+        S[:,2] = np.cross(S[:,0],S[:,1])
+        V1 = S
+
+        # Angles
+        angles = []
+
+        # Loop on the number of Mo
+        for i in range(self.Mharvard.shape[2]):
+            # Calculate the Eigenvectors 
+            V,S    = eigh(self.Mharvard[:,:,i])
+            inds   = np.argsort(V)                        
+            S      = S[:,inds]         
+            S[:,2] = np.cross(S[:,0],S[:,1])
+            V2 = S
+            # Calculate theta
+            th = np.arccos((np.trace(np.dot(V1,V2.transpose()))-1.)/2.)
+            # find the good value
+            for j in range(3):
+                k       = (j+1)%3
+                V3      = copy.deepcopy(V2)
+                V3[:,j] = -V3[:,j]
+                V3[:,k] = -V3[:,k]
+                x       = np.arccos((np.trace(np.dot(V1,V3.transpose()))-1.)/2.) 
+                if x < th:
+                        th = x
+
+            angles.append(th*180./np.pi)
+
+        # All done
+        return angles
 
     def integratedPotencyWithDepth(self, plotOutput=None, numDepthBins=5, outputSamp=None):
         '''
