@@ -504,6 +504,7 @@ class faultpostproc(object):
             ind = patchDepths >= zstart
             ind *= patchDepths <= zend
             ind = ind.nonzero()[0]
+            print(ind.size)
 
             # Sum the total moment for the depth bin
             M = 0.0

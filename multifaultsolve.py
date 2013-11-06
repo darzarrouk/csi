@@ -428,7 +428,7 @@ class multifaultsolve(object):
         # All done
         return
 
-    def GeneralizedLeastSquareSoln(self, mprior=None):
+    def GeneralizedLeastSquareSoln(self, mprior=None, rcond=None):
         ''' 
         Solves the generalized least-square problem using the following formula (Tarantolla, 2005, "Inverse Problem Theory", SIAM):
         
@@ -474,7 +474,10 @@ class multifaultsolve(object):
 
         # Get the inverse of Cd
         print ("Computing the inverse of the data covariance")
-        iCd = scilin.inv(Cd)
+        if rcond is None:
+            iCd = scilin.inv(Cd)
+        else:
+            iCd = np.linalg.pinv(Cd, rcond=rcond)
 
         # Construct mprior
         if mprior is None:
@@ -494,7 +497,7 @@ class multifaultsolve(object):
         return
 
     def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10.0, bounds=None,
-                                   method='SLSQP'):
+                                   method='SLSQP', rcond=None):
         """ 
         Solves the least squares problem:
     
@@ -549,7 +552,10 @@ class multifaultsolve(object):
 
         # Get the inverse of Cd
         print ("Computing the inverse of the data covariance")
-        iCd = scilin.inv(Cd)
+        if rcond is None:
+            iCd = scilin.inv(Cd)
+        else:
+            iCd = np.linalg.pinv(Cd, rcond=rcond)
 
         # Construct mprior
         if mprior is None:
@@ -585,6 +591,7 @@ class multifaultsolve(object):
                        'args': (Mw_thresh, self.patchAreas, Npatch)}
 
         # Call solver
+        print("Performing constrained minimzation")
         res = minimize(costFunction, mprior, args=(G,d,iCd,iCm,mprior),
                        constraints=constraints, method=method, bounds=bounds,
                        options={'disp': True})
