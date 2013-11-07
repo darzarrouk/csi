@@ -3,7 +3,7 @@ Init file for StaticInv
 
 Written by R. Jolivet, April 2013.
 '''
-
+from .RectangularPatches import RectangularPatches
 from .verticalfault import verticalfault
 from .gpsrates import gpsrates
 from .insarrates import insarrates

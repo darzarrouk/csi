@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import os.path
 
 # Import the class
-from StaticInv.timefnutils import *
+from .timefnutils import *
 
 class gpsstation:
 

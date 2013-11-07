@@ -8,7 +8,7 @@ import numpy as np
 import pyproj as pp
 import datetime as dt
 #import sopac as sopac
-import StaticInv.gpsstation as gpssta
+import .gpsstation as gpssta
 import sys
 
 class gpstimeseries:
