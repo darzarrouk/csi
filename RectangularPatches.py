@@ -16,7 +16,7 @@ import os
 
 class RectangularPatches(object):
     
-    def __init__(self, name, utmzone=None):
+    def __init__(self, name, utmzone=None, ellps='WGS84'):
         '''
         Args:
             * name          : Name of the fault.
@@ -34,8 +34,8 @@ class RectangularPatches(object):
 
         # Set the utm zone
         self.utmzone = utmzone
-        if self.utmzone is not None:
-            self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
+        if utmzone is not None:
+            self.set_utmzone(utmzone, ellps)
 
         # Allocate fault trace attributes
         self.xf   = None # original non-regularly spaced coordinates (UTM)
@@ -194,7 +194,7 @@ class RectangularPatches(object):
         # All done
         return
 
-    def utmzone(self, utmzone, ellps='WGS84'):
+    def set_utmzone(self, utmzone, ellps='WGS84'):
         '''
         Set the utm zone of the fault.
 

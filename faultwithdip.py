@@ -23,13 +23,13 @@ if major==2:
 
 class faultwithdip(RectangularPatches):
 
-    def __init__(self, name, utmzone=None):
+    def __init__(self, name, utmzone=None, ellps='WGS84'):
         '''
         Args:
             * name          : Name of the fault.
         '''
         
-        super(self.__class__,self).__init__(name,utmzone)
+        super(self.__class__,self).__init__(name,utmzone,ellps)
         
         # All done
         return
