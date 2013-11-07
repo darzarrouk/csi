@@ -21,7 +21,7 @@ major, minor, micro, release, serial = sys.version_info
 if major==2:
     import okada4py as ok
 
-class faultwithdip(object):
+class faultwithdip(RectangularPatches):
 
     def __init__(self, name, utmzone=None):
         '''
