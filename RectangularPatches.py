@@ -287,7 +287,8 @@ class RectangularPatches(object):
             xi.append(xt)
             yi.append(f_inter(xt))
         # While the last point is not the last wanted point
-        Error = 0.
+        total_error = 0.
+        mod_error   = 0.
         while (xi[-1] < xlast):
             # I compute the distance between me and the last accepted point
             d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
@@ -300,7 +301,7 @@ class RectangularPatches(object):
                 while ((np.abs(d-every)>tol) and (xt<xlast)):
                     # I add the distance*frac that I need to go
                     xt -= (d-every)*fracstep
-                    if (xt>xlast-Error):   # If I passed the last point (accounting for error in previous steps)
+                    if (xt>xlast-mod_error):   # If I passed the last point (accounting for error in previous steps)
                         xt = xlast
                     elif (xt<xi[-1]):            # If I passed the previous point
                         xt = xi[-1] + every
@@ -310,7 +311,8 @@ class RectangularPatches(object):
                     d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )                    
                 # When I stepped out of that loop, append
                 if cum_error:
-                    Error += every - d
+                    total_error += every - d
+                    mod_error    = np.abs(total_error)%(0.5*every)
                 xi.append(xt)
                 yi.append(yt)
             # Next guess for the loop

@@ -75,7 +75,7 @@ class fault3D(RectangularPatches):
         # all done
         return
 
-    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001, trace_tol=0.01, trace_fracstep=0.2, 
+    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001, trace_tol=0.5, trace_fracstep=0.2, 
                      trace_xaxis='x', trace_cum_error=True):
         '''
         Builds a dipping fault.
