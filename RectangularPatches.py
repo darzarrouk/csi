@@ -243,9 +243,9 @@ class RectangularPatches(object):
         # Transpose and return
         return self.putm(x*1000., y*1000., inverse=True)
 
-    def discretize(self, every=2, tol=0.5, fracstep=0.2): 
+    def discretize(self, every=2, tol=0.01, fracstep=0.2): 
         '''
-        Refine the surface fault trace prior to divide it into patches.
+        Refine the surface fault trace prior to divide it into patches. (Fault cannot be north-south)
         Args:
             * every         : Spacing between each point.
             * tol           : Tolerance in the spacing.
@@ -270,40 +270,36 @@ class RectangularPatches(object):
 
         # First guess for the next point
         xt = xi[-1] + every * fracstep 
-        # Check if first guess is in the domain
-        if xt>xlast:
-            xt = xlast
-        # Get the corresponding yt
         yt = self.inter(xt)
-            
+        # Check if first guess is in the domain
+        if xt>xlast-tol:
+            xt = xlast
+            xi.append(xt)
+            yi.append(self.inter(xt))
         # While the last point is not the last wanted point
         while (xi[-1] < xlast):
-            if (xt==xlast):         # I am at the end
+            # I compute the distance between me and the last accepted point
+            d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
+            # Check if I am in the tolerated range
+            if np.abs(d-every)<tol:
                 xi.append(xt)
                 yi.append(yt)
-            else:                   # I am not at the end
-                # I compute the distance between me and the last accepted point
-                d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
-                # Check if I am in the tolerated range
-                if np.abs(d-every)<tol:
-                    xi.append(xt)
-                    yi.append(yt)
-                else:
-                    # While I am to far away from my goal and I did not pass the last x
-                    while ((np.abs(d-every)>tol) and (xt<xlast)):
-                        # I add the distance*frac that I need to go
-                        xt -= (d-every)*fracstep
-                        if (xt>xlast):          # If I passed the last point
-                            xt = xlast
-                        elif (xt<xi[-1]):       # If I passed the previous point
-                            xt = xi[-1] + every
-                        # I compute the corresponding yt
-                        yt = self.inter(xt)
-                        # I compute the corresponding distance
-                        d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
-                    # When I stepped out of that loop, append
-                    xi.append(xt)
-                    yi.append(yt)
+            else:
+                # While I am to far away from my goal and I did not pass the last x
+                while ((np.abs(d-every)>tol) and (xt<xlast)):
+                    # I add the distance*frac that I need to go
+                    xt -= (d-every)*fracstep
+                    if (xt>xlast-tol*len(xi)):   # If I passed the last point (accounting for error in previous steps)
+                        xt = xlast
+                    elif (xt<xi[-1]):            # If I passed the previous point
+                        xt = xi[-1] + every
+                    # I compute the corresponding yt
+                    yt = self.inter(xt)
+                    # I compute the corresponding distance
+                    d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
+                # When I stepped out of that loop, append
+                xi.append(xt)
+                yi.append(yt)
             # Next guess for the loop
             xt = xi[-1] + every * fracstep
 
