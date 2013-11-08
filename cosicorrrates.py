@@ -1,35 +1,38 @@
 '''
 A class that deals with InSAR data, after decimation using VarRes.
 
-Written by R. Jolivet, April 2013.
+Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 '''
 
+# Externals
 import numpy as np
 import pyproj as pp
 import shapely.geometry as geom
 import matplotlib.pyplot as plt
 from scipy.linalg import block_diag
 
-class cosicorrrates(object):
+# Personals
+from .SourceInv import SourceInv
 
-    def __init__(self, name, utmzone='10'):
+class cosicorrrates(SourceInv):
+
+    def __init__(self, name, utmzone='10', ellps='WGS84'):
         '''
         Args:
             * name          : Name of the InSAR dataset.
-            * utmzone       : UTM zone. Default is 10 (Western US).
+            * utmzone   : UTM zone. (optional, default is 10 (Western US))
+            * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
+        # Base class init
+        super(self.__class__,self).__init__(name,utmzone,ellps) 
+
         # Initialize the data set 
-        self.name = name
-        self.utmzone = utmzone
         self.dtype = 'cosicorrrates'
 
         print ("---------------------------------")
         print ("---------------------------------")
         print (" Initialize InSAR data set {}".format(self.name))
-
-        # Initialize the UTM transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
 
         # Initialize some things
         self.east = None
@@ -570,18 +573,6 @@ class cosicorrrates(object):
         else:
             return
 
-
-    def ll2xy(self):
-        '''
-        Converts the lat lon positions into utm coordinates.
-        '''
-
-        x, y = self.putm(self.lon, self.lat)
-        self.x = x/1000.
-        self.y = y/1000.
-
-        # All done
-        return
 
     def writeEDKSdata(self):
         '''

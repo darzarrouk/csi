@@ -14,16 +14,23 @@ import copy
 import sys
 import os
 
-class RectangularPatches(object):
+# Personals
+from .SourceInv import SourceInv
+
+class RectangularPatches(SourceInv):
     
     def __init__(self, name, utmzone=None, ellps='WGS84'):
         '''
         Args:
             * name          : Name of the fault.
+            * utmzone   : UTM zone  (optional, default=None)
+            * ellps     : ellipsoid (optional, default='WGS84')
         '''
+        
+        # Base class init
+        super(RectangularPatches,self).__init__(name,utmzone,ellps)
 
         # Initialize the fault
-        self.name = name
         print ("---------------------------------")
         print ("---------------------------------")
         print ("Initializing fault {}".format(self.name))
@@ -31,11 +38,6 @@ class RectangularPatches(object):
         # Set the reference point in the x,y domain (not implemented)
         self.xref = 0.0
         self.yref = 0.0
-
-        # Set the utm zone
-        self.utmzone = utmzone
-        if utmzone is not None:
-            self.set_utmzone(utmzone, ellps)
 
         # Allocate fault trace attributes
         self.xf   = None # original non-regularly spaced coordinates (UTM)
@@ -194,21 +196,6 @@ class RectangularPatches(object):
         # All done
         return
 
-    def set_utmzone(self, utmzone, ellps='WGS84'):
-        '''
-        Set the utm zone of the fault.
-
-        Args:
-            * utm           : UTM zone of the fault.
-        '''
-
-        # Set utmzone
-        self.utmzone = utmzone
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps=ellps)
-
-        # All done
-        return
-
     def trace2xy(self):
         ''' 
         Transpose the fault trace lat/lon into the UTM reference.
@@ -220,28 +207,6 @@ class RectangularPatches(object):
         # All done
         return
 
-    def ll2xy(self, lon, lat):
-        '''
-        Do the lat/lon 2 utm transform
-        '''
-
-        # Transpose 
-        x, y = self.putm(lon, lat)
-
-        # Put it in Km
-        x = x/1000.
-        y = y/1000.
-
-        # All done
-        return x, y
-
-    def xy2ll(self, x, y):
-        '''
-        Do the utm to lat/lon transform
-        '''
-
-        # Transpose and return
-        return self.putm(x*1000., y*1000., inverse=True)
 
     def discretize(self, every=2, tol=0.01, fracstep=0.2, xaxis='x', cum_error=True): 
         '''
@@ -300,10 +265,11 @@ class RectangularPatches(object):
                 # While I am to far away from my goal and I did not pass the last x
                 while ((np.abs(d-every)>tol) and (xt<xlast)):
                     # I add the distance*frac that I need to go
-                    xt -= (d-every)*fracstep
-                    if (xt>xlast-mod_error):   # If I passed the last point (accounting for error in previous steps)
-                        xt = xlast
-                    elif (xt<xi[-1]):            # If I passed the previous point
+                    xt += (every-d)*fracstep                    
+                    # If I passed the last point (accounting for error in previous steps) 
+                    if (np.round(xt,decimals=2)>=np.round(xlast-mod_error-tol,decimals=2)):   
+                        xt = xlast                            
+                    elif (xt<xi[-1]):  # If I passed the previous point
                         xt = xi[-1] + every
                     # I compute the corresponding yt
                     yt = f_inter(xt)
@@ -1983,7 +1949,7 @@ class RectangularPatches(object):
         sigma is a list of numbers, as long as you have components of slip (1, 2 or 3).
         extra_params is a list of extra parameters.
         '''
-    
+   
         # Get the number of slip directions
         slipdir = len(self.slipdir)
         patch = len(self.patch)

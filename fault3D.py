@@ -28,6 +28,8 @@ class fault3D(RectangularPatches):
         '''
         Args:
             * name          : Name of the fault.
+            * utmzone   : UTM zone  (optional, default=None)
+            * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
         super(self.__class__,self).__init__(name,utmzone,ellps)
@@ -75,7 +77,7 @@ class fault3D(RectangularPatches):
         # all done
         return
 
-    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001, trace_tol=0.5, trace_fracstep=0.2, 
+    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001, trace_tol=0.1, trace_fracstep=0.2, 
                      trace_xaxis='x', trace_cum_error=True):
         '''
         Builds a dipping fault.

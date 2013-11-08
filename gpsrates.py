@@ -1,35 +1,37 @@
 ''' 
 A class that deals with gps rates.
 
-Written by R. Jolivet, April 2013.
+Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 '''
 
+# Externals
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
 
-class gpsrates(object):
+# Personals
+from .SourceInv import SourceInv
 
-    def __init__(self, name, utmzone='10'):
+class gpsrates(SourceInv):
+
+    def __init__(self, name, utmzone='10', ellps='WGS84'):
         '''
         Args:
             * name      : Name of the dataset.
-            * datatype  : can be 'gps' or 'insar' for now.
-            * utmzone   : UTM zone. Default is 10 (Western US).
+            * utmzone   : UTM zone. (optional, default is 10 (Western US))
+            * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
+        # Base class init
+        super(self.__class__,self).__init__(name,utmzone,ellps) 
+        
         # Set things
-        self.name = name
         self.dtype = 'gpsrates'
-        self.utmzone = utmzone
  
         # print
         print ("---------------------------------")
         print ("---------------------------------")
         print ("Initialize GPS array {}".format(self.name))
-
-        # Create a utm transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
 
         # Initialize things
         self.vel_enu = None
@@ -661,16 +663,6 @@ class gpsrates(object):
         # All done
         return
 
-    def ll2xy(self):
-        '''
-        Pass the position into the utm coordinate system.
-        '''
-        
-        # Do the transformation
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
-
-        # All done
-        return
 
     def lonlat2xy(self, lo, la):
         '''

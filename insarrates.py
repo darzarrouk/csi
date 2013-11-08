@@ -1,34 +1,37 @@
 '''
 A class that deals with InSAR data, after decimation using VarRes.
 
-Written by R. Jolivet, April 2013.
+Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 '''
 
+# Externals
 import numpy as np
 import pyproj as pp
 import shapely.geometry as geom
 import matplotlib.pyplot as plt
 
+# Personals
+from .SourceInv import SourceInv
+
 class insarrates(object):
 
-    def __init__(self, name, utmzone='10'):
+    def __init__(self, name, utmzone='10', ellps='WGS84'):
         '''
         Args:
             * name          : Name of the InSAR dataset.
-            * utmzone       : UTM zone. Default is 10 (Western US).
+            * utmzone   : UTM zone. (optional, default is 10 (Western US))
+            * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
+        # Base class init
+        super(self.__class__,self).__init__(name,utmzone,ellps) 
+
         # Initialize the data set 
-        self.name = name
-        self.utmzone = utmzone
         self.dtype = 'insarrates'
 
         print ("---------------------------------")
         print ("---------------------------------")
         print (" Initialize InSAR data set {}".format(self.name))
-
-        # Initialize the UTM transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
 
         # Initialize some things
         self.vel = None

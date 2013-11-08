@@ -3,6 +3,8 @@ Init file for StaticInv
 
 Written by R. Jolivet, April 2013.
 '''
+
+from .SourceInv import SourceInv
 from .RectangularPatches import RectangularPatches
 from .verticalfault import verticalfault
 from .gpsrates import gpsrates
@@ -22,4 +24,7 @@ from .faultwithdip import faultwithdip
 from .faultwithvaryingdip import faultwithvaryingdip
 from .faultpostproc import faultpostproc
 from .fault3D import fault3D
+
+# Kinematic inversion class
+from .faultwithdipkinematic import faultwithdipkinematic
 #from timefnutils import *
