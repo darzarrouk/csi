@@ -1,7 +1,7 @@
 '''
-A class that deals with vertical faults.
+A class that deals with 3D faults.
 
-Written by R. Jolivet, April 2013
+Written by R. Jolivet, B. Riel and Z. Duputel April 2013
 '''
 
 # Externals
@@ -75,12 +75,19 @@ class fault3D(RectangularPatches):
         # all done
         return
 
-    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001):
+    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001, trace_tol=0.01, trace_fracstep=0.2, 
+                     trace_xaxis='x', trace_cum_error=True):
         '''
         Builds a dipping fault.
         Args:
             * dip           : Dip angle evolution [[alongstrike, depth, dip], [alongstrike, depth, dip], ..., [alongstrike, depth, dip]]
             * dipdirection  : Direction towards which the fault dips.
+            * every           : patch length for the along trace discretization
+            * minpatchsize    : minimum patch size
+            * trace_tol       : tolerance for the along trace patch discretization optimization
+            * trace_fracstep  : fractional step in x for the patch discretization optimization
+            * trace_xaxis     : x axis for the discretization ('x' use x as the x axis, 'y' use y as the x axis)
+            * trace_cum_error : if True, account for accumulated error to define the x axis bound for the last patch
 
             Example: dip = [[0, 20], [10, 30], [80, 90]] means that from the origin point of the 
             fault (self.xi[0], self.yi[0]), the dip is 20 deg at 0 km, 30 deg at km 10 and 90 deg 
@@ -107,7 +114,7 @@ class fault3D(RectangularPatches):
         dipinterpolator = sciint.LinearNDInterpolator(xy, dips, fill_value=90.)      # If the points are not inside the area provided by the user, the dip will be 90 deg (vertical)
 
         # Discretize the surface trace of the fault
-        self.discretize(every=every)
+        self.discretize(every,trace_tol,trace_fracstep,trace_xaxis,trace_cum_error)
 
         # degree to rad
         dipdirection = (-1.0*dipdirection+90)*np.pi/180.
@@ -116,7 +123,7 @@ class fault3D(RectangularPatches):
         self.zi = np.ones((self.xi.shape))*self.top
 
         # set a marker
-        D = []
+        D = [self.top]
 
         # Loop over the depths
         for i in range(self.numz):
@@ -208,7 +215,7 @@ class fault3D(RectangularPatches):
         self.slip = np.array(self.slip)
 
         # Re-discretoze to get the original fault
-        self.discretize(every=every)
+        self.discretize(every,trace_tol,trace_fracstep,trace_xaxis,trace_cum_error)
 
         # Compute the equivalent rectangles
         self.computeEquivRectangle()

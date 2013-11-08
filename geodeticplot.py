@@ -1,7 +1,7 @@
 '''
 Class that plots the class verticalfault, gpsrates and insarrates in 3D.
 
-Written by R. Jolivet, April 2013.
+Written by R. Jolivet and Z. Duputel, April 2013.
 '''
 
 import matplotlib.pyplot as plt

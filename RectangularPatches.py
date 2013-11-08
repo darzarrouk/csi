@@ -243,12 +243,15 @@ class RectangularPatches(object):
         # Transpose and return
         return self.putm(x*1000., y*1000., inverse=True)
 
-    def discretize(self, every=2, tol=0.01, fracstep=0.2, xaxis='x'): 
+    def discretize(self, every=2, tol=0.01, fracstep=0.2, xaxis='x', cum_error=True): 
         '''
         Refine the surface fault trace prior to divide it into patches. (Fault cannot be north-south)
         Args:
             * every         : Spacing between each point.
             * tol           : Tolerance in the spacing.
+            * fracstep      : fractional step in x for the discretization optimization
+            * xaxis         : x axis for the discretization ('x'= use x as the x axis, 'y'= use y as the x axis)
+            * cum_error     : if True, account for cumulated error to define the x axis bound for the last patch
         '''
 
         # Check if the fault is in UTM coordinates
@@ -284,6 +287,7 @@ class RectangularPatches(object):
             xi.append(xt)
             yi.append(f_inter(xt))
         # While the last point is not the last wanted point
+        Error = 0.
         while (xi[-1] < xlast):
             # I compute the distance between me and the last accepted point
             d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
@@ -296,15 +300,17 @@ class RectangularPatches(object):
                 while ((np.abs(d-every)>tol) and (xt<xlast)):
                     # I add the distance*frac that I need to go
                     xt -= (d-every)*fracstep
-                    if (xt>xlast-tol*len(xi)):   # If I passed the last point (accounting for error in previous steps)
+                    if (xt>xlast-Error):   # If I passed the last point (accounting for error in previous steps)
                         xt = xlast
                     elif (xt<xi[-1]):            # If I passed the previous point
                         xt = xi[-1] + every
                     # I compute the corresponding yt
                     yt = f_inter(xt)
                     # I compute the corresponding distance
-                    d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
+                    d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )                    
                 # When I stepped out of that loop, append
+                if cum_error:
+                    Error += every - d
                 xi.append(xt)
                 yi.append(yt)
             # Next guess for the loop

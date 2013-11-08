@@ -1,7 +1,7 @@
 '''
 A class that deals with vertical faults.
 
-Written by R. Jolivet, April 2013
+Written by R. Jolivet, B. Riel and Z. Duputel, April 2013
 '''
 
 # Externals

@@ -89,13 +89,19 @@ class faultwithvaryingdip(RectangularPatches):
         # all done
         return
 
-    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001):
+    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001, trace_tol=0.01, trace_fracstep=0.2, 
+                     trace_xaxis='x', trace_cum_error=True):
         '''
         Builds a dipping fault.
         Args:
-            * dip           : Dip angle evolution [[0, 20], [10, 30], [80, 90]]
-            * dipdirection  : Direction towards which the fault dips.
-
+            * dip             : Dip angle evolution [[0, 20], [10, 30], [80, 90]]
+            * dipdirection    : Direction towards which the fault dips.
+            * every           : patch length for the along trace discretization
+            * minpatchsize    : minimum patch size
+            * trace_tol       : tolerance for the along trace patch discretization optimization
+            * trace_fracstep  : fractional step in x for the patch discretization optimization
+            * trace_xaxis     : x axis for the discretization ('x' use x as the x axis, 'y' use y as the x axis)
+            * trace_cum_error : if True, account for accumulated error to define the x axis bound for the last patch
             Example: dip = [[0, 20], [10, 30], [80, 90]] means that from the origin point of the 
             fault (self.xi[0], self.yi[0]), the dip is 20 deg at 0 km, 30 deg at km 10 and 90 deg 
             at km 80. The routine starts by discretizing the surface trace, then defines a dip 
@@ -115,7 +121,7 @@ class faultwithvaryingdip(RectangularPatches):
         self.patchdip = []
 
         # Discretize the surface trace of the fault
-        self.discretize(every=every)
+        self.discretize(every,trace_tol,trace_fracstep,trace_xaxis,trace_cum_error)
 
         # Build the dip evolution along strike
         self.dipevolution(dip)
@@ -129,7 +135,7 @@ class faultwithvaryingdip(RectangularPatches):
         self.zi = np.ones((self.xi.shape))*self.top
 
         # set a marker
-        D = []
+        D = [self.top]
 
         # Loop over the depths
         for i in range(self.numz):
@@ -214,7 +220,7 @@ class faultwithvaryingdip(RectangularPatches):
         self.slip = np.array(self.slip)
 
         # Re-discretoze to get the original fault
-        self.discretize(every=every)
+        self.discretize(every,trace_tol,trace_fracstep,trace_xaxis,trace_cum_error)
 
         # Compute the equivalent rectangles
         self.computeEquivRectangle()
