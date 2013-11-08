@@ -34,7 +34,7 @@ class faultwithdip(RectangularPatches):
         # All done
         return
 
-    def buildPatches(self, dip, dipdirection, every=10):
+    def buildPatches(self, dip, dipdirection, every=10, trace_tol=0.01, trace_fracstep=0.2, trace_xaxis='x'):
         '''
         Builds a dipping fault.
         Args:
@@ -54,7 +54,7 @@ class faultwithdip(RectangularPatches):
         self.patchdip = []
 
         # Discretize the surface trace of the fault
-        self.discretize(every=every)
+        self.discretize(every,trace_tol,trace_fracstep,trace_xaxis)
 
         # degree to rad
         dip = (dip)*np.pi/180.
@@ -64,7 +64,7 @@ class faultwithdip(RectangularPatches):
         self.zi = np.ones((self.xi.shape))*self.top
 
         # set a marker
-        D = []
+        D = [self.top]
 
         # Loop over the depths
         for i in range(self.numz):
@@ -146,7 +146,7 @@ class faultwithdip(RectangularPatches):
         self.slip = np.array(self.slip)
 
         # Re-discretoze to get the original fault
-        self.discretize(every=every)
+        self.discretize(every,trace_tol,trace_fracstep,trace_xaxis)
 
         # Compute the equivalent rectangles
         self.computeEquivRectangle()

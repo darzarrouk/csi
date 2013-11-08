@@ -243,7 +243,7 @@ class RectangularPatches(object):
         # Transpose and return
         return self.putm(x*1000., y*1000., inverse=True)
 
-    def discretize(self, every=2, tol=0.01, fracstep=0.2): 
+    def discretize(self, every=2, tol=0.01, fracstep=0.2, xaxis='x'): 
         '''
         Refine the surface fault trace prior to divide it into patches. (Fault cannot be north-south)
         Args:
@@ -255,27 +255,34 @@ class RectangularPatches(object):
         if self.xf is None:
             self.trace2xy()
 
+        if xaxis=='x':
+            xf = self.xf
+            yf = self.yf
+        else:
+            yf = self.xf
+            xf = self.yf            
+
         # Import the interpolation routines
         import scipy.interpolate as scint   
 
         # Build the interpolation
-        od = np.argsort(self.xf)
-        self.inter = scint.interp1d(self.xf[od], self.yf[od], bounds_error=False)
+        od = np.argsort(xf)
+        f_inter = scint.interp1d(xf[od], yf[od], bounds_error=False)
     
         # Initialize the list of equally spaced points
-        xi = [self.xf[od][0]]                               # Interpolated x fault
-        yi = [self.yf[od][0]]                               # Interpolated y fault
-        xlast = self.xf[od][-1]                             # Last point
-        ylast = self.yf[od][-1]
+        xi = [xf[od][0]]                               # Interpolated x fault
+        yi = [yf[od][0]]                               # Interpolated y fault
+        xlast = xf[od][-1]                             # Last point
+        ylast = yf[od][-1]
 
         # First guess for the next point
         xt = xi[-1] + every * fracstep 
-        yt = self.inter(xt)
+        yt = f_inter(xt)
         # Check if first guess is in the domain
         if xt>xlast-tol:
             xt = xlast
             xi.append(xt)
-            yi.append(self.inter(xt))
+            yi.append(f_inter(xt))
         # While the last point is not the last wanted point
         while (xi[-1] < xlast):
             # I compute the distance between me and the last accepted point
@@ -294,7 +301,7 @@ class RectangularPatches(object):
                     elif (xt<xi[-1]):            # If I passed the previous point
                         xt = xi[-1] + every
                     # I compute the corresponding yt
-                    yt = self.inter(xt)
+                    yt = f_inter(xt)
                     # I compute the corresponding distance
                     d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
                 # When I stepped out of that loop, append
@@ -304,8 +311,12 @@ class RectangularPatches(object):
             xt = xi[-1] + every * fracstep
 
         # Store the result in self
-        self.xi = np.array(xi)
-        self.yi = np.array(yi)
+        if xaxis=='x': 
+            self.xi = np.array(xi)
+            self.yi = np.array(yi)
+        else:
+            self.yi = np.array(xi)
+            self.xi = np.array(yi)
 
         # Compute the lon/lat
         self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)

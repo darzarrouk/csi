@@ -254,6 +254,8 @@ class geodeticplot:
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
+        Xs = np.array([])
+        Ys = np.array([])
         for p in range(len(fault.patch)):
             ncorners = len(fault.patch[0])
             x = []
@@ -273,16 +275,24 @@ class geodeticplot:
             rect.set_color(scalarMap.to_rgba(slip[p]))
             rect.set_edgecolors('k')
             self.faille.add_collection3d(rect)
+            Xs = np.append(Xs,x)
+            Ys = np.append(Ys,y)
+        self.faille.set_xlim3d(Xs.min(),Xs.max())
+        self.faille.set_ylim3d(Ys.min(),Ys.max())
 
         # If 2d.
         if plot_on_2d:
             for patch in fault.patch:
                 x1 = patch[0][0]
                 y1 = patch[0][1]
-                x2 = patch[2][0]
-                y2 = patch[2][1]
-                self.carte.plot([x1, x2], [y1, y2], '-k', linewidth=1)
-                self.carte.plot([x1, x2], [y1, y2], '.r', markersize=5)
+                x2 = patch[1][0]
+                y2 = patch[1][1]
+                x3 = patch[2][0]
+                y3 = patch[2][1]
+                x4 = patch[3][0]
+                y4 = patch[3][1]
+                self.carte.plot([x1, x2, x3, x4,x1], [y1, y2, y3, y4,y1], '-k', linewidth=1)
+                self.carte.plot([(x1+x3)/2.], [(y1+y3)/2.], '.r', markersize=5)
 
         # put up a colorbar        
         if colorbar:
