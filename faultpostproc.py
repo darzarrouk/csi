@@ -443,7 +443,7 @@ class faultpostproc(object):
         inds   = np.argsort(V)
         S      = S[:,inds]
         S[:,2] = np.cross(S[:,0],S[:,1])
-        V1 = S
+        V1 = copy.deepcopy(S)
 
         # Angles
         angles = []
@@ -455,7 +455,7 @@ class faultpostproc(object):
             inds   = np.argsort(V)                        
             S      = S[:,inds]         
             S[:,2] = np.cross(S[:,0],S[:,1])
-            V2 = S
+            V2 = copy.deepcopy(S)
             # Calculate theta
             th = np.arccos((np.trace(np.dot(V1,V2.transpose()))-1.)/2.)
             # find the good value

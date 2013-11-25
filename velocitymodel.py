@@ -315,6 +315,9 @@ class velocitymodel(object):
             d = self.VpVert
             std = self.StdVpVert
             prof = self.DVert
+        elif data is 'model':
+            d = self.SimVpVert
+            prof = self.SimDepth
 
         # Set up the poisson vector
         if poisson.__class__ is float:
@@ -340,37 +343,28 @@ class velocitymodel(object):
         elif data is 'vertical':
             self.VsVert = vs
             self.StdVsVert = svs
+        elif data is 'model':
+            self.SimVsVert = vs
 
         # All done
         return
 
-    def setDensityProfile(self, depth, density, std=None):
+    def setDensityProfile(self, density, std=None):
         '''
         Builds a density profile from std input.
         Args:   
-            * depth     : list of depths.
             * density   : list of densities.
             * std       : list of standard deviations.
         '''
 
-        # Import 
-        import copy
-
         # Create the vector
-        self.RhoVert = copy.deepcopy(self.DVert)
-        self.StdRhoVert = copy.deepcopy(self.DVert)
+        self.RhoVert = density
 
         # Std
         if std is None:
-            std = np.zeros((self.DVert.shape))
-
-        # Loop
-        pmin = 0
-        for i in range(len(depth)):
-            u = np.where((self.DVert<depth[i]) & (self.DVert>=pmin))
-            self.RhoVert[u] = density[i]
-            self.StdRhoVert[u] = std[i]
-            pmin = depth[i]
+            self.StdRhoVert = np.zeros((len(self.DVert,)))
+        else:
+            self.StdRhoVert = std
 
         # All done
         return
@@ -569,9 +563,9 @@ class velocitymodel(object):
         d0 = 0
         for i in range(Nlayers):
             if i < Nlayers - 1:
-                string = " {}  {}  {}  {} \n".format(vs[i], vp[i], r[i], d[i]-d0)
+                string = " {:3.2f}  {:3.2f}  {:3.2f}  {:3.2f} \n".format(vs[i], vp[i], r[i], d[i]-d0)
             else:
-                string = " {}  {}  {}  0.00 \n".format(vs[i], vp[i], r[i])
+                string = " {:3.2f}  {:3.2f}  {:3.2f}  0.00 \n".format(vs[i], vp[i], r[i])
             fout.write(string)
             # update d0
             d0 = d[i]
