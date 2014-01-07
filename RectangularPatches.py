@@ -533,7 +533,7 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
-    def readPatchesFromFile(self, filename, Cm=None):
+    def readPatchesFromFile(self, filename, Cm=None, readpatchindex=True):
         '''
         Read the patches from a GMT formatted file.
         Args:   
@@ -543,7 +543,8 @@ class RectangularPatches(SourceInv):
         # create the lists
         self.patch = []
         self.patchll = []
-        self.index_parameter = []
+        if readpatchindex:
+            self.index_parameter = []
         self.slip = []
         self.Cm   = []
 
@@ -552,7 +553,7 @@ class RectangularPatches(SourceInv):
         
         # Assign posterior covariances
         if Cm!=None: # Slip
-            self.Cm   = np.array(Cm)
+            self.Cm = np.array(Cm)
 
         # read all the lines
         A = fin.readlines()
@@ -567,7 +568,8 @@ class RectangularPatches(SourceInv):
             # Assert it works
             assert A[i].split()[0] is '>', 'Not a patch, reformat your file...'
             # Get the Patch Id
-            self.index_parameter.append([np.int(A[i].split()[3]),np.int(A[i].split()[4]),np.int(A[i].split()[5])])
+            if readpatchindex:
+                self.index_parameter.append([np.int(A[i].split()[3]),np.int(A[i].split()[4]),np.int(A[i].split()[5])])
             # Get the slip value
             if len(A[i].split())>7:
                 slip = np.array([np.float(A[i].split()[7]), np.float(A[i].split()[8]), np.float(A[i].split()[9])])
@@ -627,7 +629,8 @@ class RectangularPatches(SourceInv):
 
         # Translate slip to np.array
         self.slip = np.array(self.slip)        
-        self.index_parameter = np.array(self.index_parameter)
+        if readpatchindex:
+            self.index_parameter = np.array(self.index_parameter)
 
         # Compute equivalent patches
         self.computeEquivRectangle()
@@ -745,14 +748,14 @@ class RectangularPatches(SourceInv):
             # Get the center of the patch
             xc, yc, zc = p[0]
             lonc, latc = self.xy2ll(xc, yc)
-            if neg_depth:
+            if not neg_depth:
                 zc = -1.0*zc
             fout.write('{} {} {} \n'.format(lonc, latc, zc))
 
             # Get the end of the vector
             xc, yc, zc = p[1]
             lonc, latc = self.xy2ll(xc, yc)
-            if neg_depth:
+            if not neg_depth:
                 zc = -1.0*zc
             fout.write('{} {} {} \n'.format(lonc, latc, zc))
 
@@ -769,12 +772,16 @@ class RectangularPatches(SourceInv):
                 # Get ellipse points
                 ex, ey, ez = e[:,0],e[:,1],e[:,2]
                 
+                # Depth
+                if neg_depth:
+                    ez = -1.0 * ez
+
                 # Conversion to geographical coordinates
                 lone,late = self.putm(ex*1000.,ey*1000.,inverse=True)
                 
                 # Write the > sign to the file
                 fout.write('> \n')
-                
+
                 for lon,lat,z in zip(lone,late,ez):
                     fout.write('{} {} {} \n'.format(lon, lat, -1.*z))
             # Close file
@@ -783,7 +790,7 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
-    def getEllipse(self,patch,ellipseCenter=None,Npoints=10):
+    def getEllipse(self,patch,ellipseCenter=None,Npoints=10,factor=1.0):
         '''
         Compute the ellipse error given Cm for a given patch
         args:
@@ -796,7 +803,7 @@ class RectangularPatches(SourceInv):
         Cm[0,1]=Cm[1,0]=self.Cm[patch,2]
         
         # Get strike and dip
-        xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True) 
+        xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(patch, center=True) 
         dip    *= np.pi/180.
         strike *= np.pi/180.    
         if ellipseCenter!=None:
@@ -805,14 +812,14 @@ class RectangularPatches(SourceInv):
         # Compute eigenvalues/eigenvectors
         D,V=np.linalg.eig(Cm)
         v1 = V[:,0]
-        a  = np.sqrt(D[0])
-        b  = np.sqrt(D[1])
+        a  = np.sqrt(np.abs(D[0]))
+        b  = np.sqrt(np.abs(D[1]))
         phi   = np.arctan2(v1[1],v1[0])
         theta = np.linspace(0,2*np.pi,Npoints);
     
         # The ellipse in x and y coordinates
-        Ex = a*np.cos(theta)
-        Ey = b*np.sin(theta)
+        Ex = a*np.cos(theta)*factor
+        Ey = b*np.sin(theta)*factor
     
         # Correlation Rotation     
         R  = np.array([[np.cos(phi),-np.sin(phi)],[np.sin(phi),np.cos(phi)]])
@@ -891,7 +898,6 @@ class RectangularPatches(SourceInv):
 
             # Append slip direction
             self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])
-            
 
         # All done
         return
@@ -1497,6 +1503,7 @@ class RectangularPatches(SourceInv):
                               4 -> estimate z = axy + bx + cy + d
                               'full' -> Only for GPS, estimates a rotation, translation and scaling with 
                                         respect to the center of the network (Helmert transform).
+                              'strain' -> Only for GPS, estimate the full strain tensor (Rotation + Translation + Internal strain)
             * slipdir       : which directions of slip to include. can be any combination of s, d and t.
         '''
 
@@ -2376,6 +2383,262 @@ class RectangularPatches(SourceInv):
 
         # All done
         return 
+
+    def cumdistance(self, discretized=False):
+        '''
+        Computes the distance between the first point of the fault and every other 
+        point, when you walk along the fault.
+        Args:   
+            * discretized           : if True, use the discretized fault trace 
+                                      (default False)
+        '''
+
+        # Get the x and y positions
+        if discretized:
+            x = self.xi
+            y = self.yi
+        else:
+            x = self.xf
+            y = self.yf
+
+        # initialize
+        dis = np.zeros((x.shape[0]))
+
+        # Loop 
+        for i in xrange(1,x.shape[0]):
+            d = np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
+            dis[i] = dis[i-1] + d
+
+        # all done 
+        return dis
+
+    def AverageAlongStrikeOffsets(self, name, insars, filename, discretized=True, smooth=None):
+        '''
+        If the profiles have the lon lat vectors as the fault, 
+        This routines averages it and write it to an output file.
+        '''
+
+        if discretized:
+            lon = self.loni
+            lat = self.lati
+        else:
+            lon = self.lon
+            lat = self.lat
+
+        # Check if good
+        for sar in insars:
+            dlon = sar.AlongStrikeOffsets[name]['lon']
+            dlat = sar.AlongStrikeOffsets[name]['lat']
+            assert (dlon==lon).all(), '{} dataset rejected'.format(sar.name)
+            assert (dlat==lat).all(), '{} dataset rejected'.format(sar.name)
+
+        # Get distance
+        x = insars[0].AlongStrikeOffsets[name]['distance']
+
+        # Initialize lists
+        D = []; AV = []; AZ = []; LO = []; LA = []
+
+        # Loop on the distance
+        for i in range(len(x)):
+
+            # initialize average
+            av = 0.0
+            ni = 0.0
+            
+            # Get values
+            for sar in insars:
+                o = sar.AlongStrikeOffsets[name]['offset'][i]
+                if np.isfinite(o):
+                    av += o
+                    ni += 1.0
+        
+            # if not only nan
+            if ni>0:
+                d = x[i]
+                av /= ni
+                az = insars[0].AlongStrikeOffsets[name]['azimuth'][i]
+                lo = lon[i]
+                la = lat[i]
+            else:
+                d = np.nan
+                av = np.nan
+                az = np.nan
+                lo = lon[i]
+                la = lat[i]
+
+            # Append
+            D.append(d)
+            AV.append(av)
+            AZ.append(az)
+            LO.append(lo)
+            LA.append(la)
+
+
+        # smooth?
+        if smooth is not None:
+            # Arrays
+            D = np.array(D); AV = np.array(AV); AZ = np.array(AZ); LO = np.array(LO); LA = np.array(LA)
+            # Get the non nans
+            u = np.flatnonzero(np.isfinite(AV))
+            # Gaussian Smoothing
+            dd = np.abs(D[u][:,None] - D[u][None,:])
+            dd = np.exp(-0.5*dd*dd/(smooth*smooth))
+            norm = np.sum(dd, axis=1)
+            dd = dd/norm[:,None]
+            AV[u] = np.dot(dd,AV[u])
+            # List 
+            D = D.tolist(); AV = AV.tolist(); AZ = AZ.tolist(); LO = LO.tolist(); LA = LA.tolist()
+
+        # Open file and write header
+        fout = open(filename, 'w')
+        fout.write('# Distance (km) || Offset || Azimuth (rad) || Lon || Lat \n')
+
+        # Write to file
+        for i in range(len(D)):
+            d = D[i]; av = AV[i]; az = AZ[i]; lo = LO[i]; la = LA[i]
+            fout.write('{} {} {} {} {} \n'.format(d,av,az,lo,la))
+
+        # Close the file
+        fout.close()
+
+        # All done
+        return
+
+    def horizshrink1patch(self, ipatch, fixedside='south', finallength=25.):
+        '''
+        Takes an existing patch and shrinks its size in the horizontal direction.
+        Args:
+            * ipatch        : Index of the patch of concern.
+            * fixedside     : One side has to be fixed, takes the southernmost if 'south', 
+                                                        takes the northernmost if 'north'
+            * finallength   : Length of the final patch.
+        '''
+
+        # Get the patch
+        patch = self.patch[ipatch]
+        patchll = self.patchll[ipatch]
+
+        # Find the southernmost points
+        y = np.array([patch[i][1] for i in range(4)])
+        imin = y.argmin()
+        
+        # Take the points we need to move
+        if fixedside is 'south':
+            fpts = np.flatnonzero(y==y[imin])
+            mpts = np.flatnonzero(y!=y[imin])
+        elif fixedside is 'north':
+            fpts = np.flatnonzero(y!=y[imin])
+            mpts = np.flatnonzero(y==y[imin])
+
+        # Find which depths match
+        d = np.array([patch[i][2] for i in range(4)])
+
+        # Deal with the shallow points
+        isf = fpts[d[fpts].argmin()]      # Index of the shallow fixed point
+        ism = mpts[d[mpts].argmin()]      # Index of the shallow moving point        
+        x1 = patch[isf][0]; y1 = patch[isf][1]
+        x2 = patch[ism][0]; y2 = patch[ism][1]
+        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
+        Dy = y1 - y2                            # Y-Distance between the original points
+        Dx = x1 - x2                            # X-Distance between the original points
+        dy = finallength*Dy/DL                  # Y-Distance between the new points
+        dx = finallength*Dx/DL                  # X-Distance between the new points
+        patch[ism][0] = patch[isf][0] - dx
+        patch[ism][1] = patch[isf][1] - dy
+
+        # Deal with the deep points
+        idf = fpts[d[fpts].argmax()]      # Index of the deep fixed point
+        idm = mpts[d[mpts].argmax()]      # Index of the deep moving point
+        x1 = patch[idf][0]; y1 = patch[idf][1]
+        x2 = patch[idm][0]; y2 = patch[idm][1]
+        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
+        Dy = y1 - y2                            # Y-Distance between the original points
+        Dx = x1 - x2                            # X-Distance between the original points
+        dy = finallength*Dy/DL                  # Y-Distance between the new points
+        dx = finallength*Dx/DL                  # X-Distance between the new points
+        patch[idm][0] = patch[idf][0] - dx
+        patch[idm][1] = patch[idf][1] - dy
+
+        # Rectify the lon lat patch
+        for i in range(4):
+            x, y = patch[i][0], patch[i][1]
+            lon, lat = self.xy2ll(x, y)
+            patchll[i][0] = lon
+            patchll[i][1] = lat
+
+        # All done
+        return
+
+    def ExtractAlongStrikeVariations(self, depth=0.5, origin=None, filename='alongstrike.dat', orientation=0.0):
+        '''
+        Extract the Along Strike Variations of the creep at a given depth
+        Args:
+            depth   : Depth at which we extract the along strike variations of slip.
+            origin  : Computes a distance from origin. Give [lon, lat].
+            filename: Saves to a file.
+            orientation: defines the direction of positive distances.
+        '''
+
+        # Dictionary to store these guys
+        if not hasattr(self, 'AlongStrike'):
+            self.AlongStrike = {}
+
+        # Creates the List where we will store things
+        # For each patch, it will be [lon, lat, strike-slip, dip-slip, tensile, distance]
+        Var = []
+
+        # Creates the orientation vector
+        Dir = np.array([np.cos(orientation*np.pi/180.), np.sin(orientation*np.pi/180.)])
+
+        # initialize the origin
+        x0 = 0
+        y0 = 0
+        if origin is not None:
+            x0, y0 = self.ll2xy(origin[0], origin[1])
+
+        # open the output file
+        fout = open(filename, 'w')
+        fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) \n')
+
+        # Loop over the patches
+        for p in self.patch:
+
+            # Get depth range
+            dmin = np.min([p[i][2] for i in range(4)])
+            dmax = np.max([p[i][2] for i in range(4)])
+
+            # If good depth, keep it
+            if ((depth>=dmin) & (depth<=dmax)):
+
+                # Get the slip
+                slip = self.getslip(p)
+
+                # Get patch center
+                xc, yc, zc = self.getcenter(p)
+                lonc, latc = self.xy2ll(xc, yc)
+
+                # Computes the horizontal distance
+                vec = np.array([x0-xc, y0-yc])
+                sign = np.sign( np.dot(Dir,vec) )
+                dist = sign * np.sqrt( (xc-x0)**2 + (yc-y0)**2 )
+
+                # Assemble
+                o = [lonc, latc, slip[0], slip[1], slip[2], dist]
+
+                # write output
+                fout.write('{} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], dist))
+
+                # append
+                Var.append(o)
+
+        # Close the file
+        fout.close()
+
+        # Stores it 
+        self.AlongStrike['Depth {}'.format(depth)] = np.array(Var)
+
+        # all done 
+        return
 
     def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False):
         '''

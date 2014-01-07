@@ -158,7 +158,7 @@ class gpsrates(SourceInv):
         alpha = azimuth*np.pi/180.
 
         # Convert the lat/lon of the center into UTM.
-        xc, yc = self.lonlat2xy(loncenter, latcenter)
+        xc, yc = self.ll2xy(loncenter, latcenter)
 
         # Copmute the across points of the profile
         xa1 = xc - (width/2.)*np.cos(alpha)
@@ -173,8 +173,8 @@ class gpsrates(SourceInv):
         ye2 = yc - (length/2.)*np.cos(alpha)
 
         # Convert the endpoints
-        elon1, elat1 = self.xy2lonlat(xe1, ye1)
-        elon2, elat2 = self.xy2lonlat(xe2, ye2)
+        elon1, elat1 = self.xy2ll(xe1, ye1)
+        elon2, elat2 = self.xy2ll(xe2, ye2)
 
         # Design a box in the UTM coordinate system.
         x1 = xe1 - (width/2.)*np.cos(alpha)
@@ -187,10 +187,10 @@ class gpsrates(SourceInv):
         y4 = ye2 + (width/2.)*np.sin(alpha)
         
         # Convert the box into lon/lat for further things
-        lon1, lat1 = self.xy2lonlat(x1, y1)
-        lon2, lat2 = self.xy2lonlat(x2, y2)
-        lon3, lat3 = self.xy2lonlat(x3, y3)
-        lon4, lat4 = self.xy2lonlat(x4, y4)
+        lon1, lat1 = self.xy2ll(x1, y1)
+        lon2, lat2 = self.xy2ll(x2, y2)
+        lon3, lat3 = self.xy2ll(x3, y3)
+        lon4, lat4 = self.xy2ll(x4, y4)
 
         # make the box 
         box = []
@@ -352,7 +352,7 @@ class gpsrates(SourceInv):
         b = self.profiles[name]['Box']
         bb = np.zeros((5, 2))
         for i in range(4):
-            x, y = self.lonlat2xy(b[i,0], b[i,1])
+            x, y = self.ll2xy(b[i,0], b[i,1])
             bb[i,0] = x
             bb[i,1] = y
         bb[4,0] = bb[0,0]
@@ -442,7 +442,7 @@ class gpsrates(SourceInv):
 
         # Get the center
         lonc, latc = prof['Center']
-        xc, yc = self.lonlat2xy(lonc, latc)
+        xc, yc = self.ll2xy(lonc, latc)
 
         # Get the sign 
         xa,ya = prof['EndPoints'][0]
@@ -518,7 +518,7 @@ class gpsrates(SourceInv):
         self.factor = factor
 
         # Pass to xy 
-        self.ll2xy()
+        self.lonlat2xy()
 
         # All done
         return
@@ -580,7 +580,7 @@ class gpsrates(SourceInv):
         self.factor = factor
 
         # Pass to xy 
-        self.ll2xy()
+        self.lonlat2xy()
 
         # All done
         return
@@ -658,31 +658,32 @@ class gpsrates(SourceInv):
         self.station = np.array(self.station)
 
         # Pass to xy 
-        self.ll2xy()
+        self.lonlat2xy()
 
         # All done
         return
 
 
-    def lonlat2xy(self, lo, la):
+    def lonlat2xy(self):
         '''
-        Pass the position into the utm coordinate system.
+        Pass the position of the stations into the utm coordinate system.
         '''
-
-        x, y = self.putm(lo, la)
-        x = x/1000.
-        y = y/1000.
+        
+        # Transform
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # All done
-        return x, y
+        return 
 
-    def xy2lonlat(self, x, y):
+    def xy2lonlat(self):
         '''
-        Convert x, y to lon lat using the utm transform.
+        Convert all stations x, y to lon lat using the utm transform.
         '''
+
+        self.lon, self.lat = self.xy2ll(self.x, self.y)
 
         # all done
-        return self.putm(x*1000., y*1000., inverse=True)
+        return 
 
     def select_stations(self, minlon, maxlon, minlat, maxlat):
         ''' 
@@ -843,7 +844,7 @@ class gpsrates(SourceInv):
                         self.rot_enu = np.delete(self.rot_enu, u, axis=0)
 
         # Update x and y
-        self.ll2xy()
+        self.lonlat2xy()
 
         # All done
         return
@@ -1163,7 +1164,7 @@ class gpsrates(SourceInv):
         # All done
         return
 
-    def removeSynth(self, faults, direction='sd', include_poly=False):
+    def removeSynth(self, faults, direction='sd', poly=None):
         '''
         Removes the synthetics from a slip model.
         Args:
@@ -1173,7 +1174,7 @@ class gpsrates(SourceInv):
         '''
 
         # build the synthetics
-        self.buildsynth(faults, direction=direction, include_poly=include_poly)
+        self.buildsynth(faults, direction=direction, poly=poly)
 
         # Correct the data from the synthetics
         self.vel_enu -= self.synth
@@ -1181,7 +1182,7 @@ class gpsrates(SourceInv):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', include_poly=False):
+    def buildsynth(self, faults, direction='sd', poly=None):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
         Args:
@@ -1227,20 +1228,21 @@ class gpsrates(SourceInv):
                 if op_synth.size >2*Nd:
                     self.synth[:,2] += op_synth[2*Nd:3*Nd]
 
-            if (self.name in fault.poly.keys()) and (include_poly):
-                gpsref = fault.poly[self.name]
-                if type(gpsref) is str:
-                    if gpsref is 'strain':
-                        self.compute2Dstrain(fault)
-                        self.synth = self.synth + self.Strain
-                    elif gpsref is 'full':
-                        self.computeHelmertTransform(fault)
-                        self.synth = self.synth + self.HelmTransform
-                elif type(gpsref) is float:
-                    self.synth[:,0] += gpsref[0]
-                    self.synth[:,1] += gpsref[1]
-                    if len(gpsref)==3:
-                        self.synth += gpsref[2]
+            if poly == 'build' or poly == 'include':
+                if (self.name in fault.poly.keys()):
+                    gpsref = fault.poly[self.name]
+                    if type(gpsref) is str:
+                        if gpsref is 'strain':
+                            self.compute2Dstrain(fault)
+                            self.synth = self.synth + self.Strain
+                        elif gpsref is 'full':
+                            self.computeHelmertTransform(fault)
+                            self.synth = self.synth + self.HelmTransform
+                    elif type(gpsref) is float:
+                        self.synth[:,0] += gpsref[0]
+                        self.synth[:,1] += gpsref[1]
+                        if len(gpsref)==3:
+                            self.synth += gpsref[2]
 
         # All done
         return
@@ -1278,7 +1280,7 @@ class gpsrates(SourceInv):
         # All done
         return
 
-    def write2file(self, namefile=None, data='data'):
+    def write2file(self, namefile=None, data='data', outDir='./'):
         '''
         Args:
             * namefile  : Name of the output file.
@@ -1291,7 +1293,9 @@ class gpsrates(SourceInv):
             filename = ''
             for a in self.name.split():
                 filename = filename+a+'_'
-            filename = filename+data+'.dat'
+            filename = outDir+filename+data+'.dat'
+        else: 
+            filename = outDir+namefile
 
         print ("Write {} set {} to file {}".format(data, self.name, filename))
 

@@ -443,9 +443,9 @@ class geodeticplot:
 
         # Plot the insar
         if self.ref is 'utm':
-            sc = self.carte.scatter(insar.x, insar.y, s=30, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.1)
+            sc = self.carte.scatter(insar.x, insar.y, s=30, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
         else:
-            sc = self.carte.scatter(insar.lon, insar.lat, s=30, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.1)
+            sc = self.carte.scatter(insar.lon, insar.lat, s=30, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
 
         # plot colorbar
         if colorbar:
@@ -471,13 +471,21 @@ class geodeticplot:
         if (color.__class__ is np.ndarray) and (norm is None):
             vmin = color.min()
             vmax = color.max()
+            import matplotlib.cm as cmx
+            import matplotlib.colors as colors
+            cmap = plt.get_cmap('jet')
+            cNorm = colors.Normalize(vmin=color.min(), vmax=color.max())
+            scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+            scalarMap.set_array(color)
+        else:
+            cmap = None
 
         # plot the earthquakes on the map if ask
         if '2d' in plot:
             if self.ref is 'utm':
-                sc = self.carte.scatter(earthquakes.x, earthquakes.y, s=markersize, c=color, vmin=vmin, vmax=vmax)
+                sc = self.carte.scatter(earthquakes.x, earthquakes.y, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0)
             else:
-                sc = self.carte.scatter(earthquakes.lon, earthquakes.lat, s=markersize, c=color, vmin=vmin, vmax=vmax)
+                sc = self.carte.scatter(earthquakes.lon, earthquakes.lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0)
 
             if colorbar:
                 self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
@@ -485,9 +493,9 @@ class geodeticplot:
         # plot the earthquakes in the volume if ask
         if '3d' in plot:
             if self.ref is 'utm':
-                sc = self.faille.scatter3D(earthquakes.x, earthquakes.y, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax)
+                sc = self.faille.scatter3D(earthquakes.x, earthquakes.y, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0)
             else:
-                sc = self.faille.scatter3D(earthquakes.lon, earthquakes.lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax)
+                sc = self.faille.scatter3D(earthquakes.lon, earthquakes.lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0)
 
             if colorbar:
                 self.fig1.colorbar(sc, shrink=0.6, orientation='horizontal')
@@ -579,9 +587,9 @@ class geodeticplot:
                 import basemap_utils as bu
                 cmap = bu.gmtColormap(gmtCmap)
             except ImportError:
-                cmap = plt.get_cmap('seismic') 
+                cmap = plt.get_cmap('jet') 
         else:
-            cmap = plt.get_cmap('seismic')
+            cmap = plt.get_cmap('jet')
         cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 

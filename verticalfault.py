@@ -1002,12 +1002,13 @@ class verticalfault(object):
             # Write the string to file
             fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
 
-            # Write the 4 patch corners (the order is to be GMT friendly)
+            # Write the 4 patch corners (the order is to agree with other fault objects)
             p = self.patchll[p]
-            pp=p[1]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-            pp=p[0]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
             pp=p[3]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+            pp=p[0]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+            pp=p[1]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
             pp=p[2]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+
 
         # Close th file
         fout.close()
@@ -2756,6 +2757,72 @@ class verticalfault(object):
 
         # all done 
         return
+
+    def horizshrink1patch(self, ipatch, fixedside='south', finallength=25.):
+        '''
+        Takes an existing patch and shrinks its size in the horizontal direction.
+        Args:
+            * ipatch        : Index of the patch of concern.
+            * fixedside     : One side has to be fixed, takes the southernmost if 'south', 
+                                                        takes the northernmost if 'north'
+            * finallength   : Length of the final patch.
+        '''
+
+        # Get the patch
+        patch = self.patch[ipatch]
+        patchll = self.patchll[ipatch]
+
+        # Find the southernmost points
+        y = np.array([patch[i][1] for i in range(4)])
+        imin = y.argmin()
+
+        # Take the points we need to move
+        if fixedside is 'south':
+            fpts = np.flatnonzero(y==y[imin])
+            mpts = np.flatnonzero(y!=y[imin])
+        elif fixedside is 'north':
+            fpts = np.flatnonzero(y!=y[imin])
+            mpts = np.flatnonzero(y==y[imin])
+
+        # Find which depths match
+        d = np.array([patch[i][2] for i in range(4)])
+
+        # Deal with the shallow points
+        isf = fpts[d[fpts].argmin()]      # Index of the shallow fixed point
+        ism = mpts[d[mpts].argmin()]      # Index of the shallow moving point        
+        x1 = patch[isf][0]; y1 = patch[isf][1]
+        x2 = patch[ism][0]; y2 = patch[ism][1]
+        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
+        Dy = y1 - y2                            # Y-Distance between the original points
+        Dx = x1 - x2                            # X-Distance between the original points
+        dy = finallength*Dy/DL                  # Y-Distance between the new points
+        dx = finallength*Dx/DL                  # X-Distance between the new points
+        patch[ism][0] = patch[isf][0] - dx
+        patch[ism][1] = patch[isf][1] - dy
+
+        # Deal with the deep points
+        idf = fpts[d[fpts].argmax()]      # Index of the deep fixed point
+        idm = mpts[d[mpts].argmax()]      # Index of the deep moving point
+        x1 = patch[idf][0]; y1 = patch[idf][1]
+        x2 = patch[idm][0]; y2 = patch[idm][1]
+        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
+        Dy = y1 - y2                            # Y-Distance between the original points
+        Dx = x1 - x2                            # X-Distance between the original points
+        dy = finallength*Dy/DL                  # Y-Distance between the new points
+        dx = finallength*Dx/DL                  # X-Distance between the new points
+        patch[idm][0] = patch[idf][0] - dx
+        patch[idm][1] = patch[idf][1] - dy
+
+        # Rectify the lon lat patch
+        for i in range(4):
+            x, y = patch[i][0], patch[i][1]
+            lon, lat = self.xy2ll(x, y)
+            patchll[i][0] = lon
+            patchll[i][1] = lat
+
+        # All done
+        return
+
 
     def associatePatch2PDFs(self, directory='.', prefix='step_001_param'):
         '''

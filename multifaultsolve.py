@@ -653,6 +653,7 @@ class multifaultsolve(object):
         self.Gfile = outfile
 
         # Print stuff
+        print("Writing Green's functions to file {}".format(outfile))
         print("Green's functions matrix size: {} ; {}".format(G.shape[0], G.shape[1]))
 
         # All done

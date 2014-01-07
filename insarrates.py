@@ -9,11 +9,12 @@ import numpy as np
 import pyproj as pp
 import shapely.geometry as geom
 import matplotlib.pyplot as plt
+import sys
 
 # Personals
 from .SourceInv import SourceInv
 
-class insarrates(object):
+class insarrates(SourceInv):
 
     def __init__(self, name, utmzone='10', ellps='WGS84'):
         '''
@@ -274,13 +275,76 @@ class insarrates(object):
             self.los[:,1] *= los[1]
             self.los[:,2] *= los[2]
         else:
-            assert False, 'not enough information to compute LOS'
+            print('Warning: not enough information to compute LOS')
+            print('LOS will be set to 1,0,0')
+            self.los[:,0] = 1.0
+            self.los[:,1] = 0.0
+            self.los[:,2] = 0.0
 
         # Store the factor
         self.factor = factor
 
         # All done
         return
+
+    def buildCd(self, sigma, lam, function='exp'):
+        '''
+        Builds the full Covariance matrix from values of sigma and lambda.
+        
+        If function='exp':
+
+            Cov(i,j) = sigma*sigma * exp(-d[i,j] / lam)
+
+        elif function='gauss':
+
+            Cov(i,j) = sigma*sigma * exp(-(d[i,j]*d[i,j])/(2*lam))
+
+        '''
+
+        # Assert
+        assert function in ('exp', 'gauss'), 'Unknown functional form for Covariance matrix'
+
+        # Get some size
+        nd = self.vel.shape[0]
+
+        # Cleans the existing covariance
+        self.Cd = np.zeros((nd, nd))
+
+        # Loop over Cd
+        for i in range(nd):
+            for j in range(i,nd):
+
+                # Get the distance
+                d = self.distancePixel2Pixel(i,j)
+
+                # Compute Cd
+                if function is 'exp':
+                    self.Cd[i,j] = sigma*sigma*np.exp(-1.0*d/lam)
+                elif function is 'gauss':
+                    self.Cd[i,j] = sigma*sigma*np.exp(-1.0*d*d/(2*lam))
+
+                # Make it symmetric
+                self.Cd[j,i] = self.Cd[i,j]
+
+        # All done
+        return
+
+    def distancePixel2Pixel(self, i, j):
+        '''
+        Returns the distance in km between two pixels.
+        '''
+
+        # Get values
+        x1 = self.x[i]
+        y1 = self.y[i]
+        x2 = self.x[j]
+        y2 = self.y[j]
+
+        # Compute the distance
+        d = np.sqrt((x2-x1)**2 + (y2-y1)**2)
+
+        # All done
+        return d
 
     def select_pixels(self, minlon, maxlon, minlat, maxlat):
         ''' 
@@ -368,17 +432,18 @@ class insarrates(object):
         # All done
         return
 
-    def removeSynth(self, faults, direction='sd', include_poly=False):
+    def removeSynth(self, faults, direction='sd', poly=None, vertical=True):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
         Args:
             * faults        : List of faults.
             * direction     : Direction of slip to use.
-            * include_poly  : if a polynomial function has been estimated, include it.
+            * poly          : if a polynomial function has been estimated, build and/or include
+            * vertical      : always True - used here for consistency among data types
         '''
 
         # Build synthetics
-        self.buildsynth(faults, direction=direction, include_poly=include_poly)
+        self.buildsynth(faults, direction=direction, poly=poly)
 
         # Correct
         self.vel -= self.synth
@@ -570,7 +635,7 @@ class insarrates(object):
 
     def getprofile(self, name, loncenter, latcenter, length, azimuth, width):
         '''
-        Project the GPS velocities onto a profile. 
+        Project the SAR velocities onto a profile. 
         Works on the lat/lon coordinates system.
         Args:
             * name              : Name of the profile.
@@ -585,11 +650,55 @@ class insarrates(object):
         if not hasattr(self, 'profiles'):
             self.profiles = {}
 
-        # Azimuth into radians
-        alpha = azimuth*np.pi/180.
-
         # Convert the lat/lon of the center into UTM.
         xc, yc = self.lonlat2xy(loncenter, latcenter)
+
+        # Get the profile
+        Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2 = self.coord2prof(
+                xc, yc, length, azimuth, width)
+
+        # Store it in the profile list
+        self.profiles[name] = {}
+        dic = self.profiles[name]
+        dic['Center'] = [loncenter, latcenter]
+        dic['Length'] = length
+        dic['Width'] = width
+        dic['Box'] = np.array(boxll)
+        dic['LOS Velocity'] = vel
+        dic['LOS Error'] = err
+        dic['Distance'] = np.array(Dalong)
+        dic['Normal Distance'] = np.array(Dacros)
+        dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
+        lone1, late1 = self.putm(xe1*1000., ye1*1000., inverse=True)
+        lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
+        dic['EndPointsLL'] = [[lone1, late1],
+                              [lone2, late2]]
+
+        # All done
+        return
+
+    def coord2prof(self, xc, yc, length, azimuth, width, plot=False):
+        '''
+        Routine returning the profile
+        Args:
+            * xc                : X pos of center
+            * yc                : Y pos of center
+            * length            : length of the profile.
+            * azimuth           : azimuth of the profile.
+            * width             : width of the profile.
+            * plot              : if true, makes a small plot
+        Returns:
+            dis                 : Distance from the center
+            vel                 : values
+            err                 : errors
+            norm                : distance perpendicular to profile
+            boxll               : lon lat coordinates of the profile box used
+            xe1, ye1            : coordinates (UTM) of the profile endpoint
+            xe2, ye2            : coordinates (UTM) of the profile endpoint
+        '''
+
+        # Azimuth into radians
+        alpha = azimuth*np.pi/180.
 
         # Copmute the across points of the profile
         xa1 = xc - (width/2.)*np.cos(alpha)
@@ -640,13 +749,16 @@ class insarrates(object):
         # Get the InSAR points in this box.
         # 1. import shapely and nxutils
         import shapely.geometry as geom
-        import matplotlib.nxutils as mnu
+        import matplotlib.path as path
 
         # 2. Create an array with the InSAR positions
         SARXY = np.vstack((self.x, self.y)).T
 
-        # 3. Find those who are inside
-        Bol = mnu.points_inside_poly(SARXY, box)
+        # 3. Create a box
+        rect = path.Path(box, closed=False)
+
+        # 4. Find those who are inside
+        Bol = rect.contains_points(SARXY)
 
         # 4. Get these values
         xg = self.x[Bol]
@@ -654,39 +766,230 @@ class insarrates(object):
         vel = self.vel[Bol]
         err = self.err[Bol]
 
-        # 5. Get the sign of the scalar product between the line and the point
-        vec = np.array([xe1-xc, ye1-yc])
-        sarxy = np.vstack((xg-xc, yg-yc)).T
-        sign = np.sign(np.dot(sarxy, vec))
+        # Check if lengths are ok
+        if len(xg) > 5:
+        
+            # 5. Get the sign of the scalar product between the line and the point
+            vec = np.array([xe1-xc, ye1-yc])
+            sarxy = np.vstack((xg-xc, yg-yc)).T
+            sign = np.sign(np.dot(sarxy, vec))
 
-        # 6. Compute the distance (along, across profile) and get the velocity
-        # Create the list that will hold these values
-        Dacros = []; Dalong = []; V = []; E = []
-        # Build lines of the profile
-        Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
-        Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]]) 
-        # Build a multipoint
-        PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
-        # Loop on the points
-        for p in range(len(PP.geoms)):
-            Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
-            Dacros.append(Lalong.distance(PP.geoms[p]))
+            # 6. Compute the distance (along, across profile) and get the velocity
+            # Create the list that will hold these values
+            Dacros = []; Dalong = []; V = []; E = []
+            # Build lines of the profile
+            Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
+            Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]]) 
+            # Build a multipoint
+            PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
+            # Loop on the points
+            for p in range(len(PP.geoms)):
+                Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
+                Dacros.append(Lalong.distance(PP.geoms[p]))
 
-        # Store it in the profile list
-        self.profiles[name] = {}
-        dic = self.profiles[name]
-        dic['Center'] = [loncenter, latcenter]
-        dic['Length'] = length
-        dic['Width'] = width
-        dic['Box'] = np.array(boxll)
-        dic['LOS Velocity'] = vel
-        dic['LOS Error'] = err
-        dic['Distance'] = np.array(Dalong)
-        dic['Normal Distance'] = np.array(Dacros)
-        dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
+        else:
+            Dalong = vel
+            Dacros = vel
+
+        if plot:
+            plt.figure(1234)
+            plt.clf()
+            plt.subplot(121)
+            import matplotlib.cm as cmx
+            import matplotlib.colors as colors
+            cmap = plt.get_cmap('jet')
+            cNorm = colors.Normalize(vmin=self.vel.min(), vmax=self.vel.max())
+            scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+            scalarMap.set_array(self.vel)
+            plt.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, linewidths=0.0)
+            xb = [box[i][0] for i in xrange(4)]
+            yb = [box[i][1] for i in xrange(4)]
+            plt.plot(xb,yb,'.k')
+            xb.append(xb[0])
+            yb.append(yb[0])
+            plt.plot(xb, yb, '-k')
+            plt.colorbar(orientation='horizontal', shrink=0.6)
+            plt.subplot(122)
+            plt.plot(Dalong, vel, '.b')
+            plt.show()
 
         # All done
+        return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2
+
+    def getAlongStrikeOffset(self, name, fault, interpolation=None, width=1.0, 
+            length=10.0, faultwidth=1.0, tolerance=0.2, azimuthpad=2.0):
+
+        '''
+        Runs along a fault to determine variations of the phase offset in the 
+        along strike direction.
+        Args:
+            * name              : name of the results stored in AlongStrikeOffsets
+            * fault             : a fault object.
+            * interpolation     : interpolation distance
+            * width             : width of the profiles used
+            * length            : length of the profiles used
+            * faultwidth        : width of the fault zone.
+        '''
+
+        # the Along strike measurements are in a dictionary
+        if not hasattr(self, 'AlongStrikeOffsets'):
+            self.AlongStrikeOffsets = {}
+
+        # Interpolate the fault object if asked
+        if interpolation is not None:
+            fault.discretize(every=interpolation, tol=tolerance)
+            xf = fault.xi
+            yf = fault.yi
+        else:
+            xf = fault.xf
+            yf = fault.yf
+
+        # Initialize some lists
+        ASprof = []
+        ASx = []
+        ASy = []
+        ASazi = []
+
+        # Loop 
+        for i in xrange(len(xf)):
+
+            # Write something
+            sys.stdout.write('\r Fault point {}/{}'.format(i,len(xf)))
+            sys.stdout.flush()
+
+            # Get coordinates
+            xp = xf[i]
+            yp = yf[i]
+
+            # get the local profile and fault azimuth
+            Az, pAz = self._getazimuth(xf, yf, i, pad=azimuthpad)
+
+            # If there is something
+            if np.isfinite(Az):
+
+                # Get the profile
+                dis, vel, err, norm = self.coord2prof(xp, yp, length, pAz, 
+                        width, plot=False)[0:4]
+
+                # Keep only the non NaN values
+                pts = np.flatnonzero(np.isfinite(vel))
+                dis = np.array(dis)[pts]
+                ptspos = np.flatnonzero(dis>0.0)
+                ptsneg = np.flatnonzero(dis<0.0)
+
+                # If there is enough points, on both sides, get the offset value
+                if (len(pts)>20 and len(ptspos)>10 and len(ptsneg)>10):
+
+                    # Select the points
+                    vel = vel[pts]
+                    err = err[pts]
+                    norm = np.array(norm)[pts]
+                    
+                    # Symmetrize the profile
+                    mindis = np.min(dis)
+                    maxdis = np.max(dis)
+                    if np.abs(mindis)>np.abs(maxdis):
+                       pts = np.flatnonzero(dis>-1.0*maxdis)
+                    else:
+                        pts = np.flatnonzero(dis<=-1.0*mindis)
+
+                    # Get the points
+                    dis = dis[pts]
+                    ptsneg = np.flatnonzero(dis>0.0)
+                    ptspos = np.flatnonzero(dis<0.0)
+
+                    # If we still have enough points on both sides
+                    if (len(pts)>20 and len(ptspos)>10 and len(ptsneg)>10 and np.abs(mindis)>(10*faultwidth/2)):
+
+                        # Get the values
+                        vel = vel[pts]
+                        err = err[pts]
+                        norm = norm[pts]
+
+                        # Get offset
+                        off = self._getoffset(dis, vel, faultwidth, plot=False)
+                            
+                        # Store things in the lists
+                        ASprof.append(off)
+                        ASx.append(xp)
+                        ASy.append(yp)
+                        ASazi.append(Az)
+
+                    else:
+                        
+                        # Store some NaNs
+                        ASprof.append(np.nan)
+                        ASx.append(xp)
+                        ASy.append(yp)
+                        ASazi.append(Az)
+
+                else:
+                    
+                    # Store some NaNs
+                    ASprof.append(np.nan)
+                    ASx.append(xp)
+                    ASy.append(yp)
+                    ASazi.append(Az)
+            else:
+
+                # Store some NaNs
+                ASprof.append(np.nan)
+                ASx.append(xp)
+                ASy.append(yp)
+                ASazi.append(Az)
+
+        ASprof = np.array(ASprof)
+        ASx = np.array(ASx)
+        ASy = np.array(ASy)
+        ASazi = np.array(ASazi)
+
+        # Store things
+        self.AlongStrikeOffsets[name] = {}
+        dic = self.AlongStrikeOffsets[name]
+        dic['xpos'] = ASx
+        dic['ypos'] = ASy
+        lon, lat = self.xy2ll(ASx, ASy)
+        dic['lon'] = lon
+        dic['lat'] = lat
+        dic['offset'] = ASprof
+        dic['azimuth'] = ASazi
+
+        # Compute along strike cumulative distance
+        if interpolation is not None:
+            disc = True
+        dic['distance'] = fault.cumdistance(discretized=disc)
+
+        # Clean screen
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+        # all done 
         return
+
+    def writeAlongStrikeOffsets2File(self, name, filename):
+        '''
+        Write the variations of the offset along strike in a file.
+        '''
+
+        # Open a file
+        fout = open(filename, 'w')
+
+        # Write the header
+        fout.write('# Distance (km) || Offset || Azimuth (rad) || Lon || Lat \n')        
+
+        # Get the values from the dictionary
+        x = self.AlongStrikeOffsets[name]['distance']
+        y = self.AlongStrikeOffsets[name]['offset']
+        azi = self.AlongStrikeOffsets[name]['azimuth']
+        lon = self.AlongStrikeOffsets[name]['lon']
+        lat = self.AlongStrikeOffsets[name]['lat']
+
+        # Write to file
+        for i in range(len(x)):
+            fout.write('{} {} {} {} {} \n'.format(x[i], y[i], azi[i], lon[i], lat[i]))
+
+        # Close file
+        fout.close()
 
     def writeProfile2File(self, name, filename, fault=None):
         '''
@@ -1092,3 +1395,72 @@ class insarrates(object):
         return
         
 
+    def _getazimuth(self, x, y, i, pad=2):
+        '''
+        Get the azimuth of a line.
+        Args:
+            * x,y       : x,y values of the line.
+            * i         : index of the position of interest.
+            * pad       : number of points to take into account.
+        '''
+        # Compute distances along trace
+        dis = np.sqrt((x-x[i])**2 + (y-y[i])**2)
+        # Get points that are close than pad/2.
+        pts = np.where(dis<=pad/2)
+        # Get the azimuth if there is more than 2 points
+        if len(pts[0])>=2:
+                d = y[pts]
+                G = np.vstack((np.ones(d.shape),x[pts])).T
+                m,res,rank,s = np.linalg.lstsq(G,d)
+                Az = np.arctan(m[1])
+                pAz= Az+np.pi/2
+        else:
+                Az = np.nan
+                pAz = np.nan
+        # All done
+        return Az*180./np.pi,pAz*180./np.pi
+
+    def _getoffset(self, x, y, w, plot=True):
+        '''
+        Computes the offset around zero along a profile.
+        Args:   
+            * x         : X-axis of the profile
+            * y         : Y-axis of the profile
+            * w         : Width of the zero zone.
+        '''
+
+        # Initialize plot
+        if plot:
+            plt.figure(1213)
+            plt.clf()
+            plt.plot(x,y,'.k')
+
+        # Define function
+        G = np.vstack((np.ones(y.shape),x)).T
+
+        # fit a function on the negative side
+        pts = np.where(x<=-1.*w/2.)
+        dneg = y[pts]
+        Gneg = np.squeeze(G[pts,:])
+        mneg,res,rank,s = np.linalg.lstsq(Gneg,dneg)
+        if plot:
+            plt.plot(x,np.dot(G,mneg),'-r')
+
+        # fit a function on the positive side
+        pts = np.where(x>=w/2)
+        dpos = y[pts]
+        Gpos = np.squeeze(G[pts,:])
+        mpos,res,rank,s = np.linalg.lstsq(Gpos,dpos)
+        if plot:
+            plt.plot(x,np.dot(G,mpos),'-g')
+
+        # Offset
+        off = mpos[0] - mneg[0]
+
+        # plot
+        if plot:
+            print('Measured offset: {}'.format(off))
+            plt.show()
+
+        # all done
+        return off
