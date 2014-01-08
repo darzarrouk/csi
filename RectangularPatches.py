@@ -298,11 +298,11 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
-    def getslip(self, p):
+    def getindex(self,p):
         '''
-        Returns the slip vector for a patch.
+        Returns the index of a patch.
         '''
-        
+
         # output index
         io = None
 
@@ -310,6 +310,17 @@ class RectangularPatches(SourceInv):
         for i in range(len(self.patch)):
             if (self.patch[i] == p).all():
                 io = i
+
+        # All done
+        return io
+
+    def getslip(self, p):
+        '''
+        Returns the slip vector for a patch.
+        '''
+            
+        # Get patch index
+        io = self.getindex(p)
 
         # All done
         return self.slip[io,:]
@@ -2569,7 +2580,7 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
-    def ExtractAlongStrikeVariations(self, depth=0.5, origin=None, filename='alongstrike.dat', orientation=0.0):
+    def ExtractAlongStrikeVariations(self, depth=0.5, origin=None, filename=None, orientation=0.0):
         '''
         Extract the Along Strike Variations of the creep at a given depth
         Args:
@@ -2597,8 +2608,13 @@ class RectangularPatches(SourceInv):
             x0, y0 = self.ll2xy(origin[0], origin[1])
 
         # open the output file
-        fout = open(filename, 'w')
-        fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) \n')
+        if filename is not None:
+            fout = open(filename, 'w')
+            fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Patch Area (km2) | Distance to origin (km) \n')
+
+        # compute area, if not done yet
+        if not hasattr(self,'area'):
+            self.computeArea()
 
         # Loop over the patches
         for p in self.patch:
@@ -2610,8 +2626,12 @@ class RectangularPatches(SourceInv):
             # If good depth, keep it
             if ((depth>=dmin) & (depth<=dmax)):
 
-                # Get the slip
-                slip = self.getslip(p)
+                # Get index
+                io = self.getindex(p)
+
+                # Get the slip and area
+                slip = self.slip[io,:]
+                area = self.area[io]
 
                 # Get patch center
                 xc, yc, zc = self.getcenter(p)
@@ -2623,21 +2643,71 @@ class RectangularPatches(SourceInv):
                 dist = sign * np.sqrt( (xc-x0)**2 + (yc-y0)**2 )
 
                 # Assemble
-                o = [lonc, latc, slip[0], slip[1], slip[2], dist]
+                o = [lonc, latc, slip[0], slip[1], slip[2], area, dist]
 
                 # write output
-                fout.write('{} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], dist))
+                if filename is not None:
+                    fout.write('{} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], area, dist))
 
                 # append
                 Var.append(o)
 
         # Close the file
-        fout.close()
+        if filename is not None:
+            fout.close()
 
         # Stores it 
         self.AlongStrike['Depth {}'.format(depth)] = np.array(Var)
 
         # all done 
+        return
+
+    def ExtractAlongStrikeAllDepths(self, origin=None, filename=None, orientation=0.0):
+        '''
+        Extracts the Along Strike Variations of the creep at all depths.
+        Args:
+            origin      : Computes a distance from origin
+            filename    : Saves to a file
+            orientation : defines the orientation of positive distances.
+        '''
+
+        # Dictionnary to store these guys
+        if not hasattr(self, 'AlongStrike'):
+            self.AlongStrike = {}
+
+        # If filename provided, create it
+        if filename is not None:
+            fout = open(filename, 'w')
+
+        # Create the list of depths
+        depths = np.unique(np.array([[self.patch[i][u][2] for u in range(4)] for i in range(len(self.patch))]).flatten())
+        depths = depths[:-1] + (depths[1:] - depths[:-1])/2.
+
+        # For a list of depths, iterate
+        for d in depths.tolist():
+
+            # Get the values
+            self.ExtractAlongStrikeVariations(depth=d, origin=origin, filename=None, orientation=orientation)
+        
+            # If filename, write to it
+            fout.write('> # Depth = {} \n'.format(d))
+            fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Patch Area (km2) | Distance to origin (km) \n')
+            Var = self.AlongStrike['Depth {}'.format(d)]
+            for i in range(Var.shape[0]):
+                lon = Var[i,0]
+                lat = Var[i,1]
+                ss = Var[i,2]
+                ds = Var[i,3]
+                ts = Var[i,4]
+                area = Var[i,5]
+                dist = Var[i,6]
+                fout.write('{} {} {} {} {} {} {} \n'.format(lon, lat, ss, ds, ts, area, dist))
+
+        # Close file if done
+        if filename is not None:
+            fout.close()
+
+        # All done
         return
 
     def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False):
@@ -2773,4 +2843,152 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
-    
+    def mapFault2Fault(self, Map, fault):
+        '''
+        User provides a Mapping function np.array((len(self.patch), len(fault.patch))) and a fault and the slip from the argument
+        fault is mapped into self.slip.
+        Function just does:
+        self.slip[:,0] = np.dot(Map,fault.slip)
+        ...
+        '''
+
+        # Get the number of patches
+        nPatches = len(self.patch)
+        nPatchesExt = len(fault.patch)
+
+        # Assert the Mapping function is correct
+        assert(Map.shape==(nPatches,nPatchesExt)), 'Mapping function has the wrong size...'
+
+        # Map the slip
+        self.slip[:,0] = np.dot(Map, fault.slip[:,0])
+        self.slip[:,1] = np.dot(Map, fault.slip[:,1])
+        self.slip[:,2] = np.dot(Map, fault.slip[:,2])
+
+        # all done
+        return
+
+    def mapUnder2Above(self, deepfault):
+        '''
+        This routine is very very particular. It only works with 2 vertical faults.
+        It Builds the mapping function from one fault to another, when these are vertical.
+        These two faults must have the same surface trace. If the deep fault has more than one raw of patches, 
+        it might go wrong and give some unexpected results.
+        Args:
+            * deepfault     : Deep section of the fault.
+        '''
+
+        # Assert faults are compatible
+        assert ( (self.lon==deepfault.lon).all() and (self.lat==deepfault.lat).all()), 'Surface traces are different...'
+
+        # Check that all patches are verticals
+        dips = np.array([self.getpatchgeometry(i)[-1]*180./np.pi for i in range(len(self.patch))])
+        assert((dips == 90.).all()), 'Not viable for non-vertical patches, fault {}....'.format(self.name)
+        deepdips = np.array([deepfault.getpatchgeometry(i)[-1]*180./np.pi for i in range(len(deepfault.patch))])
+        assert((deepdips == 90.).all()), 'Not viable for non-vertical patches, fault {}...'.format(deepfault.name)
+
+        # Get the number of patches
+        nPatches = len(self.patch)
+        nDeepPatches = len(deepfault.patch)
+
+        # Create the map from under to above
+        Map = np.zeros((nPatches, nDeepPatches)) 
+
+        # Discretize the surface trace quite finely
+        self.discretize(every=0.5, tol=0.05, fracstep=0.02)
+
+        # Compute the cumulative distance along the fault
+        dis = self.cumdistance(discretized=True)
+
+        # Compute the cumulative distance between the beginning of the fault and the corners of the patches
+        distance = []
+        for p in self.patch:
+            D = []
+            # for each corner
+            for c in p:
+                # Get x,y
+                x = c[0]
+                y = c[1]
+                # Get the index of the nearest xi value under x
+                i = np.flatnonzero(x>=self.xi)[-1]
+                # Get the corresponding distance along the fault
+                d = dis[i] + np.sqrt( (x-self.xi[i])**2 + (y-self.yi[i])**2 )
+                # Append 
+                D.append(d)
+            # Array unique
+            D = np.unique(np.array(D))
+            # append
+            distance.append(D)
+
+        # Do the same for the deep patches
+        deepdistance = []
+        for p in deepfault.patch:
+            D = []
+            for c in p:
+                x = c[0]
+                y = c[1]
+                i = np.flatnonzero(x>=self.xi)
+                if len(i)>0:
+                    i = i[-1]
+                    d = dis[i] + np.sqrt( (x-self.xi[i])**2 + (y-self.yi[i])**2 )
+                else:
+                    d = 99999999.
+                D.append(d)
+            D = np.unique(np.array(D))
+            deepdistance.append(D)
+
+        # Numpy arrays
+        distance = np.array(distance)
+        deepdistance = np.array(deepdistance)
+
+        # Loop over the patches to find out which are over which 
+        for p in range(len(self.patch)):
+
+            # Get the patch distances
+            d1 = distance[p,0]
+            d2 = distance[p,1]
+
+            # Get the index for the points
+            i1 = np.intersect1d(np.flatnonzero((d1>=deepdistance[:,0])), np.flatnonzero((d1<deepdistance[:,1])))[0]
+            i2 = np.intersect1d(np.flatnonzero((d2>deepdistance[:,0])), np.flatnonzero((d2<=deepdistance[:,1])))[0]
+
+            # two cases possible:
+            if i1==i2:              # The shallow patch is fully inside the deep patch
+                Map[p,i1] = 1.0     # All the slip comes from this patch
+            else:                   # The shallow patch is on top of several patches
+                # two cases again
+                if np.abs(i2-i1)==1:       # It covers the boundary between 2 patches 
+                    delta1 = np.abs(d1-deepdistance[i1][1])
+                    delta2 = np.abs(d2-deepdistance[i2][0])
+                    total = delta1 + delta2
+                    delta1 /= total
+                    delta2 /= total
+                    Map[p,i1] = delta1
+                    Map[p,i2] = delta2
+                else:                       # It is larger than the boundary between 2 patches and covers several deep patches
+                    delta = []
+                    delta.append(np.abs(d1-deepdistance[i1][1]))
+                    for i in range(i1+1,i2):
+                        delta.append(np.abs(deepdistance[i][1]-deepdistance[i][0]))
+                    delta.append(np.abs(d2-deepdistance[i2][0]))
+                    delta = np.array(delta)
+                    total = np.sum(delta)
+                    delta = delta/total
+                    for i in range(i1,i2+1):
+                        Map[p,i] = delta
+
+        # All done
+        return Map
+
+
+
+
+
+
+
+
+
+
+
+
+
+
