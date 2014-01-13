@@ -64,7 +64,7 @@ class faultwithdipkinematic(RectangularPatches):
 
         # degree to rad
         dip = (dip)*np.pi/180.
-        dipdirection = (-1.0*dipdirection+90)*np.pi/180.
+        dipdirection_rad = dipdirection*np.pi/180.
 
         # initialize the depth of the top row
         self.zi = np.ones((self.xi.shape))*self.top
@@ -82,8 +82,8 @@ class faultwithdipkinematic(RectangularPatches):
             zt = self.zi
 
             # Compute the bottom row
-            xb = xt + self.width*np.cos(dip)*np.cos(dipdirection)
-            yb = yt + self.width*np.cos(dip)*np.sin(dipdirection)
+            xb = xt + self.width*np.cos(dip)*np.sin(dipdirection_rad)
+            yb = yt + self.width*np.cos(dip)*np.cos(dipdirection_rad)
             lonb, latb = self.putm(xb*1000., yb*1000., inverse=True)
             zb = zt + self.width*np.sin(dip)
 

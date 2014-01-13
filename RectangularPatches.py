@@ -87,7 +87,7 @@ class RectangularPatches(SourceInv):
         '''
 
         if n is None:
-            n = len(self.patch)
+           n = len(self.patch)
 
         self.slip = np.zeros((n,3))
 
@@ -206,7 +206,6 @@ class RectangularPatches(SourceInv):
 
         # All done
         return
-
 
     def discretize(self, every=2, tol=0.01, fracstep=0.2, xaxis='x', cum_error=True): 
         '''

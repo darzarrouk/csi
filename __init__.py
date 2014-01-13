@@ -24,6 +24,7 @@ from .faultwithdip import faultwithdip
 from .faultwithvaryingdip import faultwithvaryingdip
 from .faultpostproc import faultpostproc
 from .fault3D import fault3D
+from .planarfault import planarfault
 
 # Kinematic inversion class
 from .faultwithdipkinematic import faultwithdipkinematic

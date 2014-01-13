@@ -1,8 +1,9 @@
 '''
-A class that deals with vertical faults.
+A class that deals with simple vertical faults.
 
-Written by R. Jolivet, B. Riel and Z. Duputel, April 2013
+Written by Z. Duputel and R. Jolivet, January 2014
 '''
+
 
 # Externals
 import numpy as np
@@ -21,7 +22,7 @@ major, minor, micro, release, serial = sys.version_info
 if major==2:
     import okada4py as ok
 
-class faultwithdip(RectangularPatches):
+class planarfault(RectangularPatches):
 
     def __init__(self, name, utmzone=None, ellps='WGS84'):
         '''
@@ -36,57 +37,106 @@ class faultwithdip(RectangularPatches):
         # All done
         return
 
+    def discretize(self, lat, lon, strike, length, n_strike):
+        '''
+        Define the discretized trace of the fault
+        Args:
+            * lat,lon: coordinates at the center of the top edge of the fault
+            * strike: strike angle in degrees (from North)
+            * length: length of the fault (i.e., along strike)
+            * n_strike: number of patches along strike
+        '''
 
-    def buildPatches(self, dip, dipdirection, every=10, trace_tol=0.1, trace_fracstep=0.2, trace_xaxis='x'):
+        strike_rad = strike*np.pi/180.
+        
+        # Transpose lat/lon into the UTM reference
+        xc, yc = self.ll2xy(lon,lat)
+        
+        # half-length
+        half_length = 0.5*length
+
+        # set x0, y0 (i.e., coordinates at one of the top corner of the fault)
+        x0 = xc - half_length * np.sin(strike_rad)
+        y0 = yc - half_length * np.cos(strike_rad)
+
+        # set patch corners along strike
+        dist_strike = np.linspace(0,length,n_strike+1)
+        self.xi = x0 + dist_strike * np.sin(dist_strike)
+        self.yi = y0 + dist_strike * np.cos(dist_strike)
+        self.loni,self.lati = self.xy2ll(self.xi,self.yi)
+        
+
+        # All done
+        return
+        
+    def buildPatches(self, lat, lon, dep, strike, dip, length, width, n_strike, n_dip):
         '''
         Builds a dipping fault.
         Args:
-            * dip           : Dip angle
-            * dipdirection  : Direction towards which the fault dips.
+            * lat,lon,dep: coordinates at the center of the top edge of the fault
+            * strike: strike angle in degrees (from North)
+            * length: length of the fault (i.e., along strike)
+            * width: width of the fault (i.e., along dip)        
+            * n_strike: number of patches along strike
+            * n_dip: number of patches along dip
         '''
-
+        
         # Print
         print("Building a dipping fault")
+        print("         Lat, Lon, Dep : {} deg, {} deg, {} km ".format(lat,lon,dep))
+        print("         Dip Angle       : {} degrees".format(dip))        
+        print("         Strike Angle    : {} degrees".format(strike))
         print("         Dip Angle       : {} degrees".format(dip))
-        print("         Dip Direction   : {} degrees From North".format(dipdirection))
+        print("         Dip Direction   : {} degrees".format(strike+90.))
+        print("         Length          : {} km".format(length))
+        print("         Width           : {} km".format(width))
+        print("         {} patches along strike".format(n_strike))
+        print("         {} patches along dip".format(n_dip))
 
         # Initialize the structures
-        self.patch = []
+        self.patch = []        
         self.patchll = []
+        self.equivpatch = []
+        self.equivpatchll = []
         self.slip = []
         self.patchdip = []
 
+        # Set depth patch attributes
+        patch_width = width/float(n_dip)
+        self.setdepth(n_dip,patch_width,dep)
+        
         # Discretize the surface trace of the fault
-        self.discretize(every,trace_tol,trace_fracstep,trace_xaxis)
+        self.discretize(lat,lon,strike,length,n_strike)
 
         # degree to rad
         dip_rad = dip*np.pi/180.
-        dipdirection_rad = dipdirection*np.pi/180.
-
+        dipdirection_rad = (strike + 90) * np.pi/180.#(-1.0*dipdirection+90)*np.pi/180.
+        
         # initialize the depth of the top row
         self.zi = np.ones((self.xi.shape))*self.top
-
+        
         # set a marker
         D = [self.top]
-
+        
         # Loop over the depths
         for i in range(self.numz):
-
+            
             # Get the top of the row
             xt = self.xi
             yt = self.yi
-            lont, latt = self.putm(xt*1000., yt*1000., inverse=True)
             zt = self.zi
-
+            lont = self.loni
+            latt = self.lati
+            
             # Compute the bottom row
-            xb = xt + self.width*np.cos(dip_rad)*np.sin(dipdirection_rad)
-            yb = yt + self.width*np.cos(dip_rad)*np.cos(dipdirection_rad)
-            lonb, latb = self.putm(xb*1000., yb*1000., inverse=True)
+            xb = xt + self.width*np.cos(dip_rad) * np.sin(dipdirection_rad)
+            yb = yt + self.width*np.cos(dip_rad) * np.cos(dipdirection_rad)
+            lonb, latb = self.xy2ll(xb, yb)
             zb = zt + self.width*np.sin(dip_rad)
-
+            
             # fill D
             D.append(zb.max())
-
+            
             # Build the patches by linking the points together
             for j in range(xt.shape[0]-1):
                 # 1st corner
@@ -134,6 +184,9 @@ class faultwithdip(RectangularPatches):
                 self.patchll.append(pll)
                 self.slip.append([0.0, 0.0, 0.0])
                 self.patchdip.append(dip_rad)
+                # No equivalent patch calculation (patches are already rectangular)
+                self.equipatch.append(p)
+                self.equipatchll.append(pll)
 
             # upgrade xi
             self.xi = xb
@@ -149,11 +202,7 @@ class faultwithdip(RectangularPatches):
         self.slip = np.array(self.slip)
 
         # Re-discretoze to get the original fault
-        self.discretize(every,trace_tol,trace_fracstep,trace_xaxis)
+        self.discretize(lat,lon,strike,length,n_strike)
 
-        # Compute the equivalent rectangles
-        self.computeEquivRectangle()
-    
         # All done
         return
-
