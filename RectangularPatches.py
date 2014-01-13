@@ -2579,6 +2579,87 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
+    def ExtractAlongStrikeVariationsOnDiscretizedFault(self, depth=0.5, filename=None, discret=0.5):
+        '''
+        Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
+        Args:
+            depth       : Depth at which we extract the along strike variations of slip.
+            discret     : Discretization length
+            filename    : Saves to a file.
+        '''
+
+        # Import things we need
+        import scipy.spatial.distance as scidis
+
+        # Dictionary to store these guys
+        if not hasattr(self, 'AlongStrike'):
+            self.AlongStrike = {}
+
+        # Creates the list where we store things
+        # [lon, lat, strike-slip, dip-slip, tensile, distance, xi, yi]
+        Var = []
+
+        # Open the output file if needed
+        if filename is not None:
+            fout = open(filename, 'w')
+            fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) | Position (x,y) (km)\n')
+
+        # Discretize the fault
+        self.discretize(every=discret, tol=discret/10., fracstep=discret/12.)
+        nd = self.xi.shape[0]
+
+        # Compute the cumulative distance along the fault
+        dis = self.cumdistance(discretized=True)
+
+        # Get the patches concerned by the depths asked
+        dPatches = []
+        cPatches = []
+        sPatches = []
+        for p in self.patch:
+            # Check depth
+            if ((p[0][2]<=depth) and (p[2][2]>=depth)):
+                cPatches.append(np.array(self.getcenter(p)[:2]))
+                sPatches.append(self.getslip(p))
+                dPatches.append(p)
+
+        # Iterate over the discretized fault points
+        for i in range(self.xi.shape[0]):
+            # Get the position
+            x = self.xi[i]
+            y = self.yi[i]
+            # Get the distance between the point and all the patches
+            d = scidis.cdist([[x, y]], cPatches)[0]
+            # Get the two smallest values
+            imin1 = d.argmin()
+            dmin1 = d[imin1]
+            d[imin1] = 99999999.
+            imin2 = d.argmin()
+            dmin2 = d[imin2]
+            # Interpolate the slip 
+            dtot = dmin1 + dmin2
+            ss1, ds1, ts1 = sPatches[imin1]
+            ss2, ds2, ts2 = sPatches[imin2]
+            ss = (ss1*dmin1 + ss2*dmin2)/dtot
+            ds = (ds1*dmin1 + ds2*dmin2)/dtot
+            ts = (ts1*dmin1 + ts2*dmin2)/dtot
+            # Make a variable
+            v = [self.loni[i], self.lati[i], ss, ds, ts, dis[i], x, y]
+            # Put things in Val
+            Var.append(v)
+            # Write things if asked
+            if filename is not None:
+                fout.write('{} {} {} {} {} {} {} {} \n'.format(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]))
+
+        # Store it in AlongStrike
+        self.AlongStrike['Depth {}'.format(depth)] = np.array(Var)
+
+        # Close fi needed
+        if filename is not None:
+            fout.close()
+
+        # All done
+        return
+
     def ExtractAlongStrikeVariations(self, depth=0.5, origin=None, filename=None, orientation=0.0):
         '''
         Extract the Along Strike Variations of the creep at a given depth
