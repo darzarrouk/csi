@@ -1,41 +1,44 @@
 '''
-A class that deals with InSAR data, after decimation using VarRes.
+A class that deals with seismic catalogs.
 
 Written by R. Jolivet, April 2013.
 '''
 
+# Externals
 import numpy as np
 import pyproj as pp
 import datetime as dt
 import matplotlib.pyplot as plt
 
-class seismiclocations(object):
+# Personals
+from .SourceInv import SourceInv
 
-    def __init__(self, name, utmzone='10'):
+class seismiclocations(SourceInv):
+
+    def __init__(self, name, utmzone=None, ellps='WGS84'):
         '''
         Args:
             * name          : Name of the Seismic dataset.
             * utmzone       : UTM zone. Default is 10 (Western US).
         '''
 
-        # Initialize the data set 
-        self.name = name
-        self.utmzone = utmzone
+        # Base class init
+        super(seismiclocations, self).__init__(name, utmzone, ellps)
+
+        # Initialize the data set type
         self.dtype = 'seismiclocations'
 
         print ("---------------------------------")
         print ("---------------------------------")
-        print (" Initialize Seismicity data set {}".format(self.name))
+        print ("Initialize Seismicity data set {}".format(self.name))
 
-        # Initialize the UTM transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
+        # Initialize the location
 
         # Initialize some things
         self.time = None
         self.lon = None
         self.lat = None
         self.depth = None
-        self.date = None
         self.mag = None
 
         # All done
@@ -106,7 +109,7 @@ class seismiclocations(object):
         self.mag = np.array(self.mag)
 
         # Create the utm coordinates
-        self.ll2xy()
+        self.lonlat2xy()
 
         # All done
         return
@@ -232,7 +235,7 @@ class seismiclocations(object):
         # All done
         return  
 
-    def ll2xy(self):
+    def lonlat2xy(self):
         '''
         Converts the lat lon positions into utm coordinates.
         '''
@@ -328,6 +331,112 @@ class seismiclocations(object):
         # All done
         return  
 
+    def ProjectOnFaultTrace(self, fault, discretized=True, filename=None):
+        '''
+        Projects the location of the earthquake along the fault trace. 
+        This routine is not a 3D one, it just deals with the surface trace of the fault.
+        Args:
+            fault:       Fault object that has a surface trace
+            discretized: If True, then it uses the discretized fault, not the trace. Never tested with False.
+        '''
+
+        # Import needed stuff
+        import scipy.spatial.distance as scidis
+
+        # Check that we are in the same utmzone
+        assert (fault.utmzone==self.utmzone), 'Fault {} utmzone is not seismiclocation {} utmzone: {} <==> {}'.format(
+                    fault.name, self.name, fault.utmzone, self.utmzone)
+
+        # discretized?
+        if discretized:
+            # Check
+            assert (fault.xi is not None), 'Fault {} needs a discretized surface trace, Abort....'.format(fault.name)
+            # Get x, y
+            x = fault.xi
+            y = fault.yi
+            nf = fault.xi.shape[0]
+        else:
+            # Check
+            assert (fault.xf is not None), 'Fault {} needs a surface trace, Abort....'.format(fault.name)
+            # Get x, y
+            x = fault.xf
+            y = fault.yf
+            nf = fault.xf.shape[0]
+
+        # Compute the cumulative distance along the fault trace
+        dis = fault.cumdistance(discretized=discretized)
+
+        # If you want to store that in a file
+        if filename is not None:
+            fout = open(filename, 'w')
+            fout.write('# Lon | Lat | time | depth | mag | AlongStrikeDistance \n')
+
+        # Create the structure that'll hold everything
+        if not hasattr(self, 'Projected'):
+            self.Projected = {}
+
+        # Create the structure that holds this particular one
+        self.Projected['{}'.format(fault.name)] = {}
+        proj = self.Projected['{}'.format(fault.name)]
+        proj['x'] = []
+        proj['y'] = []
+        proj['lon'] = []
+        proj['lat'] = []
+        proj['time'] = []
+        proj['depth'] = []
+        proj['mag'] = []
+        proj['AlongStrikeDistance'] = []
+
+        # Iterate on the earthquakes
+        for i in range(self.time.shape[0]):
+            # Get earthquake
+            qx = self.x[i]
+            qy = self.y[i]
+            qlon = self.lon[i]
+            qlat = self.lat[i]
+            qtime = self.time[i]
+            qz = self.depth[i]
+            qmag = self.mag[i]
+            # Get distances
+            d = scidis.cdist([[qx, qy]], [ [x[j], y[j]] for j in range(nf)])[0]
+            # Get the smallest
+            imin1 = d.argmin()
+            dmin1 = d.min()
+            d[imin1] = 9999999999.
+            imin2 = d.argmin()
+            dmin2 = d.min()
+            dtot= dmin1 + dmin2
+            # Do the spatial position
+            qx = (x[imin1]*dmin1 + x[imin2]*dmin2)/dtot
+            qy = (y[imin1]*dmin1 + y[imin2]*dmin2)/dtot
+            # Put into lon lat
+            qlon, qlat = self.xy2ll(qx, qy)
+            # Compute the AlongStrike Distance
+            if dmin1<dmin2:
+                jm = imin1
+            else:
+                jm = imin2
+            qdis = dis[jm] + np.sqrt( (qx-x[jm])**2 + (qy-y[jm])**2 )
+            # Store all that in a structure
+            proj['x'].append(qx)
+            proj['y'].append(qy)
+            proj['lon'].append(qlon)
+            proj['lat'].append(qlat)
+            proj['time'].append(qtime)
+            proj['depth'].append(qz)
+            proj['mag'].append(qmag)
+            proj['AlongStrikeDistance'].append(qdis)
+            # Write to file?
+            if filename is not None:
+                fout.write('{} {} {} {} {} {} \n'.format(qlon, qlat, qtime, qz, qmag, qdis))
+
+        # Close the file
+        if filename is not None:
+            fout.close()
+
+        # All done
+        return
+
     def write2file(self, filename):
         '''
         Write the earthquakes to a file.
@@ -366,7 +475,7 @@ class seismiclocations(object):
         self.time = np.hstack((self.time, catalog.time))
 
         # Compute the xy
-        self.ll2xy()
+        self.lonlat2xy()
 
         # all done 
         return

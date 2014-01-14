@@ -2605,7 +2605,8 @@ class RectangularPatches(SourceInv):
             fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) | Position (x,y) (km)\n')
 
         # Discretize the fault
-        self.discretize(every=discret, tol=discret/10., fracstep=discret/12.)
+        if discret is not None:
+            self.discretize(every=discret, tol=discret/10., fracstep=discret/12.)
         nd = self.xi.shape[0]
 
         # Compute the cumulative distance along the fault
@@ -2742,13 +2743,9 @@ class RectangularPatches(SourceInv):
         # all done 
         return
 
-    def ExtractAlongStrikeAllDepths(self, origin=None, filename=None, orientation=0.0):
+    def ExtractAlongStrikeAllDepths(self, filename=None, discret=0.5):
         '''
-        Extracts the Along Strike Variations of the creep at all depths.
-        Args:
-            origin      : Computes a distance from origin
-            filename    : Saves to a file
-            orientation : defines the orientation of positive distances.
+        Extracts the Along Strike Variations of the creep at all depths for the discretized version.
         '''
 
         # Dictionnary to store these guys
@@ -2763,25 +2760,30 @@ class RectangularPatches(SourceInv):
         depths = np.unique(np.array([[self.patch[i][u][2] for u in range(4)] for i in range(len(self.patch))]).flatten())
         depths = depths[:-1] + (depths[1:] - depths[:-1])/2.
 
+        # Discretize the fault
+        self.discretize(every=discret, tol=discret/10., fracstep=discret/12.)
+
         # For a list of depths, iterate
         for d in depths.tolist():
 
             # Get the values
-            self.ExtractAlongStrikeVariations(depth=d, origin=origin, filename=None, orientation=orientation)
+            self.ExtractAlongStrikeVariationsOnDiscretizedFault(depth=d, filename=None, discret=None)
         
             # If filename, write to it
-            fout.write('> # Depth = {} \n'.format(d))
-            fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Patch Area (km2) | Distance to origin (km) \n')
-            Var = self.AlongStrike['Depth {}'.format(d)]
-            for i in range(Var.shape[0]):
-                lon = Var[i,0]
-                lat = Var[i,1]
-                ss = Var[i,2]
-                ds = Var[i,3]
-                ts = Var[i,4]
-                area = Var[i,5]
-                dist = Var[i,6]
-                fout.write('{} {} {} {} {} {} {} \n'.format(lon, lat, ss, ds, ts, area, dist))
+            if filename is not None:
+                fout.write('> # Depth = {} \n'.format(d))
+                fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) | x, y \n')
+                Var = self.AlongStrike['Depth {}'.format(d)]
+                for i in range(Var.shape[0]):
+                    lon = Var[i,0]
+                    lat = Var[i,1]
+                    ss = Var[i,2]
+                    ds = Var[i,3]
+                    ts = Var[i,4]
+                    dist = Var[i,5]
+                    x = Var[i,6]
+                    y = Var[i,7]
+                    fout.write('{} {} {} {} {} {} {} \n'.format(lon, lat, ss, ds, ts, area, dist, x, y))
 
         # Close file if done
         if filename is not None:
