@@ -986,10 +986,13 @@ class RectangularPatches(SourceInv):
         '''
 
         # Get the patch
+        u = None
         if patch.__class__ is int:
             u = patch
         else:
-            u = [self.patch == patch]
+            for i in range(len(self.patch)):
+                if (self.patch[i]==patch).all():
+                    u = i
 
         # Get the four corners of the rectangle
         p1, p2, p3, p4 = self.equivpatch[u]
@@ -2614,42 +2617,50 @@ class RectangularPatches(SourceInv):
 
         # Get the patches concerned by the depths asked
         dPatches = []
-        cPatches = []
         sPatches = []
         for p in self.patch:
             # Check depth
             if ((p[0][2]<=depth) and (p[2][2]>=depth)):
-                cPatches.append(np.array(self.getcenter(p)[:2]))
+                # Get patch
                 sPatches.append(self.getslip(p))
-                dPatches.append(p)
+                # Put it in dis
+                xc, yc = self.getcenter(p)[:2]
+                d = scidis.cdist([[xc, yc]], [[self.xi[i], self.yi[i]] for i in range(self.xi.shape[0])])[0]
+                imin1 = d.argmin()
+                dmin1 = d[imin1] 
+                d[imin1] = 99999999.
+                imin2 = d.argmin()  
+                dmin2 = d[imin2]  
+                dtot=dmin1+dmin2
+                # Put it along the fault
+                xcd = (self.xi[imin1]*dmin1 + self.xi[imin2]*dmin2)/dtot
+                ycd = (self.yi[imin1]*dmin1 + self.yi[imin2]*dmin2)/dtot
+                # Distance
+                if dmin1<dmin2:
+                    jm = imin1
+                else:
+                    jm = imin2
+                dPatches.append(dis[jm] + np.sqrt( (xcd-self.xi[jm])**2 + (ycd-self.yi[jm])**2) )
 
-        # Iterate over the discretized fault points
+        # Create the interpolator
+        ssint = sciint.interp1d(dPatches, [sPatches[i][0] for i in range(len(sPatches))], kind='linear', bounds_error=False)
+        dsint = sciint.interp1d(dPatches, [sPatches[i][1] for i in range(len(sPatches))], kind='linear', bounds_error=False)
+        tsint = sciint.interp1d(dPatches, [sPatches[i][2] for i in range(len(sPatches))], kind='linear', bounds_error=False)
+
+        # Interpolate
         for i in range(self.xi.shape[0]):
-            # Get the position
             x = self.xi[i]
             y = self.yi[i]
-            # Get the distance between the point and all the patches
-            d = scidis.cdist([[x, y]], cPatches)[0]
-            # Get the two smallest values
-            imin1 = d.argmin()
-            dmin1 = d[imin1]
-            d[imin1] = 99999999.
-            imin2 = d.argmin()
-            dmin2 = d[imin2]
-            # Interpolate the slip 
-            dtot = dmin1 + dmin2
-            ss1, ds1, ts1 = sPatches[imin1]
-            ss2, ds2, ts2 = sPatches[imin2]
-            ss = (ss1*dmin1 + ss2*dmin2)/dtot
-            ds = (ds1*dmin1 + ds2*dmin2)/dtot
-            ts = (ts1*dmin1 + ts2*dmin2)/dtot
-            # Make a variable
-            v = [self.loni[i], self.lati[i], ss, ds, ts, dis[i], x, y]
-            # Put things in Val
-            Var.append(v)
+            lon = self.loni[i]
+            lat = self.lati[i]
+            d = dis[i]
+            ss = ssint(d)
+            ds = dsint(d)
+            ts = tsint(d)
+            Var.append([lon, lat, ss, ds, ts, d, x, y])
             # Write things if asked
             if filename is not None:
-                fout.write('{} {} {} {} {} {} {} {} \n'.format(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]))
+                fout.write('{} {} {} {} {} {} {} {} \n'.format(lon, lat, ss, ds, ts, d, x, y))
 
         # Store it in AlongStrike
         self.AlongStrike['Depth {}'.format(depth)] = np.array(Var)

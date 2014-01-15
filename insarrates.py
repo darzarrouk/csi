@@ -32,7 +32,7 @@ class insarrates(SourceInv):
 
         print ("---------------------------------")
         print ("---------------------------------")
-        print (" Initialize InSAR data set {}".format(self.name))
+        print ("Initialize InSAR data set {}".format(self.name))
 
         # Initialize some things
         self.vel = None
@@ -47,31 +47,6 @@ class insarrates(SourceInv):
 
         # All done
         return
-
-    def lonlat2xy(self, lon, lat):
-        '''
-        Uses the transformation in self to convert  lon/lat vector to x/y utm.
-        Args:
-            * lon           : Longitude array.
-            * lat           : Latitude array.
-        '''
-
-        x, y = self.putm(lon,lat)
-        x /= 1000.
-        y /= 1000.
-
-        return x, y
-
-    def xy2lonlat(self, x, y):
-        '''
-        Uses the transformation in self to convert x.y vectors to lon/lat.
-        Args:
-            * x             : Xarray
-            * y             : Yarray
-        '''
-
-        lon, lat = self.putm(x*1000., y*1000., inverse=True)
-        return lon, lat
 
     def read_from_varres(self,filename, factor=1.0, step=0.0, header=2, cov=False):
         '''
@@ -126,14 +101,14 @@ class insarrates(SourceInv):
         fsp.close()
 
         # Compute lon lat to utm
-        self.x, self.y = self.lonlat2xy(self.lon,self.lat)
+        self.x, self.y = self.ll2xy(self.lon,self.lat)
 
         # Compute corner to xy
         self.xycorner = np.zeros(self.corner.shape)
-        x, y = self.putm(self.corner[:,0], self.corner[:,1])
+        x, y = self.ll2xy(self.corner[:,0], self.corner[:,1])
         self.xycorner[:,0] = x/1000.
         self.xycorner[:,1] = y/1000.
-        x, y = self.putm(self.corner[:,2], self.corner[:,3])
+        x, y = self.ll2xy(self.corner[:,2], self.corner[:,3])
         self.xycorner[:,2] = x/1000.
         self.xycorner[:,3] = y/1000.
 
@@ -190,7 +165,7 @@ class insarrates(SourceInv):
         self.err = self.err[u]
 
         # Convert to utm
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # Deal with the LOS
         alpha = (heading+90.0)*np.pi/180.0
@@ -257,7 +232,7 @@ class insarrates(SourceInv):
         self.err = self.err[u]
 
         # Convert to utm
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
+        self.x, self.y = self.ll2xy(self.lon, self.lat) 
 
         # Deal with the LOS
         self.los = np.ones((self.lon.shape[0],3))
@@ -283,6 +258,32 @@ class insarrates(SourceInv):
 
         # Store the factor
         self.factor = factor
+
+        # All done
+        return
+
+    def ModelResolutionDownsampling(self, faults, threshold, startingsize=10.):
+        '''
+        Downsampling algorythm based on Lohman & Simons, 2005, G3. 
+        Args:
+            faults          : List of faults, these need to have a buildGFs routine (ex: for RectangularPatches, it will be Okada).
+            threshold       : Resolution threshold, if above threshold, keep dividing.
+            startingsize    : Starting size of the downsampling boxes.
+        '''
+        
+        # Check if faults have patches and builGFs routine
+        for fault in faults:
+            assert (hasattr(fault, 'builGFs')), 'Fault object {} does not have a buildGFs attribute...'.format(fault.name)
+
+        # Create the insar downsampling object
+        downsampler = mrd('Downsampler {}'.format(self.name), self, faults)
+
+        # Initialize the downsampling starting point
+        downsampler.initialstate(startingsize)
+
+        # Iterate until done
+
+        # Write outputs
 
         # All done
         return
@@ -514,19 +515,6 @@ class insarrates(SourceInv):
         else:
             return
 
-
-    def ll2xy(self):
-        '''
-        Converts the lat lon positions into utm coordinates.
-        '''
-
-        x, y = self.putm(self.lon, self.lat)
-        self.x = x/1000.
-        self.y = y/1000.
-
-        # All done
-        return
-
     def writeEDKSdata(self):
         '''
         This routine prepares the data file as input for EDKS.
@@ -651,7 +639,7 @@ class insarrates(SourceInv):
             self.profiles = {}
 
         # Convert the lat/lon of the center into UTM.
-        xc, yc = self.lonlat2xy(loncenter, latcenter)
+        xc, yc = self.ll2xy(loncenter, latcenter)
 
         # Get the profile
         Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2 = self.coord2prof(
@@ -713,8 +701,8 @@ class insarrates(SourceInv):
         ye2 = yc - (length/2.)*np.cos(alpha)
 
         # Convert the endpoints
-        elon1, elat1 = self.xy2lonlat(xe1, ye1)
-        elon2, elat2 = self.xy2lonlat(xe2, ye2)
+        elon1, elat1 = self.xy2ll(xe1, ye1)
+        elon2, elat2 = self.xy2ll(xe2, ye2)
 
         # Design a box in the UTM coordinate system.
         x1 = xe1 - (width/2.)*np.cos(alpha)
@@ -727,10 +715,10 @@ class insarrates(SourceInv):
         y4 = ye2 + (width/2.)*np.sin(alpha)
 
         # Convert the box into lon/lat for further things
-        lon1, lat1 = self.xy2lonlat(x1, y1)
-        lon2, lat2 = self.xy2lonlat(x2, y2)     
-        lon3, lat3 = self.xy2lonlat(x3, y3)
-        lon4, lat4 = self.xy2lonlat(x4, y4)
+        lon1, lat1 = self.xy2ll(x1, y1)
+        lon2, lat2 = self.xy2ll(x2, y2)     
+        lon3, lat3 = self.xy2ll(x3, y3)
+        lon4, lat4 = self.xy2ll(x4, y4)
 
         # make the box 
         box = []
@@ -1069,7 +1057,7 @@ class insarrates(SourceInv):
         b = self.profiles[name]['Box']
         bb = np.zeros((5, 2))
         for i in range(4):
-            x, y = self.lonlat2xy(b[i,0], b[i,1])
+            x, y = self.ll2xy(b[i,0], b[i,1])
             bb[i,0] = x
             bb[i,1] = y
         bb[4,0] = bb[0,0]
@@ -1148,7 +1136,7 @@ class insarrates(SourceInv):
 
         # Get the center
         lonc, latc = prof['Center']
-        xc, yc = self.lonlat2xy(lonc, latc)
+        xc, yc = self.ll2xy(lonc, latc)
 
         # Get the sign 
         xa,ya = prof['EndPoints'][0]
