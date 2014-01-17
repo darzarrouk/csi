@@ -43,10 +43,10 @@ class geodeticplot:
 
         # store plots
         self.faille = faille
-        self.carte = carte
+        self.carte  = carte
         self.fig1 = fig1
         self.fig2 = fig2
-        self.ref = ref
+        self.ref  = ref
 
     def show(self, mapaxis='equal'):
         ''' 
@@ -300,7 +300,7 @@ class geodeticplot:
             self.fig1.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
 
         # All done
-        return
+        return Xs,Ys
 
     def setzaxis(self, depth, zticklabels=None):
         '''
