@@ -13,10 +13,11 @@ import sys
 
 # Personals
 from .SourceInv import SourceInv
+from .insardownsampling import Downsampler as mrd
 
 class insarrates(SourceInv):
 
-    def __init__(self, name, utmzone='10', ellps='WGS84'):
+    def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
         '''
         Args:
             * name          : Name of the InSAR dataset.
@@ -30,9 +31,10 @@ class insarrates(SourceInv):
         # Initialize the data set 
         self.dtype = 'insarrates'
 
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initialize InSAR data set {}".format(self.name))
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize InSAR data set {}".format(self.name))
 
         # Initialize some things
         self.vel = None
@@ -168,20 +170,42 @@ class insarrates(SourceInv):
         self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # Deal with the LOS
-        alpha = (heading+90.0)*np.pi/180.0
-        phi = incidence*np.pi/180.0
-        Se = -1.0 * np.sin(alpha) * np.sin(phi)
-        Sn = -1.0 * np.cos(alpha) * np.sin(phi)
-        Su = np.cos(phi)
-        self.los = np.ones((self.lon.shape[0],3))
-        self.los[:,0] *= Se
-        self.los[:,1] *= Sn
-        self.los[:,2] *= Su
+        self.inchd2los(incidence, heading)
 
         # Store the factor
         self.factor = factor
 
         # All done
+        return
+
+    def inchd2los(self, incidence, heading):
+        '''
+        From the incidence and the heading, defines the LOS vector.
+        Args:
+            * incidence : Incidence angle.
+            * heading   : Heading angle.
+        '''
+
+        # Save values
+        self.incidence = incidence
+        self.heading = heading
+
+        # Convert angles
+        alpha = (heading+90.)*np.pi/180.
+        phi = incidence *np.pi/180.
+
+        # Compute LOS
+        Se = -1.0 * np.sin(alpha) * np.sin(phi)
+        Sn = -1.0 * np.cos(alpha) * np.sin(phi)
+        Su = np.cos(phi)
+
+        # Store it
+        self.los = np.ones((self.lon.shape[0],3))
+        self.los[:,0] *= Se
+        self.los[:,1] *= Sn
+        self.los[:,2] *= Su
+
+        # all done
         return
 
     def read_from_grd(self, filename, factor=1.0, step=0.0, incidence=None, heading=None,
@@ -237,14 +261,7 @@ class insarrates(SourceInv):
         # Deal with the LOS
         self.los = np.ones((self.lon.shape[0],3))
         if heading is not None and incidence is not None and los is None:
-            alpha = (heading+90.0)*np.pi/180.0
-            phi = incidence*np.pi/180.0 
-            Se = -1.0*np.sin(alpha) * np.sin(phi) 
-            Sn = -1.0*np.cos(alpha) * np.sin(phi) 
-            Su = np.cos(phi) 
-            self.los[:,0] *= Se
-            self.los[:,1] *= Sn
-            self.los[:,2] *= Su
+            self.inchd2los(incidence, heading)
         elif los is not None:
             self.los[:,0] *= los[0]
             self.los[:,1] *= los[1]
@@ -282,6 +299,7 @@ class insarrates(SourceInv):
         downsampler.initialstate(startingsize)
 
         # Iterate until done
+        downsampler.iterativeDownsampling(threshold)
 
         # Write outputs
 

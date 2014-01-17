@@ -16,6 +16,9 @@ import os
 
 # Personals
 from .SourceInv import SourceInv
+major, minor, micro, release, serial = sys.version_info
+if major==2:
+    import okada4py as ok
 
 class RectangularPatches(SourceInv):
     
@@ -1103,7 +1106,7 @@ class RectangularPatches(SourceInv):
         # All done
         return ss_dis, ds_dis, op_dis
 
-    def buildGFs(self, data, vertical=True, slipdir='sd'):
+    def buildGFs(self, data, vertical=True, slipdir='sd', verbose=True):
         '''
         Builds the Green's function matrix based on the discretized fault.
         Args:
@@ -1114,7 +1117,8 @@ class RectangularPatches(SourceInv):
         The Green's function matrix is stored in a dictionary. Each entry of the dictionary is named after the corresponding dataset. Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
         '''
 
-        print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
+        if verbose:
+            print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
 
         # Get the number of data
         Nd = data.lon.shape[0]
@@ -1184,8 +1188,9 @@ class RectangularPatches(SourceInv):
 
         # Loop over each patch
         for p in range(len(self.patch)):
-            sys.stdout.write('\r Patch: {} / {} '.format(p+1,len(self.patch)))
-            sys.stdout.flush()
+            if verbose:
+                sys.stdout.write('\r Patch: {} / {} '.format(p+1,len(self.patch)))
+                sys.stdout.flush()
             
             # get the surface displacement corresponding to unit slip
             # ss,ds,op will all have shape (Nd,3) for 3 components
@@ -1228,8 +1233,9 @@ class RectangularPatches(SourceInv):
                 G['tensile'][:,p] = op
 
         # Clean the screen 
-        sys.stdout.write('\n')
-        sys.stdout.flush()
+        if verbose:
+            sys.stdout.write('\n')
+            sys.stdout.flush()
 
         # All done
         return
@@ -1504,7 +1510,7 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
-    def assembleGFs(self, datas, polys=0, slipdir='sd'):
+    def assembleGFs(self, datas, polys=0, slipdir='sd', verbose=True):
         '''
         Assemble the Green's functions that have been built using build GFs.
         This routine spits out the General G and the corresponding data vector d.
@@ -1521,9 +1527,10 @@ class RectangularPatches(SourceInv):
         '''
 
         # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print("Assembling G for fault {}".format(self.name))
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print("Assembling G for fault {}".format(self.name))
 
         # Store the assembled slip directions
         self.slipdir = slipdir
@@ -1609,7 +1616,8 @@ class RectangularPatches(SourceInv):
             self.datanames.append(data.name)
 
             # print
-            print("Dealing with {} of type {}".format(data.name, data.dtype))
+            if verbose:
+                print("Dealing with {} of type {}".format(data.name, data.dtype))
 
             # Get the corresponding G
             Ndlocal = self.d[data.name].shape[0]
@@ -1999,7 +2007,7 @@ class RectangularPatches(SourceInv):
         # all done
         return
 
-    def buildCm(self, sigma, lam, lam0=None, extra_params=None, lim=None):
+    def buildCm(self, sigma, lam, lam0=None, extra_params=None, lim=None, verbose=True):
         '''
         Builds a model covariance matrix using the equation described in Radiguet et al 2010.
         Args:
@@ -2011,11 +2019,12 @@ class RectangularPatches(SourceInv):
         '''
 
         # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Assembling the Cm matrix ")
-        print ("Sigma = {}".format(sigma))
-        print ("Lambda = {}".format(lam))
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Assembling the Cm matrix ")
+            print ("Sigma = {}".format(sigma))
+            print ("Lambda = {}".format(lam))
 
         # Need the patch geometry
         if self.patch is None:
@@ -2034,7 +2043,8 @@ class RectangularPatches(SourceInv):
             yd = (np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())/(np.unique(self.centers[:,1]).size)
             zd = (np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())/(np.unique(self.centers[:,2]).size)
             lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
-        print ("Lambda0 = {}".format(lam0))
+        if verbose:
+            print ("Lambda0 = {}".format(lam0))
         C = (sigma*lam0/lam)**2
 
         # Creates the principal Cm matrix
