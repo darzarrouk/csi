@@ -319,7 +319,7 @@ class faultpostproc(object):
     def computeCentroidLonLatDepth(self, plotOutput=None, xyzOutput=None):
         '''
         Computes the equivalent centroid location.
-        Take from Theoretical Global Seismology, Dahlen & Tromp. pp. 169
+        Take from Theoretical Global Seismology, Dahlen & Tromp. Chapter 5. Section 4. pp. 169
         '''
 
         # Check
