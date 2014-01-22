@@ -369,7 +369,7 @@ class seismiclocations(SourceInv):
         # If you want to store that in a file
         if filename is not None:
             fout = open(filename, 'w')
-            fout.write('# Lon | Lat | time | depth | mag | AlongStrikeDistance \n')
+            fout.write('# Lon | Lat | time | depth | mag | AlongStrikeDistance | DistanceToFault \n')
 
         # Create the structure that'll hold everything
         if not hasattr(self, 'Projected'):
@@ -386,6 +386,7 @@ class seismiclocations(SourceInv):
         proj['depth'] = []
         proj['mag'] = []
         proj['AlongStrikeDistance'] = []
+        proj['DistanceToFault'] = []
 
         # Iterate on the earthquakes
         for i in range(self.time.shape[0]):
@@ -417,6 +418,11 @@ class seismiclocations(SourceInv):
             else:
                 jm = imin2
             qdis = dis[jm] + np.sqrt( (qx-x[jm])**2 + (qy-y[jm])**2 )
+            # Compute the distance to the fault
+            dl = np.sqrt( (x[imin1]-x[imin2])**2 + (y[imin1]-y[imin2])**2 ) # 3 side of the triangle 
+            semiperi = (dmin1 + dmin2 + dl)/2.                              # Semi-perimeter of the triangle
+            A = semiperi*(semiperi-dmin1)*(semiperi-dmin2)*(semiperi-dmin3) # Area of the triangle (Heron's formula)
+            qh = 2*A/dl                                                     # Height of the triangle
             # Store all that in a structure
             proj['x'].append(qx)
             proj['y'].append(qy)
@@ -426,9 +432,10 @@ class seismiclocations(SourceInv):
             proj['depth'].append(qz)
             proj['mag'].append(qmag)
             proj['AlongStrikeDistance'].append(qdis)
+            proj['DistanceToFault'].append(qh)
             # Write to file?
             if filename is not None:
-                fout.write('{} {} {} {} {} {} \n'.format(qlon, qlat, qtime, qz, qmag, qdis))
+                fout.write('{} {} {} {} {} {} {} \n'.format(qlon, qlat, qtime, qz, qmag, qdis, qh))
 
         # Close the file
         if filename is not None:
