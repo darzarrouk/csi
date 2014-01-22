@@ -6,9 +6,12 @@ Written by R. Jolivet, April 2013.
 
 from .SourceInv import SourceInv
 from .RectangularPatches import RectangularPatches
+
+# Secondary
 from .verticalfault import verticalfault
 from .gpsrates import gpsrates
 from .insarrates import insarrates
+from .insardownsampling import insardownsampling
 from .geodeticplot import geodeticplot
 from .multifaultsolve import multifaultsolve
 from .seismiclocations import seismiclocations

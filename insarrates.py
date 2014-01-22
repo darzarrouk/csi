@@ -13,7 +13,6 @@ import sys
 
 # Personals
 from .SourceInv import SourceInv
-from .insardownsampling import Downsampler as mrd
 
 class insarrates(SourceInv):
 
@@ -108,11 +107,11 @@ class insarrates(SourceInv):
         # Compute corner to xy
         self.xycorner = np.zeros(self.corner.shape)
         x, y = self.ll2xy(self.corner[:,0], self.corner[:,1])
-        self.xycorner[:,0] = x/1000.
-        self.xycorner[:,1] = y/1000.
+        self.xycorner[:,0] = x
+        self.xycorner[:,1] = y
         x, y = self.ll2xy(self.corner[:,2], self.corner[:,3])
-        self.xycorner[:,2] = x/1000.
-        self.xycorner[:,3] = y/1000.
+        self.xycorner[:,2] = x
+        self.xycorner[:,3] = y
 
         # Read the covariance
         if cov:
@@ -279,29 +278,38 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def ModelResolutionDownsampling(self, faults, threshold, startingsize=10.):
+    def ModelResolutionDownsampling(self, faults, threshold, damping, startingsize=10., minimumsize=0.5, tolerance=0.1, plot=False):
         '''
         Downsampling algorythm based on Lohman & Simons, 2005, G3. 
         Args:
             faults          : List of faults, these need to have a buildGFs routine (ex: for RectangularPatches, it will be Okada).
             threshold       : Resolution threshold, if above threshold, keep dividing.
+            damping         : Damping parameter. Damping is enforced through the addition of a identity matrix.
             startingsize    : Starting size of the downsampling boxes.
         '''
+        
+        # If needed
+        from .insardownsampling import insardownsampling
         
         # Check if faults have patches and builGFs routine
         for fault in faults:
             assert (hasattr(fault, 'builGFs')), 'Fault object {} does not have a buildGFs attribute...'.format(fault.name)
 
         # Create the insar downsampling object
-        downsampler = mrd('Downsampler {}'.format(self.name), self, faults)
+        downsampler = insardownsampling('Downsampler {}'.format(self.name), self, faults)
 
         # Initialize the downsampling starting point
-        downsampler.initialstate(startingsize)
+        downsampler.initialstate(startingsize, minimumsize, tolerance=tolerance)
 
         # Iterate until done
-        downsampler.iterativeDownsampling(threshold)
+        downsampler.ResolutionBasedIterations(threshold, damping, plot=False)
+
+        # Plot
+        if plot:
+            downsampler.plot()
 
         # Write outputs
+        downsampler.writeDownsampled2File(self.name, rsp=True)
 
         # All done
         return

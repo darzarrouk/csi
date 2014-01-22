@@ -15,9 +15,9 @@ import sys
 import os
 
 # Personals
-import insarrates
+from .insarrates import insarrates
 
-class Downsampler(object):
+class insardownsampling(object):
 
     def __init__(self, name, insar, faults, verbose=True):
         '''
