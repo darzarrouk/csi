@@ -155,6 +155,7 @@ class Downsampler(object):
         newsar.x = []
         newsar.y = []
         newsar.err = []
+        newsar.wgt = []
 
         # Store the factor
         newsar.factor = self.insar.factor
@@ -177,6 +178,7 @@ class Downsampler(object):
             coveredarea = np.flatnonzero(ii).shape[0]*self.pixelArea
             if (coveredarea/blockarea >= self.tolerance):
                 # Get Mean, Std, x, y, ...
+                wgt = len(np.flatnonzero(ii))
                 vel = np.mean(self.insar.vel[ii])
                 err = np.std(self.insar.vel[ii])
                 x = np.mean(self.insar.x[ii])
@@ -189,6 +191,7 @@ class Downsampler(object):
                 newsar.y.append(y)
                 newsar.lon.append(lon)
                 newsar.lat.append(lat)
+                newsar.wgt.append(wgt)
             else:
                 blocks_to_remove.append(i)
 
@@ -202,6 +205,7 @@ class Downsampler(object):
         newsar.y = np.array(newsar.y)
         newsar.lon = np.array(newsar.lon)
         newsar.lat = np.array(newsar.lat)
+        newsar.wgt = np.array(newsar.wgt)
 
         # LOS
         newsar.inchd2los(self.incidence, self.heading)
@@ -501,6 +505,65 @@ class Downsampler(object):
         plt.show()
         return
         
+    def writeDownsampled2File(self, prefix, rsp=False):
+        '''
+        Writes the downsampled insar data to a file.
+        The file will be called prefix.txt.
+        If rsp is True, then it writes a file called prefix.rsp containing the boxes of the downsampling.
+        '''
+
+        # Open files
+        ftxt = open(prefix+'.txt', 'w')
+        if rsp:
+            frsp = open(prefix+'.rsp', 'w')
+
+        # Write the header
+        ftxt.write('Number xind yind east north data err wgt Elos Nlos Ulos\n')
+        ftxt.write('********************************************************\n')
+        if rsp:
+            frsp.write('xind yind UpperLeft-x,y DownRight-x,y\n')
+            frsp.write('********************************************************\n')
+
+        # Loop over the samples
+        for i in xrange(len(self.newsar.x)):
+
+            # Write in txt
+            x = int(self.newsar.x[i])
+            y = int(self.newsar.y[i])
+            lon = self.newsar.lon[i]
+            lat = self.newsar.lat[i]
+            vel = self.newsar.vel[i]
+            err = self.newsar.err[i]
+            wgt = self.newsar.wgt[i]
+            elos = self.newsar.los[i,0]
+            nlos = self.newsar.los[i,1]
+            ulos = self.newsar.los[i,2]
+            strg = '{:4d} {:4d} {:4d} {:3.6f} {:3.6f} {} {} {} {} {} {}\n'\
+                    .format(i, x, y, lon, lat, vel, err, wgt, elos, nlos, ulos) 
+            ftxt.write(strg)
+
+            # Write in rsp
+            if rsp:
+                ulx = self.blocks[i][0][0]
+                uly = self.blocks[i][0][1]
+                drx = self.blocks[i][2][0]
+                dry = self.blocks[i][2][1]
+                ullon = self.blocksll[i][0][0]
+                ullat = self.blocksll[i][0][1]
+                drlon = self.blocksll[i][2][0]
+                drlat = self.blocksll[i][2][1]
+                strg = '{:4d} {:4d} {} {} {} {} {} {} {} {} \n'\
+                        .format(x, y, ulx, uly, drx, dry, ullon, ullat, drlon, drlat)
+                frsp.write(strg)
+
+        # Close the files
+        ftxt.close()
+        if rsp:
+            frsp.close()
+
+        # All done
+        return
+
     def _is_minimum_size(self, blocks):
         '''
         Returns a Boolean array.
