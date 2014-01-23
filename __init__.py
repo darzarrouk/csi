@@ -4,31 +4,43 @@ Init file for StaticInv
 Written by R. Jolivet, April 2013.
 '''
 
+# Base class
 from .SourceInv import SourceInv
+
+# Parent class(es)
 from .RectangularPatches import RectangularPatches
 
 # Secondary
+## Static Faults
 from .verticalfault import verticalfault
-from .gpsrates import gpsrates
-from .insarrates import insarrates
-from .insardownsampling import insardownsampling
-from .geodeticplot import geodeticplot
-from .multifaultsolve import multifaultsolve
-from .seismiclocations import seismiclocations
-#from .gpstimeseries import gpstimeseries
-#from .gpsstation import gpsstation
-from .velocitymodel import velocitymodel
-from .dippingfault import dippingfault
-from .strainfield import strainfield
-from .srcmodsolution import srcmodsolution
-from .creepmeters import creepmeters
-from .cosicorrrates import cosicorrrates
+from .dippingfault  import dippingfault
 from .faultwithdip import faultwithdip
 from .faultwithvaryingdip import faultwithvaryingdip
 from .faultpostproc import faultpostproc
 from .fault3D import fault3D
 from .planarfault import planarfault
 
-# Kinematic inversion class
-from .faultwithdipkinematic import faultwithdipkinematic
+## Kinematic faults
+from .planarfaultkinematic import planarfaultkinematic
+
+## Data
+from .gpsrates import gpsrates
+from .insarrates import insarrates
+from .insardownsampling import insardownsampling
+from .multifaultsolve import multifaultsolve
+from .cosicorrrates import cosicorrrates
+from .creepmeters import creepmeters
+from .seismic       import seismic
+#from .gpstimeseries import gpstimeseries
+#from .gpsstation import gpsstation
+
+## Metadata
+from .seismiclocations import seismiclocations
+from .velocitymodel import velocitymodel
+
+## Post-Proc
+from .srcmodsolution import srcmodsolution
+from .strainfield import strainfield
+from .geodeticplot import geodeticplot
+
 #from timefnutils import *
