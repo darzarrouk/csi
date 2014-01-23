@@ -31,8 +31,9 @@ class planarfault(RectangularPatches):
             * utmzone   : UTM zone  (optional, default=None)
             * ellps     : ellipsoid (optional, default='WGS84')
         '''
-        
-        super(self.__class__,self).__init__(name,utmzone,ellps)
+
+        # Parent class init
+        super(planarfault,self).__init__(name,utmzone,ellps)
         
         # All done
         return
@@ -71,14 +72,14 @@ class planarfault(RectangularPatches):
         # All done
         return
         
-    def buildPatches(self, lon, lat, dep, strike, dip, fault_length, fault_width, n_strike, n_dip):
+    def buildPatches(self, lon, lat, dep, strike, dip, f_length, f_width, n_strike, n_dip):
         '''
         Builds a dipping fault.
         Args:
             * lat,lon,dep: coordinates at the center of the top edge of the fault
             * strike: strike angle in degrees (from North)
-            * fault_length: length of the fault (i.e., along strike)
-            * fault_width: width of the fault (i.e., along dip)        
+            * f_length: length of the fault (i.e., along strike)
+            * f_width: width of the fault (i.e., along dip)        
             * n_strike: number of patches along strike
             * n_dip: number of patches along dip
         '''
@@ -89,8 +90,8 @@ class planarfault(RectangularPatches):
         print("         Strike Angle    : {} degrees".format(strike))
         print("         Dip Angle       : {} degrees".format(dip))
         print("         Dip Direction   : {} degrees".format(strike+90.))
-        print("         Length          : {} km".format(fault_length))
-        print("         Width           : {} km".format(fault_width))
+        print("         Length          : {} km".format(f_length))
+        print("         Width           : {} km".format(f_width))
         print("         {} patches along strike".format(n_strike))
         print("         {} patches along dip".format(n_dip))
         
@@ -103,11 +104,11 @@ class planarfault(RectangularPatches):
         self.patchdip     = []
         
         # Set depth patch attributes
-        patch_width = fault_width/float(n_dip)
+        patch_width = f_width/float(n_dip)
         self.setdepth(n_dip,patch_width,dep)
         
         # Discretize the surface trace of the fault
-        self.discretize(lon,lat,strike,fault_length,n_strike)
+        self.discretize(lon,lat,strike,f_length,n_strike)
         
         # degree to rad
         dip_rad = dip*np.pi/180.
@@ -130,10 +131,10 @@ class planarfault(RectangularPatches):
             latt = self.lati
             
             # Compute the bottom row
-            xb = xt + self.fault_width * np.cos(dip_rad) * np.sin(dipdirection_rad)
-            yb = yt + self.fault_width * np.cos(dip_rad) * np.cos(dipdirection_rad)
+            xb = xt + f_width * np.cos(dip_rad) * np.sin(dipdirection_rad)
+            yb = yt + f_width * np.cos(dip_rad) * np.cos(dipdirection_rad)
             lonb, latb = self.xy2ll(xb, yb)
-            zb = zt + self.fault_width*np.sin(dip_rad)
+            zb = zt + self.f_width*np.sin(dip_rad)
             # fill D
             D.append(zb.max())
             
@@ -203,21 +204,21 @@ class planarfault(RectangularPatches):
         self.slip = np.array(self.slip)
         
         # Re-discretize to get the original fault
-        self.discretize(lon,lat,strike,fault_length,n_strike)
+        self.discretize(lon,lat,strike,f_length,n_strike)
 
         # All done
         return
 
 
-    def buildPatchesVarResolution(self, lon, lat, dep, strike, dip, fault_length, fault_width, 
+    def buildPatchesVarResolution(self, lon, lat, dep, strike, dip, f_length, f_width, 
                                   patch_lengths, patch_widths, interpolation='linear'):
         '''
         Builds a dipping fault.
         Args:
             * lat,lon,dep: coordinates at the center of the top edge of the fault
             * strike: strike angle in degrees (from North)
-            * fault_length: length of the fault (i.e., along strike)
-            * fault_width: width of the fault (i.e., along dip)        
+            * f_length: length of the fault (i.e., along strike)
+            * f_width: width of the fault (i.e., along dip)        
             * n_strike: number of patches along strike
             * n_dip: number of patches along dip
         '''
@@ -228,8 +229,8 @@ class planarfault(RectangularPatches):
         print("         Strike Angle    : {} degrees".format(strike))
         print("         Dip Angle       : {} degrees".format(dip))
         print("         Dip Direction   : {} degrees".format(strike+90.))
-        print("         Length          : {} km".format(fault_length))
-        print("         Width           : {} km".format(fault_width))
+        print("         Length          : {} km".format(f_length))
+        print("         Width           : {} km".format(f_width))
         
         # Initialize the structures
         self.patch = []        
@@ -248,7 +249,7 @@ class planarfault(RectangularPatches):
 
         # Interpolant function instantiation
         min_z  = self.top 
-        max_z  = self.top + fault_width     * np.sin(dip_rad)
+        max_z  = self.top + f_width     * np.sin(dip_rad)
         z_points    = np.array([min_z,max_z])
         fint_width  = sciint.interp1d(z_points, patch_widths , kind=interpolation)
         fint_length = sciint.interp1d(z_points, patch_lengths, kind=interpolation)
@@ -257,14 +258,14 @@ class planarfault(RectangularPatches):
         width     = 0.
         self.numz = 0 
         D = [self.top]
-        while width < fault_width:
+        while width < f_width:
             # Set depth patch attributes            
             patch_width  = fint_width(D[-1])
             patch_length = fint_length(D[-1])
-            n_strike     = int(np.round(fault_length/patch_length))
+            n_strike     = int(np.round(f_length/patch_length))
             
             # Discretize the surface trace of the fault
-            self.discretize(lon,lat,strike,fault_length,n_strike)
+            self.discretize(lon,lat,strike,f_length,n_strike)
         
             # initialize the depth at the top of the fault
             self.zi = np.ones((self.xi.shape))*self.top
@@ -349,8 +350,8 @@ class planarfault(RectangularPatches):
         
         # Re-discretize to get the original fault
         patch_length = fint_length(min_z)
-        n_strike     = int(np.round(fault_length/patch_length))
-        self.discretize(lon,lat,strike,fault_length,n_strike)
+        n_strike     = int(np.round(f_length/patch_length))
+        self.discretize(lon,lat,strike,f_length,n_strike)
         
         # All done
         return

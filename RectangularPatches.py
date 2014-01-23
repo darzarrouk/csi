@@ -20,6 +20,7 @@ major, minor, micro, release, serial = sys.version_info
 if major==2:
     import okada4py as ok
 
+
 class RectangularPatches(SourceInv):
     
     def __init__(self, name, utmzone=None, ellps='WGS84'):
@@ -975,6 +976,24 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
+    def chCoordinates(self,p,p_ref,angle_rad):
+        '''
+        Change the coordinate system:
+           reference at p_ref
+           rotation by angle_rad
+        '''
+        
+        # Translation
+        t_p = [p[0]-p_ref[0],p[1]-p_ref[1],p[2]-p_ref[2]]
+        
+        # Rotation 
+        r_p     = [t_p[0]*np.cos(angle_rad) - t_p[1] * np.sin(angle_rad)]
+        r_p.append(t_p[0]*np.sin(angle_rad) + t_p[1] * np.cos(angle_rad))
+        r_p.append(t_p[2])
+        
+        # All done
+        return r_p
+
     def getpatchgeometry(self, patch, center=False):
         '''
         Returns the patch geometry as needed for okada85.
@@ -1006,7 +1025,7 @@ class RectangularPatches(SourceInv):
         else:
             x1 = p2[0]
             x2 = p2[1]
-            x3 = p2[2]
+            x3 = p2[2]        
 
         # Get the patch width (this fault is vertical for now)
         width = np.sqrt( (p4[0] - p1[0])**2 + (p4[1] - p1[1])**2 + (p4[2] - p1[2])**2 )   
@@ -1014,9 +1033,17 @@ class RectangularPatches(SourceInv):
         # Get the length
         length = np.sqrt( (p2[0] - p1[0])**2 + (p2[1] - p1[1])**2 )
 
-        # Get the strike
-        strike = np.arctan2( (p1[0] - p2[0]),(p1[1] - p2[1]) )
+        # Get the strike assuming dipping to the east
+        strike = np.arctan2( (p2[0] - p1[0]),(p2[1] - p1[1]) )
 
+        # Change coordinates (origin at p1 and rotation by strike)
+        r_p1 = self.chCoordinates(p1,p1,strike) 
+        r_p4 = self.chCoordinates(p4,p1,strike) 
+        
+        # If it dip to the west, change update strike
+        if r_p4[0] < 0.:
+            strike += np.pi
+        
         # Set the dip
         dip = np.arcsin( (p4[2] - p1[2])/width )
 
