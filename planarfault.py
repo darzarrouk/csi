@@ -104,8 +104,9 @@ class planarfault(RectangularPatches):
         self.patchdip     = []
         
         # Set depth patch attributes
-        patch_width = f_width/float(n_dip)
-        self.setdepth(n_dip,patch_width,dep)
+        p_width = f_width/float(n_dip)
+        self.setdepth(n_dip,p_width,dep)
+
         
         # Discretize the surface trace of the fault
         self.discretize(lon,lat,strike,f_length,n_strike)
@@ -131,10 +132,10 @@ class planarfault(RectangularPatches):
             latt = self.lati
             
             # Compute the bottom row
-            xb = xt + f_width * np.cos(dip_rad) * np.sin(dipdirection_rad)
-            yb = yt + f_width * np.cos(dip_rad) * np.cos(dipdirection_rad)
+            xb = xt + p_width * np.cos(dip_rad) * np.sin(dipdirection_rad)
+            yb = yt + p_width * np.cos(dip_rad) * np.cos(dipdirection_rad)
             lonb, latb = self.xy2ll(xb, yb)
-            zb = zt + self.f_width*np.sin(dip_rad)
+            zb = zt + p_width*np.sin(dip_rad)
             # fill D
             D.append(zb.max())
             

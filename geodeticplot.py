@@ -12,7 +12,7 @@ import matplotlib.cm as cmx
 import matplotlib.collections as colls
 import numpy as np
 
-class geodeticplot:
+class geodeticplot(object):
 
     def __init__(self, figure=130, ref='utm', pbaspect=None):
         '''

@@ -42,5 +42,6 @@ from .velocitymodel import velocitymodel
 from .srcmodsolution import srcmodsolution
 from .strainfield import strainfield
 from .geodeticplot import geodeticplot
+from .seismicplot import seismicplot
 
 #from timefnutils import *

@@ -156,11 +156,13 @@ class planarfaultkinematic(planarfault):
         self.grid = []
         for p in range(len(self.patch)):
             # Get patch location/size
-            p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = self.getpatchgeometry(p)
+            p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = self.getpatchgeometry(p,center=True)
 
             # Set grid points coordinates on fault
             grid_strike = np.arange(0.5*grid_size,p_length,grid_size) - p_length/2.
-            grid_dip    = np.arange(0.5*grid_size,p_length,grid_size) - p_width/2.
+            grid_dip    = np.arange(0.5*grid_size,p_width,grid_size) - p_width/2.
+            print(grid_strike,p_length)
+            print(grid_dip,p_width)
 
             # Check that everything is correct
             assert np.round(p_strike,2) == np.round(self.f_strike,2), 'Fault must be planar' 
@@ -170,18 +172,58 @@ class planarfaultkinematic(planarfault):
             assert nbp_dip    == len(grid_dip),    'Incorrect width for patch  %d'%(p)
 
             # Get grid points coordinates in UTM  
-            xt = grid_strike * np.sin(self.f_strike)
-            yt = grid_strike * np.cos(self.f_strike)
-            zt = np.ones(xt.shape) * p_z 
-            x = np.array([],dtype='float64')
-            y = np.array([],dtype='float64')
-            z = np.array([],dtype='float64')
+            print 'strike=',self.f_strike*180./np.pi
+            print 'dip=',self.f_dip*180./np.pi
+            print 'dipdir=',dipdir*180./np.pi
+            print 'depth=',p_z
+            xt = p_x + grid_strike * np.sin(self.f_strike)
+            yt = p_y + grid_strike * np.cos(self.f_strike)
+            zt = p_z * np.ones(xt.shape)
+            g  = []
             for i in range(nbp_dip):
-                x = np.append(x, xt + grid_dip[i] * np.cos(self.f_dip) * np.sin(dipdir))
-                y = np.append(y, yt + grid_dip[i] * np.cos(self.f_dip) * np.cos(dipdir))
-                z = np.append(z, zt + grid_dip[i] * np.sin(self.f_dip))
-            self.grid.append([x,y,z])
+                x = xt + grid_dip[i] * np.cos(self.f_dip) * np.sin(dipdir)
+                y = yt + grid_dip[i] * np.cos(self.f_dip) * np.cos(dipdir)
+                z = zt + grid_dip[i] * np.sin(self.f_dip)
+                for j in range(x.size):                    
+                    g.append([x[j],y[j],z[j]])
+            self.grid.append(g)
                 
         # All done
         return
 
+
+    def buildKinGFs(self, data, rake_parallel, Mu, rise_time=1., stf_type='triangle', out_type='D', verbose=True):
+        '''
+        Build Kinematic Green's functions based on the discretized fault.
+        Args:
+            * data: seismic data object
+        '''
+
+        # Check the Waveform Engine
+        assert self.waveform_engine != None, 'Waveform engine must be assigned'
+        assert self.patch != None, 'Patch object should be assigned'
+
+        # Verbose on/off        
+        if verbose:
+            import sys
+            print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
+            print ("Using waveform engine {}".format(data.wafeform_engine.name))
+        
+
+        # Loop over each patch
+        Np = len(self.patch)
+        rad2deg = 180./np.pi
+        for p in range(Np):
+            # Loop over point sources in patch
+            for g in range(len(self.grid[p])):
+                if verbose:
+                    sys.stdout.write('\r Patch: {} / {} ; Point src {} / {}'.format(p+1,Np,g+1,self.grid[p][0].size))
+                    sys.stdout.flush()  
+                p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = self.getpatchgeometry(p)
+                p_strike_deg = p_strike_deg * rad2deg
+                p_dip_deg    = p_dip_deg    * rad2deg
+                M0           = Mu * p_width * p_length * 1.0e6 # M0 assumin 1m slip
+                data.waveform_engine.calcSynthetics('GF_tmp',p_strike_deg,p_dip_deg,rake_parallel,M0,
+                                                    rise_time,stf_type,out_type,self.grid[p][g],True)
+        
+                ###### CONTINUE HERE ######

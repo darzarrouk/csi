@@ -31,18 +31,17 @@ class seismic(SourceInv):
         super(self.__class__,self).__init__(name,utmzone,ellps) 
 
         # Initialize the data set 
-        self.dtype = 'seismic'
+        self.dtype = dtype
         
         # Initialize Waveform Engine
-        self.WaveformEngine = None
+        self.waveform_engine = None
 
         # Initialize some things
         self.sta_name = []
-        self.sac      = []
-        self.sta_lat  = np.array([],dtype='float64')
-        self.sta_lon  = np.array([],dtype='float64')
-        self.sta_x    = np.array([],dtype='float64')
-        self.sta_y    = np.array([],dtype='float64')
+        self.lat  = np.array([],dtype='float64')
+        self.lon  = np.array([],dtype='float64')
+        self.x    = np.array([],dtype='float64')
+        self.y    = np.array([],dtype='float64')
     
         # All done
         return
@@ -76,30 +75,17 @@ class seismic(SourceInv):
 
         # Lat-Lon / UTM conversions
         if file_format=='LL':            
-            self.sta_lon = np.append(self.sta_lon,X)
-            self.sta_lat = np.append(self.sta_lat,Y)
-            self.x, self.y = self.ll2xy(self.sta_lon,self.sta_lat)
+            self.lon = np.append(self.lon,X)
+            self.lat = np.append(self.lat,Y)
+            self.x, self.y = self.ll2xy(self.lon,self.lat)
         else:
-            self.sta_x = np.append(self.sta_x,X)
-            self.sta_y = np.append(self.sta_y,Y)
-            self.lon, self.lat = self.ll2xy(self.sta_x,self.sta_y)
+            self.x = np.append(self.x,X)
+            self.y = np.append(self.y,Y)
+            self.lon, self.lat = self.ll2xy(self.x,self.y)
 
         # All done
         return    
 
-    def writeModelFile(self,Vp,Vs,Rho,H):
-        '''
-        Create model file from input Vp, Vs and thickness (H)
-        '''
-        
-        # Check Waveform Engine
-        assert self.WaveformEngine != None, 'WaveformEngine must be assigned'
-
-        # Create file
-        self.WaveformEngine.writeModelFile(Vp,Vs,Rho,H)
-
-        # All done
-        return
 
     def readStatLL(self,station_file):
         '''
@@ -127,33 +113,45 @@ class seismic(SourceInv):
         
         # All done
         return    
+        
+    def initWaveInt(self,waveform_engine):
+        '''
+        Initialize Bob Hermann's wavenumber integration engine
+        '''
+        
+        # Assign reference to waveform_engine
+        self.waveform_engine = copy.deepcopy(waveform_engine)
 
-    def calcSynthetics(self,dir_name,strike,dip,rake,M0,r_time,stf_type='triangle',
-                 out_type='D',src_loc=None,cleanup=True):
+        # Assign receiver location
+        self.waveform_engine.setXr(self.sta_name,self.x,self.y)
+
+        # All done
+        return
+
+    def calcSynthetics(self,dir_name,strike,dip,rake,M0,rise_time,stf_type='triangle',
+                       out_type='D',src_loc=None,cleanup=True):
         '''
         Build Green's functions for a particular source location
         Args:
-            * dir_name: Name of the directory where synthetics will be created
-            * strike:   Fault strike
-            * dip:      Fault dip
-            * rake:     Fault rake
-            * M0:       Seismic moment
-            * r_time:   Rise time
+            * dir_name:  Name of the directory where synthetics will be created
+            * strike:    Fault strike
+            * dip:       Fault dip
+            * rake:      Fault rake
+            * M0:        Seismic moment
+            * rise_time: Rise time
             * stf_type: 
             * src_loc:  Point source coordinates (ndarray)
         '''
         
         # Check Waveform Engine
-        assert self.WaveformEngine != None, 'WaveformEngine must be assigned'
+        assert self.waveform_engine != None, 'waveform_engine must be assigned'
         if src_loc == None:
-            assert self.WaveformEngine.Xs != None, 'Source location must be assigned'
+            assert self.waveform_engine.Xs != None, 'Source location must be assigned'
         else:
-            self.WaveformEngine.Xs = copy.deepcopy(src_loc)
+            self.waveform_engine.Xs = copy.deepcopy(src_loc)
 
-        if src_loc == None:
-            assert self.WaveformEngine.Xr != None, 'Recever locations must be assigned'
-        else:
-            self.WaveformEngine.Xr = copy.deepcopy(sta_loc)
+        # Assign receiver locations
+        assert self.waveform_engine.Xr != None, 'Recever locations must be assigned'
 
         # Go in dir_name
         cwd = os.getcwd()
@@ -164,10 +162,15 @@ class seismic(SourceInv):
         os.chdir(dir_name)
 
         # Waveform simulation
-        self.WaveformEngine.synthSDR(out_type,strike,dip,rake,M0,stf_type,r_time)
+        self.waveform_engine.synthSDR(out_type,strike,dip,rake,M0,stf_type,rise_time)
         
         # Go back
         os.chdir(cwd)
+        
+        if cleanup:
+            shutil.rmtree(dir_name)
 
         # All done
         return
+    
+
