@@ -819,7 +819,7 @@ class RectangularPatches(SourceInv):
         # Get strike and dip
         xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(patch, center=True) 
         dip    *= np.pi/180.
-        strike *= np.pi/180.    
+        strike *= np.pi/180.
         if ellipseCenter!=None:
             xc,yc,zc = ellipseCenter
         
@@ -878,8 +878,8 @@ class RectangularPatches(SourceInv):
             rake = np.arctan2(slip[1],slip[0])
 
             # Compute the vector
-            x = np.sin(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake) 
-            y = np.cos(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake)
+            x = (np.sin(strike+np.pi)*np.cos(rake) + np.sin(strike+np.pi)*np.cos(dip)*np.sin(rake))
+            y = (np.cos(strike+np.pi)*np.cos(rake) - np.cos(strike+np.pi)*np.cos(dip)*np.sin(rake))
             z = -1.0*np.sin(dip)*np.sin(rake)
         
             # Scale these
