@@ -132,7 +132,7 @@ class insardownsampling(object):
         '''
 
         # Create the new insar object
-        newsar = insarrates.insarrates('Downsampled {}'.format(self.insar.name), utmzone=self.utmzone, verbose=False)
+        newsar = insarrates('Downsampled {}'.format(self.insar.name), utmzone=self.utmzone, verbose=False)
 
         # Save the blocks
         self.blocks = blocks
