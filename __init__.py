@@ -9,6 +9,7 @@ from .SourceInv import SourceInv
 
 # Parent class(es)
 from .RectangularPatches import RectangularPatches
+from .TriangularPatches import TriangularPatches
 
 # Secondary
 ## Static Faults
