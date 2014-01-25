@@ -167,15 +167,15 @@ class planarfaultkinematic(planarfault):
             # Check that everything is correct
             assert np.round(p_strike,2) == np.round(self.f_strike,2), 'Fault must be planar' 
             assert np.round(p_dip,2)    == np.round(self.f_dip,2)   , 'Fault must be planar' 
-            print  nbp_strike, len(grid_strike)
+            print(nbp_strike, len(grid_strike))
             assert nbp_strike == len(grid_strike), 'Incorrect length for patch %d'%(p)
             assert nbp_dip    == len(grid_dip),    'Incorrect width for patch  %d'%(p)
 
             # Get grid points coordinates in UTM  
-            print 'strike=',self.f_strike*180./np.pi
-            print 'dip=',self.f_dip*180./np.pi
-            print 'dipdir=',dipdir*180./np.pi
-            print 'depth=',p_z
+            print('strike=',self.f_strike*180./np.pi)
+            print('dip=',self.f_dip*180./np.pi)
+            print('dipdir=',dipdir*180./np.pi)
+            print('depth=',p_z)
             xt = p_x + grid_strike * np.sin(self.f_strike)
             yt = p_y + grid_strike * np.cos(self.f_strike)
             zt = p_z * np.ones(xt.shape)
