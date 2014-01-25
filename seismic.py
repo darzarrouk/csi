@@ -64,9 +64,10 @@ class seismic(SourceInv):
         assert file_format=='LL' or file_format=='XY', 'file_format can be either LL or XY'
         
         # Read the file 
-        X = []; Y = []
-	for l in open(station_file):
-            if l.strip()[0]=='#':
+        X = []
+        Y = []
+        for l in open(station_file):
+            if (l.strip()[0]=='#'):
                 continue
             items = l.strip().split()
             self.sta_name.append(items[0].strip())
@@ -100,8 +101,8 @@ class seismic(SourceInv):
         assert os.path.exists(station_file), 'Cannot read %s (no such file)'%(station_file)
         
         # Read the file and fill-up Xr
-	for l in open(station_file):
-            if l.strip()[0]=='#':
+        for l in open(station_file):
+            if (l.strip()[0]=='#'):
                 continue
             items = l.strip().split()
             self.stat.append(items[0].strip())
