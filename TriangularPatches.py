@@ -9,7 +9,7 @@ import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
 import scipy.interpolate as sciint
-import triangularDisp as tdisp
+from StaticInv import triangularDisp as tdisp
 from scipy.linalg import block_diag
 import copy
 import sys
@@ -1984,7 +1984,10 @@ class TriangularPatches(SourceInv):
         '''
     
         # Get center
-        p1, p2, p3 = p
+        if type(p) is int:
+            p1, p2, p3 = self.patch[p]
+        else:
+            p1, p2, p3 = p
 
         # Compute the center
         x = (p1[0] + p2[0] + p3[0]) / 3.0
@@ -1993,6 +1996,7 @@ class TriangularPatches(SourceInv):
 
         # All done
         return x,y,z
+
 
     def computetotalslip(self):
         '''
@@ -2004,6 +2008,7 @@ class TriangularPatches(SourceInv):
     
         # All done
         return
+
 
     def getcenters(self):
         '''
@@ -2020,6 +2025,7 @@ class TriangularPatches(SourceInv):
 
         # All done
         return center
+
 
     def surfacesimulation(self, box=None, disk=None, err=None, npoints=None, lonlat=None,
                           slipVec=None):

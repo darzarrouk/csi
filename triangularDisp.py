@@ -114,7 +114,7 @@ def displacement(sx, sy, sz, vertices, ss, ds, ts, nu=0.25):
     
     # Identify indices for stations under current triangle
     path = Path([p1[:2], p2[:2], p3[:2]])
-    inPolyIdx = path.contains_points(zip(sx, sy)).nonzero()[0]
+    inPolyIdx = path.contains_points(np.column_stack((sx, sy))).nonzero()[0]
     underIdx = []
     for iIdx in inPolyIdx:
         d = LinePlaneIntersect(sx[iIdx], sy[iIdx], sz[iIdx], p1, p2, p3)
@@ -204,6 +204,8 @@ def adv(y1, y2, y3, a, beta, nu, B1, B2, B3):
            + np.arctan2(y2*Rbar*sinbeta, y1*z1bar + y2*y2*cosbeta))
     Rbar3 = Rbar**3
     cotbeta2 = cotbeta**2
+    Rby3bar = Rbar + y3bar
+    Rbz3bar = Rbar + z3bar
 
     # Cache Poisson's ratio terms
     nu1 = 1.0 - nu
@@ -211,48 +213,48 @@ def adv(y1, y2, y3, a, beta, nu, B1, B2, B3):
     
     # Case I: Burgers vector (B1,0,0)
     v1InfB1 = (2.0 * nu1 * (F + Fbar) - y1 * y2 * (1.0 / (R * (R - y3))
-             + 1.0 / (Rbar * (Rbar + y3bar))) - y2 * cosbeta * ((R * sinbeta - y1) 
-             / (R * (R-z3)) + (Rbar * sinbeta - y1) / (Rbar * (Rbar + z3bar))))
-    v2InfB1 = (nu2 * (np.log(R - y3) + np.log(Rbar + y3bar) 
-              - cosbeta * (np.log(R - z3) + np.log(Rbar + z3bar))) 
-              - y2 * y2 * (1.0 / (R * (R - y3)) + 1.0 / (Rbar * (Rbar + y3bar)) 
-              - cosbeta * (1.0 / (R * (R - z3)) + 1.0 / (Rbar * (Rbar + z3bar)))))
+             + 1.0 / (Rbar * (Rby3bar))) - y2 * cosbeta * ((R * sinbeta - y1) 
+             / (R * (R-z3)) + (Rbar * sinbeta - y1) / (Rbar * (Rbz3bar))))
+    v2InfB1 = (nu2 * (np.log(R - y3) + np.log(Rby3bar) 
+              - cosbeta * (np.log(R - z3) + np.log(Rbz3bar))) 
+              - y2 * y2 * (1.0 / (R * (R - y3)) + 1.0 / (Rbar * (Rby3bar)) 
+              - cosbeta * (1.0 / (R * (R - z3)) + 1.0 / (Rbar * (Rbz3bar)))))
     v3InfB1 = (y2 * (1.0 / R - 1.0 / Rbar - cosbeta * ((R * cosbeta - y3) / (R * (R - z3)) 
-            - (Rbar * cosbeta + y3bar) / (Rbar * (Rbar + z3bar)))))
+            - (Rbar * cosbeta + y3bar) / (Rbar * (Rbz3bar)))))
     denom = 1.0 / (8.0 * np.pi * nu1)
     v1InfB1 *= denom
     v2InfB1 *= denom
     v3InfB1 *= denom
     
     v1CB1 = (-2.0 * nu1 * nu2 * Fbar * (cotbeta2) 
-           + nu2 * y2 / (Rbar + y3bar) * ((1.0 - 2.0 * nu - a / Rbar) * cotbeta 
-           - y1 / (Rbar + y3bar) * (nu + a / Rbar)) + nu2 * y2 * cosbeta * cotbeta 
-           / (Rbar + z3bar) * (cosbeta + a / Rbar) + a * y2 * (y3bar - a) * cotbeta 
-           / Rbar3 + y2 * (y3bar - a) / (Rbar * (Rbar + y3bar)) * (-(1.0 - 2.0*nu)
-           * cotbeta + y1 / (Rbar + y3bar) * (2.0 * nu + a / Rbar) + a * y1 / (Rbar * Rbar)) 
-           + y2 * (y3bar - a) / (Rbar * (Rbar + z3bar)) * (cosbeta / (Rbar + z3bar) 
+           + nu2 * y2 / (Rby3bar) * ((1.0 - 2.0 * nu - a / Rbar) * cotbeta 
+           - y1 / (Rby3bar) * (nu + a / Rbar)) + nu2 * y2 * cosbeta * cotbeta 
+           / (Rbz3bar) * (cosbeta + a / Rbar) + a * y2 * (y3bar - a) * cotbeta 
+           / Rbar3 + y2 * (y3bar - a) / (Rbar * (Rby3bar)) * (-(1.0 - 2.0*nu)
+           * cotbeta + y1 / (Rby3bar) * (2.0 * nu + a / Rbar) + a * y1 / (Rbar * Rbar)) 
+           + y2 * (y3bar - a) / (Rbar * (Rbz3bar)) * (cosbeta / (Rbz3bar) 
            * ((Rbar * cosbeta + y3bar) * (nu2 * cosbeta - a / Rbar) * cotbeta 
            + 2.0 * nu1 * (Rbar * sinbeta - y1) * cosbeta) - a * y3bar *cosbeta *cotbeta 
            / (Rbar * Rbar)))
 
     v2CB1 = (nu2 * ((2.0 * nu1 * (cotbeta2) - nu) 
-           * np.log(Rbar + y3bar) -(2.0 * nu1 * (cotbeta2) + 1.0 - 2.0 * nu) 
-           * cosbeta * np.log(Rbar + z3bar)) - nu2 / (Rbar + y3bar) * (y1 * cotbeta
-           * (1.0 - 2.0 * nu - a / Rbar) + nu * y3bar - a + (y2 * y2) / (Rbar + y3bar) 
-           * (nu + a / Rbar)) - nu2 * z1bar * cotbeta / (Rbar + z3bar) * (cosbeta + a / Rbar) 
-           - a * y1 * (y3bar - a) * cotbeta / Rbar3 + (y3bar - a) / (Rbar + y3bar)
+           * np.log(Rby3bar) - (2.0 * nu1 * (cotbeta2) + 1.0 - 2.0 * nu) 
+           * cosbeta * np.log(Rbz3bar)) - nu2 / (Rby3bar) * (y1 * cotbeta
+           * (1.0 - 2.0 * nu - a / Rbar) + nu * y3bar - a + (y2 * y2) / (Rby3bar) 
+           * (nu + a / Rbar)) - nu2 * z1bar * cotbeta / (Rbz3bar) * (cosbeta + a / Rbar) 
+           - a * y1 * (y3bar - a) * cotbeta / Rbar3 + (y3bar - a) / (Rby3bar)
            * (-2.0 * nu + 1.0 / Rbar * (nu2 * y1 * cotbeta - a) + (y2 * y2) 
-           / (Rbar * (Rbar + y3bar)) * (2.0 * nu + a / Rbar) + a * (y2 * y2) 
-           / Rbar3) + (y3bar - a) / (Rbar + z3bar) * ((cosbeta * cosbeta) - 1.0 
+           / (Rbar * (Rby3bar)) * (2.0 * nu + a / Rbar) + a * (y2 * y2) 
+           / Rbar3) + (y3bar - a) / (Rbz3bar) * ((cosbeta * cosbeta) - 1.0 
            / Rbar * (nu2 * z1bar * cotbeta + a * cosbeta) + a * y3bar * z1bar 
-           * cotbeta / Rbar3 - 1.0 / (Rbar * (Rbar + z3bar)) * ((y2 * y2) 
+           * cotbeta / Rbar3 - 1.0 / (Rbar * (Rbz3bar)) * ((y2 * y2) 
            * (cosbeta * cosbeta) - a * z1bar * cotbeta / Rbar * (Rbar * cosbeta + y3bar))))
     
-    v3CB1 = (2.0 * (1 - nu) * ((nu2 * Fbar * cotbeta) + (y2 / (Rbar + y3bar) 
-          * (2.0 * nu + a / Rbar)) - (y2 * cosbeta / (Rbar + z3bar) * (cosbeta + a / Rbar))) 
-          + y2 * (y3bar - a) / Rbar * (2 * nu / (Rbar + y3bar) + a / (Rbar * Rbar)) + y2 
-          * (y3bar - a) * cosbeta / (Rbar * (Rbar + z3bar)) * (1.0 -2.0 * nu - (Rbar * cosbeta
-          + y3bar) / (Rbar + z3bar) * (cosbeta + a / Rbar) - a * y3bar / (Rbar * Rbar)))
+    v3CB1 = (2.0 * nu1 * ((nu2 * Fbar * cotbeta) + (y2 / (Rby3bar) 
+          * (2.0 * nu + a / Rbar)) - (y2 * cosbeta / (Rbz3bar) * (cosbeta + a / Rbar))) 
+          + y2 * (y3bar - a) / Rbar * (2 * nu / (Rby3bar) + a / (Rbar * Rbar)) + y2 
+          * (y3bar - a) * cosbeta / (Rbar * (Rbz3bar)) * (1.0 -2.0 * nu - (Rbar * cosbeta
+          + y3bar) / (Rbz3bar) * (cosbeta + a / Rbar) - a * y3bar / (Rbar * Rbar)))
    
     denom = 1.0 / (4.0 * np.pi * nu1) 
     v1CB1 *= denom 
@@ -264,51 +266,51 @@ def adv(y1, y2, y3, a, beta, nu, B1, B2, B3):
     v3B1 = v3InfB1 + v3CB1
     
     # Case II: Burgers vector (0,B2,0)
-    v1InfB2 = (-nu2 * (np.log(R - y3) + np.log(Rbar + y3bar) - cosbeta 
-            * (np.log(R - z3) + np.log(Rbar + z3bar))) + y1 * y1 * (1.0 / (R * (R - y3)) + 1.0 
-            / (Rbar * (Rbar + y3bar))) + z1 * (R * sinbeta - y1) / (R * (R - z3)) + z1bar 
-            * (Rbar * sinbeta - y1) / (Rbar * (Rbar + z3bar)))
+    v1InfB2 = (-nu2 * (np.log(R - y3) + np.log(Rby3bar) - cosbeta 
+            * (np.log(R - z3) + np.log(Rbz3bar))) + y1 * y1 * (1.0 / (R * (R - y3)) + 1.0 
+            / (Rbar * (Rby3bar))) + z1 * (R * sinbeta - y1) / (R * (R - z3)) + z1bar 
+            * (Rbar * sinbeta - y1) / (Rbar * (Rbz3bar)))
     v2InfB2 = (2.0 * nu1 * (F + Fbar) + y1 * y2 * (1.0 / (R * (R - y3)) + 1.0 / (Rbar 
-            * (Rbar + y3bar))) - y2 * (z1 / (R * (R - z3)) + z1bar / (Rbar * (Rbar + z3bar))))
-    v3InfB2 = (-nu2 * sinbeta * (np.log(R - z3) - np.log(Rbar + z3bar)) - y1 
+            * (Rby3bar))) - y2 * (z1 / (R * (R - z3)) + z1bar / (Rbar * (Rbz3bar))))
+    v3InfB2 = (-nu2 * sinbeta * (np.log(R - z3) - np.log(Rbz3bar)) - y1 
             * (1.0 / R - 1.0 / Rbar) + z1 * (R * cosbeta - y3) / (R * (R - z3)) - z1bar 
-            * (Rbar * cosbeta + y3bar) / (Rbar * (Rbar + z3bar)))
+            * (Rbar * cosbeta + y3bar) / (Rbar * (Rbz3bar)))
     denom = 1.0 / (8.0 * np.pi * nu1)
     v1InfB2 *= denom
     v2InfB2 *= denom
     v3InfB2 *= denom
     
     v1CB2 = (nu2 * ((2.0 * nu1 * (cotbeta2) + nu) 
-          * np.log(Rbar + y3bar) - (2.0 * nu1 * (cotbeta2) + 1.0) * cosbeta
-          * np.log(Rbar + z3bar)) + nu2 / (Rbar + y3bar) * (-nu2 
+          * np.log(Rby3bar) - (2.0 * nu1 * (cotbeta2) + 1.0) * cosbeta
+          * np.log(Rbz3bar)) + nu2 / (Rby3bar) * (-nu2 
           * y1 * cotbeta + nu * y3bar - a + a * y1 * cotbeta / Rbar + (y1 * y1) / (Rbar 
-          + y3bar) * (nu + a / Rbar)) - nu2 * cotbeta / (Rbar + z3bar) * (z1bar * cosbeta 
+          + y3bar) * (nu + a / Rbar)) - nu2 * cotbeta / (Rbz3bar) * (z1bar * cosbeta 
           - a * (Rbar * sinbeta - y1) / (Rbar * cosbeta)) - a * y1 * (y3bar - a) * cotbeta 
-          / Rbar3 + (y3bar - a) / (Rbar + y3bar) * (2.0 * nu + 1.0 / Rbar 
-          * (nu2 * y1 * cotbeta + a) - (y1 * y1) / (Rbar * (Rbar + y3bar)) 
+          / Rbar3 + (y3bar - a) / (Rby3bar) * (2.0 * nu + 1.0 / Rbar 
+          * (nu2 * y1 * cotbeta + a) - (y1 * y1) / (Rbar * (Rby3bar)) 
           * (2.0 * nu + a / Rbar) - a * (y1 * y1) / Rbar3) + (y3bar - a) * cotbeta
-          / (Rbar + z3bar) * (-cosbeta * sinbeta + a * y1 * y3bar / (Rbar3 * cosbeta) 
+          / (Rbz3bar) * (-cosbeta * sinbeta + a * y1 * y3bar / (Rbar3 * cosbeta) 
           + (Rbar * sinbeta - y1) / Rbar * (2.0 * nu1 * cosbeta - (Rbar * cosbeta + y3bar) 
           / (Rbar+z3bar) * (1.0 + a / (Rbar * cosbeta)))))
 
     v2CB2 = (2.0 * nu1 * nu2 * Fbar * cotbeta2 + (1.0 - 2 * nu) 
-          * y2 / (Rbar + y3bar) * (-(1.0 - 2.0 * nu - a / Rbar) * cotbeta + y1 / (Rbar + y3bar)
-          * (nu + a / Rbar)) - nu2 * y2 * cotbeta / (Rbar + z3bar) * (1.0 + a 
+          * y2 / (Rby3bar) * (-(1.0 - 2.0 * nu - a / Rbar) * cotbeta + y1 / (Rby3bar)
+          * (nu + a / Rbar)) - nu2 * y2 * cotbeta / (Rbz3bar) * (1.0 + a 
           / (Rbar * cosbeta)) - a * y2 * (y3bar - a) * cotbeta / Rbar3 + y2 
-          * (y3bar - a) / (Rbar * (Rbar + y3bar)) * (nu2 * cotbeta - 2.0 * nu * y1 
-          / (Rbar + y3bar) - a * y1 / Rbar * (1.0 / Rbar + 1.0 / (Rbar + y3bar))) + y2 
-          * (y3bar - a) * cotbeta / (Rbar * (Rbar + z3bar)) * (-2.0 * nu1 * cosbeta 
-          + (Rbar * cosbeta + y3bar) / (Rbar + z3bar) * (1.0 + a / (Rbar * cosbeta)) + a 
+          * (y3bar - a) / (Rbar * (Rby3bar)) * (nu2 * cotbeta - 2.0 * nu * y1 
+          / (Rby3bar) - a * y1 / Rbar * (1.0 / Rbar + 1.0 / (Rby3bar))) + y2 
+          * (y3bar - a) * cotbeta / (Rbar * (Rbz3bar)) * (-2.0 * nu1 * cosbeta 
+          + (Rbar * cosbeta + y3bar) / (Rbz3bar) * (1.0 + a / (Rbar * cosbeta)) + a 
           * y3bar / ((Rbar * Rbar) * cosbeta)))
 
-    v3CB2 = (-2.0 * nu1 * nu2 * cotbeta * (np.log(Rbar + y3bar) - cosbeta
-          * np.log(Rbar + z3bar)) - 2.0 * nu1 * y1 / (Rbar + y3bar) * (2.0 * nu + a / Rbar) 
-          + 2.0 * nu1 * z1bar / (Rbar + z3bar) * (cosbeta + a / Rbar) + (y3bar - a) / Rbar
-          * (nu2 * cotbeta - 2.0 * nu * y1 / (Rbar + y3bar) - a * y1 / (Rbar * Rbar)) 
-          - (y3bar - a) / (Rbar + z3bar) * (cosbeta * sinbeta + (Rbar * cosbeta + y3bar) 
-          * cotbeta / Rbar * (2.0 * nu1 * cosbeta - (Rbar * cosbeta + y3bar) / (Rbar + z3bar)) 
+    v3CB2 = (-2.0 * nu1 * nu2 * cotbeta * (np.log(Rby3bar) - cosbeta
+          * np.log(Rbz3bar)) - 2.0 * nu1 * y1 / (Rby3bar) * (2.0 * nu + a / Rbar) 
+          + 2.0 * nu1 * z1bar / (Rbz3bar) * (cosbeta + a / Rbar) + (y3bar - a) / Rbar
+          * (nu2 * cotbeta - 2.0 * nu * y1 / (Rby3bar) - a * y1 / (Rbar * Rbar)) 
+          - (y3bar - a) / (Rbz3bar) * (cosbeta * sinbeta + (Rbar * cosbeta + y3bar) 
+          * cotbeta / Rbar * (2.0 * nu1 * cosbeta - (Rbar * cosbeta + y3bar) / (Rbz3bar)) 
           + a / Rbar * (sinbeta - y3bar * z1bar / (Rbar * Rbar) - z1bar * (Rbar * cosbeta 
-          + y3bar) / (Rbar * (Rbar + z3bar)))))
+          + y3bar) / (Rbar * (Rbz3bar)))))
 
     denom = 1.0 / (4.0 * np.pi * nu1)
     v1CB2 *= denom
@@ -320,32 +322,32 @@ def adv(y1, y2, y3, a, beta, nu, B1, B2, B3):
     
     # Case III: Burgers vector (0,0,B3)
     v1InfB3 = (y2 * sinbeta * ((R * sinbeta - y1) / (R * (R - z3)) + (Rbar * sinbeta - y1) 
-            / (Rbar * (Rbar + z3bar))))
-    v2InfB3 = (nu2 * sinbeta * (np.log(R - z3) + np.log(Rbar + z3bar)) - (y2 * y2) 
-            * sinbeta * (1.0 / (R * (R - z3)) + 1.0 / (Rbar * (Rbar + z3bar))))
+            / (Rbar * (Rbz3bar))))
+    v2InfB3 = (nu2 * sinbeta * (np.log(R - z3) + np.log(Rbz3bar)) - (y2 * y2) 
+            * sinbeta * (1.0 / (R * (R - z3)) + 1.0 / (Rbar * (Rbz3bar))))
     v3InfB3 = (2.0 * nu1 * (F - Fbar) + y2 * sinbeta * ((R * cosbeta - y3) / (R 
-            * (R - z3)) - (Rbar * cosbeta + y3bar) / (Rbar * (Rbar + z3bar))))
+            * (R - z3)) - (Rbar * cosbeta + y3bar) / (Rbar * (Rbz3bar))))
     denom = 1.0 / (8.0 * np.pi * nu1)
     v1InfB3 *= denom
     v2InfB3 *= denom
     v3InfB3 *= denom
     
-    v1CB3 = (nu2 * (y2 / (Rbar + y3bar) * (1.0 + a / Rbar) - y2 * cosbeta / (Rbar
+    v1CB3 = (nu2 * (y2 / (Rby3bar) * (1.0 + a / Rbar) - y2 * cosbeta / (Rbar
           + z3bar) * (cosbeta + a / Rbar)) - y2 * (y3bar - a) / Rbar * (a / (Rbar * Rbar) 
-          + 1.0 / (Rbar + y3bar)) + y2 * (y3bar - a) * cosbeta / (Rbar * (Rbar + z3bar)) 
-          * ((Rbar * cosbeta + y3bar) / (Rbar + z3bar) * (cosbeta + a / Rbar) + a * y3bar 
+          + 1.0 / (Rby3bar)) + y2 * (y3bar - a) * cosbeta / (Rbar * (Rbz3bar)) 
+          * ((Rbar * cosbeta + y3bar) / (Rbz3bar) * (cosbeta + a / Rbar) + a * y3bar 
           / (Rbar * Rbar)))
 
-    v2CB3 = (nu2 * (-sinbeta * np.log(Rbar + z3bar) - y1 / (Rbar + y3bar) * (1.0 
-          + a / Rbar) + z1bar / (Rbar + z3bar) * (cosbeta + a / Rbar)) + y1 * (y3bar - a) 
-          / Rbar * (a / (Rbar * Rbar) + 1.0 / (Rbar + y3bar)) - (y3bar - a) / (Rbar + z3bar) 
+    v2CB3 = (nu2 * (-sinbeta * np.log(Rbz3bar) - y1 / (Rby3bar) * (1.0 
+          + a / Rbar) + z1bar / (Rbz3bar) * (cosbeta + a / Rbar)) + y1 * (y3bar - a) 
+          / Rbar * (a / (Rbar * Rbar) + 1.0 / (Rby3bar)) - (y3bar - a) / (Rbz3bar) 
           * (sinbeta * (cosbeta - a / Rbar) + z1bar / Rbar * (1 + a * y3bar / (Rbar * Rbar)) 
-          - 1.0 / (Rbar * (Rbar + z3bar)) * ((y2 * y2) * cosbeta * sinbeta - a * z1bar / Rbar 
+          - 1.0 / (Rbar * (Rbz3bar)) * ((y2 * y2) * cosbeta * sinbeta - a * z1bar / Rbar 
           * (Rbar * cosbeta + y3bar))))
 
-    v3CB3 = (2.0 * nu1 * Fbar + 2.0 * nu1 * (y2 * sinbeta / (Rbar + z3bar) 
-          * (cosbeta + a / Rbar)) + y2 * (y3bar - a) * sinbeta / (Rbar * (Rbar + z3bar)) 
-          * (1.0 + (Rbar * cosbeta + y3bar) / (Rbar + z3bar) * (cosbeta + a / Rbar) + a 
+    v3CB3 = (2.0 * nu1 * Fbar + 2.0 * nu1 * (y2 * sinbeta / (Rbz3bar) 
+          * (cosbeta + a / Rbar)) + y2 * (y3bar - a) * sinbeta / (Rbar * (Rbz3bar)) 
+          * (1.0 + (Rbar * cosbeta + y3bar) / (Rbz3bar) * (cosbeta + a / Rbar) + a 
           * y3bar / (Rbar * Rbar)))
 
     denom = 1.0 / (4.0 * np.pi * nu1)
