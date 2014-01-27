@@ -9,7 +9,7 @@ import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
 import scipy.interpolate as sciint
-from <. import triangularDisp as tdisp
+from . import triangularDisp as tdisp
 from scipy.linalg import block_diag
 import copy
 import sys
@@ -266,7 +266,7 @@ class TriangularPatches(SourceInv):
         for patch in self.patch:
 
             # Get vertices of patch 
-            p1, p2, p3 = p[:3]
+            p1, p2, p3 = patch[:3]
 
             # Compute side lengths
             a = np.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2 + (p2[2] - p1[2])**2)
@@ -344,6 +344,8 @@ class TriangularPatches(SourceInv):
         # Resample vertices to UTM
         vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
         vz = vertices[:,2]
+        self.gocad_vertices = np.column_stack((vx, vy, vz))
+        self.gocad_faces = faces
 
         # Loop over faces and create a triangular patch consisting of coordinate tuples
         self.numpatch = faces.shape[0]
@@ -2654,6 +2656,70 @@ class TriangularPatches(SourceInv):
 
         # All done
         return
+
+
+    def plotMayavi(self, neg_depth=True, value_to_plot='total', colormap='jet',
+                   reverseSign=False):
+        """
+        Plot 3D representation of fault using MayaVi.
+
+        Args:
+            * neg_depth     : Flag to specify if patch depths are negative or positive
+            * value_to_plot : What to plot on patches
+            * colormap      : Colormap for patches
+            * reverseSign   : Flag to reverse sign of value_to_plot
+        """
+        try:
+            from mayavi import mlab
+        except ImportError:
+            print('mayavi module not installed. skipping plotting...')
+            return
+
+        # Sign factor for negative depths
+        negFactor = -1.0
+        if neg_depth:
+            negFactor = 1.0
+
+        # Sign for values
+        valueSign = 1.0
+        if reverseSign:
+            valueSign = -1.0
+
+        # Plot the wireframe
+        x, y, z = self.gocad_vertices[:,0], self.gocad_vertices[:,1], self.gocad_vertices[:,2]
+        z *= negFactor
+        mesh = mlab.triangular_mesh(x, y, z, self.gocad_faces, representation='wireframe',
+                                    opacity=0.6, color=(0.0,0.0,0.0))
+
+        # Compute the scalar value to color the patches
+        if value_to_plot == 'total':
+            self.computetotalslip()
+            plotval = self.totalslip
+        elif value_to_plot == 'strikeslip':
+            plotval = self.slip[:,0]
+        elif value_to_plot == 'dipslip':
+            plotval = self.slip[:,1]
+        elif value_to_plot == 'tensile':
+            plotval = self.slip[:,2]
+        elif value_to_plot == 'index':
+            plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
+        else:
+            assert False, 'unsupported value_to_plot'
+
+        # Assign the scalar data to a source dataset
+        cell_data = mesh.mlab_source.dataset.cell_data
+        cell_data.scalars = valueSign * plotval
+        cell_data.scalars.name = 'Cell data'
+        cell_data.update()
+
+        # Make a new mesh with the scalar data applied to patches
+        mesh2 = mlab.pipeline.set_active_attribute(mesh, cell_scalars='Cell data')
+        mlab.pipeline.surface(mesh2, colormap='spectral')
+
+        mlab.show()
+
+        return
+
 
     def mapFault2Fault(self, Map, fault):
         '''

@@ -74,9 +74,9 @@ class multifaultsolve(object):
         # Store an array of the patch areas
         patchAreas = []
         for fault in faults:
+            fault.computeArea()
             for patchIndex in range(len(fault.patch)):
-                width,length = fault.getpatchgeometry(patchIndex)[3:5]
-                patchAreas.append(1000.0*width * 1000.0*length)
+                patchAreas.append(fault.area[patchIndex])
         self.patchAreas = np.array(patchAreas)
 
         # All done
