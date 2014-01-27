@@ -130,18 +130,19 @@ class seismic(SourceInv):
         return
 
     def calcSynthetics(self,dir_name,strike,dip,rake,M0,rise_time,stf_type='triangle',
-                       out_type='D',src_loc=None,cleanup=True):
+                       rfile_name=None,out_type='D',src_loc=None,cleanup=True):
         '''
         Build Green's functions for a particular source location
         Args:
             * dir_name:  Name of the directory where synthetics will be created
-            * strike:    Fault strike
-            * dip:       Fault dip
-            * rake:      Fault rake
+            * strike:    Fault strike (in deg)
+            * dip:       Fault dip (in deg)
+            * rake:      Fault rake (in deg)
             * M0:        Seismic moment
-            * rise_time: Rise time
+            * rise_time: Rise time (in sec)
             * stf_type: 
             * src_loc:  Point source coordinates (ndarray)
+            * rfile_name: pulse file name if stf_type='rfile'
         '''
         
         # Check Waveform Engine
@@ -162,8 +163,8 @@ class seismic(SourceInv):
             os.mkdir(dir_name)
         os.chdir(dir_name)
 
-        # Waveform simulation
-        self.waveform_engine.synthSDR(out_type,strike,dip,rake,M0,stf_type,rise_time)
+        # Waveform simulation        
+        self.waveform_engine.synthSDR(out_type,strike,dip,rake,M0,stf_type,rise_time,rfile_name)
         
         # Go back
         os.chdir(cwd)

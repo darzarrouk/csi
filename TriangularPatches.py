@@ -9,7 +9,7 @@ import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
 import scipy.interpolate as sciint
-from StaticInv import triangularDisp as tdisp
+from <. import triangularDisp as tdisp
 from scipy.linalg import block_diag
 import copy
 import sys

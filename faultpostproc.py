@@ -7,7 +7,6 @@ Written by R. Jolivet, April 2013.
 import numpy as np
 import pyproj as pp
 import copy
-import shapely.geometry as geom
 import matplotlib.pyplot as plt
 import sys
 import os

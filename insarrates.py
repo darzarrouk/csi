@@ -7,7 +7,6 @@ Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 # Externals
 import numpy as np
 import pyproj as pp
-import shapely.geometry as geom
 import matplotlib.pyplot as plt
 import sys
 
@@ -613,7 +612,10 @@ class insarrates(SourceInv):
             * dis       : Threshold distance.
             * faults    : list of fault objects.
         '''
-
+        
+        # Import shapely
+        import shapely.geometry as geom
+        
         # Variables to trim are  self.corner,
         # self.xycorner, self.Cd, (self.synth)
 
@@ -1133,6 +1135,9 @@ class insarrates(SourceInv):
             * name      : name of the profile.
             * fault     : fault object from verticalfault.
         '''
+
+        # Import shapely
+        import shapely.geometry as geom
 
         # Grab the fault trace
         xf = fault.xf

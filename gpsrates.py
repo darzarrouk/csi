@@ -207,17 +207,17 @@ class gpsrates(SourceInv):
         boxll.append([lon4, lat4])
 
         # Get the GPSs in this box.
-        # 1. import shapely and path
+        # Import shapely and path
         import shapely.geometry as geom
         import matplotlib.path as path
-
-        # 2. Create an array with the GPS positions
+        
+        # 1. Create an array with the GPS positions
         GPSXY = np.vstack((self.x, self.y)).T
 
-        # 3. Create a box
+        # 2. Create a box
         rect = path.Path(box, closed=False)
         
-        # 4. Find those who are inside
+        # 3. Find those who are inside
         Bol = rect.contains_points(GPSXY)
 
         # 4. Get these GPS

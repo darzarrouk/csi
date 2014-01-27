@@ -142,7 +142,7 @@ class velocitymodel(object):
 
         # Import shapely
         import shapely.geometry as geom
-
+        
         # Transform box into xy
         xul, yul = self.lonlat2xy(box[0], box[1])
         xbr, ybr = self.lonlat2xy(box[2], box[3])
@@ -254,9 +254,6 @@ class velocitymodel(object):
         # Check class
         if faults.__class__ is not list:
             faults = [faults]
-
-        # Import 
-        import shapely.geometry as geom
 
         # Build a list
         mll = []

@@ -7,7 +7,6 @@ Written by R. Jolivet, April 2013.
 # Externals
 import numpy as np
 import pyproj as pp
-import shapely.geometry as geom
 import matplotlib.pyplot as plt
 import h5py
 
@@ -694,6 +693,9 @@ class strainfield(object):
             * name      : name of the profile.
             * fault     : fault object from verticalfault.
         '''
+
+        # Import shapely
+        import shapely.geometry as geom
 
         # Grab the fault trace
         xf = fault.xf

@@ -289,9 +289,6 @@ class seismiclocations(SourceInv):
             * distance  : threshold distance.
         '''
 
-        # Import necessary things
-        import shapely.geometry as sg
-
         # Create a list with the earthquakes locations
         LL = np.vstack((self.x, self.y)).T.tolist()
 

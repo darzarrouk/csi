@@ -7,7 +7,6 @@ Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 # Externals
 import numpy as np
 import pyproj as pp
-import shapely.geometry as geom
 import matplotlib.pyplot as plt
 from scipy.linalg import block_diag
 
@@ -651,6 +650,9 @@ class cosicorrrates(SourceInv):
             * faults    : list of fault objects.
         '''
 
+        # Import Shapely
+        import shapely.geometry as geom
+        
         # Variables to trim are  self.corner,
         # self.xycorner, self.Cd, (self.synth)
 

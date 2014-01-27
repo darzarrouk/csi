@@ -12,6 +12,9 @@ import scipy.interpolate as sciint
 from scipy.linalg import block_diag
 import copy
 import sys
+import os
+import shutil
+import pickle
 
 ## Personals
 major, minor, micro, release, serial = sys.version_info
@@ -192,15 +195,24 @@ class planarfaultkinematic(planarfault):
         return
 
 
-    def buildKinGFs(self, data, rake_parallel, Mu, rise_time=1., stf_type='triangle', out_type='D', verbose=True):
+    def buildKinGFs(self, data, Mu, rake, slip=1., rise_time=1., stf_type='triangle', 
+                    rfile_name=None, out_type='D', verbose=True):
         '''
-        Build Kinematic Green's functions based on the discretized fault.
+        Build Kinematic Green's functions based on the discretized fault. Green's functions will be calculated 
+        for a given shear modulus and a given slip (cf., slip) along a given rake angle (cf., rake)
         Args:
-            * data: seismic data object
+            * data: Seismic data object
+            * Mu:   Shear modulus
+            * rake: Rake used to compute Green's functions
+            * slip: Slip amplitude used to compute Green's functions (in m)
+            * rise_time:  Duration of the STF in each patch
+            * stf_type:   Type of STF pulse
+            * rfile_name: User specified stf file name if stf_type='rfile'
+            * out_type:   'D' for displacement, 'V' for velocity, 'A' for acceleration
+            * verbose:    True or False
         '''
 
         # Check the Waveform Engine
-        assert self.waveform_engine != None, 'Waveform engine must be assigned'
         assert self.patch != None, 'Patch object should be assigned'
 
         # Verbose on/off        
@@ -213,17 +225,141 @@ class planarfaultkinematic(planarfault):
         # Loop over each patch
         Np = len(self.patch)
         rad2deg = 180./np.pi
+        if not self.G.has_key(data.name):
+            self.G[data.name] = {}
+        self.G[data.name][rake] = []
+        G = self.G[data.name][rake]
         for p in range(Np):
-            # Loop over point sources in patch
-            for g in range(len(self.grid[p])):
-                if verbose:
-                    sys.stdout.write('\r Patch: {} / {} ; Point src {} / {}'.format(p+1,Np,g+1,self.grid[p][0].size))
-                    sys.stdout.flush()  
-                p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = self.getpatchgeometry(p)
-                p_strike_deg = p_strike_deg * rad2deg
-                p_dip_deg    = p_dip_deg    * rad2deg
-                M0           = Mu * p_width * p_length * 1.0e6 # M0 assumin 1m slip
-                data.waveform_engine.calcSynthetics('GF_tmp',p_strike_deg,p_dip_deg,rake_parallel,M0,
-                                                    rise_time,stf_type,out_type,self.grid[p][g],True)
+            if verbose:
+                sys.stdout.write('\r Patch: {} / {} '.format(p+1,Np))
+                sys.stdout.flush()  
+
+            # Get point source location and patch geometry
+            p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = self.getpatchgeometry(p,center=True)
+            src_loc = [p_x, p_y, p_z]
+
+            # Angles in degree
+            p_strike_deg = p_strike_deg * rad2deg
+            p_dip_deg    = p_dip_deg    * rad2deg
+
+            # Seismic moment
+            M0           = Mu * slip * p_width * p_length * 1.0e6 # M0 assuming 1m slip
+            
+            # Compute Green's functions using data waveform engine
+            data.calcSynthetics('GF_tmp',p_strike_deg,p_dip_deg,rake,M0,rise_time,stf_type,rfile_name,
+                                out_type,src_loc,cleanup=True)
         
-                ###### CONTINUE HERE ######
+            # Assemble GFs
+            for stat in data.sta_name:
+                G.append(copy.deepcopy(data.waveform_engine.synth[stat]))
+        
+        # All done
+        return
+
+    def buildKinData(self, data, Mu, Vr, rise_time=1., stf_type='triangle', 
+                     rfile_name=None, out_type='D', verbose=True):
+        '''
+        Build Kinematic Green's functions based on the discretized fault. Green's functions will be calculated 
+        for a given shear modulus and a given slip (cf., slip) along a given rake angle (cf., rake)
+        Args:
+            * data: Seismic data object
+            * Mu:   Shear modulus
+            * Vr:   Rupture velocity (assumed homogeneous on the explored space)
+            * rise_time:  Duration of the STF in each patch
+            * stf_type:   Type of STF pulse
+            * rfile_name: User specified stf file name if stf_type='rfile'
+            * out_type:   'D' for displacement, 'V' for velocity, 'A' for acceleration
+            * verbose:    True or False
+        '''
+
+        # Check the Waveform Engine
+        assert self.patch != None, 'Patch object should be assigned'
+
+        # Verbose on/off        
+        if verbose:
+            import sys
+            print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
+            print ("Using waveform engine {}".format(data.wafeform_engine.name))
+        
+
+        # Loop over each patch
+        Np = len(self.patch)
+        rad2deg = 180./np.pi
+        if not self.d.has_key(data.name):
+            self.d[data.name] = {}
+        D = self.d[data.name]
+        for p in range(Np):
+            if verbose:
+                sys.stdout.write('\r Patch: {} / {} '.format(p+1,Np))
+                sys.stdout.flush()  
+
+            # Get point source location and patch geometry
+            p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = self.getpatchgeometry(p,center=True)
+            src_loc = [p_x, p_y, p_z] 
+
+            # Angles in degree
+            p_strike_deg = p_strike_deg * rad2deg
+            p_dip_deg    = p_dip_deg    * rad2deg
+
+            # Seismic moment
+            M0      = Mu * slip * p_width * p_length * 1.0e6 # M0 assuming 1m slip
+            
+            # Compute Green's functions using data waveform engine
+            data.calcSynthetics('GF_tmp',p_strike_deg,p_dip_deg,rake,M0,rise_time,stf_type,rfile_name,
+                                out_type,src_loc,cleanup=True)
+        
+            # Assemble GFs
+            for stat in data.sta_name:
+                G.append(copy.deepcopy(data.waveform_engine.synth[stat]))
+        
+        # All done
+        return
+
+
+        #### CONTINUE HERE
+
+
+
+
+
+
+    def saveKinGFs(self, data, ofile='GFs.pkl'):
+        '''
+        Serializing the Green's functions (pickle format)
+        Args:
+            data  : Data object corresponding to the Green's function to be saved
+            ofile : Output file name
+        '''
+
+        # Print stuff
+        print('Writing Kinematic Greens functions to file {} for fault {} and dataset {}'.format(ofile,self.name,data.name))
+
+        # Write pickle file
+        G   = self.G[data.name]
+        fid = open(ofile,'wb')
+        pickle.dump(G,fid)
+        fid.close()
+
+        # All done
+        return
+
+    def loadKinGFs(self, data, ofile='GFs.pkl'):
+        '''
+        De-Serializing the Green's functions (pickle format)
+        Args:
+            data  : Data object corresponding to the Green's function to be loaded
+            ifile : Input file name
+        '''
+
+        # Print stuff
+        print('Loading Kinematic Greens functions from file {} for fault {} and dataset {}'.format(ofile,self.name,data.name))
+
+        # Load pickle file        
+        fid = open(ofile,'rb')
+        self.G[data.name] = pickle.load(G,fid)
+        fid.close()
+
+        # All done
+        return
+
+
