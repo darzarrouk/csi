@@ -1909,7 +1909,7 @@ class RectangularPatches(SourceInv):
                 H[:,3:6] = np.array([[0.0, -z1, y1],
                                      [z1, 0.0, -x1],
                                      [-y1, x1, 0.0]])
-                H[:,7] = np.array([x1, y1, z1])
+                H[:,6] = np.array([x1, y1, z1])
             else:
                 H[:,2] = np.array([y1, -x1])
                 H[:,3] = np.array([x1, y1])

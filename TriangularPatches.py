@@ -1600,7 +1600,7 @@ class TriangularPatches(SourceInv):
                 H[:,3:6] = np.array([[0.0, -z1, y1],
                                      [z1, 0.0, -x1],
                                      [-y1, x1, 0.0]])
-                H[:,7] = np.array([x1, y1, z1])
+                H[:,6] = np.array([x1, y1, z1])
             else:
                 H[:,2] = np.array([y1, -x1])
                 H[:,3] = np.array([x1, y1])
@@ -1777,19 +1777,16 @@ class TriangularPatches(SourceInv):
         Cm = np.zeros((Np, Np))
 
         # Loop over the patches
-        i = 0
-        for p1 in self.patch:
-            j = 0
-            for p2 in self.patch:
-                # Compute the distance
-                d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
-                # Compute Cm
-                Cmt[i,j] = C * np.exp(-d/lam)
-                Cmt[j,i] = C * np.exp(-d/lam)
-                # Upgrade counter
-                j += 1
-            # upgrade counter
-            i += 1
+        npatch = len(self.patch)
+        for i in range(npatch):
+            distances = np.zeros((npatch,))
+            p1 = self.patch[i]
+            for j in range(npatch):
+                if j == i:
+                    continue
+                p2 = self.patch[j]
+                distances[j] = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
+            Cmt[i,:] = C * np.exp(-distances / lam)
 
         # Store that into Cm
         st = 0
