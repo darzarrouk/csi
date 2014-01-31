@@ -356,6 +356,85 @@ class planarfaultkinematic(planarfault):
         # All done
         return
 
+    def creaWav(self,data,include_G=True,include_d=True):
+        '''
+        Create a list of Waveform dictionaries
+        Args:
+            * data: Data object 
+            * include_G: if True, include G (default=True)
+            * include_d: if True, include d (default=True)
+        '''
+        # Create a list of waveform dictionaries
+        Wav = []
+        print self.G.keys()
+        if include_G==True:
+            assert self.G.has_key(data.name), 'G must be implemented for {}'.format(data.name)
+            for r in self.G[data.name].keys():
+                for p in range(len(self.patch)):
+                    Wav.append(self.G[data.name][r][p])
+        if include_d==True:
+            assert self.d.has_key(data.name), 'd must be implemented for {}'.format(data.name)
+            Wav.append(self.d[data.name])
+        
+        # All done
+        return Wav
+
+    def trim(self,data,mint,maxt,trim_G=True,trim_d=True):
+        '''
+        Waveform windowing
+        Args:
+            * data: Data object 
+            * mint: Minimum time
+            * maxt: Maximum time
+            * trim_G: if True, trim G (default=True)
+            * trim_d: if True, trim d (default=True)
+        '''
+
+        # Create waveform dictionary list
+        Wav = self.creaWav(data,include_G=trim_G,include_d=trim_d)
+
+        # Trim waveforms
+        for w in Wav:
+            for s in data.sta_name:
+                for c in w[s].keys():
+                    t = np.arange(w[s][c].npts,dtype='float64') * w[s][c].delta + w[s][c].o + w[s][c].b
+                    ta = np.abs(t-mint)
+                    tb = np.abs(t-maxt)
+                    ita = np.where(ta==ta.min())[0][0]
+                    itb = np.where(tb==tb.min())[0][0]
+                    w[s][c].b      = t[ita]- w[s][c].o
+                    w[s][c].depvar = w[s][c].depvar[ita:itb+1]
+                    w[s][c].npts   = len(w[s][c].depvar)
+
+        # All done
+        return
+
+    def filter(self,data,a,b,filtFunc,mean_npts=None,filter_G=True,filter_d=True):
+        '''
+        Waveform filtering
+        Args:
+            * data: Data object 
+            * a: numerator polynomial of the IIR filter
+            * b: denominator polynomial of the IIR filter
+            * filtFunc: filter function
+            * mean_npts: remove mean over the leading mean_npts points (default=None)
+            * filter_G: if True, filter G (default=True)
+            * filter_d: if True, filter d (default=True)        
+        '''
+        # Create waveform dictionary list
+        Wav = self.creaWav(data,include_G=filter_G,include_d=filter_d)
+
+        # Trim waveforms
+        for w in Wav:
+            for s in data.sta_name:
+                for c in w[s].keys():
+                    if mean_npts != None:
+                        w[s][c].depvar -= np.mean(w[s][c].depvar[:mean_npts])
+                    w[s][c].depvar = filtFunc(b,a,w[s][c].depvar)
+
+        # All done
+        return        
+        
 
     def saveKinGFs(self, data, ofile='GFs.pkl'):
         '''
