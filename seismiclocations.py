@@ -441,6 +441,26 @@ class seismiclocations(SourceInv):
         # All done
         return
 
+    def BuildHistogramsAlongFaultTrace(self, fault, filename, normed=True, width=10.0):
+        '''
+        Builds a histogram of the earthquake distribution along the fault trace.
+        width: Width of the averaging cell (distance along strike)
+        '''
+
+        # Need a projected earthquake set
+        assert hasattr(self, 'Projected'), 'No dictionary of Projected earthquakes available'
+        assert ('{}'.format(fault.name)), 'No projection of earthquakes associated with fault {}'.format(fault.name)
+
+        # Open the file
+        fout = open(filename, 'w')
+
+        # On every point of the fault
+        
+
+        # All done
+        return
+        
+
     def write2file(self, filename):
         '''
         Write the earthquakes to a file.
