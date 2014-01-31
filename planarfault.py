@@ -203,6 +203,7 @@ class planarfault(RectangularPatches):
         
         # Translate slip into an array
         self.slip = np.array(self.slip)
+        self.zi = np.ones((self.xi.shape))*self.top
         
         # Re-discretize to get the original fault
         self.discretize(lon,lat,strike,f_length,n_strike)

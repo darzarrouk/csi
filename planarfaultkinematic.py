@@ -45,6 +45,7 @@ class planarfaultkinematic(planarfault):
         # Hypocenter coordinates
         self.hypo_x   = None
         self.hypo_y   = None
+        self.hypo_z   = None
         self.hypo_lon = None
         self.hypo_lat = None
                 
@@ -57,6 +58,8 @@ class planarfaultkinematic(planarfault):
         # Patch objects
         self.patch = None
         self.grid  = None
+        self.vr    = None
+        self.tr    = None
         
         # All done
         return
@@ -84,10 +87,10 @@ class planarfaultkinematic(planarfault):
             self.hypo_y = y
 
         # Get distance from the fault trace axis (in km)
-        dist_from_trace = self.hypo_x * np.cos(self.f_strike) - self.hypo_y * np.sin(self.f_strike)
+        dist_from_trace = (self.hypo_x-self.xi[0]) * np.cos(self.f_strike) - (self.hypo_y-self.yi[0]) * np.sin(self.f_strike)
 
         # Get depth on the fault
-        self.hypo_z = dist_from_trace * np.tan(self.f_dip)
+        self.hypo_z = dist_from_trace * np.tan(self.f_dip) + self.top
         
         # UTM to lat/lon conversion        
         self.hypo_lon,self.hypo_lat = self.xy2ll(self.hypo_x,self.hypo_y)
@@ -164,21 +167,14 @@ class planarfaultkinematic(planarfault):
             # Set grid points coordinates on fault
             grid_strike = np.arange(0.5*grid_size,p_length,grid_size) - p_length/2.
             grid_dip    = np.arange(0.5*grid_size,p_width,grid_size) - p_width/2.
-            print(grid_strike,p_length)
-            print(grid_dip,p_width)
 
             # Check that everything is correct
             assert np.round(p_strike,2) == np.round(self.f_strike,2), 'Fault must be planar' 
             assert np.round(p_dip,2)    == np.round(self.f_dip,2)   , 'Fault must be planar' 
-            print(nbp_strike, len(grid_strike))
             assert nbp_strike == len(grid_strike), 'Incorrect length for patch %d'%(p)
             assert nbp_dip    == len(grid_dip),    'Incorrect width for patch  %d'%(p)
 
             # Get grid points coordinates in UTM  
-            print('strike=',self.f_strike*180./np.pi)
-            print('dip=',self.f_dip*180./np.pi)
-            print('dipdir=',dipdir*180./np.pi)
-            print('depth=',p_z)
             xt = p_x + grid_strike * np.sin(self.f_strike)
             yt = p_y + grid_strike * np.cos(self.f_strike)
             zt = p_z * np.ones(xt.shape)
@@ -195,8 +191,8 @@ class planarfaultkinematic(planarfault):
         return
 
 
-    def buildKinGFs(self, data, Mu, rake, slip=1., rise_time=1., stf_type='triangle', 
-                    rfile_name=None, out_type='D', verbose=True):
+    def buildKinGFs(self, data, Mu, rake, slip=1., rise_time=2., stf_type='triangle', 
+                    rfile_name=None, out_type='D', verbose=True, ofd=sys.stdout, efd=sys.stderr):
         '''
         Build Kinematic Green's functions based on the discretized fault. Green's functions will be calculated 
         for a given shear modulus and a given slip (cf., slip) along a given rake angle (cf., rake)
@@ -219,7 +215,7 @@ class planarfaultkinematic(planarfault):
         if verbose:
             import sys
             print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
-            print ("Using waveform engine {}".format(data.wafeform_engine.name))
+            print ("Using waveform engine: {}".format(data.waveform_engine.name))
         
 
         # Loop over each patch
@@ -239,55 +235,69 @@ class planarfaultkinematic(planarfault):
             src_loc = [p_x, p_y, p_z]
 
             # Angles in degree
-            p_strike_deg = p_strike_deg * rad2deg
-            p_dip_deg    = p_dip_deg    * rad2deg
+            p_strike_deg = p_strike * rad2deg
+            p_dip_deg    = p_dip    * rad2deg
 
             # Seismic moment
-            M0           = Mu * slip * p_width * p_length * 1.0e6 # M0 assuming 1m slip
+            M0 = Mu * slip * p_width * p_length * 1.0e13 # M0 assuming 1m slip
             
             # Compute Green's functions using data waveform engine
             data.calcSynthetics('GF_tmp',p_strike_deg,p_dip_deg,rake,M0,rise_time,stf_type,rfile_name,
-                                out_type,src_loc,cleanup=True)
+                                out_type,src_loc,cleanup=True,ofd=ofd,efd=efd)
         
             # Assemble GFs
-            for stat in data.sta_name:
-                G.append(copy.deepcopy(data.waveform_engine.synth[stat]))
-        
+            G.append(copy.deepcopy(data.waveform_engine.synth))
+            G[-1]['patch_x'] = p_x
+            G[-1]['patch_y'] = p_y
+            G[-1]['patch_z'] = p_z
+        sys.stdout.write('\n')
+
         # All done
         return
 
-    def buildKinData(self, data, Mu, Vr, rise_time=1., stf_type='triangle', 
-                     rfile_name=None, out_type='D', verbose=True):
+    def buildKinDataTriangleMRF(self, data, Mu, rake_para=0., out_type='D', verbose=True, ofd=sys.stdout, efd=sys.stderr):
         '''
         Build Kinematic Green's functions based on the discretized fault. Green's functions will be calculated 
         for a given shear modulus and a given slip (cf., slip) along a given rake angle (cf., rake)
         Args:
             * data: Seismic data object
             * Mu:   Shear modulus
-            * Vr:   Rupture velocity (assumed homogeneous on the explored space)
-            * rise_time:  Duration of the STF in each patch
-            * stf_type:   Type of STF pulse
-            * rfile_name: User specified stf file name if stf_type='rfile'
-            * out_type:   'D' for displacement, 'V' for velocity, 'A' for acceleration
-            * verbose:    True or False
+            * rake_para: Rake of the slip parallel component in deg (default=0. deg)
+            * out_type:   'D' for displacement, 'V' for velocity, 'A' for acceleration (default='D')
+            * verbose:    True or False (default=True)
+
+        WARNING: ONLY VALID FOR HOMOGENEOUS RUPTURE VELOCITY
+
         '''
 
         # Check the Waveform Engine
-        assert self.patch != None, 'Patch object should be assigned'
+        assert self.patch  != None, 'Patch object must be assigned'
+        assert self.hypo_x != None, 'Hypocenter location must be assigned'
+        assert self.hypo_y != None, 'Hypocenter location must be assigned'
+        assert self.hypo_z != None, 'Hypocenter location must be assigned'
+        assert self.slip   != None, 'Slip values must be assigned'
+        assert self.vr     != None, 'Rupture velocities must be assigned'
+        assert self.tr     != None, 'Rise times must be assigned'
+        assert len(self.patch)==len(self.slip)==len(self.vr)==len(self.tr), 'Patch attributes must have same length'
+        for v in self.vr:
+            assert v==self.vr[0], 'This function is only valid for homogeneous vr'
 
         # Verbose on/off        
         if verbose:
             import sys
-            print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
-            print ("Using waveform engine {}".format(data.wafeform_engine.name))
-        
+            print ("Building predictions for the data set {} of type {}".format(data.name, data.dtype))
+            print ("Using waveform engine: {}".format(data.waveform_engine.name))
+
+        # Max duration
+        max_dur = np.sqrt(self.f_length*self.f_length + self.f_width*self.f_width)/np.min(self.vr)
+        Nt      = np.ceil(max_dur/data.waveform_engine.delta)
 
         # Loop over each patch
         Np = len(self.patch)
         rad2deg = 180./np.pi
         if not self.d.has_key(data.name):
             self.d[data.name] = {}
-        D = self.d[data.name]
+        D = self.d[data.name]        
         for p in range(Np):
             if verbose:
                 sys.stdout.write('\r Patch: {} / {} '.format(p+1,Np))
@@ -298,29 +308,53 @@ class planarfaultkinematic(planarfault):
             src_loc = [p_x, p_y, p_z] 
 
             # Angles in degree
-            p_strike_deg = p_strike_deg * rad2deg
-            p_dip_deg    = p_dip_deg    * rad2deg
-
-            # Seismic moment
-            M0      = Mu * slip * p_width * p_length * 1.0e6 # M0 assuming 1m slip
+            p_strike_deg = p_strike * rad2deg
+            p_dip_deg    = p_dip    * rad2deg
             
+            # Total slip
+            s_para = self.slip[p][0]
+            s_perp = self.slip[p][1]
+            total_slip = np.sqrt(s_para*s_para + s_perp*s_perp)
+
+            # Compute Rake
+            rake = rake_para + np.arctan2(s_perp,s_para)*rad2deg
+            
+            # Seismic moment
+            M0  = Mu * total_slip * p_width * p_length * 1.0e13 # M0 assuming 1m slip
+            
+            # Moment rate function
+            rfile = 'rfile.p%03d'%(p)
+            MRF = np.zeros((Nt,),dtype='float64')
+            t   = np.arange(Nt,dtype='float64')*data.waveform_engine.delta
+            hTr = 0.5 * self.tr[p]
+            for g in range(len(self.grid[p])):
+                g_x = self.grid[p][g][0] - self.hypo_x
+                g_y = self.grid[p][g][1] - self.hypo_y
+                g_z = self.grid[p][g][2] - self.hypo_z
+                g_dist = np.sqrt(g_x*g_x + g_y*g_y + g_z*g_z)
+                g_t0 = g_dist/self.vr[p]
+                g_tc = g_t0 + hTr
+                g_t1 = g_t0 + 2*hTr
+                g_i  = np.where((t>=g_t0)*(t<=g_t1))
+                MRF[g_i] += (1.0 - np.abs(t[g_i]-g_tc)/hTr)*(1.0/hTr)/len(self.grid[p])
+            data.waveform_engine.writeRfile(rfile,MRF)
+            rfile = os.path.abspath(rfile)
             # Compute Green's functions using data waveform engine
-            data.calcSynthetics('GF_tmp',p_strike_deg,p_dip_deg,rake,M0,rise_time,stf_type,rfile_name,
-                                out_type,src_loc,cleanup=True)
-        
+            data.calcSynthetics('GF_tmp',p_strike_deg,p_dip_deg,rake,M0,None,'rfile',rfile,
+                                out_type,src_loc,cleanup=True,ofd=ofd,efd=efd)
+                        
+            
             # Assemble GFs
             for stat in data.sta_name:
-                G.append(copy.deepcopy(data.waveform_engine.synth[stat]))
+                if not D.has_key(stat):
+                    D[stat] = copy.deepcopy(data.waveform_engine.synth[stat])
+                else:
+                    for c in data.waveform_engine.synth[stat].keys():
+                        D[stat][c].depvar += data.waveform_engine.synth[stat][c].depvar
+        sys.stdout.write('\n')
         
         # All done
         return
-
-
-        #### CONTINUE HERE
-
-
-
-
 
 
     def saveKinGFs(self, data, ofile='GFs.pkl'):
@@ -343,7 +377,7 @@ class planarfaultkinematic(planarfault):
         # All done
         return
 
-    def loadKinGFs(self, data, ofile='GFs.pkl'):
+    def loadKinGFs(self, data, ifile='GFs.pkl'):
         '''
         De-Serializing the Green's functions (pickle format)
         Args:
@@ -352,11 +386,50 @@ class planarfaultkinematic(planarfault):
         '''
 
         # Print stuff
-        print('Loading Kinematic Greens functions from file {} for fault {} and dataset {}'.format(ofile,self.name,data.name))
+        print('Loading Kinematic Greens functions from file {} for fault {} and dataset {}'.format(ifile,self.name,data.name))
 
         # Load pickle file        
-        fid = open(ofile,'rb')
-        self.G[data.name] = pickle.load(G,fid)
+        fid = open(ifile,'rb')
+        self.G[data.name] = pickle.load(fid)
+        fid.close()
+
+        # All done
+        return
+
+    def saveKinData(self, data, ofile='data.pkl'):
+        '''
+        Serializing the Data (pickle format)
+        Args:
+            data  : Data object corresponding to the Green's function to be saved
+            ofile : Output file name
+        '''
+
+        # Print stuff
+        print('Writing Kinematic Data to file {} for fault {} and dataset {}'.format(ofile,self.name,data.name))
+
+        # Write pickle file
+        D   = self.d[data.name]
+        fid = open(ofile,'wb')
+        pickle.dump(D,fid)
+        fid.close()
+
+        # All done
+        return
+
+    def loadKinData(self, data, ifile='data.pkl'):
+        '''
+        De-Serializing the Data (pickle format)
+        Args:
+            data  : Data object corresponding to the Green's function to be loaded
+            ifile : Input file name
+        '''
+
+        # Print stuff
+        print('Loading Kinematic Data from file {} for fault {} and dataset {}'.format(ifile,self.name,data.name))
+
+        # Load pickle file        
+        fid = open(ifile,'rb')
+        self.d[data.name] = pickle.load(fid)
         fid.close()
 
         # All done

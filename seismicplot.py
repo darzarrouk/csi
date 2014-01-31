@@ -27,8 +27,8 @@ class seismicplot(geodeticplot):
         # Base class init
         super(seismicplot,self).__init__(figure,ref,pbaspect)        
         
-    def faultPatchesGrid(self, fault, slip='strikeslip', Norm=None, colorbar=True, 
-                     plot_on_2d=False, revmap=False):
+    def faultPatchesGrid(self, fault, slip=None, Norm=None, colorbar=True, 
+                         plot_on_2d=False, revmap=False, data=None):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -39,20 +39,11 @@ class seismicplot(geodeticplot):
         '''
 
         # Get slip
-        if slip in ('strikeslip'):
-            slip = fault.slip[:,0]
-        elif slip in ('dipslip'):
-            slip = fault.slip[:,1]
-        elif slip in ('opening'):
-            slip = fault.slip[:,2]
-        elif slip in ('total'):
+        if slip!=None:
             slip = np.sqrt(fault.slip[:,0]**2 + fault.slip[:,1]**2 + fault.slip[:,2]**2)
-        else:
-            print ("Unknown slip direction")
-            return
 
         # norm
-        if Norm is None:
+        if Norm is None and slip != None:
             vmin=0
             vmax=slip.max()
         else:
@@ -86,15 +77,29 @@ class seismicplot(geodeticplot):
                     x.append(fault.patchll[p][i][0])
                     y.append(fault.patchll[p][i][1])
                     z.append(-1.0*fault.patchll[p][i][2])
-            verts = [zip(x, y, z)]
-            rect = art3d.Poly3DCollection(verts)
-            rect.set_color(scalarMap.to_rgba(slip[p]))
+            x.append(x[0])
+            y.append(y[0])
+            z.append(z[0])
+            verts = [zip(x, y, z)]            
+            if slip!=None:
+                rect = art3d.Poly3DCollection(verts)
+                rect.set_color(scalarMap.to_rgba(slip[p]))                
+            else:
+                grid = np.array(fault.grid[p])      
+                self.faille.scatter3D(grid[:,0],grid[:,1],-grid[:,2],color='b',s=20,zorder=1000)
+                rect = art3d.Line3DCollection(verts)
             rect.set_edgecolors('k')
-            self.faille.add_collection3d(rect)
+            self.faille.scatter3D(fault.hypo_x,fault.hypo_y,-fault.hypo_z,color='k',marker=(5,1,0),s=100,zorder=1000)
+            self.faille.add_collection3d(rect)            
             Xs = np.append(Xs,x)
             Ys = np.append(Ys,y)
-            grid = np.array(fault.grid[p])
-            self.faille.scatter3D(grid[:,0],grid[:,1],1.-grid[:,2],'ko',s=20,zorder=1000)
+
+        if data!=None and slip==None:
+            for x,y in zip(data.x,data.y):
+                self.faille.scatter3D(x,y,0.,color='b',marker='v',s=20,zorder=1000)
+                Xs = np.append(Xs,x)
+                Ys = np.append(Ys,y)
+
         self.faille.set_xlim3d(Xs.min(),Xs.max())
         self.faille.set_ylim3d(Ys.min(),Ys.max())
 
@@ -119,5 +124,45 @@ class seismicplot(geodeticplot):
 
         # All done
         return Xs,Ys
+
+
+    def faulttrace(self, fault, color='r', add=False, data=None):
+        '''
+        Args:
+            * fault         : Fault class from verticalfault.
+            * color         : Color of the fault.
+            * add           : plot the faults in fault.addfaults    
+        '''
+
+        # Plot the added faults before
+        if add and (self.ref is 'utm'):
+            for f in fault.addfaultsxy:
+                self.faille.plot(f[0], f[1], '-k')
+                self.carte.plot(f[0], f[1], '-k')
+        elif add and (self.ref is not 'utm'):
+            for f in fault.addfaults:
+                self.faille.plot(f[0], f[1], '-k')
+                self.carte.plot(f[0], f[1], '-k')
+
+        # Plot the surface trace
+        print fault.top
+        if self.ref is 'utm':
+            if fault.xf is None:
+                fault.trace2xy()
+            self.faille.plot3D(fault.xf, fault.yf,-fault.top, '-{}'.format(color), linewidth=2)
+            self.carte.plot(fault.xf, fault.yf, '-{}'.format(color), linewidth=2)
+        else:
+            self.faille.plot3D(fault.lon, fault.lat,-fault.top, '-{}'.format(color), linewidth=2)
+            self.carte.plot(fault.lon, fault.lat, '-{}'.format(color), linewidth=2)
+            
+            
+        if data!=None:
+            self.carte.plot(data.x,data.y,'bv',zorder=1000)
+
+        # All done
+        return
+
+
+
 
 

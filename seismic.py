@@ -6,6 +6,7 @@ Written by Z. Duputel, April 2013.
 
 # Externals
 import os
+import sys
 import copy
 import shutil
 import numpy  as np
@@ -45,76 +46,74 @@ class seismic(SourceInv):
     
         # All done
         return
+
+    def setStat(self,sta_name,x,y,loc_format='LL'):
+        '''
+        Set station names and locations attributes
+        Args:
+            * sta_name: station names
+            * x: x coordinate (longitude or UTM) 
+            * y: y coordinate (latitude or UTM)
+            * loc_format: location format ('LL' for lon/lat or 'XY' for UTM)
+        '''
+
+        # Check input parameters
+        assert len(sta_name)==len(x)==len(y), 'sta_name, x and y must have the same length'
+        assert loc_format=='LL' or loc_format=='XY', 'loc_format can be LL or XY'        
+        if type(x)==list:
+            x = np.array(x)
+        if type(y)==list:
+            y = np.array(y)
+
+        # Assign input parameters to station attributes
+        self.sta_name = copy.deepcopy(sta_name)
+        if loc_format=='LL':            
+            self.lon = np.append(self.lon,x)
+            self.lat = np.append(self.lat,y)
+            self.x, self.y = self.ll2xy(self.lon,self.lat)
+        else:
+            self.x = np.append(self.x,x)
+            self.y = np.append(self.y,y)
+            self.lon, self.lat = self.ll2xy(self.x,self.y)            
+
+        # All done
+        return
     
-    def readStat(self,station_file,file_format='LL'):
+    def readStat(self,station_file,loc_format='LL'):
         '''
         Read station file and populate the Xr attribute (station coordinates)
         Args:
             * station_file: station filename including station coordinates
-            * file_format:  station file format (default= 'LL')
+            * loc_format:  station file format (default= 'LL')
         file format:
-        STNAME  X_COORD Y_COORD (if file_format='XY')
-        STNAME  LON LAT (if file_format='LL')
+        STNAME  X_COORD Y_COORD (if loc_format='XY')
+        STNAME  LON LAT (if loc_format='LL')
         '''
         
         # Assert if station file exists
         assert os.path.exists(station_file), 'Cannot read %s (no such file)'%(station_file)
 
         # Assert file format
-        assert file_format=='LL' or file_format=='XY', 'file_format can be either LL or XY'
+        assert loc_format=='LL' or loc_format=='XY', 'loc_format can be either LL or XY'
         
         # Read the file 
         X = []
         Y = []
+        sta_name = []
         for l in open(station_file):
             if (l.strip()[0]=='#'):
                 continue
             items = l.strip().split()
-            self.sta_name.append(items[0].strip())
+            sta_name.append(items[0].strip())
             X.append(float(items[1]))
             Y.append(float(items[2]))
 
-        # Lat-Lon / UTM conversions
-        if file_format=='LL':            
-            self.lon = np.append(self.lon,X)
-            self.lat = np.append(self.lat,Y)
-            self.x, self.y = self.ll2xy(self.lon,self.lat)
-        else:
-            self.x = np.append(self.x,X)
-            self.y = np.append(self.y,Y)
-            self.lon, self.lat = self.ll2xy(self.x,self.y)
+        # Set station attributes
+        self.setStat(sta_name,X,Y,loc_format)
 
         # All done
         return    
 
-
-    def readStatLL(self,station_file):
-        '''
-        Read station file and populate the Xr attribute (station coordinates)
-        Args:
-            * station_file:   station filename including station coordinates
-        file format:
-        STNAME  X_COORD Y_COORD
-        '''
-        
-        # Assert if station file exists
-        assert os.path.exists(station_file), 'Cannot read %s (no such file)'%(station_file)
-        
-        # Read the file and fill-up Xr
-        for l in open(station_file):
-            if (l.strip()[0]=='#'):
-                continue
-            items = l.strip().split()
-            self.stat.append(items[0].strip())
-            self.lat.append(float(items[1]))
-            self.lon.append(float(items[2]))
-        self.lat = np.array(self.x,dtype='float64')
-        self.lon = np.array(self.y,dtype='float64')
-        self.x,self.y = self.xy2ll(self.lon,self.lat)
-        
-        # All done
-        return    
-        
     def initWaveInt(self,waveform_engine):
         '''
         Initialize Bob Hermann's wavenumber integration engine
@@ -129,8 +128,8 @@ class seismic(SourceInv):
         # All done
         return
 
-    def calcSynthetics(self,dir_name,strike,dip,rake,M0,rise_time,stf_type='triangle',
-                       rfile_name=None,out_type='D',src_loc=None,cleanup=True):
+    def calcSynthetics(self,dir_name,strike,dip,rake,M0,rise_time,stf_type='triangle',rfile_name=None,out_type='D',
+                       src_loc=None,cleanup=True,ofd=sys.stdout,efd=sys.stderr):
         '''
         Build Green's functions for a particular source location
         Args:
@@ -143,6 +142,8 @@ class seismic(SourceInv):
             * stf_type: 
             * src_loc:  Point source coordinates (ndarray)
             * rfile_name: pulse file name if stf_type='rfile'
+            * ofd:       stream for standard output (optional, default=sys.stdout)
+            * efd:       stream for standard error  (optional, default=sys.stdout)        
         '''
         
         # Check Waveform Engine
@@ -159,12 +160,12 @@ class seismic(SourceInv):
         cwd = os.getcwd()
         if cleanup and os.path.exists(dir_name):
             shutil.rmtree(dir_name)
-        else:
+        if not os.path.exists(dir_name):
             os.mkdir(dir_name)
         os.chdir(dir_name)
 
         # Waveform simulation        
-        self.waveform_engine.synthSDR(out_type,strike,dip,rake,M0,stf_type,rise_time,rfile_name)
+        self.waveform_engine.synthSDR(out_type,strike,dip,rake,M0,stf_type,rise_time,rfile_name,True,ofd,efd)
         
         # Go back
         os.chdir(cwd)
