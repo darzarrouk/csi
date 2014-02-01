@@ -764,7 +764,6 @@ class insarrates(SourceInv):
 
         # Get the InSAR points in this box.
         # 1. import shapely and nxutils
-        import shapely.geometry as geom
         import matplotlib.path as path
 
         # 2. Create an array with the InSAR positions

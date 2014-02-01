@@ -2840,6 +2840,45 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
+    def getFaultVector(self, i, discretized=True, normal=False):
+        '''
+        Returns the vector tangential to the fault at the i-th point of the fault (discretized if True).
+        if normal is True, returns a normal vector (+90 counter-clockwise wrt. tangente)
+        '''
+
+        # Get fault trace
+        if discretized:
+            x = self.xi
+            y = self.yi
+        else:
+            x = self.xf
+            y = self.yf
+
+        # Starting point
+        st = max(0, i-5)
+        ed = min(len(x), i+5)
+
+        # Get slope
+        G = np.vstack((x[st:ed], np.ones(x[st:ed].shape))).T
+        Gg = np.dot(np.linalg.inv(np.dot(G.T, G)),G.T)
+        m = np.dot(Gg,y[st:ed])
+        slope = m[0]
+        const = m[1]
+
+        # Make unit vector from slope
+        b = np.sqrt( 1./(1.+slope**2) )
+        a = b*slope
+        vect = np.array([a, b])
+
+        if normal:
+            # Rotate 90deg counter-clokwise
+            R = np.array([ [0.0, -1.0],
+                           [1.0,  0.0]])
+            vect = np.dot(R,vect)
+
+        # All done
+        return vect
+
     def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False):
         '''
         Plot the available elements of the fault.

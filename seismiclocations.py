@@ -289,6 +289,9 @@ class seismiclocations(SourceInv):
             * distance  : threshold distance.
         '''
 
+        # Shapely (Change for matplotlib path later)
+        import shapely.geometry as sg
+
         # Create a list with the earthquakes locations
         LL = np.vstack((self.x, self.y)).T.tolist()
 
@@ -418,7 +421,7 @@ class seismiclocations(SourceInv):
             # Compute the distance to the fault
             dl = np.sqrt( (x[imin1]-x[imin2])**2 + (y[imin1]-y[imin2])**2 ) # 3 side of the triangle 
             semiperi = (dmin1 + dmin2 + dl)/2.                              # Semi-perimeter of the triangle
-            A = semiperi*(semiperi-dmin1)*(semiperi-dmin2)*(semiperi-dmin3) # Area of the triangle (Heron's formula)
+            A = semiperi*(semiperi-dmin1)*(semiperi-dmin2)*(semiperi-dl)    # Area of the triangle (Heron's formula)
             qh = 2*A/dl                                                     # Height of the triangle
             # Store all that in a structure
             proj['x'].append(qx)
@@ -448,14 +451,81 @@ class seismiclocations(SourceInv):
         '''
 
         # Need a projected earthquake set
-        assert hasattr(self, 'Projected'), 'No dictionary of Projected earthquakes available'
-        assert ('{}'.format(fault.name)), 'No projection of earthquakes associated with fault {}'.format(fault.name)
+        assert hasattr(self, 'Projected'), 'No dictionary of Projected earthquakes is available'
+        assert ('{}'.format(fault.name)), 'No projection of earthquakes associated with fault {} is available'.format(fault.name)
+
+        # Need a discretized fault trace
+        assert hasattr(fault, 'xi'), 'No discretized fault trace is available'
 
         # Open the file
         fout = open(filename, 'w')
 
+        # Get the projected earthquakes
+        x = self.Projected['{}'.format(fault.name)]['x']
+        y = self.Projected['{}'.format(fault.name)]['y']
+        lon = self.Projected['{}'.format(fault.name)]['lon']
+        lat = self.Projected['{}'.format(fault.name)]['lat']
+        z = self.Projected['{}'.format(fault.name)]['depth']
+        Das = self.Projected['{}'.format(fault.name)]['AlongStrikeDistance']
+
+        # Get the fault trace
+        xf = fault.xi
+        yf = fault.yi
+
+        # And the corresponding distance along the fault
+        df = fault.cumdistance(discretized=True)
+
         # On every point of the fault
+        for i in range(len(xf)):
         
+            # Get the earthquakes in between x-width/2. and x+width/2.
+            U = np.flatnonzero( (Das<=df[i]+width/2.) & (Das>=df[i]-width/2.) ).tolist()
+
+            # Get the corresponding earthquakes
+            xe = np.array([x[u] for u in U])
+            ye = np.array([y[u] for u in U])
+            ze = np.array([z[u] for u in U])
+            
+            # Fit a plane in these (define the fault plane)
+            # 1. Find the center of the plane
+            c = [xe.sum()/len(xe), ye.sum()/len(ye), ze.sum()/len(ze)]
+
+            # 2. Find the normal
+            sumxx = ((xe-c[0])*(xe-c[0])).sum()
+            sumyy = ((ye-c[1])*(ye-c[1])).sum()
+            sumzz = ((ze-c[2])*(ze-c[2])).sum()
+            sumxy = ((xe-c[0])*(ye-c[1])).sum()
+            sumxz = ((xe-c[0])*(ze-c[2])).sum()
+            sumyz = ((ye-c[1])*(ze-c[2])).sum()
+            M = np.array([ [sumxx, sumxy, sumxz],
+                           [sumxy, sumyy, sumyz],
+                           [sumxz, sumyz, sumzz] ])
+            w, v = np.linalg.eig(M)
+            u = w.argmin()
+            N = v[:,u]
+
+            # 3. Project earthquakes on that plane
+            vecs = np.array([[xe[u]-c[0],ye[u]-c[1], ze[u]-c[2]] for u in range(len(xe))]).T
+            distance = np.dot(N, vecs)
+            xn = xe - distance*N[0]
+            yn = ye - distance*N[1]
+            zn = ze - distance*N[2]
+
+            # check 
+            import matplotlib.pyplot as plt
+            fig = plt.figure(23)
+            ax3 = fig.add_subplot(111, projection='3d')
+            ax3.scatter3D(xe, ye, ze, s=5.0, color='k')
+            ax3.scatter3D(xn, yn, zn, s=2.0, color='r')
+            plt.show()
+
+            # Compute the distance between the earthquakes and this fault
+
+            # Compute the histogram of the distance
+
+            # Store the histograms in the xy file
+
+        # Close the file
 
         # All done
         return
