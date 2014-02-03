@@ -366,7 +366,7 @@ class planarfaultkinematic(planarfault):
         '''
         # Create a list of waveform dictionaries
         Wav = []
-        print self.G.keys()
+        print(self.G.keys())
         if include_G==True:
             assert self.G.has_key(data.name), 'G must be implemented for {}'.format(data.name)
             for r in self.G[data.name].keys():

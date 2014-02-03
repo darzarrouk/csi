@@ -145,7 +145,7 @@ class seismicplot(geodeticplot):
                 self.carte.plot(f[0], f[1], '-k')
 
         # Plot the surface trace
-        print fault.top
+        print(fault.top)
         if self.ref is 'utm':
             if fault.xf is None:
                 fault.trace2xy()
