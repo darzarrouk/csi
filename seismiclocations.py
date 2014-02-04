@@ -462,11 +462,11 @@ class seismiclocations(SourceInv):
         fout.write('# Along Strike Distance (km) | Distance to the fault plane (km) | Counts \n')
 
         # Get the projected earthquakes
-        x = self.Projected['{}'.format(fault.name)]['x']
-        y = self.Projected['{}'.format(fault.name)]['y']
-        lon = self.Projected['{}'.format(fault.name)]['lon']
-        lat = self.Projected['{}'.format(fault.name)]['lat']
-        z = self.Projected['{}'.format(fault.name)]['depth']
+        x = self.x
+        y = self.y
+        lon = self.lon
+        lat = self.lat
+        z = self.depth
         Das = self.Projected['{}'.format(fault.name)]['AlongStrikeDistance']
 
         # Get the fault trace
@@ -518,7 +518,7 @@ class seismiclocations(SourceInv):
                 zn = ze - distance*N[2]
 
                 # Compute the histogram of the distance
-                hist, edges = np.histogram(distance, bins=bins, range=(-1.0, 1.0), normed=normed)
+                hist, edges = np.histogram(distance, bins=bins, normed=normed, range=(-10.0, 10.0))
 
                 # check 
                 if plot:
