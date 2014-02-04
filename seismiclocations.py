@@ -83,10 +83,10 @@ class seismiclocations(SourceInv):
             da = np.int(tmp[2])
             hr = np.int(tmp[3])
             mi = np.int(tmp[4])
-            lat = np.float(tmp[6])
-            lon = np.float(tmp[7])
-            depth = np.float(tmp[8])
-            mag = np.float(tmp[imag])
+            lat = np.float64(tmp[6])
+            lon = np.float64(tmp[7])
+            depth = np.float64(tmp[8])
+            mag = np.float64(tmp[imag])
 
             # Create the time object
             d = dt.datetime(yr, mo, da, hr, mi)
@@ -444,7 +444,7 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-    def BuildHistogramsAlongFaultTrace(self, fault, filename, normed=True, width=10.0):
+    def BuildHistogramsAlongFaultTrace(self, fault, filename, normed=True, width=10.0, bins=50, plot=False):
         '''
         Builds a histogram of the earthquake distribution along the fault trace.
         width: Width of the averaging cell (distance along strike)
@@ -459,6 +459,7 @@ class seismiclocations(SourceInv):
 
         # Open the file
         fout = open(filename, 'w')
+        fout.write('# Along Strike Distance (km) | Distance to the fault plane (km) | Counts \n')
 
         # Get the projected earthquakes
         x = self.Projected['{}'.format(fault.name)]['x']
@@ -478,54 +479,73 @@ class seismiclocations(SourceInv):
         # On every point of the fault
         for i in range(len(xf)):
         
-            # Get the earthquakes in between x-width/2. and x+width/2.
+            # 1. Get the earthquakes in between x-width/2. and x+width/2.
             U = np.flatnonzero( (Das<=df[i]+width/2.) & (Das>=df[i]-width/2.) ).tolist()
 
-            # Get the corresponding earthquakes
+            # 2. Get the corresponding earthquakes
             xe = np.array([x[u] for u in U])
             ye = np.array([y[u] for u in U])
             ze = np.array([z[u] for u in U])
             
-            # Fit a plane in these (define the fault plane)
-            # 1. Find the center of the plane
-            c = [xe.sum()/len(xe), ye.sum()/len(ye), ze.sum()/len(ze)]
+            #import matplotlib.pyplot as plt
+            #dddd = np.sqrt( (xe-xe[0])**2 + (ye-ye[0])**2 + (ze-ze[0])**2 )
+            #plt.hist(dddd, bins=100.)
 
-            # 2. Find the normal
-            sumxx = ((xe-c[0])*(xe-c[0])).sum()
-            sumyy = ((ye-c[1])*(ye-c[1])).sum()
-            sumzz = ((ze-c[2])*(ze-c[2])).sum()
-            sumxy = ((xe-c[0])*(ye-c[1])).sum()
-            sumxz = ((xe-c[0])*(ze-c[2])).sum()
-            sumyz = ((ye-c[1])*(ze-c[2])).sum()
-            M = np.array([ [sumxx, sumxy, sumxz],
-                           [sumxy, sumyy, sumyz],
-                           [sumxz, sumyz, sumzz] ])
-            w, v = np.linalg.eig(M)
-            u = w.argmin()
-            N = v[:,u]
+            if xe.shape[0]>3: # Only do the thing if we have more than 3 earthquakes
 
-            # 3. Project earthquakes on that plane
-            vecs = np.array([[xe[u]-c[0],ye[u]-c[1], ze[u]-c[2]] for u in range(len(xe))]).T
-            distance = np.dot(N, vecs)
-            xn = xe - distance*N[0]
-            yn = ye - distance*N[1]
-            zn = ze - distance*N[2]
+                # 3. Find the center of the best fitting plane
+                c = [xe.sum()/len(xe), ye.sum()/len(ye), ze.sum()/len(ze)]
 
-            # check 
-            import matplotlib.pyplot as plt
-            fig = plt.figure(23)
-            ax3 = fig.add_subplot(111, projection='3d')
-            ax3.scatter3D(xe, ye, ze, s=5.0, color='k')
-            ax3.scatter3D(xn, yn, zn, s=2.0, color='r')
-            plt.show()
+                # 4. Find the normal of the best fitting plane
+                sumxx = ((xe-c[0])*(xe-c[0])).sum()
+                sumyy = ((ye-c[1])*(ye-c[1])).sum()
+                sumzz = ((ze-c[2])*(ze-c[2])).sum()
+                sumxy = ((xe-c[0])*(ye-c[1])).sum()
+                sumxz = ((xe-c[0])*(ze-c[2])).sum()
+                sumyz = ((ye-c[1])*(ze-c[2])).sum()
+                M = np.array([ [sumxx, sumxy, sumxz],
+                               [sumxy, sumyy, sumyz],
+                               [sumxz, sumyz, sumzz] ])
+                w, v = np.linalg.eig(M)
+                u = w.argmin()
+                N = v[:,u]
 
-            # Compute the distance between the earthquakes and this fault
+                # 5. Project earthquakes on that plane and get the distance between the EQ and the plane
+                vecs = np.array([[xe[u]-c[0],ye[u]-c[1], ze[u]-c[2]] for u in range(len(xe))]).T
+                distance = np.dot(N, vecs)
+                xn = xe - distance*N[0]
+                yn = ye - distance*N[1]
+                zn = ze - distance*N[2]
 
-            # Compute the histogram of the distance
+                # Compute the histogram of the distance
+                hist, edges = np.histogram(distance, bins=bins, range=(-1.0, 1.0), normed=normed)
+
+                # check 
+                if plot:
+                    import matplotlib.pyplot as plt
+                    fig = plt.figure(23)
+                    ax3 = fig.add_subplot(211, projection='3d')
+                    ax3.scatter3D(xe, ye, ze, s=5.0, color='k')
+                    ymin, ymax = ax3.get_ylim(); xmin, xmax = ax3.get_xlim()
+                    ax3.plot(xf, yf, '-r')
+                    ax3.scatter3D(xn, yn, zn, s=2.0, color='r')
+                    ax3.set_xlim([xmin, xmax]); ax3.set_ylim([ymin, ymax])
+                    axh = fig.add_subplot(212)
+                    axh.hist(distance, bins=bins, range=(-1.0, 1.0), normed=normed)
+                    plt.show()
+            
+            else:           # If less than 3 earthquakes
+                hist, edges = np.histogram([], bins=bins, range=(-1.0, 1.0), normed=normed) 
 
             # Store the histograms in the xy file
+            xi = df[i]
+            for k in range(len(hist)):
+                yi = (edges[k+1] - edges[k])/2. + edges[k]
+                zi = hist[k] 
+                fout.write('{} {} {} \n'.format(xi, yi, zi))
 
         # Close the file
+        fout.close()
 
         # All done
         return
