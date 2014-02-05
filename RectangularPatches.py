@@ -2831,7 +2831,7 @@ class RectangularPatches(SourceInv):
                     dist = Var[i,5]
                     x = Var[i,6]
                     y = Var[i,7]
-                    fout.write('{} {} {} {} {} {} {} \n'.format(lon, lat, ss, ds, ts, area, dist, x, y))
+                    fout.write('{} {} {} {} {} {} \n'.format(lon, lat, ss, ds, ts, dist, x, y))
 
         # Close file if done
         if filename is not None:

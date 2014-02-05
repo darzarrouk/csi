@@ -444,11 +444,14 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-    def BuildHistogramsAlongFaultTrace(self, fault, filename, normed=True, width=10.0, bins=50, plot=False):
+    def BuildHistogramsAlongFaultTrace(self, fault, filename, normed=True, width=10.0, bins=50, plot=False, planemode='verticalfault', Range=(-5.0, 5.0)):
         '''
         Builds a histogram of the earthquake distribution along the fault trace.
         width: Width of the averaging cell (distance along strike)
         '''
+
+        # Import needed stuffs
+        import scipy.stats as stats
 
         # Need a projected earthquake set
         assert hasattr(self, 'Projected'), 'No dictionary of Projected earthquakes is available'
@@ -458,8 +461,10 @@ class seismiclocations(SourceInv):
         assert hasattr(fault, 'xi'), 'No discretized fault trace is available'
 
         # Open the file
-        fout = open(filename, 'w')
-        fout.write('# Along Strike Distance (km) | Distance to the fault plane (km) | Counts \n')
+        frough = open('Rough_'+filename, 'w')
+        frough.write('# Along Strike Distance (km) | Distance to the fault plane (km) | Counts \n')
+        fsmooth = open(filename, 'w')
+        fsmooth.write('# Along Strike Distance (km) | Distance to the fault plane (km) | Counts \n')
 
         # Get the projected earthquakes
         x = self.x
@@ -468,6 +473,7 @@ class seismiclocations(SourceInv):
         lat = self.lat
         z = self.depth
         Das = self.Projected['{}'.format(fault.name)]['AlongStrikeDistance']
+        Dff = self.Projected['{}'.format(fault.name)]['DistanceToFault']
 
         # Get the fault trace
         xf = fault.xi
@@ -486,66 +492,149 @@ class seismiclocations(SourceInv):
             xe = np.array([x[u] for u in U])
             ye = np.array([y[u] for u in U])
             ze = np.array([z[u] for u in U])
+            de = np.array([Dff[u] for u in U])
             
-            #import matplotlib.pyplot as plt
-            #dddd = np.sqrt( (xe-xe[0])**2 + (ye-ye[0])**2 + (ze-ze[0])**2 )
-            #plt.hist(dddd, bins=100.)
+            if planemode in ('bestfit'):
 
-            if xe.shape[0]>3: # Only do the thing if we have more than 3 earthquakes
+                if xe.shape[0]>3: # Only do the thing if we have more than 3 earthquakes
+            
+                    # 3.1 Get those earthquakes in between -2.0 and 2.0 km from the fault trace
+                    #     A reasonable thing to do would be to code a L1-regression, but for some places it is a nigthmare
+                    M = np.flatnonzero( (de<=2.) & (de>=-2.) ).tolist()
+                    xee = np.array([xe[m] for m in M])    
+                    yee = np.array([ye[m] for m in M])    
+                    zee = np.array([ze[m] for m in M])    
 
-                # 3. Find the center of the best fitting plane
-                c = [xe.sum()/len(xe), ye.sum()/len(ye), ze.sum()/len(ze)]
+                    # 3.2 Find the center of the best fitting plane 
+                    c = [xee.sum()/len(xee), yee.sum()/len(yee), zee.sum()/len(zee)]
 
-                # 4. Find the normal of the best fitting plane
-                sumxx = ((xe-c[0])*(xe-c[0])).sum()
-                sumyy = ((ye-c[1])*(ye-c[1])).sum()
-                sumzz = ((ze-c[2])*(ze-c[2])).sum()
-                sumxy = ((xe-c[0])*(ye-c[1])).sum()
-                sumxz = ((xe-c[0])*(ze-c[2])).sum()
-                sumyz = ((ye-c[1])*(ze-c[2])).sum()
-                M = np.array([ [sumxx, sumxy, sumxz],
-                               [sumxy, sumyy, sumyz],
-                               [sumxz, sumyz, sumzz] ])
+                    # 3.3 Find the normal of the best fitting plane
+                    sumxx = ((xee-c[0])*(xee-c[0])).sum() 
+                    sumyy = ((yee-c[1])*(yee-c[1])).sum() 
+                    sumzz = ((zee-c[2])*(zee-c[2])).sum() 
+                    sumxy = ((xee-c[0])*(yee-c[1])).sum() 
+                    sumxz = ((xee-c[0])*(zee-c[2])).sum() 
+                    sumyz = ((yee-c[1])*(zee-c[2])).sum() 
+                    M = np.array([ [sumxx, sumxy, sumxz],
+                                   [sumxy, sumyy, sumyz],
+                                   [sumxz, sumyz, sumzz] ])
+                    w, v = np.linalg.eig(M)
+                    u = w.argmin()
+                    N = v[:,u]
+                    
+                    # 3.4 If the normal points toward the west, rotate it 180 deg
+                    if N[0]<0.0:
+                        N[0] *= -1.0
+                        N[1] *= -1.0
+                        N[2] *= -1.0
+
+                    # 3.5 Project earthquakes on that plane and get the distance between the EQ and the plane
+                    vecs = np.array([[xe[u]-c[0],ye[u]-c[1], ze[u]-c[2]] for u in range(len(xe))]).T
+                    distance = np.dot(N, vecs)
+                    xn = xe - distance*N[0]
+                    yn = ye - distance*N[1]
+                    zn = ze - distance*N[2]
+
+                else:
+                    distance = []
+                    xn = []
+                    yn = []
+                    zn = []
+
+            elif planemode in ('verticalfault'):
+
+                # 3.1 Get the fault points 
+                F = np.flatnonzero( (df<=df[i]+10.) & (df>=df[i]-10.) ).tolist()
+                xif = np.array([xf[u] for u in F])
+                yif = np.array([yf[u] for u in F])
+
+                # 3.2 Get the center of the fault points
+                c = [xif.sum()/len(xif), yif.sum()/len(yif), ze.mean()]
+                 
+                # 3.3 Get the normal to the fault
+                sumxx = ((xif-c[0])*(xif-c[0])).sum() 
+                sumyy = ((yif-c[1])*(yif-c[1])).sum()
+                sumxy = ((xif-c[0])*(yif-c[1])).sum()
+                M = np.array([ [sumxx, sumxy],
+                               [sumxy, sumyy] ])
                 w, v = np.linalg.eig(M)
                 u = w.argmin()
-                N = v[:,u]
+                N = np.zeros(3,)
+                N[:2] = v[:,u]
 
-                # 5. Project earthquakes on that plane and get the distance between the EQ and the plane
+                # 3.4 Get the projected earthquakes
+                xn = [self.Projected['{}'.format(fault.name)]['x'][u] for u in U]
+                yn = [self.Projected['{}'.format(fault.name)]['y'][u] for u in U]
+                zn = [self.Projected['{}'.format(fault.name)]['depth'][u] for u in U]
+
+                # 3.5 If the normal points toward the west, rotate it 180 deg
+                if N[0]<0.0:
+                    N[0] *= -1.0
+                    N[1] *= -1.0
+                    N[2] *= -1.0
+
+                # 3.6 Get the distance to the fault
                 vecs = np.array([[xe[u]-c[0],ye[u]-c[1], ze[u]-c[2]] for u in range(len(xe))]).T
-                distance = np.dot(N, vecs)
-                xn = xe - distance*N[0]
-                yn = ye - distance*N[1]
-                zn = ze - distance*N[2]
+                if vecs.shape[0]>0:
+                    distance = np.dot(N, vecs)
+                else:
+                    distance = []
 
-                # Compute the histogram of the distance
-                hist, edges = np.histogram(distance, bins=bins, normed=normed, range=(-10.0, 10.0))
+            # 4. Compute the histogram of the distance
+            if len(distance)>10:
+                hist, edges = np.histogram(distance, bins=bins, normed=normed, range=Range)
+            else:
+                hist, edges = np.histogram(distance, bins=bins, normed=False, range=Range)
 
-                # check 
-                if plot:
-                    import matplotlib.pyplot as plt
-                    fig = plt.figure(23)
-                    ax3 = fig.add_subplot(211, projection='3d')
-                    ax3.scatter3D(xe, ye, ze, s=5.0, color='k')
-                    ymin, ymax = ax3.get_ylim(); xmin, xmax = ax3.get_xlim()
-                    ax3.plot(xf, yf, '-r')
-                    ax3.scatter3D(xn, yn, zn, s=2.0, color='r')
-                    ax3.set_xlim([xmin, xmax]); ax3.set_ylim([ymin, ymax])
-                    axh = fig.add_subplot(212)
-                    axh.hist(distance, bins=bins, range=(-1.0, 1.0), normed=normed)
-                    plt.show()
-            
-            else:           # If less than 3 earthquakes
-                hist, edges = np.histogram([], bins=bins, range=(-1.0, 1.0), normed=normed) 
-
-            # Store the histograms in the xy file
+            # 5. Store the rough histograms in the xy file
             xi = df[i]
             for k in range(len(hist)):
                 yi = (edges[k+1] - edges[k])/2. + edges[k]
                 zi = hist[k] 
-                fout.write('{} {} {} \n'.format(xi, yi, zi))
+                frough.write('{} {} {} \n'.format(xi, yi, zi))
+
+            # 5. Fit the histogram with a Gaussian and center it
+            if len(distance)>10:
+                Mu, Sigma = stats.norm.fit(distance)
+                Sdis = distance - Mu
+                hist, edges = np.histogram(Sdis, bins=bins, normed=normed, range=Range)
+                yis = (edges[1:] - edges[:-1])/2. + edges[:-1]
+                wis = stats.norm.pdf(yis, Mu, Sigma)
+                # Write the smoothed and entered histograms in the file
+                for k in range(len(hist)):
+                    yi = yis[k]
+                    zi = hist[k]
+                    wi = wis[k]
+                    fsmooth.write('{} {} {} {} \n'.format(xi, yi, zi, wi))
+            else:
+                hist, edges = np.histogram(distance, bins=bins, normed=False, range=Range)
+
+            # check 
+            if plot and df[i]>107. and df[i]<108.:
+                import matplotlib.pyplot as plt
+                fig = plt.figure(23)
+                ax3 = fig.add_subplot(211, projection='3d')
+                ax3.scatter3D(xe, ye, ze, s=5.0, color='k')
+                ymin, ymax = ax3.get_ylim(); xmin, xmax = ax3.get_xlim()
+                ax3.plot(xf, yf, '-r')
+                ax3.scatter3D(xn, yn, zn, s=2.0, color='r')
+                ax3.plot([c[0], c[0]+N[0]], [c[1], c[1]+N[1]], [c[2], c[2]+N[2]], '-r')
+                ax3.set_xlim([xmin, xmax]); ax3.set_ylim([ymin, ymax])
+                axh = fig.add_subplot(212)
+                T = axh.hist(distance, bins=bins, normed=True, range=Range)
+                edge = T[1]
+                hist = T[0]
+                cent = (edge[1:] - edge[:-1])/2. + edge[:-1]
+                aa = np.arange(cent[0], cent[-1], 0.1)
+                g = np.zeros((hist.size,1))
+                g[:,0] = stats.norm.pdf(cent, Mu, Sigma)
+                A, res, rank, s = np.linalg.lstsq(g, hist)
+                axh.plot(aa, A*stats.norm.pdf(aa, Mu, Sigma), '-r')
+                plt.show()
 
         # Close the file
-        fout.close()
+        frough.close()
+        fsmooth.close()
 
         # All done
         return
