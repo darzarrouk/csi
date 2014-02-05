@@ -2820,7 +2820,6 @@ class RectangularPatches(SourceInv):
             # If filename, write to it
             if filename is not None:
                 fout.write('> # Depth = {} \n'.format(d))
-                fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) | x, y \n')
                 Var = self.AlongStrike['Depth {}'.format(d)]
                 for i in range(Var.shape[0]):
                     lon = Var[i,0]
