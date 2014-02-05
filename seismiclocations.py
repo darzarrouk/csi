@@ -444,6 +444,49 @@ class seismiclocations(SourceInv):
         # All done
         return
 
+    def MapHistogram(self, binwidth=1.0, plot=False, normed=True):
+        '''
+        Builds a 2D histogram of the earthquakes locations.
+        binwidth: width of the bins used for histogram.
+        '''
+
+        # Build x- and y-bins
+        xbins = np.arange(self.x.min(), self.x.max(), binwidth)
+        ybins = np.arange(self.y.min(), self.y.max(), binwidth)
+
+        # Build the histogram
+        hist, xedges, yedges = np.histogram2d(self.x, self.y, bins=[xbins, ybins], normed=normed)
+
+        # Store the histogram
+        self.histogram = {}
+        self.histogram['xedges'] = xedges
+        self.histogram['yedges'] = yedges
+        self.histogram['values'] = hist
+        
+        # Store (x,y) locations
+        x = (xedges[1:] - xedges[:-1])/2. + xedges[:-1]
+        y = (yedges[1:] - yedges[:-1])/2. + yedges[:-1]
+        x, y = np.meshgrid(x,y)
+        x = x.flatten()
+        y = y.flatten()
+        self.histogram['x'] = x
+        self.histogram['y'] = y
+
+        # Pass it in lon lat
+        lon, lat = self.xy2ll(x,y)
+        self.histogram['lon'] = lon
+        self.histogram['lat'] = lat
+
+        # Plot
+        if plot:
+            plt.figure()
+            plt.imshow(hist, interpolation='nearest', extent=[lon.min(), lon.max(), lat.min(), lat.max()])
+            plt.colorbar(orientation='horizontal', shrink=0.6)
+            plt.show()
+
+        # All done
+        return
+
     def BuildHistogramsAlongFaultTrace(self, fault, filename, normed=True, width=10.0, bins=50, plot=False, planemode='verticalfault', Range=(-5.0, 5.0)):
         '''
         Builds a histogram of the earthquake distribution along the fault trace.
