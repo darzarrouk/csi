@@ -8,6 +8,7 @@ Written by R. Jolivet, Z. Duputel and Bryan Riel November 2013
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
+import matplotlib.path as path
 import scipy.interpolate as sciint
 from scipy.linalg import block_diag
 import copy
@@ -927,6 +928,8 @@ class RectangularPatches(SourceInv):
         del self.patch[patch]
         del self.patchll[patch]
         self.slip = np.delete(self.slip, patch, axis=0)
+        if hasattr(self, 'index_parameter'):
+            self.index_parameter = np.delete(self.index_parameter, patch, axis=0)
 
         # All done
         return
@@ -3011,46 +3014,101 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
-    def MapHistogram(self, binwidth=1.0, plot=False, normed=True):
+    def getPatchesThatAreUnder(self, xf, yf, ref='utm', tolerance=0.5):
         '''
-        Builds a 2D histogram of the earthquakes locations.
-        binwidth: width of the bins used for histogram.
+        For a list of positions, returns the patches that are directly underneath.
+        Only works if you have a vertical fault.
         '''
 
-        # Build x- and y-bins
-        xbins = np.arange(self.x.min(), self.x.max(), binwidth)
-        ybins = np.arange(self.y.min(), self.y.max(), binwidth)
+        # Check reference
+        if ref in ('lonlat'):
+            xf, yf = self.ll2xy(xf, yf)
 
-        # Build the histogram
-        hist, xedges, yedges = np.histogram2d(self.x, self.y, bins=[xbins, ybins], normed=normed)
+        # Make an array
+        points = np.vstack((xf, yf)).T
 
-        # Store the histogram
-        self.histogram = {}
-        self.histogram['xedges'] = xedges
-        self.histogram['yedges'] = yedges
-        self.histogram['values'] = hist
+        # Create a list of empty lists (one per point you want to test)
+        List = [[] for u in range(len(xf))]
+        sscheck = False
+        dscheck = False
+        tscheck = False
+        if hasattr(self, 'index_parameter'):
+            if self.index_parameter[0][0]<9999999:
+                sscheck = True
+                SSList = [[] for u in range(len(xf))]
+            if self.index_parameter[0][1]<9999999:
+                dscheck = True
+                DSList = [[] for u in range(len(xf))]
+            if self.index_parameter[0][2]<9999999:
+                tscheck = True
+                TSList = [[] for u in range(len(xf))]
 
-        # Store (x,y) locations
-        x = (xedges[1:] - xedges[:-1])/2. + xedges[:-1]
-        y = (yedges[1:] - yedges[:-1])/2. + yedges[:-1]
-        self.histogram['x'] = x
-        self.histogram['y'] = y
+        # Iterate over patches
+        for p in self.patch:
 
-        # Pass it in lon lat
-        lon, lat = self.xy2lonlat(x,y)
-        self.histogram['lon'] = lon
-        self.histogram['lat'] = lat
+            # Get the index
+            i = self.getindex(p)
 
-        # Plot
-        if plot:
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.imshow(hist, interpolation='nearest', extent=[lon.min(), lon.max(), lat.min(), lat.max()])
-            plt.colorbar(orientation='horizontal', shrink=0.6)
-            plt.show()
+            # Get the patch geometry
+            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)
+
+            # make a vector Director and a Normal
+            D = np.array([np.sin(strike), np.cos(strike)])
+            N = np.array([np.sin(strike+np.pi/2.), np.cos(strike+np.pi/2.)])
+
+            # Center
+            center = np.array([xc, yc])
+
+            # Build path
+            p1 = center + D*length/2. + D*tolerance - N*tolerance
+            p2 = center + D*length/2. + D*tolerance + N*tolerance
+            p3 = center - D*length/2. - D*tolerance + N*tolerance
+            p4 = center - D*length/2. - D*tolerance - N*tolerance
+            pp = path.Path([p1, p2, p3, p4], closed=False)
+
+            # Yes or no?
+            check = pp.contains_points(points)
+
+            # Append the index of the patch in the corresponding list in List
+            for u in np.flatnonzero(check).tolist():
+                List[u].append(i)
+                if sscheck:
+                    SSList[u].append(self.index_parameter[i][0])
+                if dscheck:
+                    DSList[u].append(self.index_parameter[i][1])
+                if tscheck:
+                    TSList[u].append(self.index_parameter[i][2])
+
+ #           if i==252:
+ #               plt.figure()
+ #               plt.plot(xc, yc, '+k', markersize=20.)
+ #               plt.plot([xc, xc+D[0]], [yc, yc+D[1]], '-b')
+ #               plt.plot(xf, yf, '.r')
+ #               plt.plot(xf[check], yf[check], '.b')
+ #               plt.plot([p[i][0] for i in range(4)], [p[i][1] for i in range(4)], '.g')
+ #               plt.plot(p1[0], p1[1], '+r')
+ #               plt.plot(p2[0], p2[1], '+g')
+ #               plt.plot(p3[0], p3[1], '+b')
+ #               plt.plot(p4[0], p4[1], '+k')
+ #               plt.show()
 
         # all done
-        return
+        if sscheck and not dscheck and not tscheck:
+            return List, SSList
+        elif sscheck and dscheck and not tscheck:
+            return List, SSList, DSList
+        elif sscheck and dscheck and tscheck:
+            return List, SSList, DSList, TSList
+        elif not sscheck and dscheck and not tscheck:
+            return List, DSList
+        elif not sscheck and not dscheck and tscheck:
+            return List, TSList
+        elif not sscheck and dscheck and tscheck:
+            return List, DSList, TSList
+        elif sscheck and not dscheck and tscheck:
+            return List, SSList, TSList
+        else:
+            return List
 
     def mapFault2Fault(self, Map, fault):
         '''
