@@ -126,7 +126,8 @@ def displacement(sx, sy, sz, vertices, ss, ds, ts, nu=0.25):
     uy[underIdx] -= slipVec[1]
     uz[underIdx] -= slipVec[2]
 
-    return ux, uy, uz
+    # Make sure to change sign on the vertical displacements!
+    return ux, uy, -uz
 
 
 def LinePlaneIntersect(sx, sy, sz, p1, p2, p3):

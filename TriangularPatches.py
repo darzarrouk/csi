@@ -37,6 +37,9 @@ class TriangularPatches(SourceInv):
         print ("---------------------------------")
         print ("Initializing fault {}".format(self.name))
 
+        # Specify the type of patch
+        self.patchType = 'triangle'
+
         # Set the reference point in the x,y domain (not implemented)
         self.xref = 0.0
         self.yref = 0.0
@@ -69,6 +72,9 @@ class TriangularPatches(SourceInv):
         # Create structure to store the GFs and the assembled d vector
         self.Gassembled = None
         self.dassembled = None
+
+        # Adjacency map for the patches
+        self.adjacencyMap = None
 
         # All done
         return
@@ -320,11 +326,11 @@ class TriangularPatches(SourceInv):
         self.patch = []
         self.patchll = []
 
-        # Factor to incorporate optional negative depths
+        # Factor to correct input negative depths (we want depths to be positive)
         if neg_depth:
-            negFactor = 1.0
-        else:
             negFactor = -1.0
+        else:
+            negFactor = 1.0
         
         # Get the geographic vertices and connectivities from the Gocad file
         with open(filename, 'r') as fid:
@@ -340,6 +346,7 @@ class TriangularPatches(SourceInv):
             fid.close()
             vertices = np.array(vertices, dtype=float)
             faces = np.array(faces, dtype=int) - 1
+        self.gocad_vertices_ll = vertices
 
         # Resample vertices to UTM
         vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
@@ -700,7 +707,7 @@ class TriangularPatches(SourceInv):
         return
 
 
-    def getpatchgeometry(self, patch, center=False):
+    def getpatchgeometry(self, patch, center=False, retNormal=False):
         '''
         Returns the patch geometry as needed for triangleDisp.
         Args:
@@ -721,6 +728,14 @@ class TriangularPatches(SourceInv):
         # Get the center of the patch
         x1, x2, x3 = self.getcenter(u)
 
+        # Get the vertices of the patch
+        verts = copy.deepcopy(self.patch[u])
+        p1, p2, p3 = [np.array(lst) for lst in verts]
+
+        # Get a dummy width and height
+        width = np.linalg.norm(p1 - p2)
+        length = np.linalg.norm(p3 - p1)        
+
         # Get the patch normal
         normal = np.cross(p2 - p1, p3 - p1)
         normal /= np.linalg.norm(normal)
@@ -729,14 +744,20 @@ class TriangularPatches(SourceInv):
             normal *= -1.0
             p2, p3 = p3, p2
 
-        # Get the strike vector
+        # Get the strike vector and strike angle
         angle = np.arctan2(normal[1], normal[0])
         strikeVec = np.array([-np.sin(angle), np.cos(angle), 0.0])
+        strike = np.arctan2(strikeVec[1], strikeVec[0])
+        strike = 0.5 * np.pi - strike
 
         # Set the dip vector
-        dipVec = np.cross(normal, strikeVec)
+        dipVec = -np.cross(normal, strikeVec)
+        dip = np.arctan(dipVec[2] / np.sqrt(dipVec[0]**2 + dipVec[1]**2))
 
-        return x1, x2, x3, normal, strikeVec, dipVec
+        if retNormal:
+            return x1, x2, x3, width, length, strike, dip, normal
+        else:
+            return x1, x2, x3, width, length, strike, dip
 
 
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
@@ -1692,6 +1713,132 @@ class TriangularPatches(SourceInv):
         return
 
 
+    def buildAdjacencyMap(self, verbose=True):
+        """
+        For each triangle, find the indices of the adjacent (edgewise) triangles.
+        """
+        if verbose:
+            print("------------------------------------------")
+            print("------------------------------------------")
+            print("Building the adjacency map for all patches")
+
+        self.adjacencyMap = []
+
+        # Cache the vertices and faces arrays
+        vertices, faces = self.gocad_vertices, self.gocad_faces
+
+        # First find adjacent triangles for all triangles
+        npatch = len(self.patch)
+        for i in range(npatch):
+            
+            sys.stdout.write('%i / %i\r' % (i, npatch))
+            sys.stdout.flush()
+
+            # Indices of Vertices of current patch
+            refVertInds = faces[i,:]
+
+            # Find triangles that share an edge
+            adjacents = []
+            for j in range(npatch):
+                if j == i:
+                    continue
+                sharedVertices = np.intersect1d(refVertInds, faces[j,:])
+                numSharedVertices = sharedVertices.size
+                if numSharedVertices < 2:
+                    continue
+                adjacents.append(j)
+                if len(adjacents) == 3:
+                    break
+
+            self.adjacencyMap.append(adjacents)
+
+        print('\n')
+        return
+
+
+    def buildLaplacian(self, extra_params=None, verbose=True):
+        """
+        Build a discrete Laplacian smoothing matrix.
+        """
+        if verbose:
+            print("------------------------------------------")
+            print("------------------------------------------")
+            print("Building the Laplacian matrix")
+
+        if self.adjacencyMap is None or len(self.adjacencyMap) != len(self.patch):
+            assert False, 'Must run self.buildAdjacencyMap() first'
+
+        # Pre-compute patch centers
+        centers = self.getcenters()
+
+        # Cache the vertices and faces arrays
+        vertices, faces = self.gocad_vertices, self.gocad_faces
+
+        # Loop over the triangles
+        npatch = len(self.patch)
+        D = np.zeros((npatch,npatch))
+        for i in range(npatch):
+            
+            sys.stdout.write('%i / %i\r' % (i, npatch))
+            sys.stdout.flush()
+
+            # Center for current patch
+            refCenter = np.array(centers[i])
+            
+            # Compute Laplacian using adjacent triangles
+            hvals = []
+            adjacents = self.adjacencyMap[i]
+            for index in adjacents:
+                pcenter = np.array(centers[index])
+                dist = np.linalg.norm(pcenter - refCenter)
+                hvals.append(dist)
+            if len(hvals) == 3:
+                h12, h13, h14 = hvals
+                D[i,adjacents[0]] = h13*h14
+                D[i,adjacents[1]] = h12*h14
+                D[i,adjacents[2]] = h12*h13
+                sumProd = h13*h14 + h12*h14 + h12*h13
+            elif len(hvals) == 2:
+                h12, h13 = hvals
+                D[i,adjacents[0]] = h13
+                D[i,adjacents[1]] = h12
+                sumProd = h12 + h13
+            D[i,i] = -sumProd
+
+
+            ## Find adjacent triangles
+            #cnt = 0
+            #for j in range(npatch):
+            #    if j == i:
+            #        continue
+            #    sharedVertices = np.intersect1d(refVertInds, faces[j,:])
+            #    numSharedVertices = sharedVertices.size
+            #    if numSharedVertices < 2:
+            #        continue
+
+            #    # Find midpoint of edge shared by two triangles
+            #    p1 = vertices[sharedVertices[0],:]
+            #    p2 = vertices[sharedVertices[1],:]
+            #    mid = 0.5 * (p1 + p2)
+            #    edgeLength = np.linalg.norm(p1 - p2)
+
+            #    # Compute length of path joining the centers through midpoint
+            #    patchCenter = centers[j]
+            #    dist = np.linalg.norm(patchCenter - mid) + np.linalg.norm(refCenter - mid)
+
+            #    # Fill in corresponding entries in Laplacian matrix
+            #    weight = edgeLength / (dist * refArea)
+            #    #D[i,i] -= weight
+            #    D[i,j] += weight
+
+            #    cnt += 1
+            #    if cnt == 3:
+            #        break
+
+        print('\n')
+        return D
+
+
     def buildCmGaussian(self, sigma, extra_params=None):
         '''
         Builds a diagonal Cm with sigma values on the diagonal.
@@ -2020,7 +2167,7 @@ class TriangularPatches(SourceInv):
         # loop over the patches
         for p in self.patch:
             x, y, z = self.getcenter(p)
-            center.append([x, y, z])
+            center.append(np.array([x, y, z]))
 
         # All done
         return center
@@ -2714,8 +2861,9 @@ class TriangularPatches(SourceInv):
 
         # Make a new mesh with the scalar data applied to patches
         mesh2 = mlab.pipeline.set_active_attribute(mesh, cell_scalars='Cell data')
-        mlab.pipeline.surface(mesh2, colormap='spectral')
+        surface = mlab.pipeline.surface(mesh2, colormap=colormap)
 
+        mlab.colorbar(surface)
         mlab.show()
 
         return

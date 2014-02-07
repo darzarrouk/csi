@@ -117,17 +117,27 @@ class faultpostproc(object):
             * p             : Index of the desired patch.
         '''
 
-        # Get the geometry of the patch
-        x, y, z, width, length, strike, dip = self.fault.getpatchgeometry(p, center=True)
+        if self.fault.patchType == 'triangle':
+            normal = self.fault.getpatchgeometry(p, retNormal=True)[-1]
+            return normal
 
-        # Normal
-        n1 = -1.0*np.sin(dip)*np.sin(strike)
-        n2 = np.sin(dip)*np.cos(strike)
-        n3 = -1.0*np.cos(dip)
-        N = np.sqrt(n1**2+ n2**2 + n3**2)
+        elif self.fault.patchType == 'rectangle':
 
-        # All done
-        return np.array([n1/N, n2/N, n3/N])
+            # Get the geometry of the patch
+            x, y, z, width, length, strike, dip = self.fault.getpatchgeometry(p, center=True)
+
+            # Normal
+            n1 = -1.0*np.sin(dip)*np.sin(strike)
+            n2 = np.sin(dip)*np.cos(strike)
+            n3 = -1.0*np.cos(dip)
+            N = np.sqrt(n1**2+ n2**2 + n3**2)
+
+            # All done
+            return np.array([n1/N, n2/N, n3/N])
+
+        else:
+            assert False, 'unsupported patch type'
+
 
     def slipVector(self, p):
         '''

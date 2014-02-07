@@ -40,6 +40,9 @@ class RectangularPatches(SourceInv):
         print ("---------------------------------")
         print ("Initializing fault {}".format(self.name))
 
+        # Specify the type of patch
+        self.patchType = 'rectangle'
+
         # Set the reference point in the x,y domain (not implemented)
         self.xref = 0.0
         self.yref = 0.0
