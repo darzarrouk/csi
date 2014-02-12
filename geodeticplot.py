@@ -48,13 +48,16 @@ class geodeticplot(object):
         self.fig2 = fig2
         self.ref  = ref
 
-    def show(self, mapaxis='equal'):
+    def show(self, mapaxis='equal', triDaxis='auto'):
         ''' 
         Show to screen 
         '''
 
         # Change axis of the map
         self.carte.axis(mapaxis)
+
+        # Change the axis of the 3d projection
+        self.faille.axis(triDaxis)
 
         # Show
         plt.show()

@@ -17,10 +17,7 @@ import os
 
 # Personals
 from .SourceInv import SourceInv
-major, minor, micro, release, serial = sys.version_info
-if major==2:
-    import okada4py as ok
-
+from .okadafull import okadafull
 
 class RectangularPatches(SourceInv):
     
@@ -1002,7 +999,7 @@ class RectangularPatches(SourceInv):
 
     def getpatchgeometry(self, patch, center=False):
         '''
-        Returns the patch geometry as needed for okada85.
+        Returns the patch geometry as needed for okada92.
         Args:
             * patch         : index of the wanted patch or patch;
             * center        : if true, returns the coordinates of the center of the patch. 
@@ -1106,35 +1103,30 @@ class RectangularPatches(SourceInv):
             SLP = slip
 
         # Get patch geometry
-        x1, x2, x3, width, length, strike, dip = self.getpatchgeometry(patch)
+        x1, x2, x3, width, length, strike, dip = self.getpatchgeometry(patch, center=True)
 
         # Get data position
         x = data.x
         y = data.y
+        z = np.zeros(x.shape)   # Data are the surface
 
-        # Allocate displacement lists
-        ss_dis = []
-        ds_dis = []
-        op_dis = []
+        # Run it for the strike slip component
+        if (SLP[0]!=0.0):
+            ss_dis = okadafull.displacement(x, y, z, x1, x2, x3, width, length, strike, dip, SLP[0], 0.0, 0.0)
+        else:
+            ss_dis = np.zeros((len(x1), 3))
 
-        for i in range(len(x)):
+        # Run it for the dip slip component
+        if (SLP[1]!=0.0):
+            ds_dis = okadafull.displacement(x, y, z, x1, x2, x3, width, length, strike, dip, 0.0, SLP[1], 0.0)
+        else:
+            ds_dis = np.zeros((len(x1), 3))
 
-            # Run okada for strike slip
-            ss = ok.displacement(x[i], y[i], dip, x1, x2, x3, length, width, strike, 1)
-            ss_dis.append(ss*SLP[0])
-
-            # Run okada for dip slip
-            ds = ok.displacement(x[i], y[i], dip, x1, x2, x3, length, width, strike, 2)
-            ds_dis.append(ds*SLP[1])
-
-            # Run okada for opening
-            op = ok.displacement(x[i], y[i], dip, x1, x2, x3, length, width, strike, 3)
-            op_dis.append(op*SLP[2])
-
-        # Make arrays
-        ss_dis = np.array(ss_dis)
-        ds_dis = np.array(ds_dis)
-        op_dis = np.array(op_dis)
+        # Run it for the tensile component
+        if (SLP[2]!=0.0):
+            ts_dis = okadafull.displacement(x, y, z, x1, x2, x3, width, length, strike, dip, 0.0, 0.0, SLP[2])
+        else:
+            ts_dis = np.zeros((len(x1), 3))
 
         # All done
         return ss_dis, ds_dis, op_dis
