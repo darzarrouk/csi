@@ -9,8 +9,7 @@ import numpy as np
 import sys
 
 # Personals
-import okada4py as okada
-
+import okada4py as ok92
 
 #--------------------------------------------------
 # Check inputs
@@ -26,13 +25,15 @@ def ArraySizes(*args):
 
     # Check class
     for arg in args:
-        if arg.__class__ in (float, list, tuple):
+        if arg.__class__ in (list, tuple):
             arg = np.array(arg)
+        elif arg.__class__ in (float, np.float64, int):
+            arg = np.array([arg])
         Arrays.append(arg)
         Sizes.append(arg.shape)
-
+    
     # Assert sizes
-    assert (np.unique(Sizes)==(1,1)), 'The {} provided arrays are not the same size'.format(len(args))
+    assert (len(np.unique(Sizes))==1), 'The {} provided arrays are not the same size'.format(len(args))
 
     # All done
     return Arrays
@@ -52,8 +53,12 @@ def displacement(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts,
     # Nu does matter here, and it is by default 0.25
 
     # Check 
-    xs, ys, zs = checkStationSizes(xs, ys, zs)
-    xc, yc, zc, width, length, strike, dip, ss, ds, ts = checkDislocationSizes(xc, yc, zc, width, length, strike, dip, ss, ds, ts)
+    xs, ys, zs = ArraySizes(xs, ys, zs)
+    xc, yc, zc, width, length, strike, dip, ss, ds, ts = ArraySizes(xc, yc, zc, width, length, strike, dip, ss, ds, ts)
+
+    # Normally, StaticInv does angles in Radians
+    dip = dip*180./np.pi
+    strike = strike*180./np.pi
 
     # Run okada
     u, d, s, flag, flag2 = ok92.okada92(xs, ys, zs, xc, yc, zc, length, width, dip, strike, ss, ds, ts, mu, nu)
@@ -85,8 +90,12 @@ def strain(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, nu=0.
     # Nu does matter here, and it is by default 0.25
 
     # Check 
-    xs, ys, zs = checkStationSizes(xs, ys, zs)
-    xc, yc, zc, width, length, strike, dip, ss, ds, ts = checkDislocationSizes(xc, yc, zc, width, length, strike, dip, ss, ds, ts)
+    xs, ys, zs = ArraySizes(xs, ys, zs)
+    xc, yc, zc, width, length, strike, dip, ss, ds, ts = ArraySizes(xc, yc, zc, width, length, strike, dip, ss, ds, ts)
+
+    # Normally, StaticInv does angles in Radians
+    dip = dip*180./np.pi
+    strike = strike*180./np.pi
 
     # Run okada
     u, d, s, flag, flag2 = ok92.okada92(xs, ys, zs, xc, yc, zc, length, width, dip, strike, ss, ds, ts, mu, nu)
@@ -128,8 +137,12 @@ def stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30
     # Mu and Nu do matter here, there is default values, but feel free to change...
 
     # Check 
-    xs, ys, zs = checkStationSizes(xs, ys, zs)
-    xc, yc, zc, width, length, strike, dip, ss, ds, ts = checkDislocationSizes(xc, yc, zc, width, length, strike, dip, ss, ds, ts)
+    xs, ys, zs = ArraySizes(xs, ys, zs)
+    xc, yc, zc, width, length, strike, dip, ss, ds, ts = ArraySizes(xc, yc, zc, width, length, strike, dip, ss, ds, ts)
+
+    # Normally, StaticInv does angles in Radians
+    dip = dip*180./np.pi
+    strike = strike*180./np.pi
 
     # Run okada
     u, d, s, flag, flag2 = ok92.okada92(xs, ys, zs, xc, yc, zc, length, width, dip, strike, ss, ds, ts, mu, nu)
@@ -156,7 +169,6 @@ def stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30
         Stress[2,1,:] = s[:,4]  #Syz
         return Stress
          
-
 
 
 

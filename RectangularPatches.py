@@ -17,7 +17,7 @@ import os
 
 # Personals
 from .SourceInv import SourceInv
-from .okadafull import okadafull
+import okadafull
 
 class RectangularPatches(SourceInv):
     
@@ -927,6 +927,7 @@ class RectangularPatches(SourceInv):
         # Remove the patch
         del self.patch[patch]
         del self.patchll[patch]
+        del self.equivpatch[patch]
         self.slip = np.delete(self.slip, patch, axis=0)
         if hasattr(self, 'index_parameter'):
             self.index_parameter = np.delete(self.index_parameter, patch, axis=0)
@@ -1114,22 +1115,22 @@ class RectangularPatches(SourceInv):
         if (SLP[0]!=0.0):
             ss_dis = okadafull.displacement(x, y, z, x1, x2, x3, width, length, strike, dip, SLP[0], 0.0, 0.0)
         else:
-            ss_dis = np.zeros((len(x1), 3))
+            ss_dis = np.zeros((len(x), 3))
 
         # Run it for the dip slip component
         if (SLP[1]!=0.0):
             ds_dis = okadafull.displacement(x, y, z, x1, x2, x3, width, length, strike, dip, 0.0, SLP[1], 0.0)
         else:
-            ds_dis = np.zeros((len(x1), 3))
+            ds_dis = np.zeros((len(x), 3))
 
         # Run it for the tensile component
         if (SLP[2]!=0.0):
             ts_dis = okadafull.displacement(x, y, z, x1, x2, x3, width, length, strike, dip, 0.0, 0.0, SLP[2])
         else:
-            ts_dis = np.zeros((len(x1), 3))
+            ts_dis = np.zeros((len(x), 3))
 
         # All done
-        return ss_dis, ds_dis, op_dis
+        return ss_dis, ds_dis, ts_dis
 
     def buildGFs(self, data, vertical=True, slipdir='sd', verbose=True):
         '''
@@ -2876,7 +2877,7 @@ class RectangularPatches(SourceInv):
         # All done
         return vect
 
-    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False):
+    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False, show=True, axesscaling=True):
         '''
         Plot the available elements of the fault.
         
@@ -2889,7 +2890,7 @@ class RectangularPatches(SourceInv):
         import matplotlib.pyplot as plt
         from mpl_toolkits.mplot3d import Axes3D
         fig = plt.figure(figure)
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection='3d', aspect='equal')
 
         # Set the axes
         if ref is 'utm':
@@ -2928,6 +2929,12 @@ class RectangularPatches(SourceInv):
         if value_to_plot=='total':
             self.computetotalslip()
             plotval = self.totalslip
+        elif value_to_plot=='strikeslip':
+            plotval = self.slip[:,0]
+        elif value_to_plot=='dipslip':
+            plotval = self.slip[:,1]
+        elif value_to_plot=='tensile':
+            plotval = self.slip[:,2]
         elif value_to_plot=='index':
             plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
 
@@ -2940,18 +2947,19 @@ class RectangularPatches(SourceInv):
             import matplotlib.cm as cmx
             
             # set z axis
-            ax.set_zlim3d([-1.0*(self.depth+5), 0])
-            zticks = []
-            zticklabels = []
-            for z in self.z_patches:
-                zticks.append(-1.0*z)
-                zticklabels.append(z)
-            ax.set_zticks(zticks)
-            ax.set_zticklabels(zticklabels)
+            if axesscaling:
+                ax.set_zlim3d([-1.0*(self.depth+5), 0])
+                zticks = []
+                zticklabels = []
+                for z in self.z_patches:
+                    zticks.append(-1.0*z)
+                    zticklabels.append(z)
+                ax.set_zticks(zticks)
+                ax.set_zticklabels(zticklabels)
             
             # set color business
             cmap = plt.get_cmap('jet')
-            cNorm  = colors.Normalize(vmin=0, vmax=plotval.max())
+            cNorm  = colors.Normalize(vmin=plotval.min(), vmax=plotval.max())
             scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
             for p in range(len(self.patch)):
@@ -3003,8 +3011,12 @@ class RectangularPatches(SourceInv):
         if maxdepth is not None:
             ax.set_zlim3d([-1.0*maxdepth, 0])
 
+        # Store it 
+        self.ax = ax
+
         # show
-        plt.show()
+        if show:
+            plt.show()
 
         # All done
         return

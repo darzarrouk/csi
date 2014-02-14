@@ -35,6 +35,9 @@ from .seismic       import seismic
 #from .gpstimeseries import gpstimeseries
 #from .gpsstation import gpsstation
 
+## Green's functions
+import okadafull
+
 ## Metadata
 from .seismiclocations import seismiclocations
 from .velocitymodel import velocitymodel
@@ -42,6 +45,7 @@ from .velocitymodel import velocitymodel
 ## Post-Proc
 from .srcmodsolution import srcmodsolution
 from .strainfield import strainfield
+from .stressfield import stressfield
 from .geodeticplot import geodeticplot
 from .seismicplot import seismicplot
 

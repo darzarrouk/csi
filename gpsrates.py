@@ -1387,7 +1387,7 @@ class gpsrates(SourceInv):
 
         # All done
 
-    def plot(self, ref='utm', faults=None, figure=135, name=False, legendscale=10., color='b', scale=150, plot_los=False):
+    def plot(self, ref='utm', faults=None, figure=135, name=False, legendscale=10., color='b', scale=150, plot_los=False, show=True):
         '''
         Args:
             * ref       : can be 'utm' or 'lonlat'.
@@ -1472,7 +1472,8 @@ class gpsrates(SourceInv):
         ax.axis('equal')
 
         # Do the plot
-        plt.show()
+        if show:
+            plt.show()
 
         # All done
         return
