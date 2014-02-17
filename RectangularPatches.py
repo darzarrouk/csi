@@ -17,6 +17,7 @@ import os
 
 # Personals
 from .SourceInv import SourceInv
+from .stressfield import stressfield
 import okadafull
 
 class RectangularPatches(SourceInv):
@@ -2877,6 +2878,71 @@ class RectangularPatches(SourceInv):
         # All done
         return vect
 
+    def computeTractionOnEachFaultPatch(self, factor=0.001, mu=30e9, nu=0.25):
+        '''
+        Uses okada92 to compute the traction change on each patch from slip on the other patches.
+        Args:
+            * factor        : Conversion fator between slip units and distance units. In a regular case, distance 
+                              units are km. If the slip is in mm, then factor is 10e-6.
+            * mu            : Shear Modulus (default is 30e9 Pa).
+            * nu            : Poisson's ratio (default is 0.25).
+        '''
+
+        # How many fault patches
+        nP = len(self.patch)
+
+        # Save the slip
+        Slip = copy.deepcopy(self.slip)
+
+        # Create the arrays
+        self.T = np.zeros((3,nP))
+        self.ShearStrike = np.zeros((nP,))
+        self.ShearDip = np.zeros((nP,))
+        self.Normal = np.zeros((nP,))
+
+        # Create a stress object 
+        stress = stressfield('Stress', utmzone=self.utmzone)
+
+        # Loop on each fault patch
+        for p in self.patch:
+
+            # Get the patch index
+            ii = self.getindex(p)
+
+            # Write out
+            sys.stdout.write('\r Patch: {}/{}'.format(ii, nP))
+            sys.stdout.flush()
+
+            # Get the patch characteristics
+            xc, yc, depthc, widthc, lengthc, strike, dip = self.getpatchgeometry(p, center=True)
+            stress.setXYZ(xc, yc, depthc)
+
+            # Set the slip of the fault
+            self.slip = Slip
+            self.slip[ii,:] = 0.0
+
+            # compute the stress from that fault
+            stress.Fault2Stress(self, mu=mu, slipdirection='sdt', factor=factor)
+            stress.total2deviatoric()
+
+            # compute the tractions on the patch
+            n1, n2, n3, T, Sigma, TauStrike, TauDip = stress.computeTractions(strike, dip)
+
+            # Store these
+            self.T[:,ii] = T[0]
+            self.ShearStrike[ii] = TauStrike[0]
+            self.ShearDip[ii] = TauDip[0]
+            self.Normal[ii] = Sigma[0]
+
+        # Restore slip correctly on that fault
+        self.slip = Slip
+
+        # Clean up screen 
+        print('')
+
+        # all done
+        return
+
     def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False, show=True, axesscaling=True):
         '''
         Plot the available elements of the fault.
@@ -2935,6 +3001,12 @@ class RectangularPatches(SourceInv):
             plotval = self.slip[:,1]
         elif value_to_plot=='tensile':
             plotval = self.slip[:,2]
+        elif value_to_plot=='normaltraction':
+            plotval = self.Normal
+        elif value_to_plot=='strikesheartraction':
+            plotval = self.ShearStrike
+        elif value_to_plot=='dipsheartraction':
+            plotval = self.ShearDip
         elif value_to_plot=='index':
             plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
 

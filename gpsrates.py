@@ -331,7 +331,7 @@ class gpsrates(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None):
+    def plotprofile(self, name, legendscale=10., fault=None, show=True):
         '''
         Plot profile.
         Args:
@@ -401,7 +401,8 @@ class gpsrates(SourceInv):
         carte.axis('equal')
 
         # Show to screen 
-        plt.show()
+        if show:
+            plt.show()
 
         # All done
         return

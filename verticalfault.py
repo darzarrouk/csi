@@ -144,6 +144,23 @@ class verticalfault(RectangularPatches):
             return pointwise(xs) #array(map(pointwise, array(xs)))
         return ufunclike
     
+    def setDepth(self, depth, top=0, num=5):
+        '''
+        Set the maximum depth of the fault patches.
+
+        Args:
+            * depth         : Depth of the fault patches.
+            * num           : Number of fault patches at depth.
+        '''
+
+        # Set depth
+        self.top = top
+        self.depth = depth
+        self.numz = num
+
+        # All done
+        return
+
     def build_patches(self):
         '''
         Builds rectangular patches from the discretized fault.
@@ -199,18 +216,21 @@ class verticalfault(RectangularPatches):
                 pll = np.zeros((4,3))
                 p[0,:] = [x1, y1, z[j]]
                 pll[0,:] = [lon1, lat1, z[j]]
-                p[1,:] = [x2, y2, z[j+1]]
-                pll[1,:] = [lon2, lat2, z[j+1]]
+                p[3,:] = [x2, y2, z[j+1]]
+                pll[3,:] = [lon2, lat2, z[j+1]]
                 p[2,:] = [x3, y3, z[j+1]]
                 pll[2,:] = [lon3, lat3, z[j+1]]
-                p[3,:] = [x4, y4, z[j]]
-                pll[3,:] = [lon4, lat4, z[j]]
+                p[1,:] = [x4, y4, z[j]]
+                pll[1,:] = [lon4, lat4, z[j]]
                 self.patch.append(p)
                 self.patchll.append(pll)
                 self.slip.append([0.0, 0.0, 0.0])
 
         # Translate slip to np.array
         self.slip = np.array(self.slip)
+
+        # Compute the equivalent patches
+        self.equivpatch = copy.deepcopy(self.patch)
 
         # All done
         return

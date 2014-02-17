@@ -60,11 +60,13 @@ class stressfield(SourceInv):
         # All done
         return
 
-    def Fault2Stress(self, fault, mu=30e9, nu=0.25, slipdirection='sd'):
+    def Fault2Stress(self, fault, factor=0.001, mu=30e9, nu=0.25, slipdirection='sd', force_dip=None):
         '''
         Takes a fault, or a list of faults, and computes the stress change associated with the slip on the fault.
         Args:   
             * fault             : Fault object (RectangularFault).
+            * factor            : Conversion factor between the slip units and distance units. Usually, distances are in Km.
+                                  Therefore, if slip is in mm, then factor=1e-6.
             * slipdirection     : any combination of s, d, and t.
             * mu                : Shear Modulus (default is 30GPa).
             * nu                : Poisson's ratio (default is 0.25).
@@ -89,15 +91,15 @@ class stressfield(SourceInv):
         tensileslip = np.zeros((nPatch,))
 
         # Build the arrays for okada
-        ii = 0
-        for p in fault.patch:
-            xc[ii], yc[ii], zc[ii], width[ii], length[ii], strike[ii], dip[ii] = fault.getpatchgeometry(p, center=True)
-            strikeslip[ii], dipslip[ii], tensileslip[ii] = fault.getslip(p)
-            ii+=1
+        for ii in range(len(fault.patch)):
+            xc[ii], yc[ii], zc[ii], width[ii], length[ii], strike[ii], dip[ii] = fault.getpatchgeometry(fault.patch[ii], center=True)
+            strikeslip[ii], dipslip[ii], tensileslip[ii] = fault.slip[ii,:]
 
-        # Angles in degrees
-        strike = 180.*strike/np.pi
-        dip = dip*180./np.pi
+        # Don't invert zc (for the patches, we give depths, so it has to be positive)
+        # Apply the conversion factor
+        strikeslip *= factor
+        dipslip *= factor
+        tensileslip *= factor
 
         # Set slips
         if 's' not in slipdirection:
@@ -112,12 +114,16 @@ class stressfield(SourceInv):
         ys = self.y
         zs = -1.0*self.depth            # Okada wants the z position, we have the depth, so x-1.
 
+        # If force dip
+        if force_dip is not None:
+            dip[:] = force_dip
+
         # Get the Stress
         self.stresstype = 'total'
         self.Stress = okada.stress(xs, ys, zs, 
                                    xc, yc, zc, 
-                                   length, width, 
-                                   dip, strike, 
+                                   width, length, 
+                                   strike, dip,
                                    strikeslip, dipslip, tensileslip, 
                                    mu, nu, 
                                    full=True)
@@ -166,7 +172,7 @@ class stressfield(SourceInv):
         # All done
         return
 
-    def getTractions(self, strike, dip):
+    def computeTractions(self, strike, dip):
         '''
         Computes the tractions given a plane with a given strike and dip.
         Args:
@@ -179,19 +185,12 @@ class stressfield(SourceInv):
         Positive Shear Traction means left-lateral.
         '''
 
-        # Assert sizes
-        assert len(strike)==len(dip), 'Strike and Dip need to be of same size...'
-
         # Get number of data points
         Np = self.Stress.shape[2]
 
         # Check the sizes
-        if (len(strike)==1):
-            strike = np.ones((Np,))*strike
-            dip = np.ones((Np,))*dip
-        else:
-            strike = np.array(strike)
-            dip = np.array(dip)
+        strike = np.ones((Np,))*strike
+        dip = np.ones((Np,))*dip
 
         # Create the normal vectors
         n1, n2, n3 = self.strikedip2normal(strike, dip)
@@ -203,7 +202,18 @@ class stressfield(SourceInv):
         Sigma = [ np.dot(T[i],n1[:,i]) for i in range(Np) ]
         TauStrike = [ np.dot(T[i],n2[:,i]) for i in range(Np) ]
         TauDip = [ np.dot(T[i],n3[:,i]) for i in range(Np) ]  
-        
+
+        # All done
+        return n1, n2, n3, T, Sigma, TauStrike, TauDip
+
+    def getTractions(self, strike, dip):
+        '''
+        Just a wrapper around computeTractions to store the result, if necessary.
+        '''
+
+        # Compute tractions
+        n1, n2, n3, T, Sigma, TauStrike, TauDip = self.computeTractions(strike, dip)
+
         # Store everything
         self.n1 = n1
         self.n2 = n2
@@ -212,7 +222,7 @@ class stressfield(SourceInv):
         self.Sigma = Sigma
         self.TauStrike = TauStrike
         self.TauDip = TauDip
-
+        
         # All done
         return
 

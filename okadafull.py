@@ -166,7 +166,7 @@ def stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30
         Stress[0,2,:] = s[:,2]  # Sxz
         Stress[2,0,:] = s[:,2]  # Sxz
         Stress[1,2,:] = s[:,4]  # Syz
-        Stress[2,1,:] = s[:,4]  #Syz
+        Stress[2,1,:] = s[:,4]  # Syz
         return Stress
          
 
