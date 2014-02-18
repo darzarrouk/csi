@@ -689,19 +689,24 @@ class RectangularPatches(SourceInv):
                         slp = np.std(samples[:,p])
                     else:
                         slp = self.slip[p,0]*scale
-                    string = '-Z{}'.format(slp)
                 elif add_slip is 'dipslip':
                     if stdh5 is not None:
                         slp = np.std(samples[:,p+nPatches])
                     else:
                         slp = self.slip[p,1]*scale
-                    string = '-Z{}'.format(slp)
                 elif add_slip is 'total':
                     if stdh5 is not None:
                         slp = np.std(samples[:,p]**2 + samples[:,p+nPatches]**2)
                     else:
                         slp = np.sqrt(self.slip[p,0]**2 + self.slip[p,1]**2)*scale
-                    string = '-Z{}'.format(slp)
+                elif add_slip is 'normaltraction':
+                    slp = self.Normal
+                elif add_slip is 'strikesheartraction':
+                    slp = self.ShearStrike
+                elif add_slip is 'dipsheartraction':
+                    slp = self.ShearDip
+                # Make string
+                string = '-Z{}'.format(slp)
 
             # Put the parameter number in the file as well if it exists
             parameter = ' ' 
@@ -977,6 +982,23 @@ class RectangularPatches(SourceInv):
             tmp[:nl-1,:] = self.slip
         tmp[-1,:] = slip
         self.slip = tmp
+
+        # All done
+        return
+
+    def addPatchesFromOtherFault(self, fault):
+        '''
+        Adds the patches of one fault to another.
+        '''
+
+        # Loop on patches
+        for p in fault.patch:
+            ii = fault.getindex(p)
+            slip = fault.slip[ii,:]
+            self.addpatch(p, slip)
+
+        # Build the equivalent patches
+        self.computeEquivRectangle()
 
         # All done
         return
@@ -2114,6 +2136,100 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
+    def buildCmSlipDirs(self, sigma, lam, lam0=None, extra_params=None, lim=None):
+        '''
+        Builds a model covariance matrix using the equation described in Radiguet et al 2010.
+        Here, Sigma and Lambda are lists specifying values for the slip directions
+        Args:
+            * sigma         : Amplitude of the correlation.
+            * lam           : Characteristic length scale.
+            * lam0          : Normalizing distance (if None, lam0=min(distance between patches)).
+            * extra_params  : Add some extra values on the diagonal.
+            * lim           : Limit distance parameter (see self.distancePatchToPatch)
+        '''
+
+        # print
+        print ("---------------------------------")
+        print ("---------------------------------")
+        print ("Assembling the Cm matrix ")
+        print ("Sigma = {}".format(sigma))
+        print ("Lambda = {}".format(lam))
+
+        # Need the patch geometry
+        if self.patch is None:
+            print("You should build the patches and the Green's functions first.")
+            return
+
+        # Geth the desired slip directions
+        slipdir = self.slipdir
+
+        # Get the patch centers
+        self.centers = np.array(self.getcenters())
+
+        # Sets the lambda0 value
+        if lam0 is None:
+            xd = (np.unique(self.centers[:,0]).max() - np.unique(self.centers[:,0]).min())/(np.unique(self.centers[:,0]).size)
+            yd = (np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())/(np.unique(self.centers[:,1]).size)
+            zd = (np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())/(np.unique(self.centers[:,2]).size)
+            lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
+
+        # Creates the principal Cm matrix
+        Np = len(self.patch)*len(slipdir)
+        if extra_params is not None:
+            Np += len(extra_params)
+        Cmt = np.zeros((len(self.patch), len(self.patch)))
+        Cm = np.zeros((Np, Np))
+
+        # Build the sigma and lambda lists
+        if type(sigma) is not list:
+            s = []; l = []
+            for sl in range(len(slipdir)):
+                s.append(sigma)
+                l.append(lam)
+            sigma = s
+            lam = l
+        assert (type(sigma) is list), 'Sigma is not a list, why???'
+        if type(sigma) is list:
+            assert(len(sigma)==len(lam)), 'Sigma and lambda must have the same length'
+            assert(len(sigma)==len(slipdir)), 'Need one value of sigma and one value of lambda per slip direction'
+
+        # Loop over the slipdirections
+        st = 0
+        for sl in range(len(slipdir)):
+            # pick the right values
+            la = lam[sl]
+            C = (sigma[sl]*lam0/la)**2
+            # Loop over the patches
+            i = 0
+            for p1 in self.patch:
+                j = 0
+                for p2 in self.patch:
+                    # Compute the distance
+                    d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
+                    # Compute Cm
+                    Cmt[i,j] = C * np.exp( -1.0*d/la)
+                    Cmt[j,i] = C * np.exp( -1.0*d/la)
+                    # Upgrade counter
+                    j += 1
+                # upgrade counter
+                i += 1
+
+            # Store that into Cm
+            se = st + len(self.patch)
+            Cm[st:se, st:se] = Cmt
+            st += len(self.patch)
+
+        # Put the extra values
+        if extra_params is not None:
+            for i in range(len(extra_params)):
+                Cm[st+i, st+i] = extra_params[i]
+
+        # Store Cm into self
+        self.Cm = Cm
+
+        # All done
+        return
+
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
         '''
         Measures the distance between two patches.
@@ -2880,6 +2996,76 @@ class RectangularPatches(SourceInv):
 
     def computeTractionOnEachFaultPatch(self, factor=0.001, mu=30e9, nu=0.25):
         '''
+        Uses okada92 to compute the traction change on each patch.
+        Args:
+            * factor        : Conversion fator between slip units and distance units. In a regular case, distance 
+                              units are km. If the slip is in mm, then factor is 10e-6.
+            * mu            : Shear Modulus (default is 30e9 Pa).
+            * nu            : Poisson's ratio (default is 0.25).
+        '''
+
+        # How many fault patches
+        nP = len(self.patch)
+
+        # Create a stress object
+        stress = stressfield('Stress', utmzone=self.utmzone)
+
+        # Compute the stress on the fault
+        stress.Fault2Stress(self, factor=factor, mu=mu, nu=nu, slipdirection='sdt', stressonpatches=True)
+        stress.total2deviatoric()
+
+        # Create the arrays
+        self.T = np.zeros((3,nP))
+        self.ShearStrike = np.zeros((nP,))
+        self.ShearDip = np.zeros((nP,))
+        self.Normal = np.zeros((nP,))
+        
+        # Get the strike and dip
+        angles = np.array([self.getpatchgeometry(p, center=True)[-2:] for p in self.patch])
+        strike = angles[:,0]
+        dip = angles[:,1]
+
+        # Compute the tractions on the patch
+        n1, n2, n3, T, Sigma, TauStrike, TauDip = stress.computeTractions(strike, dip)
+
+        # Store these
+        self.Stress = stress.Stress
+        self.flag = stress.flag
+        self.flag2 = stress.flag2
+        self.T = T
+        self.Normal = Sigma
+        self.ShearStrike = TauStrike
+        self.ShearDip = TauDip
+        self.n1 = n1
+        self.n2 = n2
+        self.n3 = n3
+
+        # All done
+        return
+
+    def computeCoulombOnPatches(self, friction=0.6, sign='strike'):
+        '''
+        Computes the Coulomb failure stress change on patches.
+        On the routine, the normal stress is positive away from the center of the patch.
+        '''
+    
+        # Check if Tractions have been computed
+        assert hasattr(self, 'Normal'), 'Compute Tractions first...'
+
+        # Sign
+        if sign in ('strike'):
+            Sign = np.sign(self.ShearStrike)
+        elif sign in ('dip'):
+            Sign = np.sign(self.ShearDip)
+
+        # Compute the Coulomb failure stress (-1.0 for Normal stress because positive must be compressive)
+        self.Coulomb = Sign*np.sqrt(self.ShearStrike**2 + self.ShearDip**2) - friction*self.Normal*-1.0
+
+        # All done 
+        return
+        
+    def computeImposedTractionOnEachFaultPatch(self, factor=0.001, mu=30e9, nu=0.25):
+        '''
         Uses okada92 to compute the traction change on each patch from slip on the other patches.
         Args:
             * factor        : Conversion fator between slip units and distance units. In a regular case, distance 
@@ -2943,7 +3129,7 @@ class RectangularPatches(SourceInv):
         # all done
         return
 
-    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False, show=True, axesscaling=True):
+    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False, show=True, axesscaling=True, Norm=None):
         '''
         Plot the available elements of the fault.
         
@@ -3007,6 +3193,8 @@ class RectangularPatches(SourceInv):
             plotval = self.ShearStrike
         elif value_to_plot=='dipsheartraction':
             plotval = self.ShearDip
+        elif value_to_plot=='coulomb':
+            plotval = self.Coulomb
         elif value_to_plot=='index':
             plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
 
@@ -3031,7 +3219,10 @@ class RectangularPatches(SourceInv):
             
             # set color business
             cmap = plt.get_cmap('jet')
-            cNorm  = colors.Normalize(vmin=plotval.min(), vmax=plotval.max())
+            if Norm is not None:
+                cNorm = colors.Normalize(vmin=Norm[0], vmax=Norm[1])
+            else:
+                cNorm  = colors.Normalize(vmin=plotval.min(), vmax=plotval.max())
             scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
             for p in range(len(self.patch)):

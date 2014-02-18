@@ -57,10 +57,15 @@ class stressfield(SourceInv):
         self.y = y
         self.depth = z
 
+        # Set lon lat
+        lon, lat = self.xy2ll(x, y)
+        self.lon = lon
+        self.lat = lat
+    
         # All done
         return
 
-    def Fault2Stress(self, fault, factor=0.001, mu=30e9, nu=0.25, slipdirection='sd', force_dip=None):
+    def Fault2Stress(self, fault, factor=0.001, mu=30e9, nu=0.25, slipdirection='sd', force_dip=None, stressonpatches=False, verbose=False):
         '''
         Takes a fault, or a list of faults, and computes the stress change associated with the slip on the fault.
         Args:   
@@ -70,7 +75,12 @@ class stressfield(SourceInv):
             * slipdirection     : any combination of s, d, and t.
             * mu                : Shear Modulus (default is 30GPa).
             * nu                : Poisson's ratio (default is 0.25).
+            * stressonpatches   : Re-sets the station locations to be where the center of the patches are.
         '''
+
+        # Verbose?
+        if verbose:
+            print('Computing stress changes from fault {}'.format(fault.name))
 
         # Check if fault type corresponds
         assert len(fault.patch[0])==4, 'Fault is not made of rectangular patches'
@@ -110,9 +120,14 @@ class stressfield(SourceInv):
             tensileslip[:] = 0.0
 
         # Get the stations
-        xs = self.x
-        ys = self.y
-        zs = -1.0*self.depth            # Okada wants the z position, we have the depth, so x-1.
+        if not stressonpatches:
+            xs = self.x
+            ys = self.y
+            zs = -1.0*self.depth            # Okada wants the z position, we have the depth, so x-1.
+        else:
+            xs = xc
+            ys = yc
+            zs = -1.0*zc                    # Okada wants the z position, we have the depth, so x-1.
 
         # If force dip
         if force_dip is not None:
@@ -120,13 +135,16 @@ class stressfield(SourceInv):
 
         # Get the Stress
         self.stresstype = 'total'
-        self.Stress = okada.stress(xs, ys, zs, 
-                                   xc, yc, zc, 
-                                   width, length, 
-                                   strike, dip,
-                                   strikeslip, dipslip, tensileslip, 
-                                   mu, nu, 
-                                   full=True)
+        self.Stress, flag, flag2 = okada.stress(xs, ys, zs, 
+                                                xc, yc, zc, 
+                                                width, length, 
+                                                strike, dip,
+                                                strikeslip, dipslip, tensileslip, 
+                                                mu, nu, 
+                                                full=True)
+
+        self.flag = flag
+        self.flag2 = flag2
 
         # All done
         return
@@ -169,6 +187,9 @@ class stressfield(SourceInv):
         self.Stress[1,1,:] -= self.trace
         self.Stress[2,2,:] -= self.trace
 
+        # Change
+        self.stresstype = 'deviatoric'
+
         # All done
         return
 
@@ -199,9 +220,9 @@ class stressfield(SourceInv):
         T = [ np.dot(n1[:,i], self.Stress[:,:,i]) for i in range(Np)]
 
         # Compute the Shear Stress and Normal Stress
-        Sigma = [ np.dot(T[i],n1[:,i]) for i in range(Np) ]
-        TauStrike = [ np.dot(T[i],n2[:,i]) for i in range(Np) ]
-        TauDip = [ np.dot(T[i],n3[:,i]) for i in range(Np) ]  
+        Sigma = np.array([ np.dot(T[i],n1[:,i]) for i in range(Np) ])
+        TauStrike = np.array([ np.dot(T[i],n2[:,i]) for i in range(Np) ])
+        TauDip = np.array([ np.dot(T[i],n3[:,i]) for i in range(Np) ])
 
         # All done
         return n1, n2, n3, T, Sigma, TauStrike, TauDip

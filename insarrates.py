@@ -397,9 +397,9 @@ class insarrates(SourceInv):
         self.lat = self.lat[u]
         self.x = self.x[u]
         self.y = self.y[u]
-        self.vel = self.vel[u,:]
-        self.err = self.err[u,:]
-        self.los = self.los[u,:]
+        self.vel = self.vel[u]
+        self.err = self.err[u]
+        self.los = self.los[u]
         if self.synth is not None:
             self.synth = self.synth[u,:]
         if self.corner is not None:

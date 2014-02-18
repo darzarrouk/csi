@@ -626,6 +626,16 @@ class multifaultsolve(object):
         # All done
         return
 
+    def writeMpost2BinaryFile(self, outfile):
+        '''
+        Writes the solution to a binary file.
+        '''
+
+        self.mpost.tofile(outfile)
+
+        # all done 
+        return
+
     def writeGFs2BinaryFile(self, outfile='GF.dat', dtype='f'):
         '''
         Writes the assembled GFs to the file outfile.

@@ -330,6 +330,56 @@ class geodeticplot(object):
         # All done
         return
 
+    def surfacestress(self, stress, component='normal', linewidth=0.0, Norm=None, colorbar=True):
+        '''
+        Plots the stress on the map.
+        Args:
+            * stress        : Stressfield object.
+            * component     : If string, can be normal, shearstrike, sheardip
+                              If tuple or list, can be anything specifying the indexes of the Stress tensor.
+            * linewidth     : option of scatter.
+            * Norm          : Scales the color bar.
+            * colorbar      : if true, plots a colorbar
+        '''
+        
+        # Get values
+        if component.__class__ is str:
+            if component in ('normal'):
+                val = stress.Sigma
+            elif component in ('shearstrike'):
+                val = stress.TauStrike
+            elif component in ('sheardip'):
+                val = stress.TauDip
+            else:
+                print ('Unknown component of stress to plot')
+                return
+        else:
+            val = stress.Stress[component[0], component[1]]
+
+        # Prepare the colormap
+        cmap = plt.get_cmap('jet')
+
+        # Norm
+        if Norm is not None:
+            vmin = Norm[0]
+            vmax = Norm[1]
+        else:
+            vmin = val.min()
+            vmax = val.max()
+
+        # Plot
+        if self.ref is 'utm':
+            sc = self.carte.scatter(stress.x, stress.y, s=20, c=val, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
+        else:
+            sc = self.carte.scatter(stress.lon, stress.y, s=20, c=val, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
+
+        # colorbar
+        if colorbar:
+            self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')   
+
+        # All don
+        return
+
     def gpsvelocities(self, gps, color='k', colorsynth='b', scale=None, legendscale=10., linewidths=.1, name=False, data='both'):
         '''
         Args:

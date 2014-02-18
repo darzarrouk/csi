@@ -65,6 +65,7 @@ def displacement(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts,
 
     # Check if things went well
     if not (flag==0).all():
+        print(' Error: {}'.format(tuple(np.where(flag!=0))))
         print('Something went wrong in okada4py... You should check...')
 
     # Reshape the displacement
@@ -102,6 +103,7 @@ def strain(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, nu=0.
 
     # Check if things went well
     if not (flag==0).all():
+        print(' Error: {}'.format(tuple(np.where(flag!=0))))
         print('Something went wrong in okada4py... You should check...')
 
     # Reshape the displacement
@@ -148,8 +150,9 @@ def stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30
     u, d, s, flag, flag2 = ok92.okada92(xs, ys, zs, xc, yc, zc, length, width, dip, strike, ss, ds, ts, mu, nu)
 
     # Check if things went well
-    if not (flag==0).all():
+    if not (flag==0.).all():
         print('Something went wrong in okada4py... You should check...')
+        print(' Error: {}'.format(tuple(np.where(flag!=0.))))
 
     # Reshape the displacement
     s = s.reshape((len(xs), 6))
@@ -167,7 +170,7 @@ def stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30
         Stress[2,0,:] = s[:,2]  # Sxz
         Stress[1,2,:] = s[:,4]  # Syz
         Stress[2,1,:] = s[:,4]  # Syz
-        return Stress
+        return Stress, flag, flag2
          
 
 
