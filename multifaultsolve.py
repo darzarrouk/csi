@@ -496,7 +496,7 @@ class multifaultsolve(object):
         # All done
         return
 
-    def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10.0, bounds=None,
+    def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10., bounds=None,
                                    method='SLSQP', rcond=None):
         """ 
         Solves the least squares problem:
@@ -586,9 +586,12 @@ class multifaultsolve(object):
             return np.array([Mw_thresh - Mw])
 
         # Define the constraints dictionary
-        constraints = {'type': 'ineq',
-                       'fun': computeMwDiff,
-                       'args': (Mw_thresh, self.patchAreas, Npatch)}
+        if Mw_thresh is not None:
+            constraints = {'type': 'ineq',
+                           'fun': computeMwDiff,
+                           'args': (Mw_thresh, self.patchAreas, Npatch)}
+        else:
+            constraints = None
 
         # Call solver
         print("Performing constrained minimzation")
