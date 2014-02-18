@@ -765,6 +765,7 @@ class insarrates(SourceInv):
         # Get the InSAR points in this box.
         # 1. import shapely and nxutils
         import matplotlib.path as path
+        import shapely.geometry as geom
 
         # 2. Create an array with the InSAR positions
         SARXY = np.vstack((self.x, self.y)).T
@@ -817,8 +818,8 @@ class insarrates(SourceInv):
             scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
             scalarMap.set_array(self.vel)
             plt.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, linewidths=0.0)
-            xb = [box[i][0] for i in xrange(4)]
-            yb = [box[i][1] for i in xrange(4)]
+            xb = [box[i][0] for i in range(4)]
+            yb = [box[i][1] for i in range(4)]
             plt.plot(xb,yb,'.k')
             xb.append(xb[0])
             yb.append(yb[0])
@@ -866,7 +867,7 @@ class insarrates(SourceInv):
         ASazi = []
 
         # Loop 
-        for i in xrange(len(xf)):
+        for i in range(len(xf)):
 
             # Write something
             sys.stdout.write('\r Fault point {}/{}'.format(i,len(xf)))

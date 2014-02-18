@@ -1756,7 +1756,7 @@ class RectangularPatches(SourceInv):
 
                         # Fill in orb matrix given an order
                         orb = np.zeros((numPoints, basePoly))
-                        for ind in xrange(basePoly):
+                        for ind in range(basePoly):
                             orb[:,ind] = polyFuncs[ind]
 
                         # Block diagonal for both components
@@ -2571,7 +2571,7 @@ class RectangularPatches(SourceInv):
         dis = np.zeros((x.shape[0]))
 
         # Loop 
-        for i in xrange(1,x.shape[0]):
+        for i in range(1,x.shape[0]):
             d = np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
             dis[i] = dis[i-1] + d
 
@@ -2595,8 +2595,8 @@ class RectangularPatches(SourceInv):
         for sar in insars:
             dlon = sar.AlongStrikeOffsets[name]['lon']
             dlat = sar.AlongStrikeOffsets[name]['lat']
-            assert (dlon==lon).all(), '{} dataset rejected'.format(sar.name)
-            assert (dlat==lat).all(), '{} dataset rejected'.format(sar.name)
+            assert (list(dlon)==list(lon)), '{} dataset rejected'.format(sar.name)
+            assert (list(dlat)==list(lat)), '{} dataset rejected'.format(sar.name)
 
         # Get distance
         x = insars[0].AlongStrikeOffsets[name]['distance']
