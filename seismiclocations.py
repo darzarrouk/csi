@@ -487,7 +487,7 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-    def BuildHistogramsAlongFaultTrace(self, fault, filename, normed=True, width=10.0, bins=50, plot=False, planemode='verticalfault', Range=(-5.0, 5.0)):
+    def BuildHistogramsAlongFaultTrace(self, fault, filename, normed=True, width=10.0, bins=50, plot=False, planemode='verticalfault', Range=(-5.0, 5.0), reference=None):
         '''
         Builds a histogram of the earthquake distribution along the fault trace.
         width: Width of the averaging cell (distance along strike)
@@ -524,6 +524,15 @@ class seismiclocations(SourceInv):
 
         # And the corresponding distance along the fault
         df = fault.cumdistance(discretized=True)
+
+        # Reference
+        if reference is not None:
+            xr, yr = self.ll2xy(reference[0], reference[1])
+            RefD = np.sqrt( (xr-xf)**2 + (yr-yf)**2 )
+            dmin = np.argmin(RefD)
+            Ref = df[dmin]
+        else:
+            Ref = 0.0
 
         # On every point of the fault
         for i in range(len(xf)):
@@ -630,7 +639,7 @@ class seismiclocations(SourceInv):
                 hist, edges = np.histogram(distance, bins=bins, normed=False, range=Range)
 
             # 5. Store the rough histograms in the xy file
-            xi = df[i]
+            xi = df[i] - Ref
             for k in range(len(hist)):
                 yi = (edges[k+1] - edges[k])/2. + edges[k]
                 zi = hist[k] 

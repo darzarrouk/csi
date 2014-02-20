@@ -9,6 +9,7 @@ import pyproj as pp
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
 import scipy.linalg as scilin
+import shapely.geometry as geom
 
 class velocitymodel(object):
 
