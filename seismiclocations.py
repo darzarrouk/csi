@@ -331,6 +331,53 @@ class seismiclocations(SourceInv):
         # All done
         return  
 
+    def delete2Close2Trace(self, faults, distance=1.):
+        '''
+        Deletes the earthquakes that are too close from the fault trace.
+        '''
+
+        # Shapely (Change for matplotlib path later)
+        import shapely.geometry as sg
+
+        # Create a list with the earthquakes locations
+        LL = np.vstack((self.x, self.y)).T.tolist()
+
+        # Create a MultiPoint object 
+        PP = sg.MultiPoint(LL)
+
+        # Loop over faults
+        u = []
+        for fault in faults:
+            dis = []
+            # Build a line object
+            FF = np.vstack((fault.xf, fault.yf)).T.tolist()
+            trace = sg.LineString(FF)
+            # Get the distance between each point and this line
+            for uu in PP.geoms:
+                dis.append(trace.distance(uu))
+            dis = np.array(dis)
+            # Get the indexes of the ones that are close to the fault
+            ut = np.flatnonzero( dis > distance )
+            # Fill in u
+            for i in ut:
+                u.append(i)
+
+        # make u an array
+        u = np.array(u)
+        u = np.unique(u)
+
+        # Select the stations
+        self.lon = self.lon[u]
+        self.lat = self.lat[u]
+        self.x = self.x[u]
+        self.y = self.y[u]
+        self.time = self.time[u]
+        self.depth = self.depth[u]
+        self.mag = self.mag[u]
+            
+        # All done
+        return  
+
     def ProjectOnFaultTrace(self, fault, discretized=True, filename=None):
         '''
         Projects the location of the earthquake along the fault trace. 
