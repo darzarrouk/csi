@@ -5,8 +5,6 @@ Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 '''
 
 # Externals
-import os
-import copy
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
@@ -458,77 +456,6 @@ class gpsrates(SourceInv):
 
         # All done
         return d
-
-    def setStat(self,sta_name,x,y,loc_format='LL'):
-        '''
-        Set station names and locations attributes
-        Args:
-            * sta_name: station names
-            * x: x coordinate (longitude or UTM) 
-            * y: y coordinate (latitude or UTM)
-            * loc_format: location format ('LL' for lon/lat or 'XY' for UTM)
-        '''
-
-        # Check input parameters
-        assert len(sta_name)==len(x)==len(y), 'sta_name, x and y must have the same length'
-        assert loc_format=='LL' or loc_format=='XY', 'loc_format can be LL or XY'        
-        if type(x)==list:
-            x = np.array(x)
-        if type(y)==list:
-            y = np.array(y)
-
-        # Assign input parameters to station attributes
-        self.station = copy.deepcopy(sta_name)
-        self.lon = np.array([],dtype='float64')
-        self.lat = np.array([],dtype='float64')
-        self.x   = np.array([],dtype='float64')
-        self.y   = np.array([],dtype='float64')
-        if loc_format=='LL':            
-            self.lon = np.append(self.lon,x)
-            self.lat = np.append(self.lat,y)
-            self.x, self.y = self.ll2xy(self.lon,self.lat)
-        else:
-            self.x = np.append(self.x,x)
-            self.y = np.append(self.y,y)
-            self.lon, self.lat = self.ll2xy(self.x,self.y)            
-
-        # All done
-        return
-    
-    def readStat(self,station_file,loc_format='LL'):
-        '''
-        Read simple station ascii file and populate station attributes
-        Args:
-            * station_file: station filename including station coordinates
-            * loc_format:  station file format (default= 'LL')
-        file format:
-        STNAME  X_COORD Y_COORD (if loc_format='XY')
-        STNAME  LON LAT (if loc_format='LL')
-        '''
-        
-        # Assert if station file exists
-        assert os.path.exists(station_file), 'Cannot read %s (no such file)'%(station_file)
-
-        # Assert file format
-        assert loc_format=='LL' or loc_format=='XY', 'loc_format can be either LL or XY'
-        
-        # Read the file 
-        X = []
-        Y = []
-        sta_name = []
-        for l in open(station_file):
-            if (l.strip()[0]=='#'):
-                continue
-            items = l.strip().split()
-            sta_name.append(items[0].strip())
-            X.append(float(items[1]))
-            Y.append(float(items[2]))
-
-        # Set station attributes
-        self.setStat(sta_name,X,Y,loc_format)
-
-        # All done
-        return    
 
     def read_from_enu(self, velfile, factor=1., minerr=1., header=0):
         '''
@@ -1266,10 +1193,10 @@ class gpsrates(SourceInv):
         '''
 
         # Number of data
-        Nd = self.x.shape[0]
+        Nd = self.vel_enu.shape[0]
 
         # Clean synth
-        self.synth = np.zeros((Nd,3))
+        self.synth = np.zeros((self.vel_enu.shape))
 
         # Loop on each fault
         for fault in faults:

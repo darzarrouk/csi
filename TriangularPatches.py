@@ -1,5 +1,5 @@
 '''
-A parent class that deals with triangular patches fault
+A parent class that deals with rectangular patches fault
 
 Written by R. Jolivet, Z. Duputel and Bryan Riel November 2013
 '''
