@@ -23,6 +23,7 @@ class SourceInv(object):
         
         # Set the utm zone
         self.utmzone = utmzone
+        self.ellps   = ellps
         if utmzone is not None:
             self.set_utmzone(utmzone, ellps)
 

@@ -215,6 +215,68 @@ class cosicorrrates(SourceInv):
         # All done
         return       
 
+    def read_from_envi(self, filename, component='EW', remove_nan=True):
+        '''
+        Reads velocity map from a grd file.
+        Args:
+            * filename  : Name of the input file
+            * component : 'EW' or 'NS'
+        '''
+        
+        assert component=='EW' or component=='NS', 'component must be EW or NS'
+
+        # Read header
+        hdr = open(filename+'.hdr','r').readlines()
+        for l in hdr:
+            items = l.strip().split('=')
+            if items[0].strip()=='data type':
+                assert float(items[1])==4,'data type is not float32'
+            if items[0].strip()=='samples':
+                self.samples = int(items[1])
+            if items[0].strip()=='lines':
+                self.lines   = int(items[1])
+            if items[0].strip()=='map info':
+                map_items = l.strip().split('{')[1].strip('}').split(',')
+                assert map_items[0].strip()=='UTM', 'Map is not UTM {}'.format(map_items[0])
+                x0 = float(map_items[3])
+                y0 = float(map_items[4])
+                dx = float(map_items[5])
+                dy = float(map_items[6])
+                assert int(map_items[7])==self.utmzone, 'UTM   zone does not match'
+                assert map_items[9].strip().replace('-','')==self.ellps, 'ellps zone does not match'
+        
+        # Coordinates
+        x = x0 + np.arange(self.samples) * dx
+        y = y0 - np.arange(self.lines)   * dy
+        xg,yg = np.meshgrid(x,y)
+        self.x = xg.flatten()/1000.
+        self.y = yg.flatten()/1000.
+        self.lon, self.lat = self.xy2ll(self.x,self.y)
+        
+        # Data        
+        if component=='EW':
+            self.east = np.fromfile(filename,dtype='float32')
+            if remove_nan:
+                u = np.flatnonzero(np.isfinite(self.east))
+                self.east = self.east[u]
+        elif component=='NS':
+            self.north = np.fromfile(filename,dtype='float32')
+            if remove_nan:
+                u = np.flatnonzero(np.isfinite(self.east))
+                self.north = self.north[u]
+        if remove_nan:
+            self.lon = self.lon[u]; self.lat = self.lat[u]
+            self.x   = self.x[u]  ; self.y   = self.y[u]
+
+        # Check size of arrays
+        if self.north!=None and self.east!=None:
+            assert len(self.north) == len(self.east), 'inconsistent data size'
+            assert len(self.lon)==len(self.lat),   'inconsistent lat/lon size'
+            assert len(self.lon)==len(self.north), 'inconsistent lon/data size'            
+
+        # All done
+        return
+        
     def read_from_grd(self, filename, factor=1.0, step=0.0, cov=False, flip=False):
         '''
         Reads velocity map from a grd file.
@@ -290,6 +352,7 @@ class cosicorrrates(SourceInv):
 
         # All done
         return
+
 
     
     def read_with_reader(self, readerFunc, filePrefix, factor=1.0, cov=False):
@@ -1198,14 +1261,15 @@ class cosicorrrates(SourceInv):
         # All done
         return
 
-    def write2grd(self, fname, oversample=1, data='data', interp=100):
+    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface'):
         '''
         Uses surface to write the output to a grd file.
         Args:
             * fname     : Filename
             * oversample: Oversampling factor.
             * data      : can be 'data' or 'synth'.
-            * interp    : Number of points along lon and lat.
+            * interp    : Number of points along lon and lat (can be a list).
+            * cmd       : command used for the conversion( i.e., surface or xyz2gmt)
         '''
 
         print('---------------------------------')
@@ -1242,17 +1306,21 @@ class cosicorrrates(SourceInv):
         R = '-R{}/{}/{}/{}'.format(lonmin, lonmax, latmin, latmax)
 
         # Create the -I string
-        Nlon = int(interp)*int(oversample)
-        Nlat = Nlon
-        I = '-I{}+/{}+'.format(Nlon,Nlat)
+        if type(interp)!=list:
+            Nlon = int(interp)*int(oversample)
+            Nlat = Nlon
+        else:
+            Nlon = int(interp[0])*int(oversample)
+            Nlat = int(interp[1])*int(oversample)
+        I = '-I{}+/{}+'.format(Nlon,Nlat)        
 
         # Create the G string
         Ge = '-G'+fname+'_east.grd'
         Gn = '-G'+fname+'_north.grd'
 
         # Create the command
-        come = ['surface', R, I, Ge]
-        comn = ['surface', R, I, Gn]
+        come = [cmd, R, I, Ge]
+        comn = [cmd, R, I, Gn]
 
         # open stdin and stdout
         fine = open('east.xyz', 'r')
