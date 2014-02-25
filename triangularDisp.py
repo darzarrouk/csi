@@ -54,8 +54,16 @@ def displacement(sx, sy, sz, vertices, ss, ds, ts, nu=0.25):
     angle = np.arctan2(normVec[1], normVec[0])
     strikeVec = np.array([-np.sin(angle), np.cos(angle), 0.0])
     dipVec = np.cross(normVec, strikeVec)
-    slipComp = np.array([ss, ds, ts])
+    # Change sign of slip components to be consistent with Okada (BVR)
+    slipComp = np.array([-ss, -ds, -ts])
     slipVec = np.dot(np.column_stack((strikeVec, dipVec, normVec)), slipComp)
+
+    #horiz = np.sqrt(dipVec[0]**2 + dipVec[1]**2)
+    #strike = np.arctan2(strikeVec[1], strikeVec[0])
+    #strike = 0.5 * np.pi - strike
+    #print('strike is:', strike * 180.0/np.pi)
+    #print(dipVec)
+    #print('dip is:', np.arctan2(dipVec[2], horiz)*180.0/np.pi)
     
     # Allocate solution vectors
     ux = np.zeros_like(sx)
