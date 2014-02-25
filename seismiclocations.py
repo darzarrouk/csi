@@ -430,24 +430,20 @@ class seismiclocations(SourceInv):
             for uu in PP.geoms:
                 dis.append(trace.distance(uu))
             dis = np.array(dis)
-            # Get the indexes of the ones that are close to the fault
-            ut = np.flatnonzero( dis > distance )
+            # Get the indexes of the ones that are away from the fault
+            ut = np.flatnonzero( dis < distance )
             # Fill in u
             for i in ut:
                 u.append(i)
 
-        # make u an array
-        u = np.array(u)
-        u = np.unique(u)
-
         # Select the stations
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.x = self.x[u]
-        self.y = self.y[u]
-        self.time = self.time[u]
-        self.depth = self.depth[u]
-        self.mag = self.mag[u]
+        self.lon = np.delete(self.lon, u)
+        self.lat = np.delete(self.lat,u)
+        self.x = np.delete(self.x, u)
+        self.y = np.delete(self.y, u)
+        self.time = np.delete(self.time, u)
+        self.depth = np.delete(self.depth, u)
+        self.mag = np.delete(self.mag, u)
             
         # All done
         return  
@@ -812,6 +808,38 @@ class seismiclocations(SourceInv):
         # All done
         return
         
+    def getClosestFaultPatch(self, fault):
+        '''
+        Returns a list of index for all the earthquakes containing the index of the closest fault patch.
+        '''
+
+        # Create a list
+        ipatch = []
+
+        # Shapely
+        import shapely.geometry as geom
+
+        # Create a list of patches
+        Patches = [geom.Polygon(p) for p in fault.patch]
+
+        # Create a list of points
+        Earthquakes = [geom.Point(self.x[i], self.y[i], self.depth[i]) for i in range(self.x.shape[0])]
+
+        # Iterate on the earthquakes
+        for eq in Earthquakes:
+
+            # Create a list of distances
+            dis = []
+
+            # Get distance between each patch and eq
+            for p in Patches:
+                dis.append(p.distance(eq))
+
+            # Get the index of the smallest distance
+            ipatch.append((np.array(dis)).argmin())
+
+        # All done
+        return ipatch
 
     def write2file(self, filename):
         '''

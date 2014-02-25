@@ -521,9 +521,13 @@ class geodeticplot(object):
         # set vmin and vmax
         vmin = None
         vmax = None
-        if (color.__class__ is np.ndarray) and (norm is None):
-            vmin = color.min()
-            vmax = color.max()
+        if (color.__class__ is np.ndarray):
+            if norm is not None:
+                vmin = norm[0]
+                vmax = norm[1]
+            else:
+                vmin = color.min()
+                vmax = color.max()
             import matplotlib.cm as cmx
             import matplotlib.colors as colors
             cmap = plt.get_cmap('jet')
