@@ -1774,9 +1774,11 @@ class TriangularPatches(SourceInv):
         # Cache the vertices and faces arrays
         vertices, faces = self.gocad_vertices, self.gocad_faces
 
-        # Loop over the triangles
+        # Allocate array for Laplace operator
         npatch = len(self.patch)
         D = np.zeros((npatch,npatch))
+
+        # Loop over patches
         for i in range(npatch):
             
             sys.stdout.write('%i / %i\r' % (i, npatch))
@@ -1800,40 +1802,12 @@ class TriangularPatches(SourceInv):
                 sumProd = h13*h14 + h12*h14 + h12*h13
             elif len(hvals) == 2:
                 h12, h13 = hvals
-                D[i,adjacents[0]] = h13
-                D[i,adjacents[1]] = h12
-                sumProd = h12 + h13
+                # Make a virtual patch
+                h14 = max(h12, h13)
+                D[i,adjacents[0]] = h13*h14
+                D[i,adjacents[1]] = h12*h14
+                sumProd = h13*h14 + h12*h14 + h12*h13
             D[i,i] = -sumProd
-
-
-            ## Find adjacent triangles
-            #cnt = 0
-            #for j in range(npatch):
-            #    if j == i:
-            #        continue
-            #    sharedVertices = np.intersect1d(refVertInds, faces[j,:])
-            #    numSharedVertices = sharedVertices.size
-            #    if numSharedVertices < 2:
-            #        continue
-
-            #    # Find midpoint of edge shared by two triangles
-            #    p1 = vertices[sharedVertices[0],:]
-            #    p2 = vertices[sharedVertices[1],:]
-            #    mid = 0.5 * (p1 + p2)
-            #    edgeLength = np.linalg.norm(p1 - p2)
-
-            #    # Compute length of path joining the centers through midpoint
-            #    patchCenter = centers[j]
-            #    dist = np.linalg.norm(patchCenter - mid) + np.linalg.norm(refCenter - mid)
-
-            #    # Fill in corresponding entries in Laplacian matrix
-            #    weight = edgeLength / (dist * refArea)
-            #    #D[i,i] -= weight
-            #    D[i,j] += weight
-
-            #    cnt += 1
-            #    if cnt == 3:
-            #        break
 
         print('\n')
         return D
