@@ -51,39 +51,39 @@ class TriangularPatches(SourceInv):
         self.yi   = None
         self.loni = None # regularly spaced coordinates (geographical)
         self.lati = None
-
+        
         # Allocate depth and number of patches
         self.top = None             # Depth of the top of the fault
         self.depth = None           # Depth of the bottom of the fault
-
+        
         # Allocate patches
         self.patch     = None
         self.slip      = None
         self.totalslip = None
         self.Cm        = None
-
+        
         # Create a dictionnary for the polysol
         self.polysol = {}
-
+        
         # Create a dictionary for the Green's functions and the data vector
         self.G = {}
         self.d = {}
-
+        
         # Create structure to store the GFs and the assembled d vector
         self.Gassembled = None
         self.dassembled = None
-
+        
         # Adjacency map for the patches
         self.adjacencyMap = None
-
+        
         # All done
         return
-
+        
     def duplicateFault(self):
         '''
         Returns a copy of the fault.
         '''
-
+        
         return copy.deepcopy(self)
 
     def initializeslip(self, n=None):
@@ -728,14 +728,14 @@ class TriangularPatches(SourceInv):
         # Get the center of the patch
         x1, x2, x3 = self.getcenter(u)
 
-        # Get the vertices of the patch
+        # Get the vertices of the patch 
         verts = copy.deepcopy(self.patch[u])
         p1, p2, p3 = [np.array(lst) for lst in verts]
 
         # Get a dummy width and height
         width = np.linalg.norm(p1 - p2)
         length = np.linalg.norm(p3 - p1)        
-
+        
         # Get the patch normal
         normal = np.cross(p2 - p1, p3 - p1)
         normal /= np.linalg.norm(normal)
@@ -753,6 +753,7 @@ class TriangularPatches(SourceInv):
         # Set the dip vector
         dipVec = -np.cross(normal, strikeVec)
         dip = np.arctan(dipVec[2] / np.sqrt(dipVec[0]**2 + dipVec[1]**2))
+        #dip = np.acos(
 
         if retNormal:
             return x1, x2, x3, width, length, strike, dip, normal
@@ -1980,31 +1981,13 @@ class TriangularPatches(SourceInv):
         print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
 
         # Write the geometry to the EDKS file
-        self.writeEDKSgeometry()
-
+        fltname,TrianglePropFile, PointCoordFile = self.writeEDKSgeometry()
+        
         # Write the data to the EDKS file
-        data.writeEDKSdata()
+        datname,ReceiverFile = data.writeEDKSdata()
 
-        # Create the variables
-        if len(self.name.split())>1:
-            fltname = self.name.split()[0]
-            for s in self.name.split()[1:]:
-                fltname = fltname+'_'+s
-        else:
-            fltname = self.name
-        RectanglePropFile = 'edks_{}.END'.format(fltname)
-        if len(data.name.split())>1:
-            datname = data.name.split()[0]
-            for s in data.name.split()[1:]:
-                datname = datname+'_'+s
-        else:
-            datname = data.name
-        ReceiverFile = 'edks_{}.idEN'.format(datname)
-
-        if data.dtype is 'insarrates':
-            useRecvDir = True # True for InSAR, uses LOS information
-        else:
-            useRecvDir = False # False for GPS, uses ENU displacements
+        # Assign some EDKS parameters
+        useRecvDir = False # False for GPS, uses ENU displacements
         EDKSunits = 1000.0
         EDKSfilename = '{}'.format(edksfilename)
         prefix = 'edks_{}_{}'.format(fltname, datname)
@@ -2015,18 +1998,19 @@ class TriangularPatches(SourceInv):
         fout = open(filename, 'w')
 
         # Write in it
-        fout.write("# File with the rectangles properties\n")
-        fout.write("RectanglesPropFile = '{}'\n".format(RectanglePropFile))
+        fout.write("# File with the triangle properties\n")
+        fout.write("TriPropFile = '{}'\n".format(TrianglePropFile))
+        fout.write("# File with the Triangles' Points (vertex) coordinates \n")
+        fout.write("TriPointsFile = '{}'\n".format(PointCoordFile))
         fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
         fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
         fout.write("# read receiver direction (# not yet implemented)\n")
-        fout.write("useRecvDir = {} # True for InSAR, uses LOS information\n".format(useRecvDir))
+        fout.write("useRecvDir = {} # leace this to False for now\n".format(useRecvDir))
         fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
         if amax is None:
             fout.write("Amax = None # None computes Amax automatically. \n")
         else:
             fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
-
         fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
         fout.write("EDKSfilename = '{}'\n".format(edksfilename))
         fout.write("prefix = '{}'\n".format(prefix))
@@ -2041,18 +2025,16 @@ class TriangularPatches(SourceInv):
         method_par = dict(zip(parNames, parValues))
 
         # All done
-        return filename, RectanglePropFile, ReceiverFile, method_par
+        return filename, TrianglePropFile, PointCoordFile, ReceiverFile, method_par
 
     def writeEDKSgeometry(self, ref=None):
         '''
         This routine spits out 2 files:
-        filename.lonlatdepth: Lon center | Lat Center | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
-        filename.END: Easting (km) | Northing (km) | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
+        filename.TriangleProp: Patch ID | Lon (deg) | Lat | Easti (km) | North | Depth (km) | Strike (deg) | Dip  | Area (km^2) | Vertice ids
+        (coordinates are given for the center of the patch)
+        filename.PointCoord: Vertice ID | Lon (deg) | Lat | East (km) | North | Depth (km)
 
-        These files are to be used with /home/geomod/dev/edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
-
-        Args:
-            * ref           : Lon and Lat of the reference point. If None, the patches positions is in the UTM coordinates.
+        These files are to be used with edks/MPI_EDKS/calcGreenFunctions_EDKS_subTriangles.py
         '''
 
         # Filename
@@ -2063,12 +2045,17 @@ class TriangularPatches(SourceInv):
         else:
             fltname = self.name
         filename = 'edks_{}'.format(fltname)
+        TrianglePropFile = filename+'.TriangleProp'
+        PointCoordFile   = filename+'.PointCoord'
 
-        # Open the output file
-        flld = open(filename+'.lonlatdepth','w')
-        flld.write('#lon lat Dep[km] strike dip length(km) width(km) ID\n')
-        fend = open(filename+'.END','w')
-        fend.write('#Easting[km] Northing[km] Dep[km] strike dip length(km) width(km) ID\n')
+        # Open the output file and write headers
+        TriP = open(TrianglePropFile,'w')
+        h_format ='%-6s %10s %10s %10s %10s %10s %10s %10s %10s %6s %6s %6s\n'
+        h_tuple = ('%Tid','lon','lat','E[km]','N[km]','dep[km]','strike','dip',
+                  'Area[km2]','idP1','idP2','idP3')
+        TriP.write(h_format%h_tuple)
+        PoC = open(PointCoordFile,'w')
+        PoC.write('%-6s %10s %10s %10s %10s %10s\n'%('Pid','lon','lat','E[km]','N[km]','dep[km]'))
 
         # Reference
         if ref is not None:
@@ -2077,23 +2064,36 @@ class TriangularPatches(SourceInv):
             refy /= 1000.
 
         # Loop over the patches
+        vcount = 1
+        TriP_format = '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %6d %6d %6d\n'
+        PoC_format =  '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f\n'
         for p in range(len(self.patch)):
-            x, y, z, width, length, strike, dip = self.getpatchgeometry(p, center=True)
+            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)
             strike = strike*180./np.pi
             dip = dip*180./np.pi
-            lon, lat = self.xy2ll(x,y)
+            lonc, latc = self.xy2ll(xc,yc)
             if ref is not None:
-                x -= refx
-                y -= refy
-            flld.write('{} {} {} {} {} {} {} {:5d} \n'.format(lon,lat,z,strike,dip,length,width,p))
-            fend.write('{} {} {} {} {} {} {} {:5d} \n'.format(x,y,z,strike,dip,length,width,p))
+                xc -= refx
+                yc -= refy
+            verts = copy.deepcopy(self.patch[p])
+            vid   = []
+            for xv,yv,zv in verts:
+                lonv,latv = self.xy2ll(xv,yv)
+                if ref is not None:
+                    xv -= refx
+                    yv -= refy
+                PoC.write(PoC_format%(vcount,lonv,latv,xv,yv,zv))
+                vid.append(vcount)
+                vcount += 1
+            TriP_tuple = (p,lonc,latc,xc,yc,zc,strike,dip,self.area[p],vid[0],vid[1],vid[2])
+            TriP.write(TriP_format%TriP_tuple)
 
         # Close the files
-        flld.close()
-        fend.close()
+        TriP.close()
+        PoC.close()
 
         # All done
-        return
+        return fltname,TrianglePropFile,PointCoordFile  
 
 
     def getcenter(self, p):

@@ -1279,7 +1279,7 @@ class gpsrates(SourceInv):
         fout.close()
 
         # All done
-        return
+        return datname,filename
 
     def write2file(self, namefile=None, data='data', outDir='./'):
         '''
