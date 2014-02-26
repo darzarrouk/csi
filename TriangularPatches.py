@@ -706,7 +706,6 @@ class TriangularPatches(SourceInv):
         # All done
         return
 
-
     def getpatchgeometry(self, patch, center=False, retNormal=False):
         '''
         Returns the patch geometry as needed for triangleDisp.
@@ -730,7 +729,7 @@ class TriangularPatches(SourceInv):
 
         # Get the vertices of the patch 
         verts = copy.deepcopy(self.patch[u])
-        p1, p2, p3 = [np.array(lst) for lst in verts]
+        p1, p2, p3 = [np.array([lst[1],lst[0],lst[2]]) for lst in verts]
 
         # Get a dummy width and height
         width = np.linalg.norm(p1 - p2)
@@ -740,20 +739,15 @@ class TriangularPatches(SourceInv):
         normal = np.cross(p2 - p1, p3 - p1)
         normal /= np.linalg.norm(normal)
         # Enforce clockwise circulation
-        if normal[2] < 0:
+        if normal[2] > 0:
             normal *= -1.0
             p2, p3 = p3, p2
 
         # Get the strike vector and strike angle
-        angle = np.arctan2(normal[1], normal[0])
-        strikeVec = np.array([-np.sin(angle), np.cos(angle), 0.0])
-        strike = np.arctan2(strikeVec[1], strikeVec[0])
-        strike = 0.5 * np.pi - strike
+        strike = np.arctan2(-normal[0], normal[1])
 
         # Set the dip vector
-        dipVec = -np.cross(normal, strikeVec)
-        dip = np.arctan(dipVec[2] / np.sqrt(dipVec[0]**2 + dipVec[1]**2))
-        #dip = np.acos(
+        dip = np.arccos(-normal[2])
 
         if retNormal:
             return x1, x2, x3, width, length, strike, dip, normal
