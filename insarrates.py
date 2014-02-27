@@ -123,11 +123,53 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14):
+    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14, dtype=np.float32):
         '''
         Read from binary file or from array.
         '''
 
+        # Get the data
+        if type(data) is str:
+            vel = np.fromfile(data, dtype=dtype)*factor + step
+        else:
+            vel = data.flatten()*factor + step
+            
+
+        # Get the lon
+        if type(lon) is str:
+            lon = np.fromfile(lon, dtype=dtype)
+
+        # Get the lat
+        if type(lat) is str:
+            lat = np.fromfile(lat, dtype=dtype)
+
+        # Check sizes
+        assert data.shape!=lon.shape, 'Something wrong with the sizes: {} {} {} '.format(data.shape, lon.shape, lat.shape)  
+        assert data.shape!=lat.shape, 'Something wrong with the sizes: {} {} {} '.format(data.shape, lon.shape, lat.shape)  
+
+        # Get the error
+        if err is not None:
+            if type(err) is str:
+                err = np.fromfile(err, dtype=dtype)
+            err = err * factor
+            assert data.shape==err.shape, 'Something wrong with the sizes: {} {} {} '.format(data.shape, lon.shape, lat.shape)
+
+        # Set things in self
+        self.vel = vel
+        self.err = err
+        self.lon = lon
+        self.lat = lat
+
+        # Keep track of factor
+        self.factor = factor
+
+        # Compute the LOS
+        self.inchd2los(incidence, heading)
+
+        # compute x, y
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
+
+        # All done
         return
 
     def read_from_mat(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.115):
@@ -1547,7 +1589,7 @@ class insarrates(SourceInv):
         com = ['surface', R, I, G]
 
         # Add tension
-        if tension is not None:
+        if tension is not None and cmd in ('surface'):
             T = '-T{}'.format(tension)
 
         # open stdin and stdout
