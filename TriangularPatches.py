@@ -1805,6 +1805,7 @@ class TriangularPatches(SourceInv):
             D[i,i] = -sumProd
 
         print('\n')
+        D = D / np.max(np.abs(np.diag(D)))
         return D
 
 

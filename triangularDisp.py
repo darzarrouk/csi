@@ -58,13 +58,6 @@ def displacement(sx, sy, sz, vertices, ss, ds, ts, nu=0.25):
     slipComp = np.array([-ss, -ds, -ts])
     slipVec = np.dot(np.column_stack((strikeVec, dipVec, normVec)), slipComp)
 
-    #horiz = np.sqrt(dipVec[0]**2 + dipVec[1]**2)
-    #strike = np.arctan2(strikeVec[1], strikeVec[0])
-    #strike = 0.5 * np.pi - strike
-    #print('strike is:', strike * 180.0/np.pi)
-    #print(dipVec)
-    #print('dip is:', np.arctan2(dipVec[2], horiz)*180.0/np.pi)
-    
     # Allocate solution vectors
     ux = np.zeros_like(sx)
     uy = np.zeros_like(sx)
@@ -94,7 +87,7 @@ def displacement(sx, sy, sz, vertices, ss, ds, ts, nu=0.25):
             beta = -1.0 * (halfPi + dip)
             if beta < -halfPi:
                 beta = halfPi - abs(beta)
-    
+
         ssVec = np.array([np.cos(strike), np.sin(strike), 0.0])
         tsVec = np.array([-np.sin(strike), np.cos(strike), 0.0])
         dsVec = np.cross(ssVec, tsVec)
@@ -106,7 +99,7 @@ def displacement(sx, sy, sz, vertices, ss, ds, ts, nu=0.25):
             # First angular dislocation
             sx1, sy1 = RotateXyVec(sx - x1, sy - y1, -strike)
             ux1, uy1, uz1 = adv(sx1, sy1, sz - z1, z1, beta, nu, lss, lts, lds)
-    
+
             # Second angular dislocation
             sx2, sy2 = RotateXyVec(sx - x2, sy - y2, -strike)
             ux2, uy2, uz2 = adv(sx2, sy2, sz - z2, z2, beta, nu, lss, lts, lds)
@@ -114,14 +107,15 @@ def displacement(sx, sy, sz, vertices, ss, ds, ts, nu=0.25):
             # Rotate vectors to correct for strike
             uxn, uyn = RotateXyVec(ux1 - ux2, uy1 - uy2, strike)
             uzn = uz1 - uz2
-    
+         
             # Add the displacements from current leg
             ux += uxn
             uy += uyn
             uz += uzn
-    
+
     # Identify indices for stations under current triangle
-    path = Path([p1[:2], p2[:2], p3[:2]])
+    p1, p2, p3 = verts[:3]
+    path = Path([p1[:2], p2[:2], p3[:2], p1[:2]])
     inPolyIdx = path.contains_points(np.column_stack((sx, sy))).nonzero()[0]
     underIdx = []
     for iIdx in inPolyIdx:
@@ -145,7 +139,7 @@ def LinePlaneIntersect(sx, sy, sz, p1, p2, p3):
 
     Args:
         * sx        : x coordinates of ground points
-        * sy        : y cooridnates of ground points
+        * sy        : y coordinates of ground points
         * sz        : z coordinates of ground points
         * p1        : xyz tuple or list of first triangle vertex
         * p2        : xyz tuple or list of second triangle vertex
@@ -180,8 +174,8 @@ def RotateXyVec(x, y, alpha):
     Rotate components by an angle alpha.
     """
     sina, cosa = np.sin(alpha), np.cos(alpha)
-    xp = x * cosa - y * sina
-    yp = x * sina + y * cosa
+    xp = x * cosa - y * sina + np.spacing(1)
+    yp = x * sina + y * cosa + np.spacing(1)
     return xp, yp
 
 
@@ -273,7 +267,7 @@ def adv(y1, y2, y3, a, beta, nu, B1, B2, B3):
     v1B1 = v1InfB1 + v1CB1
     v2B1 = v2InfB1 + v2CB1
     v3B1 = v3InfB1 + v3CB1
-    
+
     # Case II: Burgers vector (0,B2,0)
     v1InfB2 = (-nu2 * (np.log(R - y3) + np.log(Rby3bar) - cosbeta 
             * (np.log(R - z3) + np.log(Rbz3bar))) + y1 * y1 * (1.0 / (R * (R - y3)) + 1.0 
@@ -328,7 +322,7 @@ def adv(y1, y2, y3, a, beta, nu, B1, B2, B3):
     v1B2 = v1InfB2 + v1CB2
     v2B2 = v2InfB2 + v2CB2
     v3B2 = v3InfB2 + v3CB2
-    
+
     # Case III: Burgers vector (0,0,B3)
     v1InfB3 = (y2 * sinbeta * ((R * sinbeta - y1) / (R * (R - z3)) + (Rbar * sinbeta - y1) 
             / (Rbar * (Rbz3bar))))
@@ -367,7 +361,7 @@ def adv(y1, y2, y3, a, beta, nu, B1, B2, B3):
     v1B3 = v1InfB3 + v1CB3
     v2B3 = v2InfB3 + v2CB3
     v3B3 = v3InfB3 + v3CB3
-    
+
     # Sum the for each slip component
     v1 = B1 * v1B1 + B2 * v1B2 + B3 * v1B3
     v2 = B1 * v2B1 + B2 * v2B2 + B3 * v2B3
