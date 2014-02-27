@@ -123,6 +123,13 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14):
+        '''
+        Read from binary file or from array.
+        '''
+
+        return
+
     def read_from_mat(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.115):
         '''
         Reads velocity map from a mat file.
@@ -693,6 +700,104 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def cleanProfile(self, name, xlim=None, zlim=None):
+        '''
+        Cleans a specified profile.
+        '''
+
+        # Get profile
+        profile = self.profiles[name]
+
+        # Distance cleanup
+        if xlim is not None:
+            ii = self._getindexXlimProfile(name, xlim[0], xlim[1])
+            profile['Distance'] = profile['Distance'][ii]
+            profile['LOS Velocity'] = profile['LOS Velocity'][ii]
+            profile['Normal Distance'] = profile['Normal Distance'][ii]
+            if profile['LOS Error'] is not None:
+                profile['LOS Error'] = profile['LOS Error'][ii]
+
+        # Amplitude cleanup 
+        if zlim is not None:
+            ii = self._getindexZlimProfile(name, zlim[0], zlim[1])
+            profile['Distance'] = profile['Distance'][ii]
+            profile['LOS Velocity'] = profile['LOS Velocity'][ii]
+            profile['Normal Distance'] = profile['Normal Distance'][ii]
+            if profile['LOS Error'] is not None:
+                profile['LOS Error'] = profile['LOS Error'][ii]
+
+        return
+
+    def runingAverageProfile(self, name, window):
+        '''
+        Computes a mooving average on the profile with name.
+        '''
+
+        # Get profile
+        dis = self.profiles[name]['Distance']
+        vel = self.profiles[name]['LOS Velocity']
+
+        outvel = np.zeros(vel.shape)
+        outerr = np.zeros(vel.shape)
+
+        # Run a runing average on it
+        for i in range(dis.shape[0]):
+            
+            # Where am i?
+            d = dis[i]
+
+            # Get the indexes of the concerned pixels
+            jj = np.flatnonzero((dis>=d-window/2.) & (dis<=d+window/2.))
+
+            # Get the mean
+            m = vel[jj].mean()
+
+            # Get the error
+            e = vel[jj].std()
+
+            # Set it 
+            outvel[i] = m
+            outerr[i] = e
+
+        # Replace
+        self.profiles[name]['LOS Velocity'] = outvel
+        self.profiles[name]['LOS Error'] = outerr
+
+        # All done
+        return
+
+    def _getindexXlimProfile(self, name, xmin, xmax):
+        '''
+        Returns the index of the points that are in between xmin & xmax.
+        '''
+
+        # Get the distance array
+        distance = self.profiles[name]['Distance']
+
+        # Get the indexes
+        ii = np.flatnonzero(distance>=xmin)
+        jj = np.flatnonzero(distance<=xmax)
+        uu = np.intersect1d(ii,jj)
+
+        # All done
+        return uu
+
+    def _getindexZlimProfile(self, name, zmin, zmax):
+        '''
+        Returns the index of the points that are in between zmin & zmax.
+        '''
+
+        # Get the velocity
+        velocity = self.profiles[name]['LOS Velocity']
+
+        # Get the indexes
+        ii = np.flatnonzero(velocity>=zmin)
+        jj = np.flatnonzero(velocity<=zmax)
+        uu = np.intersect1d(ii,jj)
+
+        # All done
+        return uu
+
     def coord2prof(self, xc, yc, length, azimuth, width, plot=False):
         '''
         Routine returning the profile
@@ -780,7 +885,10 @@ class insarrates(SourceInv):
         xg = self.x[Bol]
         yg = self.y[Bol]
         vel = self.vel[Bol]
-        err = self.err[Bol]
+        if self.err is not None:
+            err = self.err[Bol]
+        else:
+            err = None
 
         # Check if lengths are ok
         if len(xg) > 5:
@@ -806,6 +914,17 @@ class insarrates(SourceInv):
         else:
             Dalong = vel
             Dacros = vel
+
+        Dalong = np.array(Dalong)
+        Dacros = np.array(Dacros)
+
+        # Toss out nans
+        jj = np.flatnonzero(np.isfinite(vel)).tolist()
+        vel = vel[jj]
+        Dalong = Dalong[jj]
+        Dacros = Dacros[jj]
+        if err is not None:
+            err = err[jj]
 
         if plot:
             plt.figure(1234)
@@ -1046,7 +1165,10 @@ class insarrates(SourceInv):
         for i in range(len(dic['Distance'])):
             d = dic['Distance'][i]
             Vp = dic['LOS Velocity'][i]
-            Ep = dic['LOS Error'][i]
+            if dic['LOS Error'] is not None:
+                Ep = dic['LOS Error'][i]
+            else:
+                Ep = None
             if np.isfinite(Vp):
                 fout.write('{} {} {} \n'.format(d, Vp, Ep))
 
@@ -1056,7 +1178,7 @@ class insarrates(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None):
+    def plotprofile(self, name, legendscale=10., fault=None, norm=None):
         '''
         Plot profile.
         Args:
@@ -1069,15 +1191,23 @@ class insarrates(SourceInv):
         carte = fig.add_subplot(121)
         prof = fig.add_subplot(122)
 
+        # Norm
+        if norm is not None:
+            vmin = norm[0]
+            vmax = norm[1]
+        else:
+            vmin = self.vel.min()
+            vmax = self.vel.max()
+
         # Prepare a color map for insar
         import matplotlib.colors as colors
         import matplotlib.cm as cmx
         cmap = plt.get_cmap('jet')
-        cNorm = colors.Normalize(vmin=self.vel.min(), vmax=self.vel.max())
+        cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
         # plot the InSAR Points on the Map
-        carte.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, vmin=self.vel.min(), vmax=self.vel.max(), linewidths=0.0)
+        carte.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.0)
         scalarMap.set_array(self.vel) 
         plt.colorbar(scalarMap)
 
@@ -1180,16 +1310,6 @@ class insarrates(SourceInv):
 
         # All done
         return d
-
-    def writeProfile2File(self, name, outfile):
-        '''
-        Write the profile you asked for into a ascii file.
-        Args:
-                * name          : Name of the profile
-                * outfile       : Name of the output file
-        '''
-
-        return
 
     def getRMS(self):
         '''                                                                                                      
@@ -1339,9 +1459,9 @@ class insarrates(SourceInv):
 
         # Plot the insar
         if ref is 'utm':
-            ax.scatter(self.x, self.y, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
+            ax.scatter(self.x, self.y, s=10, c=z, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
         else:
-            ax.scatter(self.lon, self.lat, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
+            ax.scatter(self.lon, self.lat, s=10, c=z, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
 
         # Colorbar
         scalarMap.set_array(z)
@@ -1356,7 +1476,7 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def write2grd(self, fname, oversample=1, data='data', interp=100):
+    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', tension=None):
         '''
         Uses surface to write the output to a grd file.
         Args:
@@ -1364,6 +1484,7 @@ class insarrates(SourceInv):
             * oversample: Oversampling factor.
             * data      : can be 'data' or 'synth'.
             * interp    : Number of points along lon and lat.
+            * cmd       : command used for the conversion( i.e., surface or xyz2gmt)
         '''
 
         # Get variables
@@ -1391,8 +1512,12 @@ class insarrates(SourceInv):
         R = '-R{}/{}/{}/{}'.format(lonmin, lonmax, latmin, latmax)
 
         # Create the -I string
-        Nlon = int(interp)*int(oversample)
-        Nlat = Nlon
+        if type(interp)!=list:
+            Nlon = int(interp)*int(oversample)
+            Nlat = Nlon
+        else:
+            Nlon = int(interp[0])
+            Nlat = int(interp[1])
         I = '-I{}+/{}+'.format(Nlon,Nlat)
 
         # Create the G string
@@ -1400,6 +1525,10 @@ class insarrates(SourceInv):
 
         # Create the command
         com = ['surface', R, I, G]
+
+        # Add tension
+        if tension is not None:
+            T = '-T{}'.format(tension)
 
         # open stdin and stdout
         fin = open('xyz.xyz', 'r')

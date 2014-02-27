@@ -32,6 +32,7 @@ from .multifaultsolve import multifaultsolve
 from .cosicorrrates import cosicorrrates
 from .creepmeters import creepmeters
 from .seismic       import seismic
+from .insartimeseries import insartimeseries
 #from .gpstimeseries import gpstimeseries
 #from .gpsstation import gpsstation
 
