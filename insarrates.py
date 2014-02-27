@@ -700,6 +700,26 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def referenceProfile(self, name, xmin, xmax):
+        '''
+        Removes the mean value of points between xmin and xmax.
+        '''
+
+        # Get the profile
+        profile = self.profiles[name]
+
+        # Get the indexes
+        ii = self._getindexXlimProfile(name, xmin, xmax)
+
+        # Get average value
+        average = profile['LOS Velocity'][ii].mean()
+    
+        # Set the reference
+        profile['LOS Velocity'][:] -= average
+
+        # all done
+        return
+
     def cleanProfile(self, name, xlim=None, zlim=None):
         '''
         Cleans a specified profile.
@@ -1196,8 +1216,8 @@ class insarrates(SourceInv):
             vmin = norm[0]
             vmax = norm[1]
         else:
-            vmin = self.vel.min()
-            vmax = self.vel.max()
+            vmin = np.nanmin(self.vel)
+            vmax = np.nanmax(self.vel)
 
         # Prepare a color map for insar
         import matplotlib.colors as colors

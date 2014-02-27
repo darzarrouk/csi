@@ -196,6 +196,36 @@ class insartimeseries(SourceInv):
         # ALl done
         return
 
+    def referenceProfiles(self, prefix, xmin, xmax, verbose=False):
+        '''
+        Removes the mean value of points between xmin and xmax for all the profiles.
+        '''
+
+        # verbose
+        if verbose:
+            print('Referencing profiles:')
+
+        # Simply iterate over the steps
+        for date, sar in zip(self.dates, self.timeseries):
+
+            # make a name
+            pname = '{} {}'.format(prefix, date.isoformat())
+
+            # Print
+            if verbose:
+                sys.stdout.write('\r {} '.format(pname))
+                sys.stdout.flush()
+
+            # Reference
+            sar.referenceProfile(pname, xmin, xmax)
+
+        # verbose
+        if verbose:
+            print('')
+
+        # ALl done
+        return
+
     def cleanProfiles(self, prefix, xlim=None, zlim=None, verbose=False):
         '''
         Wrapper around cleanProfile of insarrates.
@@ -360,7 +390,14 @@ class insartimeseries(SourceInv):
                 zmin = zlim[0]
                 zmax = zlim[1]
                 uu = sar._getindexZlimProfile(pname, zmin, zmax)
-            jj = np.intersect1d(ii,uu).tolist()
+            if (xlim is not None) and (zlim is not None):
+                jj = np.intersect1d(ii,uu).tolist()
+            elif (zlim is None) and (xlim is not None):
+                jj = ii
+            elif (zlim is not None) and (xlim is None):
+                jj = uu
+            else:
+                jj = range(sar.profiles[pname]['Distance'].shape[0])
 
             # Get distance
             distance = sar.profiles[pname]['Distance'][jj].tolist()
