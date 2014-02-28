@@ -2517,7 +2517,7 @@ class RectangularPatches(SourceInv):
             self.sim.lon = lon
             self.sim.lat = lat
             # put these in x y utm coordinates
-            self.sim.ll2xy()
+            self.sim.lonlat2xy()
 
         # Initialize the vel_enu array
         self.sim.vel_enu = np.zeros((lon.size, 3))

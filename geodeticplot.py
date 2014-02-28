@@ -432,6 +432,42 @@ class geodeticplot(object):
         # All done
         return
 
+    def gpsverticals(self, gps, norm=None, colorbar=True, markersize=20.):
+        '''
+        Scatter plot of the vertical displacement of the GPS.
+        '''
+
+        # Get xy
+        if self.ref is 'utm':
+            x = gps.x
+            y = gps.y
+        else:
+            x = gps.lon
+            y = gps.lat
+
+        # Get the verticals
+        V = gps.vel_enu[:,2]
+
+        # Get a colormap
+        cmap = plt.get_cmap('jet')
+
+        # Norm
+        if norm is not None:
+            vmin = norm[0]
+            vmax = norm[1]
+        else:
+            vmin = V.min()
+            vmax = V.max()
+
+        # Plot that on the map
+        sc = self.carte.scatter(x, y, s=markersize, c=V, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.01)
+
+        # Colorbar
+        if colorbar:
+            self.fig2.colorbar(sc, orientation='horizontal', shrink=0.6)
+
+        return
+
     def gps_projected(self, gps, norm=None, colorbar=True):
         '''
         Args:

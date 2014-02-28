@@ -561,6 +561,30 @@ class seismiclocations(SourceInv):
         # All done
         return
 
+    def _getDistance2Fault(self, fault):
+        '''
+        Computes the distance between the fault trace and all the earthquakes.
+        '''
+        
+        # Import
+        import shapely.geometry as sg
+
+        # Create a list with earthquakes
+        LL = np.vstack((self.x, self.y)).T.tolist()
+        PP = sg.MultiPoint(LL)
+
+        # Build a line object
+        FF = np.vstack((fault.xf, fault.yf)).T.tolist()
+        trace = sg.LineString(FF)
+
+        # Distance
+        dis = []
+        for p in PP.geoms:
+            dis.append(trace.distance(p))
+
+        # All done
+        return dis
+
     def MapHistogram(self, binwidth=1.0, plot=False, normed=True):
         '''
         Builds a 2D histogram of the earthquakes locations.
