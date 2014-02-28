@@ -166,7 +166,7 @@ class insartimeseries(SourceInv):
         # All done
         return
 
-    def runingAverageProfiles(self, prefix, window, verbose=False):
+    def runingAverageProfiles(self, prefix, window, verbose=False, method='mean'):
         '''
         Runs the average window mean on profiles.
         '''
@@ -187,7 +187,7 @@ class insartimeseries(SourceInv):
                 sys.stdout.flush()
 
             # Smooth the profile
-            sar.runingAverageProfile(pname, window)
+            sar.runingAverageProfile(pname, window, method=method)
 
         # verbose
         if verbose:

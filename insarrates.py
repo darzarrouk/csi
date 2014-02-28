@@ -790,7 +790,7 @@ class insarrates(SourceInv):
 
         return
 
-    def runingAverageProfile(self, name, window):
+    def runingAverageProfile(self, name, window, method='mean'):
         '''
         Computes a mooving average on the profile with name.
         '''
@@ -812,7 +812,10 @@ class insarrates(SourceInv):
             jj = np.flatnonzero((dis>=d-window/2.) & (dis<=d+window/2.))
 
             # Get the mean
-            m = vel[jj].mean()
+            if method in ('mean'):
+                m = vel[jj].mean()
+            elif method in ('median'):
+                m = np.median(vel[jj])
 
             # Get the error
             e = vel[jj].std()
@@ -1586,7 +1589,7 @@ class insarrates(SourceInv):
         G = '-G'+fname
 
         # Create the command
-        com = ['surface', R, I, G]
+        com = [cmd, R, I, G]
 
         # Add tension
         if tension is not None and cmd in ('surface'):

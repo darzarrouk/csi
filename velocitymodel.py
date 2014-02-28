@@ -561,9 +561,9 @@ class velocitymodel(object):
         d0 = 0
         for i in range(Nlayers):
             if i < Nlayers - 1:
-                string = " {:3.2f}  {:3.2f}  {:3.2f}  {:3.2f} \n".format(vs[i], vp[i], r[i], d[i]-d0)
+                string = " {:3.2f}  {:3.2f}  {:3.2f}  {:3.2f} \n".format(r[i], vp[i], vs[i], d[i]-d0)
             else:
-                string = " {:3.2f}  {:3.2f}  {:3.2f}  0.00 \n".format(vs[i], vp[i], r[i])
+                string = " {:3.2f}  {:3.2f}  {:3.2f}  0.00 \n".format(r[i], vp[i], vs[i])
             fout.write(string)
             # update d0
             d0 = d[i]
