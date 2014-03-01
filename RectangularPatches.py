@@ -3146,7 +3146,7 @@ class RectangularPatches(SourceInv):
         # all done
         return
 
-    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False, show=True, axesscaling=True, Norm=None):
+    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False, show=True, axesscaling=True, Norm=None, linewidth=1.0):
         '''
         Plot the available elements of the fault.
         
@@ -3259,6 +3259,7 @@ class RectangularPatches(SourceInv):
                 verts = [zip(x, y, z)]
                 rect = art3d.Poly3DCollection(verts)
                 rect.set_color(scalarMap.to_rgba(plotval[p]))
+                rect.set_linewidth(linewidth)
                 rect.set_edgecolors('k')
                 ax.add_collection3d(rect)
 
@@ -3533,9 +3534,123 @@ class RectangularPatches(SourceInv):
         # All done
         return Map
 
+    def mapSlipPlane2Plane(self, fault, interpolation='linear', verbose=False):
+        '''
+        Maps the slip distribution from fault onto self.
+        Mapping is built by computing the best plane between the two faults, 
+        projecting the center of patches on that plane and doing a simple resampling.
+        The closer the two faults, the better...
+        '''
 
+        if verbose:
+            print('Map Slip from fault {} into fault {}'.format(fault.name, self.name))
+            print('Build the best plane')
 
+        # 1. Find the best fitting plane for self
+        # 1.1 Compute the average strike and the average dip of the fault
+        selfstrike = np.mean([self.getpatchgeometry(i)[5] for i in range(len(self.patch))])
+        selfdip = np.mean([self.getpatchgeometry(i)[6] for i in range(len(self.patch))])
 
+        # 1.2 Get the center of the fault
+        selfxc = np.mean([self.getpatchgeometry(i, center=True)[0] for i in range(len(self.patch))])
+        selfyc = np.mean([self.getpatchgeometry(i, center=True)[1] for i in range(len(self.patch))])
+        selfzc = np.mean([self.getpatchgeometry(i, center=True)[2] for i in range(len(self.patch))])
+
+        # 2. Find the best fitting plane for fault
+        # 2.1 Compute the average strike and dip of the fault
+        faultstrike = np.mean([fault.getpatchgeometry(i)[5] for i in range(len(fault.patch))])
+        faultdip = np.mean([fault.getpatchgeometry(i)[6] for i in range(len(fault.patch))])
+
+        # 2.2 Get the center of the fault
+        faultxc = np.mean([fault.getpatchgeometry(i, center=True)[0] for i in range(len(fault.patch))])
+        faultyc = np.mean([fault.getpatchgeometry(i, center=True)[1] for i in range(len(fault.patch))])
+        faultzc = np.mean([fault.getpatchgeometry(i, center=True)[2] for i in range(len(fault.patch))])
+
+        # 3. Compute the average plane P
+        # 3.1 Compute the average strike and dip of the plane
+        strike = (selfstrike + faultstrike)/2.
+        dip = (selfdip + faultdip)/2.
+
+        # 3.2 Compute the average center of the plane
+        xc = (faultxc + selfxc)/2.
+        yc = (faultyc + selfyc)/2.
+        zc = (faultzc + selfzc)/2.
+
+        # 3.3 Get the unit vectors of that plane
+        n1, n2, n3 = self.strikedip2normal(strike, dip)
+
+        if verbose:
+            print('Project on the best plane')
+
+        # 4. Project patch centers from self on the plane P
+        # 4.1 Build vectors from new plane center to each patch center
+        selfvector = np.array([self.getpatchgeometry(i, center=True)[:3] for i in range(len(self.patch))])
+        selfvector[:,0] -= xc
+        selfvector[:,1] -= yc
+        selfvector[:,2] -= zc
+
+        # 4.2 Project on the unit vectors
+        self.x1 = np.dot(selfvector, n2).reshape((len(self.patch),))
+        self.x2 = np.dot(selfvector, n3).reshape((len(self.patch),))
+
+        # 5. Project patch centers from fault on the plane P
+        # 5.1 Build vectors from the new plane center to each patch center
+        faultvector =np.array([fault.getpatchgeometry(i, center=True)[:3] for i in range(len(fault.patch))])
+        faultvector[:,0] -= xc
+        faultvector[:,1] -= yc
+        faultvector[:,2] -= zc
+
+        # 5.2 Project on the unit vectors
+        fault.x1 = np.dot(faultvector, n2).reshape((len(fault.patch),))
+        fault.x2 = np.dot(faultvector, n3).reshape((len(fault.patch),))
+
+        if verbose:
+            print('Run the interpolation')
+
+        # 6. Now, resample the slip that is on 
+        # 6.0 import scipy
+        import scipy.interpolate as sciint
+
+        # 6.1 Get slip
+        inslip = fault.slip
+
+        # 6.1 Create an interpolator
+        print('Strike Slip')
+        fStrikeSlip = sciint.interp2d(fault.x1, fault.x2, inslip[:,0], kind='linear')
+        print('Dip Slip')
+        fDipSlip = sciint.interp2d(fault.x1, fault.x2, inslip[:,1], kind='linear')
+        print('Tensile Slip')
+        fTensile = sciint.interp2d(fault.x1, fault.x2, inslip[:,2], kind='linear')
+
+        # 6.2 Interpolate
+        for i in range(len(self.patch)):
+            self.slip[i,0] = fStrikeSlip(self.x1[i], self.x2[i])
+            self.slip[i,1] = fDipSlip(self.x1[i], self.x2[i])
+            self.slip[i,2] = fTensile(self.x1[i], self.x2[i])
+
+        # All done
+        return
+
+    def strikedip2normal(self, strike, dip):
+        '''
+        Returns a vector normal to a plane with a given strike and dip.
+        strike and dip in radians...
+        '''
+        
+        # Compute normal
+        n1 = np.array([np.sin(dip)*np.cos(strike), -1.0*np.sin(dip)*np.sin(strike), np.cos(dip)])
+
+        # Along Strike
+        n2 = np.array([np.sin(strike), np.cos(strike), np.zeros(strike.shape)])
+
+        # Along Dip
+        n3 = np.cross(n1, n2, axisa=0, axisb=0).T
+
+        # All done
+        if len(n1.shape)==1:
+            return n1.reshape((3,1)), n2.reshape((3,1)), n3.reshape((3,1))
+        else:
+            return n1, n2, n3
 
 
 

@@ -215,7 +215,7 @@ class geodeticplot(object):
         return
 
     def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True, 
-                     plot_on_2d=False, revmap=False):
+                     plot_on_2d=False, revmap=False, linewidth=1.0):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -277,6 +277,7 @@ class geodeticplot(object):
             rect = art3d.Poly3DCollection(verts)
             rect.set_color(scalarMap.to_rgba(slip[p]))
             rect.set_edgecolors('k')
+            rect.set_linewidth(linewidth)
             self.faille.add_collection3d(rect)
             Xs = np.append(Xs,x)
             Ys = np.append(Ys,y)
