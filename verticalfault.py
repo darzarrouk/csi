@@ -29,18 +29,6 @@ class verticalfault(RectangularPatches):
         # Initialize base class
         super(self.__class__,self).__init__(name,utmzone,ellps)
 
-        # Warning
-        print('---------------------------------------------------')
-        print('---------------------------------------------------')
-        print('             WARNING WARNING WARNING               ')
-        print(' vertical fault class is not consistent with other ')
-        print(' rectangular fault classes. The order of the patch ')
-        print(' corner is different. We need to fix that asap...  ')
-        print('             WARNING WARNING WARNING               ')
-        print('-----------------------------------------------------')
-        print('-----------------------------------------------------')
-
-
         # All done
         return
 
@@ -309,12 +297,12 @@ class verticalfault(RectangularPatches):
                 # fill them
                 p[0,:] = [x1, y1, z[j]]
                 pll[0,:] = [lon1, lat1, z[j]]
-                p[1,:] = [x2, y2, z[j+1]]
-                pll[1,:] = [lon2, lat2, z[j+1]]
+                p[3,:] = [x2, y2, z[j+1]]
+                pll[3,:] = [lon2, lat2, z[j+1]]
                 p[2,:] = [x3, y3, z[j+1]]
                 pll[2,:] = [lon3, lat3, z[j+1]]
-                p[3,:] = [x4, y4, z[j]]
-                pll[3,:] = [lon4, lat4, z[j]]
+                p[1,:] = [x4, y4, z[j]]
+                pll[1,:] = [lon4, lat4, z[j]]
                 psize = np.sqrt( (x3-x2)**2 + (y3-y2)**2 )
                 if psize>minpatchsize:
                     self.patch.append(p)
@@ -322,9 +310,9 @@ class verticalfault(RectangularPatches):
                     self.slip.append([0.0, 0.0, 0.0])
                 else:           # Increase the size of the previous patch
                     self.patch[-1][2,:] = [x3, y3, z[j+1]]
-                    self.patch[-1][3,:] = [x4, y4, z[j]]
+                    self.patch[-1][1,:] = [x4, y4, z[j]]
                     self.patchll[-1][2,:] = [lon3, lat3, z[j+1]]
-                    self.patchll[-1][3,:] = [lon4, lat4, z[j]]
+                    self.patchll[-1][1,:] = [lon4, lat4, z[j]]
 
 
         # Translate slip into a np.array
@@ -418,26 +406,26 @@ class verticalfault(RectangularPatches):
         newpatchll = np.zeros((4,3))
 
         # determine which corners are in common, needs at least two
-        if ((list(patch1[0])==list(patch2[1])) and (list(patch1[3])==list(patch2[2]))):     # patch2 is above patch1
+        if ((list(patch1[0])==list(patch2[3])) and (list(patch1[1])==list(patch2[2]))):     # patch2 is above patch1
             newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:] 
-            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
-            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
-            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
-        elif ((list(patch1[3])==list(patch2[0])) and (list(patch1[2])==list(patch2[1]))):   # patch2 is on the right of patch1
-            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
-            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
-            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
-            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
-        elif ((list(patch1[1])==list(patch2[0])) and (list(patch1[2])==list(patch2[3]))):   # patch2 is under patch1
-            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
-            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
-            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
             newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
-        elif ((list(patch1[0])==list(patch2[3])) and (list(patch1[1])==list(patch2[2]))):   # patch2 is on the left of patch1
+            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
+            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
+        elif ((list(patch1[1])==list(patch2[0])) and (list(patch1[2])==list(patch2[3]))):   # patch2 is on the right of patch1
+            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
+            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
+            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
+            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
+        elif ((list(patch1[3])==list(patch2[0])) and (list(patch1[2])==list(patch2[1]))):   # patch2 is under patch1
+            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
+            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
+            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
+            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
+        elif ((list(patch1[0])==list(patch2[1])) and (list(patch1[3])==list(patch2[2]))):   # patch2 is on the left of patch1
             newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:]
-            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
+            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
             newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
-            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
+            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
         else:
             print('Patches do not have common corners...')
             return
@@ -576,34 +564,6 @@ class verticalfault(RectangularPatches):
         # All done
         return
 
-    def cutPatchesIn2Vertically(self, ipatches):
-        '''
-        Cut the Patches in 2 vertically.
-        '''
-
-        # Check something
-        if ipatches.__class__ in (int, np.int):
-            ipatches = [ipatches]
-        elif ipatches.__class__ in (np.ndarray):
-            ipatches = ipatches.tolist()
-        else:
-            print('Input must be of type int, np.int, list or array of int')
-            return
-
-        # Loop over the patches
-        for ip in ipatches:
-
-            # Get the patch
-            patch = self.patch[ip]
-
-            # Delete the patch 
-            self.deletepatch(ip)
-
-            # Find the middle of the two horizontal bars
-
-        # All done
-        return
-
     def associatePatch2PDFs(self, directory='.', prefix='step_001_param'):
         '''
         Associates a patch with a pdf called directory/prefix_{#}.dat.
@@ -654,91 +614,3 @@ class verticalfault(RectangularPatches):
         # all done
         return
 
-    def writePatches2File(self, filename, add_slip=None, scale=1.0, patch='normal',
-                          stdh5=None, decim=1):
-        '''
-        Writes the patch corners in a file that can be used in psxyz.
-        Args:
-            * filename      : Name of the file.
-            * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total.
-            * scale         : Multiply the slip value by a factor.
-            * patch         : Can be 'normal' or 'equiv'
-        '''
-
-        # Write something
-        print('Routine overwritten on top of base class')
-        print('Writing geometry to file {}'.format(filename))
-
-        # Open the file
-        fout = open(filename, 'w')
-
-        # If an h5 file is specified, open it
-        if stdh5 is not None:
-            import h5py
-            h5fid = h5py.File(stdh5, 'r')
-            samples = h5fid['samples'].value[::decim,:]
-
-        # Loop over the patches
-        nPatches = len(self.patch)
-        for p in range(nPatches):
-
-            # Select the string for the color
-            string = '  '
-            if add_slip is not None:
-                if add_slip is 'strikeslip':
-                    if stdh5 is not None:
-                        slp = np.std(samples[:,p])
-                    else:
-                        slp = self.slip[p,0]*scale
-                elif add_slip is 'dipslip':
-                    if stdh5 is not None:
-                        slp = np.std(samples[:,p+nPatches])
-                    else:
-                        slp = self.slip[p,1]*scale
-                elif add_slip is 'total':
-                    if stdh5 is not None:
-                        slp = np.std(samples[:,p]**2 + samples[:,p+nPatches]**2)
-                    else:
-                        slp = np.sqrt(self.slip[p,0]**2 + self.slip[p,1]**2)*scale
-                elif add_slip is 'normaltraction':
-                    slp = self.Normal
-                elif add_slip is 'strikesheartraction':
-                    slp = self.ShearStrike
-                elif add_slip is 'dipsheartraction':
-                    slp = self.ShearDip
-                # Make string
-                string = '-Z{}'.format(slp)
-
-            # Put the parameter number in the file as well if it exists
-            parameter = ' ' 
-            if hasattr(self,'index_parameter'):
-                i = np.int(self.index_parameter[p,0])
-                j = np.int(self.index_parameter[p,1])
-                k = np.int(self.index_parameter[p,2])
-                parameter = '# {} {} {} '.format(i,j,k)
-
-            # Put the slip value
-            slipstring = ' # {} {} {} '.format(self.slip[p,0], self.slip[p,1], self.slip[p,2])
-
-            # Write the string to file
-            fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
-
-            # Write the 4 patch corners (the order is to be GMT friendly)
-            if patch in ('normal'):
-                p = self.patchll[p]
-            elif patch in ('equiv'):
-                p = self.equivpatchll[p]
-            pp=p[3]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-            pp=p[0]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-            pp=p[1]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-            pp=p[2]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-
-        # Close th file
-        fout.close()
-
-        # Close h5 file if it is open
-        if stdh5 is not None:
-            h5fid.close()
-
-        # All done 
-        return

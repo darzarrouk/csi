@@ -3534,12 +3534,17 @@ class RectangularPatches(SourceInv):
         # All done
         return Map
 
-    def mapSlipPlane2Plane(self, fault, interpolation='linear', verbose=False):
+    def mapSlipPlane2Plane(self, fault, interpolation='linear', verbose=False, addlimits=True):
         '''
         Maps the slip distribution from fault onto self.
         Mapping is built by computing the best plane between the two faults, 
         projecting the center of patches on that plane and doing a simple resampling.
         The closer the two faults, the better...
+        Args:
+            * fault         : Fault that has a slip distribution
+            * interpolation : Type of interpolation method. Can be 'linear', 'cubic' or 'quintic'
+            * verbose       : if True, the routine says a few things.
+            * addlimits     : Adds the upper and lower bounds of the fault in the interpolation scheme.
         '''
 
         if verbose:
@@ -3596,6 +3601,13 @@ class RectangularPatches(SourceInv):
         # 5. Project patch centers from fault on the plane P
         # 5.1 Build vectors from the new plane center to each patch center
         faultvector =np.array([fault.getpatchgeometry(i, center=True)[:3] for i in range(len(fault.patch))])
+
+        # 5.1.bis Add Limits
+        if addlimits:
+            mindepth = np.min(faultvector[:,2])
+            uu = np.flatnonzero(faultvector[:,2]==mindepth)
+#            addvector = np.array([ [fault.patch[u][
+
         faultvector[:,0] -= xc
         faultvector[:,1] -= yc
         faultvector[:,2] -= zc
