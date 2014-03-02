@@ -549,7 +549,7 @@ class RectangularPatches(SourceInv):
         # All done
         return
 
-    def readPatchesFromFile(self, filename, Cm=None, readpatchindex=True):
+    def readPatchesFromFile(self, filename, Cm=None, readpatchindex=True, inputCoordinates='lonlat'):
         '''
         Read the patches from a GMT formatted file.
         Args:   
@@ -593,27 +593,40 @@ class RectangularPatches(SourceInv):
                 slip = np.array([0.0, 0.0, 0.0])
             self.slip.append(slip)
             # get the values
-            lon1, lat1, z1 = A[i+1].split()
-            lon2, lat2, z2 = A[i+2].split()
-            lon3, lat3, z3 = A[i+3].split()
-            lon4, lat4, z4 = A[i+4].split()
+            if inputCoordinates in ('lonlat'):
+                lon1, lat1, z1 = A[i+1].split()
+                lon2, lat2, z2 = A[i+2].split()
+                lon3, lat3, z3 = A[i+3].split()
+                lon4, lat4, z4 = A[i+4].split()
+                # Pass as floating point
+                lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1)
+                lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
+                lon3 = float(lon3); lat3 = float(lat3); z3 = float(z3)
+                lon4 = float(lon4); lat4 = float(lat4); z4 = float(z4)
+                # translate to utm
+                x1, y1 = self.ll2xy(lon1, lat1)
+                x2, y2 = self.ll2xy(lon2, lat2)
+                x3, y3 = self.ll2xy(lon3, lat3)
+                x4, y4 = self.ll2xy(lon4, lat4)
+            elif inputCoordinates in ('xyz'):
+                x1, y1, z1 = A[i+1].split()
+                x2, y2, z2 = A[i+2].split()
+                x3, y3, z3 = A[i+3].split()
+                x4, y4, z4 = A[i+4].split()
+                # Pass as floating point
+                x1 = float(x1); y1 = float(y1); z1 = float(z1)
+                x2 = float(x2); y2 = float(y2); z2 = float(z2)
+                x3 = float(x3); y3 = float(y3); z3 = float(z3)
+                x4 = float(x4); y4 = float(y4); z4 = float(z4)
+                # translate to utm
+                lon1, lat1 = self.xy2ll(x1, y1)
+                lon2, lat2 = self.xy2ll(x2, y2)
+                lon3, lat3 = self.xy2ll(x3, y3)
+                lon4, lat4 = self.xy2ll(x4, y4)
             # Depth
             mm = min([float(z1), float(z2), float(z3), float(z4)])
             if D<mm:
                 D=mm
-            # Pass as floating point
-            lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1)
-            lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
-            # Pass as floating point
-            lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1)
-            lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
-            lon3 = float(lon3); lat3 = float(lat3); z3 = float(z3)
-            lon4 = float(lon4); lat4 = float(lat4); z4 = float(z4)
-            # translate to utm
-            x1, y1 = self.ll2xy(lon1, lat1)
-            x2, y2 = self.ll2xy(lon2, lat2)
-            x3, y3 = self.ll2xy(lon3, lat3)
-            x4, y4 = self.ll2xy(lon4, lat4)
             # Set points
             if y1>y2:
                 p2 = [x1, y1, z1]; p2ll = [lon1, lat1, z1]
@@ -727,6 +740,8 @@ class RectangularPatches(SourceInv):
                 p = self.patchll[p]
             elif patch in ('equiv'):
                 p = self.equivpatchll[p]
+            elif patch in ('xyz'):
+                p = self.patch[p]
             pp=p[1]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
             pp=p[0]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
             pp=p[3]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
@@ -3600,21 +3615,28 @@ class RectangularPatches(SourceInv):
 
         # 5. Project patch centers from fault on the plane P
         # 5.1 Build vectors from the new plane center to each patch center
-        faultvector =np.array([fault.getpatchgeometry(i, center=True)[:3] for i in range(len(fault.patch))])
+        faultvector = np.array([fault.getpatchgeometry(i, center=True)[:3] for i in range(len(fault.patch))])
+        size = len(fault.patch)
 
         # 5.1.bis Add Limits
         if addlimits:
             mindepth = np.min(faultvector[:,2])
+            maxdepth = np.max(faultvector[:,2])
             uu = np.flatnonzero(faultvector[:,2]==mindepth)
-#            addvector = np.array([ [fault.patch[u][
+            vv = np.flatnonzero(faultvector[:,2]==maxdepth)
+            ii = np.hstack((uu,vv))
+            addvector0 = np.array([fault.patch[i][0] for i in ii])
+            addvector1 = np.array([fault.patch[i][1] for i in ii])
+            faultvector = np.vstack(( np.vstack((faultvector, addvector0)), addvector1 ))
+            size = size + addvector0.shape[0] + addvector1.shape[0]
 
         faultvector[:,0] -= xc
         faultvector[:,1] -= yc
         faultvector[:,2] -= zc
 
         # 5.2 Project on the unit vectors
-        fault.x1 = np.dot(faultvector, n2).reshape((len(fault.patch),))
-        fault.x2 = np.dot(faultvector, n3).reshape((len(fault.patch),))
+        fault.x1 = np.dot(faultvector, n2).reshape((size,))
+        fault.x2 = np.dot(faultvector, n3).reshape((size,))
 
         if verbose:
             print('Run the interpolation')
@@ -3625,6 +3647,10 @@ class RectangularPatches(SourceInv):
 
         # 6.1 Get slip
         inslip = fault.slip
+        if addlimits:
+            addslip = fault.slip[ii,:]
+            inslip = np.vstack((inslip, addslip))
+            inslip = np.vstack((inslip, addslip))
 
         # 6.1 Create an interpolator
         print('Strike Slip')
