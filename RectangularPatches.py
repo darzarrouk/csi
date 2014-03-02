@@ -3620,13 +3620,22 @@ class RectangularPatches(SourceInv):
 
         # 5.1.bis Add Limits
         if addlimits:
-            mindepth = np.min(faultvector[:,2])
-            maxdepth = np.max(faultvector[:,2])
-            uu = np.flatnonzero(faultvector[:,2]==mindepth)
-            vv = np.flatnonzero(faultvector[:,2]==maxdepth)
-            ii = np.hstack((uu,vv))
-            addvector0 = np.array([fault.patch[i][0] for i in ii])
-            addvector1 = np.array([fault.patch[i][1] for i in ii])
+            # Get depths
+            depths = np.array([[fault.patch[i][0][2], fault.patch[i][2][2]] for i in range(len(fault.patch))])
+            # Get min and max depths
+            mindepth = np.min(np.unique(depths))
+            maxdepth = np.max(np.unique(depths))
+            # Get which patches are concerned
+            uu = np.flatnonzero(depths[:,0]==mindepth)
+            vv = np.flatnonzero(depths[:,1]==maxdepth)
+            # Add top row
+            addvector0 = np.array([fault.patch[i][0] for i in uu])
+            addvector1 = np.array([fault.patch[i][1] for i in uu])
+            faultvector = np.vstack(( np.vstack((faultvector, addvector0)), addvector1 ))
+            size = size + addvector0.shape[0] + addvector1.shape[0]
+            # Add bottom row
+            addvector0 = np.array([fault.patch[i][2] for i in vv])
+            addvector1 = np.array([fault.patch[i][3] for i in vv])
             faultvector = np.vstack(( np.vstack((faultvector, addvector0)), addvector1 ))
             size = size + addvector0.shape[0] + addvector1.shape[0]
 
@@ -3648,23 +3657,29 @@ class RectangularPatches(SourceInv):
         # 6.1 Get slip
         inslip = fault.slip
         if addlimits:
-            addslip = fault.slip[ii,:]
+            addslip = fault.slip[uu,:]
             inslip = np.vstack((inslip, addslip))
             inslip = np.vstack((inslip, addslip))
+            addslip = fault.slip[vv,:]
+            inslip = np.vstack((inslip, addslip))
+            inslip = np.vstack((inslip, addslip))
+        fault.inslip = inslip
 
         # 6.1 Create an interpolator
-        print('Strike Slip')
-        fStrikeSlip = sciint.interp2d(fault.x1, fault.x2, inslip[:,0], kind='linear')
-        print('Dip Slip')
-        fDipSlip = sciint.interp2d(fault.x1, fault.x2, inslip[:,1], kind='linear')
-        print('Tensile Slip')
-        fTensile = sciint.interp2d(fault.x1, fault.x2, inslip[:,2], kind='linear')
+#        fStrikeSlip = sciint.SmoothBivariateSpline(fault.x1, fault.x2, inslip[:,0], kx=5, ky=5)
+#        fDipSlip = sciint.SmoothBivariateSpline(fault.x1, fault.x2, inslip[:,1], kx=5, ky=5)
+#        fTensile = sciint.SmoothBivariateSpline(fault.x1, fault.x2, inslip[:,2], kx=5, ky=5)
+        minx1 = np.min(fault.x1); normx1 = np.max(fault.x1) - minx1; 
+        minx2 = np.min(fault.x2); normx2 = np.max(fault.x2) - minx2; 
+        fStrikeSlip = sciint.Rbf((fault.x1-minx1)/normx1, (fault.x2-minx2)/normx2, inslip[:,0], function='linear', smooth=0.1)
+        fDipSlip = sciint.Rbf((fault.x1-minx1)/normx1, (fault.x2-minx2)/normx2, inslip[:,1], function='linear', smooth=0.1)
+        fTensile = sciint.Rbf((fault.x1-minx1)/normx1, (fault.x2-minx2)/normx2, inslip[:,2], function='linear', smooth=0.1)
 
         # 6.2 Interpolate
         for i in range(len(self.patch)):
-            self.slip[i,0] = fStrikeSlip(self.x1[i], self.x2[i])
-            self.slip[i,1] = fDipSlip(self.x1[i], self.x2[i])
-            self.slip[i,2] = fTensile(self.x1[i], self.x2[i])
+            self.slip[i,0] = fStrikeSlip((self.x1[i]-minx1)/normx1, (self.x2[i]-minx2)/normx2)
+            self.slip[i,1] = fDipSlip((self.x1[i]-minx1)/normx1, (self.x2[i]-minx2)/normx2)
+            self.slip[i,2] = fTensile((self.x1[i]-minx1)/normx1, (self.x2[i]-minx2)/normx2)
 
         # All done
         return
