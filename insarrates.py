@@ -1485,8 +1485,8 @@ class insarrates(SourceInv):
 
         # Norm 
         if norm is None:
-            vmin = z.min()
-            vmax = z.max()
+            vmin = np.nanmin(z)
+            vmax = np.nanmax(z)
         else:
             vmin = norm[0]
             vmax = norm[1]
