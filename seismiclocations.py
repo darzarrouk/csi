@@ -840,24 +840,20 @@ class seismiclocations(SourceInv):
         # Create a list
         ipatch = []
 
-        # Shapely
-        import shapely.geometry as geom
+        # scipy.distance
+        import scipy.spatial.distance as distance
 
-        # Create a list of patches
-        Patches = [geom.Polygon(p) for p in fault.patch]
+        # Create a list of patch centers
+        Centers = [fault.getpatchgeometry(i, center=True)[:3] for i in range(len(fault.patch))]
 
         # Create a list of points
-        Earthquakes = [geom.Point(self.x[i], self.y[i], self.depth[i]) for i in range(self.x.shape[0])]
+        Earthquakes = [[self.x[i], self.y[i], self.depth[i]] for i in range(self.x.shape[0])]
 
         # Iterate on the earthquakes
         for eq in Earthquakes:
 
             # Create a list of distances
-            dis = []
-
-            # Get distance between each patch and eq
-            for p in Patches:
-                dis.append(p.distance(eq))
+            dis = distance.cdist([eq], Centers)
 
             # Get the index of the smallest distance
             ipatch.append((np.array(dis)).argmin())
