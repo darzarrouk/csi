@@ -65,8 +65,9 @@ def displacement(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts,
 
     # Check if things went well
     if not (flag==0).all():
-        print(' Error: {}'.format(tuple(np.where(flag!=0))))
-        print('Something went wrong in okada4py... You should check...')
+        if not np.where(flag!=0)==[]:
+            print(' Error: {}'.format(tuple(np.where(flag!=0))))
+            print('Something went wrong in okada4py... You should check...')
 
     # Reshape the displacement
     u = u.reshape((len(xs), 3))
@@ -103,8 +104,9 @@ def strain(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, nu=0.
 
     # Check if things went well
     if not (flag==0).all():
-        print(' Error: {}'.format(tuple(np.where(flag!=0))))
-        print('Something went wrong in okada4py... You should check...')
+        if not np.where(flag!=0)==[]:
+            print(' Error: {}'.format(tuple(np.where(flag!=0))))
+            print('Something went wrong in okada4py... You should check...')
 
     # Reshape the displacement
     d = d.reshape((len(xs), 9))
@@ -151,8 +153,9 @@ def stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30
 
     # Check if things went well
     if not (flag==0.).all():
-        print('Something went wrong in okada4py... You should check...')
-        print(' Error: {}'.format(tuple(np.where(flag!=0.))))
+        if not np.where(flag!=0)==[]:
+            print('Something went wrong in okada4py... You should check...')
+            print(' Error: {}'.format(tuple(np.where(flag!=0.))))
 
     # Reshape the displacement
     s = s.reshape((len(xs), 6))

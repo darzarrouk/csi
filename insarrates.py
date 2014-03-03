@@ -1243,7 +1243,7 @@ class insarrates(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None, norm=None):
+    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm'):
         '''
         Plot profile.
         Args:
@@ -1272,7 +1272,13 @@ class insarrates(SourceInv):
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
         # plot the InSAR Points on the Map
-        carte.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.0)
+        if ref is 'utm':
+            x = self.x
+            y = self.y
+        elif ref is 'lonlat':
+            x = self.lon
+            y = self.lat
+        carte.scatter(x, y, s=10, c=self.vel, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.0)
         scalarMap.set_array(self.vel) 
         plt.colorbar(scalarMap)
 
@@ -1280,7 +1286,11 @@ class insarrates(SourceInv):
         b = self.profiles[name]['Box']
         bb = np.zeros((5, 2))
         for i in range(4):
-            x, y = self.ll2xy(b[i,0], b[i,1])
+            if ref is 'utm':
+                x, y = self.ll2xy(b[i,0], b[i,1])
+            elif ref is 'lonlat':
+                x = b[i,0]
+                y = b[i,1]
             bb[i,0] = x
             bb[i,1] = y
         bb[4,0] = bb[0,0]
@@ -1304,7 +1314,10 @@ class insarrates(SourceInv):
                 fault = [fault]
             # Loop on the faults
             for f in fault:
-                carte.plot(f.xf, f.yf, '-')
+                if ref is 'utm':
+                    carte.plot(f.xf, f.yf, '-')
+                elif ref is 'lonlat':
+                    carte.plot(f.lon, f.lat, '-')
                 # Get the distance
                 d = self.intersectProfileFault(name, f)
                 if d is not None:

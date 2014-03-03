@@ -318,7 +318,7 @@ class geodeticplot(object):
         if zticklabels is None:
             zticks = []
             zticklabels = []
-            for z in linspace(0,depth,5):
+            for z in np.linspace(0,depth,5):
                 zticks.append(-1.0*z)
                 zticklabels.append(z)
         else:
