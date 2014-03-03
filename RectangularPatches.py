@@ -3549,7 +3549,7 @@ class RectangularPatches(SourceInv):
         # All done
         return Map
 
-    def mapSlipPlane2Plane(self, fault, interpolation='linear', verbose=False, addlimits=True):
+    def mapSlipPlane2Plane(self, fault, interpolation='linear', verbose=False, addlimits=True, smooth=0.1):
         '''
         Maps the slip distribution from fault onto self.
         Mapping is built by computing the best plane between the two faults, 
@@ -3666,14 +3666,11 @@ class RectangularPatches(SourceInv):
         fault.inslip = inslip
 
         # 6.1 Create an interpolator
-#        fStrikeSlip = sciint.SmoothBivariateSpline(fault.x1, fault.x2, inslip[:,0], kx=5, ky=5)
-#        fDipSlip = sciint.SmoothBivariateSpline(fault.x1, fault.x2, inslip[:,1], kx=5, ky=5)
-#        fTensile = sciint.SmoothBivariateSpline(fault.x1, fault.x2, inslip[:,2], kx=5, ky=5)
         minx1 = np.min(fault.x1); normx1 = np.max(fault.x1) - minx1; 
         minx2 = np.min(fault.x2); normx2 = np.max(fault.x2) - minx2; 
-        fStrikeSlip = sciint.Rbf((fault.x1-minx1)/normx1, (fault.x2-minx2)/normx2, inslip[:,0], function='linear', smooth=0.1)
-        fDipSlip = sciint.Rbf((fault.x1-minx1)/normx1, (fault.x2-minx2)/normx2, inslip[:,1], function='linear', smooth=0.1)
-        fTensile = sciint.Rbf((fault.x1-minx1)/normx1, (fault.x2-minx2)/normx2, inslip[:,2], function='linear', smooth=0.1)
+        fStrikeSlip = sciint.Rbf((fault.x1-minx1)/normx1, (fault.x2-minx2)/normx2, inslip[:,0], function=interpolation, smooth=smooth)
+        fDipSlip = sciint.Rbf((fault.x1-minx1)/normx1, (fault.x2-minx2)/normx2, inslip[:,1], function=interpolation, smooth=smooth)
+        fTensile = sciint.Rbf((fault.x1-minx1)/normx1, (fault.x2-minx2)/normx2, inslip[:,2], function=interpolation, smooth=smooth)
 
         # 6.2 Interpolate
         for i in range(len(self.patch)):
