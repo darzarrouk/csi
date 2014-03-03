@@ -3563,6 +3563,8 @@ class RectangularPatches(SourceInv):
         '''
 
         if verbose:
+            print('---------------------------------')
+            print('---------------------------------')
             print('Map Slip from fault {} into fault {}'.format(fault.name, self.name))
             print('Build the best plane')
 
