@@ -318,7 +318,7 @@ class TriangularPatches(SourceInv):
         return
 
 
-    def readGocadPatches(self, filename, neg_depth=False):
+    def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_depth=1., set_trace=False):
         """
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
         """
@@ -349,8 +349,13 @@ class TriangularPatches(SourceInv):
         self.gocad_vertices_ll = vertices
 
         # Resample vertices to UTM
-        vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
-        vz = vertices[:,2]
+        if utm:
+            vx = vertices[:,0].copy()*1.0e-3
+            vy = vertices[:,1].copy()*1.0e-3
+            vertices[:,0],vertices[:,1] = self.xy2ll(vx,vy)
+        else:
+            vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
+        vz = vertices[:,2]*factor_depth
         self.gocad_vertices = np.column_stack((vx, vy, vz))
         self.gocad_faces = faces
 
@@ -370,11 +375,31 @@ class TriangularPatches(SourceInv):
             # Store the patch 
             self.patch.append([p1, p2, p3])
             self.patchll.append([pll1, pll2, pll3])
-
+            
         # Update the depth of the bottom of the fault
-        self.depth = np.min(vz)
+        if neg_depth:
+            self.depth = np.min(vz)
+        else:
+            self.depth = np.max(vz)
         self.z_patches = np.linspace(self.depth, 0.0, 5)
 
+        # Fault trace
+        if set_trace:
+            self.xf = []
+            self.yf = []
+            for p,pl in zip(self.patch,self.patchll):
+                for v,vl in zip(p,pl):
+                    if v[-1]!=0.:
+                        continue
+                    self.xf.append(v[0])
+                    self.yf.append(v[1])
+            self.xf = np.array(self.xf)
+            self.yf = np.array(self.yf)
+            i = np.argsort(self.yf)
+            self.xf = self.xf[i]
+            self.yf = self.yf[i]
+
+        # All done
         return
    
  
