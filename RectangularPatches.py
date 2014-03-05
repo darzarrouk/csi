@@ -3026,6 +3026,52 @@ class RectangularPatches(SourceInv):
         # All done
         return vect
 
+    def getPatchPositionAlongStrike(self, p, discretized=True):
+        '''
+        Returns the position of a patch along strike (distance to the first point of the fault).
+        p is the patch index or the patch.
+        '''
+
+        import scipy.spatial.distance as scidis
+
+        # Convert patch to index 
+        if type(p) is not int:
+            p = getindex(p)
+
+        # Compute the cumulative distance
+        dis = self.cumdistance(discretized=discretized)
+
+        # Get the fault
+        if discretized:
+            x = self.xi
+            y = self.yi
+        else:
+            x = self.xf
+            y = self.yf
+
+        # get the patch center
+        xc, yc = self.getpatchgeometry(p, center=True)[:2]
+
+        # compute the distance
+        d = scidis.cdist([[xc, yc]], [[x[i], y[i]] for i in range(x.shape[0])])[0]
+        
+        # Get the two closest points
+        imin1 = d.argmin()
+        dmin1 = d[imin1]
+        d[imin1] = 9999999999.
+        imin2 = d.argmin()
+        dmin2 = d[imin2]
+        dtot = dmin1+dmin2
+        xcd = (x[imin1]*dmin1 + x[imin2]*dmin2)/dtot
+        ycd = (y[imin1]*dmin1 + y[imin2]*dmin2)/dtot
+        if dmin1<dmin2:
+            jm = imin1
+        else:
+            jm = imin2
+
+        # All done
+        return dis[jm] + np.sqrt( (xcd-x[jm])**2 + (ycd-y[jm])**2)
+
     def computeTractionOnEachFaultPatch(self, factor=0.001, mu=30e9, nu=0.25):
         '''
         Uses okada92 to compute the traction change on each patch.
