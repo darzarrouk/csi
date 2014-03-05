@@ -726,7 +726,7 @@ class geodeticplot(object):
         return
 
     def cosicorr_decimate(self, corr, norm=None, colorbar=True, data='dataEast',
-                          plotType='rect', gmtCmap=None):
+                          plotType='rect', gmtCmap=None, decimate=None):
         ''' 
         Args:
             * insar     : insar object from insarrates.
@@ -768,9 +768,9 @@ class geodeticplot(object):
                 import basemap_utils as bu
                 cmap = bu.gmtColormap(gmtCmap)
             except ImportError:
-                cmap = plt.get_cmap('seismic') 
+                cmap = plt.get_cmap('jet') 
         else:
-            cmap = plt.get_cmap('seismic')
+            cmap = plt.get_cmap('jet')
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
@@ -797,9 +797,7 @@ class geodeticplot(object):
                 self.carte.add_collection(rect)
             
         elif plotType is 'scatter':
-            for i in range(corr.x.size):
-                color = scalarMap.to_rgba(d[i])
-                self.carte.plot(corr.x[i], corr.y[i], 'o', color=color)
+            self.carte.scatter(corr.x, corr.y, s=10., c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
 
         else:
             assert False, 'unsupported plot type. Must be rect or scatter'

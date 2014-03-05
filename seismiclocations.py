@@ -321,7 +321,7 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-    def GRplot(self, ion=False):
+    def computeGR(self, plot=False, bins=20):
         ''' 
         Plots the Gutemberg-Richter distribution.
         Args:
@@ -331,30 +331,32 @@ class seismiclocations(SourceInv):
         # Get the magnitude
         mag = self.mag
 
-        # ion
-        if ion:
-            plt.ion()
-
-        # Create a figure
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-
         # Get the histogram
-        h, x = np.histogram(self.mag, bins=20)
+        h, x = np.histogram(self.mag, bins=bins)
         x = (x[1:] + x[:-1])/2.
 
         # Store that somewhere
         self.Histogram = [x, h]
 
         # plot the values
-        ax.semilogy(x, h, '.r', markersize=10, linewidth=1)
-
-        # show to the screen
-        plt.show()
+        if plot:
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.semilogy(x, h, '.r', markersize=10, linewidth=1)
+            plt.show()
 
         # All done
         return
-        
+    
+    def fitBvalue(self, b=None):
+        '''
+        Fits a B-value to a Gutemberg-Righter distribution.
+        option: if b is provided, then the fit is forced to have a slope b.
+        '''
+
+        # All done
+        return
+
     def distance2trace(self, faults, distance=5.):
         '''
         Selects the earthquakes that are located less than 'distance' km away from a given surface fault trace.

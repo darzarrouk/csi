@@ -31,7 +31,7 @@ class cosicorrrates(SourceInv):
 
         print ("---------------------------------")
         print ("---------------------------------")
-        print (" Initialize InSAR data set {}".format(self.name))
+        print ("Initialize Cosicorr data set {}".format(self.name))
 
         # Initialize some things
         self.east = None
@@ -215,6 +215,83 @@ class cosicorrrates(SourceInv):
         # All done
         return       
 
+    def read_from_binary(self, east, north, lon, lat, err_east=None, err_north=None, factor=1.0, step=0.0, dtype=np.float32, remove_nan=True):
+        '''
+        Read from a set of binary files or from a set of arrays.
+        Args:
+            * east      : array or filename of the east displacement 
+            * north     : array or filename of the north displacement
+            * lon       : array or filename of the longitude
+            * lat       : array or filename of the latitude
+            * err_east  : uncertainties on the east displacement (file or array)
+            * err_north : uncertainties on the north displacememt (file or array)
+            * factor    : multiplication factor
+            * step      : offset
+            * dtype     : type of binary file
+        '''
+
+        # Get east
+        if type(east) is str:
+            east = np.fromfile(east, dtype=dtype)
+        east = np.array(east).flatten()
+
+        # Get north
+        if type(north) is str:
+            north = np.fromfile(north, dtype=dtype)
+        north = np.array(north).flatten()
+
+        # Get lon
+        if type(lon) is str:
+            lon = np.fromfile(lon, dtype=dtype)
+        lon = np.array(lon).flatten()
+
+        # Get Lat 
+        if type(lat) is str:
+            lat = np.fromfile(lat, dtype=dtype)
+        lat = np.array(lat).flatten()
+
+        # Errors
+        if err_east is not None:
+            if type(err_east) is str:
+                err_east = np.fromfile(err_east, dtype=dtype)
+            err_east = np.array(err_east).flatten()
+        else:
+            err_east = np.zeros(east.shape)
+        if err_north is not None:
+            if type(err_north) is str:
+                err_north = np.fromfile(err_north, dtype=dtype)
+            err_north = np.array(err_north).flatten()
+        else:
+            err_north = np.zeros(north.shape)
+
+        # Check NaNs
+        if remove_nan:
+            eFinite = np.flatnonzero(np.isfinite(east))
+            nFinite = np.flatnonzero(np.isfinite(north))
+            iFinite = np.intersect1d(eFinite, nFinite).tolist()
+        else:
+            iFinite = range(east.shape[0])
+
+        # Set things in there
+        self.east = factor * (east[iFinite] + step)
+        self.north = factor * (north[iFinite] + step)
+        self.lon = lon[iFinite]
+        self.lat = lat[iFinite]
+        self.err_east = err_east[iFinite] * factor
+        self.err_north = err_north[iFinite] * factor
+
+        # Compute lon lat to utm
+        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
+
+        # Store the factor
+        self.factor = factor
+   
+        # Save number of observations per station
+        self.obs_per_station = 2
+
+        # All done
+        return
+
     def read_from_envi(self, filename, component='EW', remove_nan=True):
         '''
         Reads velocity map from a grd file.
@@ -276,6 +353,66 @@ class cosicorrrates(SourceInv):
 
         # All done
         return
+
+    def splitFromShapefile(self, shapefile, remove_nan=True):
+        '''
+        Uses the paths defined in a Shapefile to select and return particular domains of self.
+        Args:   
+            * shapefile : Input file (shapefile format).
+        '''
+
+        # Import necessary library
+        import shapefile as shp
+        import matplotlib.path as path
+
+        # Build a list of points
+        AllXY = np.vstack((self.x, self.y)).T
+
+        # Read the shapefile
+        shape = shp.Reader(shapefile)
+
+        # Create the list of new objects
+        OutCosi = []
+
+        # Iterate over the shape records
+        for record, iR in zip(shape.shapeRecords(), range(len(shape.shapeRecords()))):
+            
+            # Get x, y
+            x = np.array([record.shape.points[i][0] for i in range(len(record.shape.points))])/1000.
+            y = np.array([record.shape.points[i][1] for i in range(len(record.shape.points))])/1000.
+            xyroi = np.vstack((x, y)).T
+
+            # Build a path with that
+            roi = path.Path(xyroi, closed=False)
+
+            # Get the ones inside
+            check = roi.contains_points(AllXY)
+
+            # Get the values
+            east = self.east[check]
+            north = self.north[check]
+            lon = self.lon[check]
+            lat = self.lat[check]
+            if self.err_east is not None:
+                err_east = self.err_east[check]
+            else:
+                err_east = None
+            if self.err_north is not None:
+                err_north = self.err_north[check]
+            else:
+                err_north = None
+
+            # Create a new cosicorr object
+            cosi = cosicorrrates('{} #{}'.format(self.name, iR), utmzone=self.utmzone)
+
+            # Put the values in there
+            cosi.read_from_binary(east, north, lon, lat, err_east=err_east, err_north=err_north, remove_nan=True)
+
+            # Store this object
+            OutCosi.append(cosi)
+
+        # All done
+        return OutCosi
         
     def read_from_grd(self, filename, factor=1.0, step=0.0, cov=False, flip=False):
         '''
