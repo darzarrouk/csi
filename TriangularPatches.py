@@ -323,7 +323,7 @@ class TriangularPatches(SourceInv):
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
         """
         # Initialize the lists of patches
-        self.patch = []
+        self.patch   = []
         self.patchll = []
 
         # Factor to correct input negative depths (we want depths to be positive)
