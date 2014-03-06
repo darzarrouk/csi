@@ -743,7 +743,8 @@ class RectangularPatches(Fault):
         # Remove the patch
         del self.patch[patch]
         del self.patchll[patch]
-        del self.equivpatch[patch]
+        if len(self.equivpatch)==len(self.patch):
+            del self.equivpatch[patch]
         self.slip = np.delete(self.slip, patch, axis=0)
         if hasattr(self, 'index_parameter'):
             self.index_parameter = np.delete(self.index_parameter, patch, axis=0)

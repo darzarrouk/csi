@@ -252,8 +252,11 @@ class verticalfault(RectangularPatches):
         self.z_patches = z
 
         # Interpolate the resolution
-        fint = sciint.interp1d(Depthpoints, Resolpoints, kind=interpolation)
-        resol = fint(z)
+        if interpolation is not 'nointerpolation':
+            fint = sciint.interp1d(Depthpoints, Resolpoints, kind=interpolation)
+            resol = fint(z)
+        else:
+            resol = Resolpoints
 
         # build lists for storing things
         self.patch = []
@@ -322,6 +325,49 @@ class verticalfault(RectangularPatches):
         self.computeEquivRectangle()
 
         # all done
+        return
+
+    def cutPatchesVertically(self, iP, cuttingDepth):
+        '''
+        Cut a patche into 2 patches at depth given by cuttingDepth.
+        Args:
+            * iP            : patch index or list of patch indexes.
+            * cuttingDepth  : Depth where patch is going to be split in 2.
+        '''
+
+        # Check
+        if type(iP) is not list:
+            iP = [iP]
+
+        # Iterate over patches
+        for p in iP:
+    
+            # Get patch value
+            patch = self.patch[p]
+
+            # Get values
+            x1, y1, z1 = patch[0]
+            x2, y2 = patch[1][:2]
+            z2 = patch[2][2]
+
+            # Make 2 patches
+            patchUp = [ [x1, y1, z1],
+                        [x2, y2, z1],
+                        [x2, y2, cuttingDepth],
+                        [x1, y1, cuttingDepth] ]
+            patchDown = [ [x1, y1, cuttingDepth],
+                          [x2, y2, cuttingDepth],
+                          [x2, y2, z2],
+                          [x1, y1, z2] ]
+
+            # Add patch
+            self.addpatch(patchUp)
+            self.addpatch(patchDown)
+
+        # Delete the old patches
+        self.deletepatches(iP)
+
+        # All done
         return
 
     def rotationHoriz(self, center, angle):
@@ -402,30 +448,30 @@ class verticalfault(RectangularPatches):
         patch2ll = self.patchll[p2]
 
         # Create the newpatches
-        newpatch = np.zeros((4,3))
-        newpatchll = np.zeros((4,3))
+        newpatch = [[],[],[],[]] #np.zeros((4,3))
+        newpatchll = [[],[],[],[]] #np.zeros((4,3))
 
         # determine which corners are in common, needs at least two
         if ((list(patch1[0])==list(patch2[3])) and (list(patch1[1])==list(patch2[2]))):     # patch2 is above patch1
-            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:] 
-            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
-            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
-            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
+            newpatch[0] = patch2[0]; newpatchll[0] = patch2ll[0] 
+            newpatch[3] = patch1[3]; newpatchll[3] = patch1ll[3]
+            newpatch[2] = patch1[2]; newpatchll[2] = patch1ll[2]
+            newpatch[1] = patch2[1]; newpatchll[1] = patch2ll[1]
         elif ((list(patch1[1])==list(patch2[0])) and (list(patch1[2])==list(patch2[3]))):   # patch2 is on the right of patch1
-            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
-            newpatch[3,:] = patch1[3,:]; newpatchll[3,:] = patch1ll[3,:]
-            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
-            newpatch[1,:] = patch2[1,:]; newpatchll[1,:] = patch2ll[1,:]
+            newpatch[0] = patch1[0]; newpatchll[0] = patch1ll[0]
+            newpatch[3] = patch1[3]; newpatchll[3] = patch1ll[3]
+            newpatch[2] = patch2[2]; newpatchll[2] = patch2ll[2]
+            newpatch[1] = patch2[1]; newpatchll[1] = patch2ll[1]
         elif ((list(patch1[3])==list(patch2[0])) and (list(patch1[2])==list(patch2[1]))):   # patch2 is under patch1
-            newpatch[0,:] = patch1[0,:]; newpatchll[0,:] = patch1ll[0,:]
-            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
-            newpatch[2,:] = patch2[2,:]; newpatchll[2,:] = patch2ll[2,:]
-            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
+            newpatch[0] = patch1[0]; newpatchll[0] = patch1ll[0]
+            newpatch[3] = patch2[3]; newpatchll[3] = patch2ll[3]
+            newpatch[2] = patch2[2]; newpatchll[2] = patch2ll[2]
+            newpatch[1] = patch1[1]; newpatchll[1] = patch1ll[1]
         elif ((list(patch1[0])==list(patch2[1])) and (list(patch1[3])==list(patch2[2]))):   # patch2 is on the left of patch1
-            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:]
-            newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
-            newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
-            newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
+            newpatch[0] = patch2[0]; newpatchll[0] = patch2ll[0]
+            newpatch[3] = patch2[3]; newpatchll[3] = patch2ll[3]
+            newpatch[2] = patch1[2]; newpatchll[2] = patch1ll[2]
+            newpatch[1] = patch1[1]; newpatchll[1] = patch1ll[1]
         else:
             print('Patches do not have common corners...')
             return
