@@ -8,6 +8,7 @@ Written by R. Jolivet, April 2013.
 from .SourceInv import SourceInv
 
 # Parent class(es)
+from .Fault import Fault
 from .RectangularPatches import RectangularPatches
 from .TriangularPatches import TriangularPatches
 
