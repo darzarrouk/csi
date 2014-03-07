@@ -177,6 +177,41 @@ class RectangularPatches(Fault):
         # all done
         return
 
+    def patchesUtm2LonLat(self):
+        '''
+        Perform the utm to lonlat conversion for all patches.
+        '''
+
+        # iterate over the patches
+        for i in range(len(self.patch)):
+
+            # Get the patch
+            patch = self.patch[i]
+
+            # Get x, y
+            x1 = patch[0][0]
+            y1 = patch[0][1]
+            x2 = patch[1][0]
+            y2 = patch[1][1]
+            zu = patch[0][2]
+            zd = patch[2][2]
+
+            # Convert
+            lon1, lat1 = self.xy2ll(x1, y1)
+            lon2, lat2 = self.xy2ll(x2, y2)
+
+            # Build a ll patch
+            patchll = [ [lon1, lat1, zu],
+                        [lon2, lat2, zu], 
+                        [lon2, lat2, zd], 
+                        [lon1, lat1, zd] ]
+
+            # Put it in the list
+            self.patchll[i] = patchll
+
+        # All done
+        return
+
     def computeEquivRectangle(self, strikeDir='south'):
         '''
         Computes the equivalent rectangle patches and stores these into self.equivpatch
