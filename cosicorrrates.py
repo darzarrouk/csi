@@ -1206,16 +1206,6 @@ class cosicorrrates(SourceInv):
         # All done
         return d
 
-    def writeProfile2File(self, name, outfile):
-        '''
-        Write the profile you asked for into a ascii file.
-        Args:
-                * name          : Name of the profile
-                * outfile       : Name of the output file
-        '''
-
-        return
-
     def getRMS(self):
         '''                                                                                                      
         Computes the RMS of the data and if synthetics are computed, the RMS of the residuals                    
@@ -1396,6 +1386,42 @@ class cosicorrrates(SourceInv):
         plt.show()
 
         # All done
+        return
+
+    def write2binary(self, prefix, dtype=np.float):
+        '''
+        Writes the records in a binary file. The files will be called
+        prefix_north.dat    : North displacement
+        prefix_east.dat     : East displacement
+        prefix_lon.dat      : Longitude
+        prefix_lat.dat      : Latitude
+        '''
+
+        print('---------------------------------')
+        print('---------------------------------')
+        print('Write in binary format to files {}_east.dat and {}_north.dat'.format(prefix, prefix))
+
+        # North 
+        fname = '{}_north.dat'.format(prefix)
+        data = self.north.astype(dtype)
+        data.tofile(fname)
+
+        # East 
+        fname = '{}_east.dat'.format(prefix)
+        data = self.east.astype(dtype)
+        data.tofile(fname)
+
+        # Longitude
+        fname = '{}_lon.dat'.format(prefix)
+        data = self.lon.astype(dtype)
+        data.tofile(fname)
+
+        # Latitude
+        fname = '{}_lat.dat'.format(prefix)
+        data = self.lat.astype(dtype)
+        data.tofile(fname)
+
+        # All done 
         return
 
     def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface'):
