@@ -173,8 +173,8 @@ class Fault(SourceInv):
 
         # Set lon and lat
         if utm:
-            self.xf  = np.array(x)
-            self.yf  = np.array(y)
+            self.xf  = np.array(x)/1000.
+            self.yf  = np.array(y)/1000.
             # to lat/lon
             self.trace2ll()
         else:
