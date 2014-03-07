@@ -797,7 +797,10 @@ class geodeticplot(object):
                 self.carte.add_collection(rect)
             
         elif plotType is 'scatter':
-            self.carte.scatter(corr.x[::decimate], corr.y[::decimate], s=10., c=d[::decimate], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
+            if decimate != None:
+                self.carte.scatter(corr.x[::decimate], corr.y[::decimate], s=10., c=d[::decimate], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
+            else:
+                self.carte.scatter(corr.x, corr.y, s=10., c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
 
         else:
             assert False, 'unsupported plot type. Must be rect or scatter'
