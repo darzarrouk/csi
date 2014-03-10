@@ -302,3 +302,140 @@ class Fault(SourceInv):
 
         # All done
         return
+
+
+    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], 
+               tensile=[None, None, None], vertical=False):
+        '''
+        Stores the input Green's functions matrices into the fault structure.
+        Args:
+            * data          : Data structure from gpsrates or insarrates.
+            * strikeslip    : List of matrices of the Strikeslip Green's functions, ordered E, N, U
+            * dipslip       : List of matrices of the dipslip Green's functions, ordered E, N, U
+            * tensile       : List of matrices of the tensile Green's functions, ordered E, N, U
+            If you provide InSAR GFs, these need to be projected onto the LOS direction already.
+        '''
+
+        # Get the number of data per point
+        if data.dtype is 'insarrates':
+            data.obs_per_station = 1
+        elif data.dtype is 'gpsrates':
+            data.obs_per_station = 2
+            if vertical:
+                data.obs_per_station = 3
+        elif data.dtype is 'cosicorrrates':
+            data.obs_per_station = 2
+            if vertical:
+                data.obs_per_station += 1
+
+        # Create the storage for that dataset
+        if data.name not in self.G.keys():
+            self.G[data.name] = {}
+        G = self.G[data.name]
+
+        # Initializes the data vector
+        if data.dtype is 'insarrates':
+            self.d[data.name] = data.vel
+            vertical = True # Always true for InSAR
+        elif data.dtype is 'gpsrates':
+            if vertical:
+                self.d[data.name] = data.vel_enu.T.flatten()
+            else:
+                self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
+        elif data.dtype is 'cosicorrrates':
+            self.d[data.name] = np.hstack((data.east.T.flatten(), data.north.T.flatten()))
+            if vertical:
+                self.d[data.name] = np.hstack((self.d[data.name],
+                                               np.zeros_like(data.east.T.ravel())))
+
+        # StrikeSlip
+        if len(strikeslip) == 3:            # GPS case
+
+            E_ss = strikeslip[0]
+            N_ss = strikeslip[1]
+            U_ss = strikeslip[2]
+            ss = []
+            nd = 0
+            if (E_ss is not None) and (N_ss is not None): 
+                d = E_ss.shape[0]
+                m = E_ss.shape[1]
+                ss.append(E_ss)
+                ss.append(N_ss)
+                nd += 2
+            if (U_ss is not None):
+                d = U_ss.shape[0]
+                m = U_ss.shape[1]
+                ss.append(U_ss)
+                nd += 1
+            if nd > 0:
+                ss = np.array(ss)
+                ss = ss.reshape((nd*d, m))
+                G['strikeslip'] = ss
+
+        elif len(strikeslip) == 1:          # InSAR case
+
+            LOS_ss = strikeslip[0]
+            if LOS_ss is not None:
+                G['strikeslip'] = LOS_ss
+
+        # DipSlip
+        if len(dipslip) == 3:               # GPS case
+            E_ds = dipslip[0]
+            N_ds = dipslip[1]
+            U_ds = dipslip[2]
+            ds = []
+            nd = 0
+            if (E_ds is not None) and (N_ds is not None): 
+                d = E_ds.shape[0]
+                m = E_ds.shape[1]
+                ds.append(E_ds)
+                ds.append(N_ds)
+                nd += 2
+            if (U_ds is not None):
+                d = U_ds.shape[0]
+                m = U_ds.shape[1]
+                ds.append(U_ds)
+                nd += 1
+            if nd > 0:
+                ds = np.array(ds)
+                ds = ds.reshape((nd*d, m))
+                G['dipslip'] = ds
+        
+        elif len(dipslip) == 1:             # InSAR case
+
+            LOS_ds = dipslip[0]
+            if LOS_ds is not None:
+                G['dipslip'] = LOS_ds
+
+        # StrikeSlip
+        if len(tensile) == 3:               # GPS case
+
+            E_ts = tensile[0]
+            N_ts = tensile[1]
+            U_ts = tensile[2]
+            ts = []
+            nd = 0
+            if (E_ts is not None) and (N_ts is not None): 
+                d = E_ts.shape[0]
+                m = E_ts.shape[1]
+                ts.append(E_ts)
+                ts.append(N_ts)
+                nd += 2
+            if (U_ts is not None):
+                d = U_ts.shape[0]
+                m = U_ts.shape[1]
+                ts.append(U_ts)
+                nd += 1
+            if nd > 0:
+                ts = np.array(ts)
+                ts = ts.reshape((nd*d, m))
+                G['tensile'] = ts
+
+        elif len(tensile) == 1:             # InSAR Case
+
+            LOS_ts = tensile[0]
+            if LOS_ts is not None:
+                G['dipslip'] = LOS_ds
+
+        # All done
+        return
