@@ -16,14 +16,15 @@ import os
 
 # Personals
 from .insarrates import insarrates
+from .cosicorrrates import cosicorrrates
 
-class insardownsampling(object):
+class imagedownsampling(object):
 
-    def __init__(self, name, insar, faults, verbose=True):
+    def __init__(self, name, image, faults, verbose=True):
         '''
         Args:
             * name      : Name of the downsampler.
-            * insar     : InSAR data set to be downsampled.
+            * image    : InSAR or Cosicorr data set to be downsampled.
             * faults    : List of faults.
         '''
 
@@ -36,12 +37,13 @@ class insardownsampling(object):
 
         # Set the name
         self.name = name
+        self.datatype = image.dtype
 
         # Set the transformation
-        self.utmzone = insar.utmzone
-        self.putm = insar.putm
-        self.ll2xy = insar.ll2xy
-        self.xy2ll = insar.xy2ll
+        self.utmzone = image.utmzone
+        self.putm = image.putm
+        self.ll2xy = image.ll2xy
+        self.xy2ll = image.xy2ll
 
         # Check if the faults are in the same utm zone
         self.faults = []
@@ -49,20 +51,21 @@ class insardownsampling(object):
             assert (fault.utmzone==self.utmzone), 'Fault {} not in utm zone #{}'.format(fault.name, self.utmzone)
             self.faults.append(fault)
 
-        # Save the insar
-        self.insar = insar
+        # Save the image
+        self.image = image
 
         # Incidence and heading need to be defined
-        assert hasattr(self.insar, 'heading'), 'No Heading precised for insar object'
-        assert hasattr(self.insar, 'incidence'), 'No Incidence precised for insar object'
-        self.incidence = self.insar.incidence
-        self.heading = self.insar.heading
+        if self.datatype is 'insarrates':
+            assert hasattr(self.image, 'heading'), 'No Heading precised for image object'
+            assert hasattr(self.image, 'incidence'), 'No Incidence precised for image object'
+            self.incidence = self.image.incidence
+            self.heading = self.image.heading
 
         # Create the initial box
-        xmin = np.floor(insar.x.min())
-        xmax = np.floor(insar.x.max())+1.
-        ymin = np.floor(insar.y.min())
-        ymax = np.floor(insar.y.max())+1.
+        xmin = np.floor(image.x.min())
+        xmax = np.floor(image.x.max())+1.
+        ymin = np.floor(image.y.min())
+        ymax = np.floor(image.y.max())+1.
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
@@ -71,10 +74,10 @@ class insardownsampling(object):
                     [xmin, ymax],
                     [xmax, ymax],
                     [xmax, ymin]]
-        lonmin = insar.lon.min()
-        lonmax = insar.lon.max()
-        latmin = insar.lat.min()
-        latmax = insar.lat.max()
+        lonmin = image.lon.min()
+        lonmax = image.lon.max()
+        latmin = image.lat.min()
+        latmax = image.lat.max()
         self.lonmin = lonmin; self.latmax = latmax
         self.latmin = latmin; self.lonmax = lonmax
         self.boxll = [[lonmin, latmin],
@@ -83,7 +86,7 @@ class insardownsampling(object):
                       [lonmax, latmin]]
         
         # Get the original pixel spacing
-        self.spacing = distance.cdist([[insar.x[0], insar.y[0]]], [[insar.x[i], insar.y[i]] for i in range(1, insar.x.shape[0])])[0]
+        self.spacing = distance.cdist([[image.x[0], image.y[0]]], [[image.x[i], image.y[i]] for i in range(1, image.x.shape[0])])[0]
         self.spacing = self.spacing.min()
 
         # Deduce the original pixel area
@@ -131,8 +134,11 @@ class insardownsampling(object):
         From the saved list of blocks, computes the downsampled data set and the informations that come along.
         '''
 
-        # Create the new insar object
-        newsar = insarrates('Downsampled {}'.format(self.insar.name), utmzone=self.utmzone, verbose=False)
+        # Create the new image object
+        if self.datatype is 'insarrates':
+            newimage = insarrates('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
+        elif self.datatype is 'cosicorrrates':
+            newimage = cosicorrrates('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
 
         # Save the blocks
         self.blocks = blocks
@@ -149,19 +155,25 @@ class insardownsampling(object):
         self.blocksll = blocksll
 
         # Create the variables
-        newsar.vel = []
-        newsar.lon = []
-        newsar.lat = []
-        newsar.x = []
-        newsar.y = []
-        newsar.err = []
-        newsar.wgt = []
+        if self.datatype is 'insarrates':
+            newimage.vel = []
+            newimage.err = []
+        elif self.datatype is 'cosicorrrates':
+            newimage.east = []
+            newimage.north = []
+            newimage.err_east = []
+            newimage.err_north = []
+        newimage.lon = []
+        newimage.lat = []
+        newimage.x = []
+        newimage.y = []
+        newimage.wgt = []
 
         # Store the factor
-        newsar.factor = self.insar.factor
+        newimage.factor = self.image.factor
 
         # Build the previous geometry
-        SARXY = np.vstack((self.insar.x, self.insar.y)).T
+        PIXXY = np.vstack((self.image.x, self.image.y)).T
 
         # Keep track of the blocks to trash
         blocks_to_remove = []
@@ -172,26 +184,38 @@ class insardownsampling(object):
             # Create a path
             p = path.Path(block, closed=False)
             # Find those who are inside
-            ii = p.contains_points(SARXY)
-            # Check if total area is suffucient
+            ii = p.contains_points(PIXXY)
+            # Check if total area is sufficient
             blockarea = self.getblockarea(block)
             coveredarea = np.flatnonzero(ii).shape[0]*self.pixelArea
             if (coveredarea/blockarea >= self.tolerance):
                 # Get Mean, Std, x, y, ...
                 wgt = len(np.flatnonzero(ii))
-                vel = np.mean(self.insar.vel[ii])
-                err = np.std(self.insar.vel[ii])
-                x = np.mean(self.insar.x[ii])
-                y = np.mean(self.insar.y[ii])
+                if self.datatype is 'insarrates':
+                    vel = np.mean(self.image.vel[ii])
+                    err = np.std(self.image.vel[ii])
+                elif self.datatype is 'cosicorrrates':
+                    east = np.mean(self.image.east[ii])
+                    north = np.mean(self.image.north[ii])
+                    err_east = np.std(self.image.east[ii])
+                    err_north = np.std(self.image.north[ii])
+                x = np.mean(self.image.x[ii])
+                y = np.mean(self.image.y[ii])
                 lon, lat = self.xy2ll(x, y)
                 # Store that
-                newsar.vel.append(vel)
-                newsar.err.append(err)
-                newsar.x.append(x)
-                newsar.y.append(y)
-                newsar.lon.append(lon)
-                newsar.lat.append(lat)
-                newsar.wgt.append(wgt)
+                if self.datatype is 'insarrates':
+                    newimage.vel.append(vel)
+                    newimage.err.append(err)
+                elif self.datatype is 'cosicorrrates':
+                    newimage.east.append(east)
+                    newimage.north.append(north)
+                    newimage.err_east.append(err_east)
+                    newimage.err_north.append(err_north)
+                newimage.x.append(x)
+                newimage.y.append(y)
+                newimage.lon.append(lon)
+                newimage.lat.append(lat)
+                newimage.wgt.append(wgt)
             else:
                 blocks_to_remove.append(i)
 
@@ -199,19 +223,26 @@ class insardownsampling(object):
         self.trashblocks(blocks_to_remove)
 
         # Convert
-        newsar.vel = np.array(newsar.vel)
-        newsar.err = np.array(newsar.err)
-        newsar.x = np.array(newsar.x)
-        newsar.y = np.array(newsar.y)
-        newsar.lon = np.array(newsar.lon)
-        newsar.lat = np.array(newsar.lat)
-        newsar.wgt = np.array(newsar.wgt)
+        if self.datatype is 'insarrates':
+            newimage.vel = np.array(newimage.vel)
+            newimage.err = np.array(newimage.err)
+        elif self.datatype is 'cosicorrrates':
+            newimage.east = np.array(newimage.east)
+            newimage.north = np.array(newimage.north)
+            newimage.err_east = np.array(newimage.err_east)
+            newimage.err_north = np.array(newimage.err_north)
+        newimage.x = np.array(newimage.x)
+        newimage.y = np.array(newimage.y)
+        newimage.lon = np.array(newimage.lon)
+        newimage.lat = np.array(newimage.lat)
+        newimage.wgt = np.array(newimage.wgt)
 
         # LOS
-        newsar.inchd2los(self.incidence, self.heading)
+        if self.datatype is 'insarrates':
+            newimage.inchd2los(self.incidence, self.heading)
 
-        # Store newsar
-        self.newsar = newsar
+        # Store newimage
+        self.newimage = newimage
 
         # plot y/n
         if plot:
@@ -259,13 +290,12 @@ class insardownsampling(object):
         # all done
         return b1, b2, b3, b4
 
-    def ResolutionBasedIterations(self, threshold, damping, slipdirection='s', plot=False):
+    def ResolutionBasedIterations(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum'):
         '''
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
         Args:
             * threshold     : Threshold.
-            * sigma         : Amplitude of the Smoothing.
-            * lam           : Smoothing characteristic length.
+            * damping       : Damping coefficient (damping is made through an identity matrix).   
             * slipdirection : Which direction to accout for to build the slip Green's functions.
         '''
         
@@ -274,8 +304,9 @@ class insardownsampling(object):
             print ("---------------------------------")
             print ("Downsampling Iterations")
 
-        # Creates the list of booleans
-        Check = [False]*len(self.blocks)
+        # Creates the variable that is supposed to stop the loop
+        # Check = [False]*len(self.blocks)
+        self.Rd = np.ones(len(self.blocks),)*(threshold+1.)
         do_cut = False
 
         # counter
@@ -285,7 +316,10 @@ class insardownsampling(object):
         Bsize = self._is_minimum_size(self.blocks)
 
         # Loops until done
-        while not all(Check):
+        while not (self.Rd<threshold).all():
+
+            # Check 
+            assert self.Rd.shape[0]==len(self.blocks), 'Resolution matrix has a size different than number of blocks'
 
             # Cut if asked
             if do_cut:
@@ -294,7 +328,7 @@ class insardownsampling(object):
                 # Iterate over blocks
                 for j in range(len(self.blocks)):
                     block = self.blocks[j]
-                    if not Check[j] and not Bsize[j]:
+                    if (self.Rd[j]>threshold) and not Bsize[j]:
                         b1, b2, b3, b4 = self.cutblockinfour(block)
                         newblocks.append(b1)
                         newblocks.append(b2)
@@ -309,7 +343,7 @@ class insardownsampling(object):
 
             # Iteration #
             it += 1
-            if self.verbose:
+            if self.verbose: 
                 sys.stdout.write('\r Iteration {} testing {} data samples '.format(it, len(self.blocks)))
                 sys.stdout.flush()
 
@@ -319,8 +353,8 @@ class insardownsampling(object):
             # Compute the greens functions for each fault and cat these together
             for fault in self.faults:
                 # build GFs
-                fault.buildGFs(self.newsar, vertical=True, slipdir=slipdirection, verbose=False)
-                fault.assembleGFs([self.newsar], polys=0, slipdir=slipdirection, verbose=False)
+                fault.buildGFs(self.newimage, vertical=False, slipdir=slipdirection, verbose=False)
+                fault.assembleGFs([self.newimage], polys=0, slipdir=slipdirection, verbose=False)
                 # Cat GFs
                 if G is None:
                     G = fault.Gassembled
@@ -329,17 +363,23 @@ class insardownsampling(object):
 
             # Compute the data resolution matrix
             Npar = G.shape[1]
+            Ndat = G.shape[0]/2 # vertical is False
             Ginv = np.dot(np.linalg.inv(np.dot(G.T,G)+ damping*np.eye(Npar)),G.T)
             Rd = np.dot(G, Ginv)
-            self.Rd = copy.deepcopy(np.diag(Rd))
+            self.Rd = np.diag(Rd)
+
+            # If we are dealing with cosicorr data, the diagonal is twice as long as the umber of blocks
+            if self.datatype is 'cosicorrrates':
+                self.Rd = np.sqrt( self.Rd[:Ndat]**2 + self.Rd[-Ndat:]**2 )
 
             # Blocks that have a minimum size, don't check these
             Bsize = self._is_minimum_size(self.blocks)
             self.Rd[np.where(Bsize)] = 0.0
-    
-            # Find the blocks that are fine
-            Check = self.Rd<threshold
 
+            if self.verbose and verboseLevel is not 'minimum':
+                sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(self.Rd.min(), self.Rd.max(), self.Rd.mean(), self.Rd.std()))
+                sys.stdout.flush()
+    
         if self.verbose:
             print(" ")
 
@@ -388,7 +428,7 @@ class insardownsampling(object):
         # all done
         return
 
-    def plotDownsampled(self, figure=145, axis='equal', ref='utm', Norm=None):
+    def plotDownsampled(self, figure=145, axis='equal', ref='utm', Norm=None, data2plot='north'):
         '''
         Plots the downsampling as it is at this step.
         Args:
@@ -396,6 +436,7 @@ class insardownsampling(object):
             * axis      : Axis argument from matplotlib.
             * Norm      : [colormin, colormax]
             * ref       : Can be 'utm' or 'lonlat'.
+            * data2plot : used if datatype is cosicorrrates: can be north or east.
         '''
 
         # Create the figure
@@ -416,15 +457,24 @@ class insardownsampling(object):
             down.set_ylabel('Latitude')
 
         # Get the datasets
-        original = self.insar
-        downsampled = self.newsar
+        original = self.image
+        downsampled = self.newimage
 
+        # Get what should be plotted
+        if self.datatype is 'insarrates':
+            data = original.vel
+        elif self.datatype is 'cosicorrrates':
+            if data2plot is 'north':
+                data = original.north
+            elif data2plot is 'east':
+                data = original.east
+                
         # Vmin, Vmax
         if Norm is not None:
             vmin, vmax = Norm
         else:
-            vmin = original.vel.min()
-            vmax = original.vel.max()
+            vmin = data.min()
+            vmax = data.max()
 
         # Prepare the colormaps
         import matplotlib.colors as colors
@@ -435,14 +485,14 @@ class insardownsampling(object):
 
         # Plot original dataset
         if ref is 'utm':
-            # insar
-            sca = full.scatter(original.x, original.y, s=10, c=original.vel, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
+            # image
+            sca = full.scatter(original.x, original.y, s=10, c=data, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
             # Faults
             for fault in self.faults:
                 full.plot(fault.xf, fault.yf, '-k')
         else:
-            # insar
-            sca = full.scatter(original.lon, original.lat, s=10, c=original.vel, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.) 
+            # image
+            sca = full.scatter(original.lon, original.lat, s=10, c=data, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.) 
             # Faults
             for fault in self.faults:
                 full.plot(fault.lon, fault.lat, '-k')
@@ -450,14 +500,23 @@ class insardownsampling(object):
         # Patches
         import matplotlib.collections as colls
 
+        # Get downsampled data
+        if self.datatype is 'insarrates':
+            downdata = downsampled.vel
+        elif self.datatype is 'cosicorrrates':
+            if data2plot is 'north':
+                downdata = downsampled.north
+            elif data2plot is 'east':
+                downdata = downsampled.east
+
         # Plot downsampled
         if ref is 'utm':
-            # Insar
+            # Image
             for i in range(len(self.blocks)):
                 # Get block
                 block = self.blocks[i]
                 # Get value
-                val = downsampled.vel[i]
+                val = downdata[i]
                 # Build patch
                 x = [block[j][0] for j in range(4)]
                 y = [block[j][1] for j in range(4)]
@@ -471,15 +530,15 @@ class insardownsampling(object):
             for fault in self.faults:
                 down.plot(fault.xf, fault.yf, '-k')
         else:
-            # InSAR
+            # Image
             for i in range(len(self.blocks)):
                 # Get block
                 block = self.blockll[i]
                 # Get value
-                val = downsampled.vel[i]
+                val = downdata[i]
                 # Build patch
-                x = [block[j][0] for j in range(4)]
-                y = [block[j][1] for j in range(4)] 
+                x = [blockll[j][0] for j in range(4)]
+                y = [blockll[j][1] for j in range(4)] 
                 verts = [zip(x, y)] 
                 patch = colls.PolyCollection(verts)
                 # Set its color  
@@ -507,7 +566,7 @@ class insardownsampling(object):
         
     def writeDownsampled2File(self, prefix, rsp=False):
         '''
-        Writes the downsampled insar data to a file.
+        Writes the downsampled image data to a file.
         The file will be called prefix.txt.
         If rsp is True, then it writes a file called prefix.rsp containing the boxes of the downsampling.
         '''
@@ -518,28 +577,39 @@ class insardownsampling(object):
             frsp = open(prefix+'.rsp', 'w')
 
         # Write the header
-        ftxt.write('Number xind yind east north data err wgt Elos Nlos Ulos\n')
+        if self.datatype is 'insarrates':
+            ftxt.write('Number xind yind east north data err wgt Elos Nlos Ulos\n')
+        elif self.datatype is 'cosicorrrates':
+            ftxt.write('Number Lon Lat East North EastErr NorthErr \n') 
         ftxt.write('********************************************************\n')
         if rsp:
             frsp.write('xind yind UpperLeft-x,y DownRight-x,y\n')
             frsp.write('********************************************************\n')
 
         # Loop over the samples
-        for i in xrange(len(self.newsar.x)):
+        for i in xrange(len(self.newimage.x)):
 
             # Write in txt
-            x = int(self.newsar.x[i])
-            y = int(self.newsar.y[i])
-            lon = self.newsar.lon[i]
-            lat = self.newsar.lat[i]
-            vel = self.newsar.vel[i]
-            err = self.newsar.err[i]
-            wgt = self.newsar.wgt[i]
-            elos = self.newsar.los[i,0]
-            nlos = self.newsar.los[i,1]
-            ulos = self.newsar.los[i,2]
-            strg = '{:4d} {:4d} {:4d} {:3.6f} {:3.6f} {} {} {} {} {} {}\n'\
+            x = int(self.newimage.x[i])
+            y = int(self.newimage.y[i])
+            lon = self.newimage.lon[i]
+            lat = self.newimage.lat[i]
+            if self.datatype is 'insarrates':
+                vel = self.newimage.vel[i]
+                err = self.newimage.err[i]
+                elos = self.newimage.los[i,0]
+                nlos = self.newimage.los[i,1]
+                ulos = self.newimage.los[i,2]
+                strg = '{:4d} {:4d} {:4d} {:3.6f} {:3.6f} {} {} {} {} {} {}\n'\
                     .format(i, x, y, lon, lat, vel, err, wgt, elos, nlos, ulos) 
+            elif self.datatype is 'cosicorrrates':
+                east = self.newimage.east[i]
+                north = self.newimage.north[i]
+                err_east = self.newimage.err_east[i]
+                err_north = self.newimage.err_north[i]
+                strg = '{:4d} {:3.6f} {:3.6f} {} {} {} {} \n'\
+                        .format(i, lon, lat, east, north, err_east, err_north)
+            wgt = self.newimage.wgt[i]
             ftxt.write(strg)
 
             # Write in rsp

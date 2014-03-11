@@ -337,14 +337,14 @@ class insarrates(SourceInv):
         '''
         
         # If needed
-        from .insardownsampling import insardownsampling
+        from .imagedownsampling import imagedownsampling
         
         # Check if faults have patches and builGFs routine
         for fault in faults:
             assert (hasattr(fault, 'builGFs')), 'Fault object {} does not have a buildGFs attribute...'.format(fault.name)
 
         # Create the insar downsampling object
-        downsampler = insardownsampling('Downsampler {}'.format(self.name), self, faults)
+        downsampler = imagedownsampling('Downsampler {}'.format(self.name), self, faults)
 
         # Initialize the downsampling starting point
         downsampler.initialstate(startingsize, minimumsize, tolerance=tolerance)

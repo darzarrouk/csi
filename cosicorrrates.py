@@ -15,7 +15,7 @@ from .SourceInv import SourceInv
 
 class cosicorrrates(SourceInv):
 
-    def __init__(self, name, utmzone='10', ellps='WGS84'):
+    def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
         '''
         Args:
             * name          : Name of the InSAR dataset.
@@ -29,9 +29,11 @@ class cosicorrrates(SourceInv):
         # Initialize the data set 
         self.dtype = 'cosicorrrates'
 
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initialize Cosicorr data set {}".format(self.name))
+        self.verbose = verbose
+        if self.verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize Cosicorr data set {}".format(self.name))
 
         # Initialize some things
         self.east = None
@@ -85,8 +87,8 @@ class cosicorrrates(SourceInv):
             * header        : Size of the header.
             * cov           : Read an additional covariance file (binary float32, Nd*Nd elements).
         '''
-
-        print ("Read from file {} into data set {}".format(filename, self.name))
+        if self.verbose:
+            print ("Read from file {} into data set {}".format(filename, self.name))
 
         # Open the file
         fin = open(filename+'.txt', 'r')
@@ -423,7 +425,8 @@ class cosicorrrates(SourceInv):
             * step      : add a value.
         '''
 
-        print ("Read from file {} into data set {}".format(filename, self.name))
+        if self.verbose:
+            print ("Read from file {} into data set {}".format(filename, self.name))
 
         # Initialize values
         self.east = []
@@ -1396,10 +1399,11 @@ class cosicorrrates(SourceInv):
         prefix_lon.dat      : Longitude
         prefix_lat.dat      : Latitude
         '''
-
-        print('---------------------------------')
-        print('---------------------------------')
-        print('Write in binary format to files {}_east.dat and {}_north.dat'.format(prefix, prefix))
+        
+        if self.verbose:
+            print('---------------------------------')
+            print('---------------------------------')
+            print('Write in binary format to files {}_east.dat and {}_north.dat'.format(prefix, prefix))
 
         # North 
         fname = '{}_north.dat'.format(prefix)
@@ -1435,9 +1439,10 @@ class cosicorrrates(SourceInv):
             * cmd       : command used for the conversion( i.e., surface or xyz2gmt)
         '''
 
-        print('---------------------------------')
-        print('---------------------------------')
-        print('Write in grd format to files {}_east.grd and {}_north.grd'.format(fname, fname))
+        if self.verbose:
+            print('---------------------------------')
+            print('---------------------------------')
+            print('Write in grd format to files {}_east.grd and {}_north.grd'.format(fname, fname))
 
         # Get variables
         x = self.lon
@@ -1496,6 +1501,43 @@ class cosicorrrates(SourceInv):
         # CLose the files
         fine.close()
         finn.close()
+
+        # All done
+        return
+
+
+    def ModelResolutionDownsampling(self, faults, threshold, damping, startingsize=10., minimumsize=0.5, tolerance=0.1, plot=False):
+        '''
+        Downsampling algorythm based on Lohman & Simons, 2005, G3. 
+        Args:
+            faults          : List of faults, these need to have a buildGFs routine (ex: for RectangularPatches, it will be Okada).
+            threshold       : Resolution threshold, if above threshold, keep dividing.
+            damping         : Damping parameter. Damping is enforced through the addition of a identity matrix.
+            startingsize    : Starting size of the downsampling boxes.
+        '''
+        
+        # If needed
+        from .imagedownsampling import imagedownsampling
+        
+        # Check if faults have patches and builGFs routine
+        for fault in faults:
+            assert (hasattr(fault, 'builGFs')), 'Fault object {} does not have a buildGFs attribute...'.format(fault.name)
+
+        # Create the insar downsampling object
+        downsampler = imagedownsampling('Downsampler {}'.format(self.name), self, faults)
+
+        # Initialize the downsampling starting point
+        downsampler.initialstate(startingsize, minimumsize, tolerance=tolerance)
+
+        # Iterate until done
+        downsampler.ResolutionBasedIterations(threshold, damping, plot=False)
+
+        # Plot
+        if plot:
+            downsampler.plot()
+
+        # Write outputs
+        downsampler.writeDownsampled2File(self.name, rsp=True)
 
         # All done
         return

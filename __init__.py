@@ -28,7 +28,7 @@ from .planarfaultkinematic import planarfaultkinematic
 ## Data
 from .gpsrates import gpsrates
 from .insarrates import insarrates
-from .insardownsampling import insardownsampling
+from .imagedownsampling import imagedownsampling
 from .multifaultsolve import multifaultsolve
 from .cosicorrrates import cosicorrrates
 from .creepmeters import creepmeters
