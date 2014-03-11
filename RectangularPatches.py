@@ -61,6 +61,117 @@ class RectangularPatches(Fault):
         # All done
         return
 
+    def extrapolate(self, length_added=50, tol=2., fracstep=5., extrap='ud'):
+        ''' 
+        Extrapolates the surface trace. This is usefull when building deep patches for interseismic loading.
+        Args:
+            * length_added  : Length to add when extrapolating.
+            * tol           : Tolerance to find the good length.
+            * fracstep      : control each jump size.
+            * extrap        : if u in extrap -> extrapolates at the end
+                              if d in extrap -> extrapolates at the beginning
+                              default is 'ud'
+        '''
+
+        # print 
+        print ("Extrapolating the fault for {} km".format(length_added))
+
+        # Check if the fault has been interpolated before
+        if self.xi is None:
+            print ("Run the discretize() routine first")
+            return
+
+        # Build the interpolation routine
+        import scipy.interpolate as scint
+        fi = scint.interp1d(self.xi, self.yi)
+
+        # Build the extrapolation routine
+        fx = self.extrap1d(fi)
+
+        # make lists
+        self.xi = self.xi.tolist()
+        self.yi = self.yi.tolist()
+
+        if 'd' in extrap:
+        
+            # First guess for first point
+            xt = self.xi[0] - length_added/2.
+            yt = fx(xt)
+            d = np.sqrt( (xt-self.xi[0])**2 + (yt-self.yi[0])**2)
+
+            # Loop to find the best distance
+            while np.abs(d-length_added)>tol:
+                # move up or down
+                if (d-length_added)>0:
+                    xt = xt + d/fracstep
+                else:
+                    xt = xt - d/fracstep
+                # Get the corresponding yt
+                yt = fx(xt)
+                # New distance
+                d = np.sqrt( (xt-self.xi[0])**2 + (yt-self.yi[0])**2) 
+        
+            # prepend the thing
+            self.xi.reverse()
+            self.xi.append(xt)
+            self.xi.reverse()
+            self.yi.reverse()
+            self.yi.append(yt)
+            self.yi.reverse()
+
+        if 'u' in extrap:
+
+            # First guess for the last point
+            xt = self.xi[-1] + length_added/2.
+            yt = fx(xt)
+            d = np.sqrt( (xt-self.xi[-1])**2 + (yt-self.yi[-1])**2)
+
+            # Loop to find the best distance
+            while np.abs(d-length_added)>tol:
+                # move up or down
+                if (d-length_added)<0:
+                    xt = xt + d/fracstep
+                else:
+                    xt = xt - d/fracstep
+                # Get the corresponding yt
+                yt = fx(xt)
+                # New distance
+                d = np.sqrt( (xt-self.xi[-1])**2 + (yt-self.yi[-1])**2)
+
+            # Append the result
+            self.xi.append(xt)
+            self.yi.append(yt)
+
+        # Make them array again
+        self.xi = np.array(self.xi)
+        self.yi = np.array(self.yi)
+
+        # Build the corresponding lon lat arrays
+        self.loni, self.lati = self.xy2ll(self.xi, self.yi)
+
+        # All done
+        return
+
+    def extrap1d(self,interpolator):
+        '''
+        Linear extrapolation routine. Found on StackOverflow by sastanin.
+        '''
+
+        # import a bunch of stuff
+        from scipy import arange, array, exp
+
+        xs = interpolator.x
+        ys = interpolator.y
+        def pointwise(x):
+            if x < xs[0]:
+                return ys[0]+(x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
+            elif x > xs[-1]:
+                return ys[-1]+(x-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
+            else:
+                return interpolator(x)
+        def ufunclike(xs):
+            return pointwise(xs) #array(map(pointwise, array(xs)))
+        return ufunclike
 
     def discretize(self, every=2, tol=0.01, fracstep=0.2, xaxis='x', cum_error=True): 
         '''
@@ -151,7 +262,38 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    
+    def surfacePatches2Trace(self):
+        '''
+        Takes the surface patches and set the fault trace with that
+        '''
 
+        # Create lists
+        xf = []
+        yf = []
+
+        # Iterate on patches
+        for p in self.patch:
+            for c in p:
+                if c[2]==0.0:
+                    xf.append(c[0])
+                    yf.append(c[1])
+        
+        # Make arrays
+        xf = np.array(xf)
+        yf = np.array(yf)
+
+        # Compute lonlat
+        lonf, latf = self.xy2ll(xf, yf)
+
+        # Set values
+        self.xf = xf
+        self.yf = yf
+        self.lonf = lonf
+        self.latf = latf
+
+        # All done
+        return
 
     def computeArea(self):
         '''
@@ -787,10 +929,12 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def deletepatches(self, tutu):
+    def deletepatches(self, titi):
         '''
         Deletes a list of patches.
         '''
+
+        tutu = copy.deepcopy(titi)
 
         while len(tutu)>0:
 
@@ -849,15 +993,19 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def addPatchesFromOtherFault(self, fault):
+    def addPatchesFromOtherFault(self, fault, indexes=None):
         '''
         Adds the patches of one fault to another.
         '''
 
+        # Set indexes
+        if indexes is None:
+            indexes = range(len(fault.patch))
+
         # Loop on patches
-        for p in fault.patch:
-            ii = fault.getindex(p)
-            slip = fault.slip[ii,:]
+        for i in indexes:
+            p = fault.patch[i]
+            slip = fault.slip[i,:]
             self.addpatch(p, slip)
 
         # Build the equivalent patches
@@ -2617,7 +2765,7 @@ class RectangularPatches(Fault):
         # all done
         return
 
-    def mapUnder2Above(self, deepfault):
+    def mapUnder2Above(self, deepfault, extrapolate=10.):
         '''
         This routine is very very particular. It only works with 2 vertical faults.
         It Builds the mapping function from one fault to another, when these are vertical.
@@ -2642,6 +2790,9 @@ class RectangularPatches(Fault):
 
         # Create the map from under to above
         Map = np.zeros((nPatches, nDeepPatches)) 
+
+        # Set the top row as the surface trace
+        self.surfacePatches2Trace()
 
         # Discretize the surface trace quite finely
         self.discretize(every=0.5, tol=0.05, fracstep=0.02)
@@ -2689,6 +2840,9 @@ class RectangularPatches(Fault):
         # Numpy arrays
         distance = np.array(distance)
         deepdistance = np.array(deepdistance)
+
+        self.disdis = distance 
+        self.deepdis = deepdistance
 
         # Loop over the patches to find out which are over which 
         for p in range(len(self.patch)):
