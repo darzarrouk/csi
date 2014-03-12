@@ -276,12 +276,14 @@ class Fault(SourceInv):
         return
 
 
-    def saveGFs(self, dtype='d', outputDir='.'):
+    def saveGFs(self, dtype='d', outputDir='.', 
+                suffix={'strikeslip':'SS','dipslip':'DS','tensile':'DS'}):
         '''
         Saves the Green's functions in different files
         Args:
             dtype       : Format of the binary data saved.
             outputDir   : Directory to save binary data.
+            suffix      : suffix for GFs name
         '''
 
         # Print stuff
@@ -293,27 +295,38 @@ class Fault(SourceInv):
             # Get the Green's function
             G = self.G[data]
 
-            # StrikeSlip Component
-            if 'strikeslip' in G.keys():
-                gss = G['strikeslip'].flatten()
-                filename = '{}_{}_SS.gf'.format(self.name, data)
-                gss = gss.astype(dtype)
-                gss.tofile(os.path.join(outputDir, filename))
+            # Create one file for each slip componenets 
+            for c in G.keys():
+                g = G[c].flatten()
+                filename = '{}_{}_{}.gf'.format(self.name, data,suffix[c])
+                g = g.astype(dtype)
+                g.tofile(os.path.join(outputDir, filename))
+ 
+       # All done
+        return
 
-            # DipSlip Component
-            if 'dipslip' in G.keys():
-                gds = G['dipslip'].flatten()
-                filename = '{}_{}_DS.gf'.format(self.name, data)
-                gds = gds.astype(dtype)
-                gds.tofile(os.path.join(outputDir, filename))
 
-            # Tensile
-            if 'tensile' in G.keys():
-                gts = G['tensile'].flatten()
-                filename = '{}_{}_TS.gf'.format(self.name, data)
-                gts = gts.astype(dtype)
-                gts.tofile(os.path.join(outputDir, filename))
-
+    def saveData(self, dtype='d', outputDir='.'):
+        '''
+        Saves the Data in binary files
+        Args:
+            * dtype       : Format of the binary data saved.
+            * outputDir   : Directory to save binary data.
+        '''        
+        
+        # Print stuff
+        print('Writing Greens functions to file for fault {}'.format(self.name))
+        
+        # Loop over the data names in self.d
+        for data in self.d.keys(): 
+            
+            # Get data
+            D = self.d[data]
+            
+            # Write data file 
+            filename = '{}_{}.data'.format(self.name, data)
+            D.tofile(os.path.join(outputDir, filename))
+           
         # All done
         return
 
@@ -415,7 +428,7 @@ class Fault(SourceInv):
 
 
     def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], 
-               tensile=[None, None, None], vertical=False):
+               tensile=[None, None, None], vertical=False, synthetic=False):
         '''
         Stores the input Green's functions matrices into the fault structure.
         Args:
@@ -444,19 +457,21 @@ class Fault(SourceInv):
         G = self.G[data.name]
 
         # Initializes the data vector
-        if data.dtype is 'insarrates':
-            self.d[data.name] = data.vel
-            vertical = True # Always true for InSAR
-        elif data.dtype is 'gpsrates':
-            if vertical:
-                self.d[data.name] = data.vel_enu.T.flatten()
-            else:
-                self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
-        elif data.dtype is 'cosicorrrates':
-            self.d[data.name] = np.hstack((data.east.T.flatten(), data.north.T.flatten()))
-            if vertical:
-                self.d[data.name] = np.hstack((self.d[data.name],
-                                               np.zeros_like(data.east.T.ravel())))
+        if not synthetic:
+            if data.dtype is 'insarrates':
+                self.d[data.name] = data.vel
+                vertical = True # Always true for InSAR
+            elif data.dtype is 'gpsrates':
+                if vertical:
+                    self.d[data.name] = data.vel_enu.T.flatten()
+                else:
+                    self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
+            elif data.dtype is 'cosicorrrates':
+                self.d[data.name] = np.hstack((data.east.T.flatten(), 
+                                               data.north.T.flatten()))
+                if vertical:
+                    self.d[data.name] = np.hstack((self.d[data.name],
+                                                   np.zeros_like(data.east.T.ravel())))
 
         # StrikeSlip
         if len(strikeslip) == 3:            # GPS case

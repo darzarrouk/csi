@@ -14,7 +14,6 @@ import copy
 import sys
 import os
 import shutil
-import pickle
 
 ## Personals
 major, minor, micro, release, serial = sys.version_info
@@ -247,9 +246,6 @@ class planarfaultkinematic(planarfault):
         
             # Assemble GFs
             G.append(copy.deepcopy(data.waveform_engine.synth))
-            G[-1]['patch_x'] = p_x
-            G[-1]['patch_y'] = p_y
-            G[-1]['patch_z'] = p_z
         sys.stdout.write('\n')
 
         # All done
@@ -366,7 +362,6 @@ class planarfaultkinematic(planarfault):
         '''
         # Create a list of waveform dictionaries
         Wav = []
-        print(self.G.keys())
         if include_G==True:
             assert self.G.has_key(data.name), 'G must be implemented for {}'.format(data.name)
             for r in self.G[data.name].keys():
@@ -436,81 +431,144 @@ class planarfaultkinematic(planarfault):
         return        
         
 
-    def saveKinGFs(self, data, ofile='GFs.pkl'):
+    def saveKinGFs(self, data, o_dir='gf_kin'):
         '''
-        Serializing the Green's functions (pickle format)
+        Writing Green's functions (1 sac file per channel per patch for each rake)
         Args:
             data  : Data object corresponding to the Green's function to be saved
-            ofile : Output file name
+            o_dir : Output directory name
         '''
-
+        
         # Print stuff
-        print('Writing Kinematic Greens functions to file {} for fault {} and dataset {}'.format(ofile,self.name,data.name))
+        print('Writing Kinematic Greens functions in directory {} for fault {} and dataset {}'.format(o_dir,self.name,data.name))
 
-        # Write pickle file
-        G   = self.G[data.name]
-        fid = open(ofile,'wb')
-        pickle.dump(G,fid)
-        fid.close()
+        # Write Green's functions
+        G = self.G[data.name]
+        for r in G: # Slip direction: Rake (integer)
+            for p in range(len(self.patch)): # Patch number (integer)
+                for s in G[r][p]: # station name (string)
+                    for c in G[r][p][s]: # component name (string)
+                        o_file = os.path.join(o_dir,'gf_rake%d_patch%d_%s_%s.sac'%(r,p,s,c))
+                        G[r][p][s][c].wsac(o_file)
+        
+        # Write list of stations
+        f = open(os.path.join(o_dir,'stat_list'),'w')
+        for s in G[r][p]:
+            f.write('%s\n'%(s))
+        f.close()
 
         # All done
         return
 
-    def loadKinGFs(self, data, ifile='GFs.pkl'):
+    def loadKinGFs(self, data, rake=[0,90],i_dir='gf_kin',station_file=None):
         '''
-        De-Serializing the Green's functions (pickle format)
+        Reading Green's functions (1 sac file per channel per patch for each rake)
         Args:
-            data  : Data object corresponding to the Green's function to be loaded
-            ifile : Input file name
+            data       : Data object corresponding to the Green's function to be loaded
+            rake       : List of rake values (default=0 and 90 deg)
+            i_dir      : Output directory name (default='gf_kin')
+            station_file: read station list from 'station_file'
         '''
+        
+        # Import sac for python (ask Zach)
+        import sacpy
 
         # Print stuff
-        print('Loading Kinematic Greens functions from file {} for fault {} and dataset {}'.format(ifile,self.name,data.name))
+        print('Loading Kinematic Greens functions from directory {} for fault {} and dataset {}'.format(i_dir,self.name,data.name))
 
-        # Load pickle file        
-        fid = open(ifile,'rb')
-        self.G[data.name] = pickle.load(fid)
-        fid.close()
+        # Init G
+        self.G[data.name] = {}
+        G = self.G[data.name]
+        
+        # Read list of station names
+        if station_file != None:
+            sta_name = []
+            f = open(os.path.join(o_dir,'stat_list'),'r')
+            for l in f:
+                sta_name.append(l.strip().split()[0])
+            f.close()
+        else:
+            sta_name = data.sta_name
+
+        # Read Green's functions
+        for r in rake: # Slip direction: Rake (integer)
+            G[r] = []
+            for p in range(len(self.patch)): # Patch number (integer)
+                G[r].append({})
+                for s in sta_name: # station name (string)
+                    G[r][p][s] = {}
+                    for c in ['Z','N','E']: # component name (string)
+                        i_file = os.path.join(i_dir,'gf_rake%d_patch%d_%s_%s.sac'%(r,p,s,c))
+                        if os.path.exists(i_file):                            
+                            G[r][p][s][c] = sacpy.sac()
+                            G[r][p][s][c].rsac(i_file)
+                        else:
+                            print('Skipping GF for {} {}'.format(s,c))
 
         # All done
         return
 
-    def saveKinData(self, data, ofile='data.pkl'):
+    def saveKinData(self, data, o_dir='data_kin'):
         '''
-        Serializing the Data (pickle format)
+        Write Data (1 sac file per channel)
         Args:
             data  : Data object corresponding to the Green's function to be saved
-            ofile : Output file name
+            o_dir : Output file name
         '''
 
         # Print stuff
-        print('Writing Kinematic Data to file {} for fault {} and dataset {}'.format(ofile,self.name,data.name))
+        print('Writing Kinematic Data to file {} for fault {} and dataset {}'.format(o_dir,self.name,data.name))
 
-        # Write pickle file
-        D   = self.d[data.name]
-        fid = open(ofile,'wb')
-        pickle.dump(D,fid)
-        fid.close()
-
+        # Write data in sac file
+        d = self.d[data.name]
+        f = open(os.path.join(o_dir,'stat_list'),'w') # List of stations
+        for s in d: # station name (string)
+            f.write('%s\n'%(s))
+            for c in d[s]: # component name (string)
+                o_file = os.path.join(o_dir,'data_%s_%s.sac'%(s,c))
+                d[s][c].wsac(o_file)
+        f.close()
+        
         # All done
         return
 
-    def loadKinData(self, data, ifile='data.pkl'):
+    def loadKinData(self, data, i_dir='data_kin', station_file=None):
         '''
-        De-Serializing the Data (pickle format)
+        Read Data (1 sac file per channel)
         Args:
             data  : Data object corresponding to the Green's function to be loaded
-            ifile : Input file name
+            i_dir : Input directory
+            station_file: read station list from 'station_file'
         '''
 
+        # Import sac for python (ask Zach)
+        import sacpy
+
         # Print stuff
-        print('Loading Kinematic Data from file {} for fault {} and dataset {}'.format(ifile,self.name,data.name))
+        print('Loading Kinematic Data from directory {} for fault {} and dataset {}'.format(i_dir,self.name,data.name))
 
-        # Load pickle file        
-        fid = open(ifile,'rb')
-        self.d[data.name] = pickle.load(fid)
-        fid.close()
+        # Check list of station names
+        if station_file != None:
+            sta_name = []
+            f = open(os.path.join(o_dir,'stat_list'),'r')
+            for l in f:
+                sta_name.append(l.strip().split()[0])
+            f.close()
+        else:
+            sta_name = data.sta_name
 
+        # Read data from sac files
+        self.d[data.name] = {}
+        d = self.d[data.name]
+        for s in sta_name: # station name (string)
+            d[s]={}
+            for c in ['Z','N','E']:      # component name (string)
+                o_file = os.path.join(i_dir,'data_%s_%s.sac'%(s,c))
+                if os.path.exists(o_file):
+                    d[s][c] = sacpy.sac()
+                    d[s][c].rsac(o_file)
+                else:
+                    print('Skipping Data for {} {}'.format(s,c))                    
         # All done
         return
 
