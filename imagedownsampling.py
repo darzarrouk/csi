@@ -366,7 +366,7 @@ class imagedownsampling(object):
             Ndat = G.shape[0]/2 # vertical is False
             Ginv = np.dot(np.linalg.inv(np.dot(G.T,G)+ damping*np.eye(Npar)),G.T)
             Rd = np.dot(G, Ginv)
-            self.Rd = np.diag(Rd)
+            self.Rd = np.diag(Rd).copy()
 
             # If we are dealing with cosicorr data, the diagonal is twice as long as the umber of blocks
             if self.datatype is 'cosicorrrates':

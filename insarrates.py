@@ -123,7 +123,7 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14, dtype=np.float32):
+    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14, dtype=np.float32, remove_nan=True):
         '''
         Read from binary file or from array.
         '''
@@ -144,21 +144,30 @@ class insarrates(SourceInv):
             lat = np.fromfile(lat, dtype=dtype)
 
         # Check sizes
-        assert data.shape!=lon.shape, 'Something wrong with the sizes: {} {} {} '.format(data.shape, lon.shape, lat.shape)  
-        assert data.shape!=lat.shape, 'Something wrong with the sizes: {} {} {} '.format(data.shape, lon.shape, lat.shape)  
+        assert vel.shape==lon.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)  
+        assert vel.shape==lat.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)  
 
         # Get the error
         if err is not None:
             if type(err) is str:
                 err = np.fromfile(err, dtype=dtype)
             err = err * factor
-            assert data.shape==err.shape, 'Something wrong with the sizes: {} {} {} '.format(data.shape, lon.shape, lat.shape)
+            assert vel.shape==err.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)
+
+        # Check NaNs
+        if remove_nan:
+            iFinite = np.flatnonzero(np.isfinite(vel))
+        else:
+            iFinite = range(vel.shape[0])
 
         # Set things in self
-        self.vel = vel
-        self.err = err
-        self.lon = lon
-        self.lat = lat
+        self.vel = vel[iFinite]
+        if err is not None:
+            self.err = err[iFinite]
+        else:
+            self.err = None
+        self.lon = lon[iFinite]
+        self.lat = lat[iFinite]
 
         # Keep track of factor
         self.factor = factor
