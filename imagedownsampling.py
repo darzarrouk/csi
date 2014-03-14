@@ -590,6 +590,7 @@ class imagedownsampling(object):
         for i in xrange(len(self.newimage.x)):
 
             # Write in txt
+            wgt = self.newimage.wgt[i]
             x = int(self.newimage.x[i])
             y = int(self.newimage.y[i])
             lon = self.newimage.lon[i]
@@ -609,7 +610,6 @@ class imagedownsampling(object):
                 err_north = self.newimage.err_north[i]
                 strg = '{:4d} {:3.6f} {:3.6f} {} {} {} {} \n'\
                         .format(i, lon, lat, east, north, err_east, err_north)
-            wgt = self.newimage.wgt[i]
             ftxt.write(strg)
 
             # Write in rsp
