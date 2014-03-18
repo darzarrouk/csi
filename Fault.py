@@ -276,8 +276,7 @@ class Fault(SourceInv):
         return
 
 
-    def saveGFs(self, dtype='d', outputDir='.', 
-                suffix={'strikeslip':'SS','dipslip':'DS','tensile':'DS'}):
+    def saveGFs(self, dtype='d', outputDir='.', suffix={'strikeslip':'SS','dipslip':'DS','tensile':'DS'}):
         '''
         Saves the Green's functions in different files
         Args:

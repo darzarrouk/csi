@@ -63,6 +63,38 @@ class planarfaultkinematic(planarfault):
         # All done
         return
 
+
+    def getHypoToCenter(self, p, sd_dist=False):
+        ''' 
+        Get patch center coordinates from hypocenter
+        Args:
+            * p      : Patch number.
+            * sd_dist: If true, will return along dip and along strike distances
+        '''
+
+        # Check strike/dip/hypo assigmement
+        assert self.f_strike != None, 'Fault strike must be assigned'
+        assert self.f_dip    != None, 'Fault dip    must be assigned'
+        assert self.hypo_x   != None, 'Hypocenter   must be assigned'
+        assert self.hypo_y   != None, 'Hypocenter   must be assigned'
+        assert self.hypo_z   != None, 'Hypocenter   must be assigned'
+
+        # Get center
+        p_x, p_y, p_z = self.getcenter(self.patch[p])
+        x = p_x - self.hypo_x
+        y = p_y - self.hypo_y
+        z = p_z - self.hypo_z
+
+        # Along dip and along strike distance to hypocenter
+        if sd_dist:
+            dip_d = z / np.sin(self.f_dip)
+            strike_d = x * np.sin(self.f_strike) + y * np.cos(self.f_strike)
+            return dip_d, strike_d
+        else:
+            return x,y,z
+            
+
+
     def setHypoXY(self,x,y, UTM=True):
         '''
         Set hypocenter attributes from x,y
@@ -151,8 +183,8 @@ class planarfaultkinematic(planarfault):
         '''
         
         # Check prescribed assigments
-        assert self.f_strike != None, 'Fault length must be assigned'
-        assert self.f_dip    != None, 'Fault length must be assigned'
+        assert self.f_strike != None, 'Fault strike must be assigned'
+        assert self.f_dip    != None, 'Fault dip must be assigned'
         assert self.patch    != None, 'Patch objects must be assigned'
         
         dipdir = (self.f_strike+np.pi/2.)%(2.*np.pi)
@@ -165,7 +197,7 @@ class planarfaultkinematic(planarfault):
 
             # Set grid points coordinates on fault
             grid_strike = np.arange(0.5*grid_size,p_length,grid_size) - p_length/2.
-            grid_dip    = np.arange(0.5*grid_size,p_width,grid_size) - p_width/2.
+            grid_dip    = np.arange(0.5*grid_size,p_width, grid_size) - p_width/2.
 
             # Check that everything is correct
             assert np.round(p_strike,2) == np.round(self.f_strike,2), 'Fault must be planar' 
@@ -251,12 +283,14 @@ class planarfaultkinematic(planarfault):
         # All done
         return
 
-    def buildKinDataTriangleMRF(self, data, Mu, rake_para=0., out_type='D', verbose=True, ofd=sys.stdout, efd=sys.stderr):
+    def buildKinDataTriangleMRF(self, data, eik_solver, Mu, rake_para=0., out_type='D', 
+                                verbose=True, ofd=sys.stdout, efd=sys.stderr):
         '''
         Build Kinematic Green's functions based on the discretized fault. Green's functions will be calculated 
         for a given shear modulus and a given slip (cf., slip) along a given rake angle (cf., rake)
         Args:
             * data: Seismic data object
+            * eik_solver: eikonal solver
             * Mu:   Shear modulus
             * rake_para: Rake of the slip parallel component in deg (default=0. deg)
             * out_type:   'D' for displacement, 'V' for velocity, 'A' for acceleration (default='D')
@@ -275,9 +309,7 @@ class planarfaultkinematic(planarfault):
         assert self.vr     != None, 'Rupture velocities must be assigned'
         assert self.tr     != None, 'Rise times must be assigned'
         assert len(self.patch)==len(self.slip)==len(self.vr)==len(self.tr), 'Patch attributes must have same length'
-        for v in self.vr:
-            assert v==self.vr[0], 'This function is only valid for homogeneous vr'
-
+        
         # Verbose on/off        
         if verbose:
             import sys
@@ -288,12 +320,18 @@ class planarfaultkinematic(planarfault):
         max_dur = np.sqrt(self.f_length*self.f_length + self.f_width*self.f_width)/np.min(self.vr)
         Nt      = np.ceil(max_dur/data.waveform_engine.delta)
 
+        # Calculate timings using eikonal solver
+        print('-- Compute rupture front')
+        eik_solver.setGridFromFault(self,0.3)
+        eik_solver.fastSweep()
+
         # Loop over each patch
+        print('-- Compute and sum-up synthetics')
         Np = len(self.patch)
         rad2deg = 180./np.pi
         if not self.d.has_key(data.name):
             self.d[data.name] = {}
-        D = self.d[data.name]        
+        D = self.d[data.name]   
         for p in range(Np):
             if verbose:
                 sys.stdout.write('\r Patch: {} / {} '.format(p+1,Np))
@@ -327,8 +365,11 @@ class planarfaultkinematic(planarfault):
                 g_x = self.grid[p][g][0] - self.hypo_x
                 g_y = self.grid[p][g][1] - self.hypo_y
                 g_z = self.grid[p][g][2] - self.hypo_z
-                g_dist = np.sqrt(g_x*g_x + g_y*g_y + g_z*g_z)
-                g_t0 = g_dist/self.vr[p]
+                g_t0 = eik_solver.getT0FromFault(self,self.grid[p][g][0],self.grid[p][g][1],
+                                                 self.grid[p][g][2])
+                #g_t0 = g_dist/self.vr[p]
+                #g_dist = np.sqrt(g_x*g_x + g_y*g_y + g_z*g_z)
+                #print '%8.2f %8.2f %8.2f'%(g_dist, g_t0 , g_dist/self.vr[p])
                 g_tc = g_t0 + hTr
                 g_t1 = g_t0 + 2*hTr
                 g_i  = np.where((t>=g_t0)*(t<=g_t1))
@@ -348,6 +389,7 @@ class planarfaultkinematic(planarfault):
                     for c in data.waveform_engine.synth[stat].keys():
                         D[stat][c].depvar += data.waveform_engine.synth[stat][c].depvar
         sys.stdout.write('\n')
+        print('-- Done')
         
         # All done
         return

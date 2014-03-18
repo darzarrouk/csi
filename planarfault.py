@@ -38,6 +38,7 @@ class planarfault(RectangularPatches):
         # All done
         return
 
+
     def discretize(self, lon, lat, strike, length, n_strike):
         '''
         Define the discretized trace of the fault
@@ -72,6 +73,7 @@ class planarfault(RectangularPatches):
         # All done
         return
         
+
     def buildPatches(self, lon, lat, dep, strike, dip, f_length, f_width, n_strike, n_dip):
         '''
         Builds a dipping fault.
