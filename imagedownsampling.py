@@ -568,7 +568,8 @@ class imagedownsampling(object):
         '''
         Writes the downsampled image data to a file.
         The file will be called prefix.txt.
-        If rsp is True, then it writes a file called prefix.rsp containing the boxes of the downsampling.
+        If rsp is True, then it writes a file called prefix.rsp 
+        containing the boxes of the downsampling.
         '''
 
         # Open files

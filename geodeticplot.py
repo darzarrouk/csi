@@ -420,6 +420,15 @@ class geodeticplot(object):
             else:
                 p = self.carte.quiver(gps.lon, gps.lat, gps.vel_enu[:,0]-gps.synth[:,0], gps.vel_enu[:,1]-gps.synth[:,1], width=0.0025, color=color, scale=scale, linewidths=linewidths)
                 q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
+        elif data is 'synth':
+            # If there is some synthetics
+            if gps.synth is not None:
+                if self.ref is 'utm':
+                    p = self.carte.quiver(gps.x, gps.y, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)   
+                    q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
+                else:                                                                         
+                    p = self.carte.quiver(gps.lon, gps.lat, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)  
+                    q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
 
         # Plot the name of the stations if asked
         if name:
