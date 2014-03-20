@@ -14,7 +14,7 @@ import numpy as np
 
 class geodeticplot(object):
 
-    def __init__(self, figure=130, ref='utm', pbaspect=None):
+    def __init__(self, figure=130, ref='utm', pbaspect=None, Faille=True, Carte=True):
         '''
         Args:
             * figure        : Number of the figure.
@@ -22,42 +22,54 @@ class geodeticplot(object):
         '''
 
         # Open a figure
-        fig1 = plt.figure(figure)
-        faille = fig1.add_subplot(111, projection='3d')
-        fig2  = plt.figure(figure+1)
-        carte = fig2.add_subplot(111)
+        if Faille:
+            fig1 = plt.figure(figure)
+            faille = fig1.add_subplot(111, projection='3d')
+        if Carte:
+            fig2  = plt.figure(figure+1)
+            carte = fig2.add_subplot(111)
 
         # Set the axes
         if ref is 'utm':
-            faille.set_xlabel('Easting (km)')
-            faille.set_ylabel('Northing (km)')
-            carte.set_xlabel('Easting (km)')
-            carte.set_ylabel('Northing (km)')
+            if Faille:
+                faille.set_xlabel('Easting (km)')
+                faille.set_ylabel('Northing (km)')
+                faille.set_zlabel('Depth (km)')
+            if Carte:
+                carte.set_xlabel('Easting (km)')
+                carte.set_ylabel('Northing (km)')
         else:
-            faille.set_xlabel('Longitude')
-            faille.set_ylabel('Latitude')
-            carte.set_xlabel('Longitude')
-            carte.set_ylabel('Latitude')
+            if Faille:
+                faille.set_xlabel('Longitude')
+                faille.set_ylabel('Latitude')
+                faille.set_zlabel('Depth (km)')
+            if Carte:
+                carte.set_xlabel('Longitude')
+                carte.set_ylabel('Latitude')
 
-        faille.set_zlabel('Depth (km)')
+                
 
         # store plots
-        self.faille = faille
-        self.carte  = carte
-        self.fig1 = fig1
-        self.fig2 = fig2
+        if Faille:
+            self.faille = faille
+            self.fig1 = fig1
+        if Carte:
+            self.carte  = carte
+            self.fig2 = fig2
         self.ref  = ref
 
-    def show(self, mapaxis='equal', triDaxis='auto'):
+    def show(self, mapaxis='equal', triDaxis='auto', Faille=True, Carte=True):
         ''' 
         Show to screen 
         '''
 
         # Change axis of the map
-        self.carte.axis(mapaxis)
+        if Carte:
+            self.carte.axis(mapaxis)
 
         # Change the axis of the 3d projection
-        self.faille.axis(triDaxis)
+        if Faille:
+            self.faille.axis(triDaxis)
 
         # Show
         plt.show()
