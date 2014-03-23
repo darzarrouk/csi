@@ -50,6 +50,8 @@ class geodeticplot(object):
                 
 
         # store plots
+        self.faille_flag = Faille
+        self.carte_flag  = Carte
         if Faille:
             self.faille = faille
             self.fig1 = fig1
@@ -64,11 +66,11 @@ class geodeticplot(object):
         '''
 
         # Change axis of the map
-        if Carte:
+        if self.carte_flag:
             self.carte.axis(mapaxis)
 
         # Change the axis of the 3d projection
-        if Faille:
+        if self.faille_flag:
             self.faille.axis(triDaxis)
 
         # Show
@@ -189,22 +191,30 @@ class geodeticplot(object):
         # Plot the added faults before
         if add and (self.ref is 'utm'):
             for f in fault.addfaultsxy:
-                self.faille.plot(f[0], f[1], '-k')
-                self.carte.plot(f[0], f[1], '-k')
+                if self.faille_flag:
+                    self.faille.plot(f[0], f[1], '-k')
+                if self.carte_flag:
+                    self.carte.plot(f[0], f[1], '-k')
         elif add and (self.ref is not 'utm'):
             for f in fault.addfaults:
-                self.faille.plot(f[0], f[1], '-k')
-                self.carte.plot(f[0], f[1], '-k')
+                if self.faille_flag:
+                    self.faille.plot(f[0], f[1], '-k')
+                if self.carte_flag:
+                    self.carte.plot(f[0], f[1], '-k')
 
         # Plot the surface trace
         if self.ref is 'utm':
             if fault.xf is None:
                 fault.trace2xy()
-            self.faille.plot(fault.xf, fault.yf, '-{}'.format(color), linewidth=2)
-            self.carte.plot(fault.xf, fault.yf, '-{}'.format(color), linewidth=2)
+            if self.faille_flag:
+                self.faille.plot(fault.xf, fault.yf, '-{}'.format(color), linewidth=2)
+            if self.carte_flag:
+                self.carte.plot(fault.xf, fault.yf, '-{}'.format(color), linewidth=2)
         else:
-            self.faille.plot(fault.lon, fault.lat, '-{}'.format(color), linewidth=2)
-            self.carte.plot(fault.lon, fault.lat, '-{}'.format(color), linewidth=2)
+            if self.faille_flag:
+                self.faille.plot(fault.lon, fault.lat, '-{}'.format(color), linewidth=2)
+            if self.carte_flag:                
+                self.carte.plot(fault.lon, fault.lat, '-{}'.format(color), linewidth=2)
 
         # All done
         return
