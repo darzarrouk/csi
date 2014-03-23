@@ -456,7 +456,8 @@ class insarrates(SourceInv):
         self.x = self.x[u]
         self.y = self.y[u]
         self.vel = self.vel[u]
-        self.err = self.err[u]
+        if self.err != None:
+            self.err = self.err[u]
         self.los = self.los[u]
         if self.synth is not None:
             self.synth = self.synth[u,:]
