@@ -645,7 +645,8 @@ class insarrates(SourceInv):
         self.lat = np.delete(self.lat, u)
         self.x = np.delete(self.x, u)
         self.y = np.delete(self.y, u)
-        self.err = np.delete(self.err, u)
+        if self.err != None:
+            self.err = np.delete(self.err, u)
         self.los = np.delete(self.los, u, axis=0)
         self.vel = np.delete(self.vel, u)
 
