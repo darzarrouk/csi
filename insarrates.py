@@ -633,7 +633,7 @@ class insarrates(SourceInv):
         fout.close()
 
         # All done
-        return
+        return datname,filename
 
     def reject_pixel(self, u):
         '''

@@ -1087,7 +1087,10 @@ class TriangularPatches(Fault):
         datname,ReceiverFile = data.writeEDKSdata()
 
         # Assign some EDKS parameters
-        useRecvDir = False # False for GPS, uses ENU displacements
+        if data.dtype is 'insarrates':
+            useRecvDir = True # True for InSAR, uses LOS information
+        else:
+            useRecvDir = False # False for GPS, uses ENU displacements
         EDKSunits = 1000.0
         EDKSfilename = '{}'.format(edksfilename)
         prefix = 'edks_{}_{}'.format(fltname, datname)
@@ -1130,7 +1133,7 @@ class TriangularPatches(Fault):
     def writeEDKSgeometry(self, ref=None):
         '''
         This routine spits out 2 files:
-        filename.TriangleProp: Patch ID | Lon (deg) | Lat | Easti (km) | North | Depth (km) | Strike (deg) | Dip  | Area (km^2) | Vertice ids
+        filename.TriangleProp: Patch ID | Lon (deg) | Lat | East (km) | North | Depth (km) | Strike (deg) | Dip  | Area (km^2) | Vertice ids
         (coordinates are given for the center of the patch)
         filename.PointCoord: Vertice ID | Lon (deg) | Lat | East (km) | North | Depth (km)
 
