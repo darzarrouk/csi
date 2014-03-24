@@ -119,18 +119,20 @@ class TriangularPatches(Fault):
         # Get the geographic vertices and connectivities from the Gocad file
         with open(filename, 'r') as fid:
             vertices = []
-            faces = []
+            vids     = []
+            faces    = []
             for line in fid:
                 if line.startswith('VRTX'):
                     name, vid, x, y, z = line.split()
+                    vids.append(vid)
                     vertices.append([float(x), float(y), negFactor*float(z)])
                 elif line.startswith('TRGL'):
                     name, p1, p2, p3 = line.split()
                     faces.append([int(p1), int(p2), int(p3)])
             fid.close()
-            vertices = np.array(vertices, dtype=float)
+            vids = np.array(vids,dtype=int) - 1
+            vertices = np.array(vertices, dtype=float)[vids,:]
             faces = np.array(faces, dtype=int) - 1
-        self.gocad_vertices_ll = vertices
 
         # Resample vertices to UTM
         if utm:
@@ -141,6 +143,7 @@ class TriangularPatches(Fault):
             vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
         vz = vertices[:,2]*factor_depth
         self.gocad_vertices = np.column_stack((vx, vy, vz))
+        self.gocad_vertices_ll = vertices
         self.gocad_faces = faces
 
         # Loop over faces and create a triangular patch consisting of coordinate tuples
@@ -1167,10 +1170,8 @@ class TriangularPatches(Fault):
             refy /= 1000.
 
         # Loop over the patches
-        vcount = 1
-        TriP_format = '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %6d %6d %6d\n'
-        PoC_format =  '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f\n'
-        for p in range(len(self.patch)):
+        TriP_format = '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %6d %6d %6d\n'        
+        for p in range(self.numpatch):
             xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)
             strike = strike*180./np.pi
             dip = dip*180./np.pi
@@ -1179,17 +1180,19 @@ class TriangularPatches(Fault):
                 xc -= refx
                 yc -= refy
             verts = copy.deepcopy(self.patch[p])
-            vid   = []
-            for xv,yv,zv in verts:
-                lonv,latv = self.xy2ll(xv,yv)
-                if ref is not None:
-                    xv -= refx
-                    yv -= refy
-                PoC.write(PoC_format%(vcount,lonv,latv,xv,yv,zv))
-                vid.append(vcount)
-                vcount += 1
-            TriP_tuple = (p,lonc,latc,xc,yc,zc,strike,dip,self.area[p],vid[0],vid[1],vid[2])
+            v1, v2, v3 = self.gocad_faces[p,:] 
+            TriP_tuple = (p,lonc,latc,xc,yc,zc,strike,dip,self.area[p],v1,v2,v3)
             TriP.write(TriP_format%TriP_tuple)
+            
+        PoC_format =  '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f\n'
+        for v in range(self.gocad_vertices.shape[0]):
+            xv,yv,zv = self.gocad_vertices[v,:]
+            lonv,latv,zv2 = self.gocad_vertices_ll[v,:]
+            assert zv == zv2*1.0e-3, 'inconsistend depth in gocad_vertices and gocad_vertices_ll'
+            if ref is not None:
+                xv -= refx
+                yv -= refy
+            PoC.write(PoC_format%(v,lonv,latv,xv,yv,zv))
 
         # Close the files
         TriP.close()
