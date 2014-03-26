@@ -297,7 +297,7 @@ class Fault(SourceInv):
             # Create one file for each slip componenets 
             for c in G.keys():
                 g = G[c].flatten()
-                filename = '{}_{}_{}.gf'.format(self.name, data,suffix[c])
+                filename = '{}_{}_{}.gf'.format(self.name, data, suffix[c])
                 g = g.astype(dtype)
                 g.tofile(os.path.join(outputDir, filename))
  

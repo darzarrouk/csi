@@ -1573,7 +1573,7 @@ class RectangularPatches(Fault):
         # All done
         return dis
 
-    def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False):
+    def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False, w_file=True):
         '''
         Write the subParam file needed for the interpolation of the green's function in EDKS.
         Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source, 
@@ -1584,8 +1584,12 @@ class RectangularPatches(Fault):
             * edksfilename  : Name of the file containing the kernels.
             * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle.
             * plot          : Activates plotting.
+            * w_file        : if False, will not write the subParam fil (default=True)
         Returns:
-            * filename      : Name of the subParams file created.
+            * filename         : Name of the subParams file created (only if w_file==True)
+            * RectanglePropFile: Name of the rectangles properties file
+            * ReceiverFile     : Name of the receiver file
+            * method_par       : Dictionary including useful EDKS parameters
         '''
 
         # print
@@ -1624,38 +1628,41 @@ class RectangularPatches(Fault):
         prefix = 'edks_{}_{}'.format(fltname, datname)
         plotGeometry = '{}'.format(plot)
 
-        # Open the EDKSsubParams.py file
-        filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
-        fout = open(filename, 'w')
-
-        # Write in it
-        fout.write("# File with the rectangles properties\n")
-        fout.write("RectanglesPropFile = '{}'\n".format(RectanglePropFile))
-        fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
-        fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
-        fout.write("# read receiver direction (# not yet implemented)\n")
-        fout.write("useRecvDir = {} # True for InSAR, uses LOS information\n".format(useRecvDir))
-        fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
-        if amax is None:
-            fout.write("Amax = None # None computes Amax automatically. \n")
-        else:
-            fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
-
-        fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
-        fout.write("EDKSfilename = '{}'\n".format(edksfilename))
-        fout.write("prefix = '{}'\n".format(prefix))
-        fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
-        
-        # Close the file
-        fout.close()
-
         # Build usefull outputs
         parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
         parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
         method_par = dict(zip(parNames, parValues))
 
-        # All done
-        return filename, RectanglePropFile, ReceiverFile, method_par
+        # Open the EDKSsubParams.py file        
+        if w_file:
+            filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
+            fout = open(filename, 'w')
+
+            # Write in it
+            fout.write("# File with the rectangles properties\n")
+            fout.write("RectanglesPropFile = '{}'\n".format(RectanglePropFile))
+            fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
+            fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
+            fout.write("# read receiver direction (# not yet implemented)\n")
+            fout.write("useRecvDir = {} # True for InSAR, uses LOS information\n".format(useRecvDir))
+            fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
+            if amax is None:
+                fout.write("Amax = None # None computes Amax automatically. \n")
+            else:
+                fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
+                
+            fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
+            fout.write("EDKSfilename = '{}'\n".format(edksfilename))
+            fout.write("prefix = '{}'\n".format(prefix))
+            fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
+            
+            # Close the file
+            fout.close()
+
+            # All done
+            return filename, RectanglePropFile, ReceiverFile, method_par
+        else:
+            return RectanglePropFile, ReceiverFile, method_par
 
     def writeEDKSgeometry(self, ref=None):
         '''
