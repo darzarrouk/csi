@@ -1,7 +1,7 @@
 '''
 A parent Fault class
 
-Written by R. Jolivet, Z. Duputel and B. Riel, March 2014
+Written by Z. Duputel, R. Jolivet, and B. Riel, March 2014
 '''
 
 # Externals
@@ -36,7 +36,7 @@ class Fault(SourceInv):
         print ("---------------------------------")
         print ("---------------------------------")
         print ("Initializing fault {}".format(self.name))
-
+        
         # Specify the type of patch
         self.patchType = None
 
@@ -59,6 +59,7 @@ class Fault(SourceInv):
         # Allocate patches
         self.patch     = None
         self.slip      = None
+        self.N_slip    = None # This will be the number of slip values
         self.totalslip = None
         self.Cm        = None
         
@@ -92,11 +93,13 @@ class Fault(SourceInv):
         Args:
             * n     : Number of slip values. If None, it'll take the number of patches.
         '''
-
+        
         if n is None:
-           n = len(self.patch)
+           self.N_slip = len(self.patch)
+        else:
+            self.N_slip = n
 
-        self.slip = np.zeros((n,3))
+        self.slip = np.zeros((self.N_slip,3))
 
         # All done
         return
@@ -351,22 +354,23 @@ class Fault(SourceInv):
         print("Set up Green's functions for fault {} from files {}, {} and {}".format(self.name, strikeslip, dipslip, tensile))
 
         # Get the number of patches
-        Npatchs = len(self.patch)
+        if self.N_slip == None:
+            self.N_slip = len(self.patch)
 
         # Read the files and reshape the GFs
         Gss = None; Gds = None; Gts = None
         if strikeslip is not None:
             Gss = np.fromfile(strikeslip, dtype=dtype)
-            ndl = int(Gss.shape[0]/Npatchs)
-            Gss = Gss.reshape((ndl, Npatchs))
+            ndl = int(Gss.shape[0]/self.N_slip)
+            Gss = Gss.reshape((ndl, self.N_slip))
         if dipslip is not None:
             Gds = np.fromfile(dipslip, dtype=dtype)
-            ndl = int(Gds.shape[0]/Npatchs)
-            Gds = Gds.reshape((ndl, Npatchs))
+            ndl = int(Gds.shape[0]/self.N_slip)
+            Gds = Gds.reshape((ndl, self.N_slip))
         if tensile is not None:
             Gts = np.fromfile(tensile, dtype=dtype)
-            ndl = int(Gts.shape[0]/Npatchs)
-            Gts = Gts.reshape((ndl, Npatchs))
+            ndl = int(Gts.shape[0]/self.N_slip)
+            Gts = Gts.reshape((ndl, self.N_slip))
 
         # Get the data type
         datatype = data.dtype
@@ -661,8 +665,9 @@ class Fault(SourceInv):
                         return
 
         # Get the number of parameters
-        N = len(self.patch)
-        Nps = N*len(slipdir)
+        if self.N_slip == None:
+            self.N_slip = len(self.patch)
+        Nps = self.N_slip*len(slipdir)
         Npo = 0
         for data in datas :
             if self.poly[data.name] is 'full':
@@ -726,8 +731,8 @@ class Fault(SourceInv):
             # Fill Glocal
             ec = 0
             for sp in sliplist:
-                Glocal[:,ec:ec+N] = self.G[data.name][sp]
-                ec += N
+                Glocal[:,ec:ec+self.N_slip] = self.G[data.name][sp]
+                ec += self.N_slip
 
             # Put Glocal into the big G
             G[el:el+Ndlocal,0:Nps] = Glocal
@@ -887,15 +892,17 @@ class Fault(SourceInv):
         '''
         Builds a diagonal Cm with sigma values on the diagonal.
         sigma is a list of numbers, as long as you have components of slip (1, 2 or 3).
-        extra_params is a list of extra parameters.
+        Args:
+           * extra_params : a list of extra parameters.
         '''
    
         # Get the number of slip directions
         slipdir = len(self.slipdir)
-        numpatch = len(self.patch)
+        if self.N_slip==None:
+            self.N_slip = len(self.patch)
 
         # Number of parameters
-        Np = numpatch * slipdir
+        Np = self.N_slip * slipdir
         if extra_params is not None:
             Np += len(extra_params)
 
@@ -904,11 +911,11 @@ class Fault(SourceInv):
 
         # Loop over slip dir
         for i in range(slipdir):
-            Cmt = np.diag(sigma[i] * np.ones(len(self.patch),))
-            Cm[i*numpatch:(i+1)*numpatch,i*numpatch:(i+1)*numpatch] = Cmt
+            Cmt = np.diag(sigma[i] * np.ones(self.N_slip,))
+            Cm[i*self.N_slip:(i+1)*self.N_slip,i*self.N_slip:(i+1)*self.N_slip] = Cmt
 
         # Put the extra parameter sigma values
-        st = numpatch * slipdir
+        st = self.N_slip * slipdir
         if extra_params is not None:
             for i in range(len(extra_params)):
                 Cm[st+i, st+i] = extra_params[i]
@@ -964,30 +971,47 @@ class Fault(SourceInv):
         C = (sigma * lam0 / lam)**2
 
         # Creates the principal Cm matrix
-        Np = len(self.patch) * len(slipdir)
+        if self.N_slip==None:
+            self.N_slip = len(self.patch)
+        Np = self.N_slip * len(slipdir)
         if extra_params is not None:
             Np += len(extra_params)
-        Cmt = np.zeros((len(self.patch), len(self.patch)))
+        Cmt = np.zeros((self.N_slip, self.N_slip))
         Cm = np.zeros((Np, Np))
 
-        # Loop over the patches
-        npatch = len(self.patch)
-        for i in range(npatch):
-            distances = np.zeros((npatch,))
-            p1 = self.patch[i]
-            for j in range(npatch):
+        # Loop over the patches                
+        if self.N_slip == len(self.patch):
+            flag_patch = True
+            vertices = None
+        elif self.patchType == 'triangle' and self.N_slip == len(self.gocad_vertices):
+            flag_patch = False
+            vertices = self.gocad_vertices
+        else:
+            raise NotImplementedError('Error: Inconsistent number of slip values')
+
+        for i in range(self.N_slip):
+            distances = np.zeros((self.N_slip,))
+            if flag_patch:
+                p1 = self.patch[i]
+            else:
+                v1 = vertices[i]
+            for j in range(self.N_slip):
                 if j == i:
                     continue
-                p2 = self.patch[j]
-                distances[j] = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
+                if flag_patch:
+                    p2 = self.patch[j]
+                    distances[j] = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
+                else:
+                    v2 = vertices[j]
+                    distances[j] = distanceVertexToVertex(v1, v2, lim=lim)
             Cmt[i,:] = C * np.exp(-distances / lam)
 
         # Store that into Cm
         st = 0
         for i in range(len(slipdir)):
-            se = st + len(self.patch)
+            se = st + self.N_slip
             Cm[st:se, st:se] = Cmt
-            st += len(self.patch)
+            st += self.N_slip
 
         # Put the extra values
         if extra_params is not None:
@@ -1001,133 +1025,3 @@ class Fault(SourceInv):
         return
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def buildCmGaussian(self, sigma, extra_params=None):
-        '''
-        Builds a diagonal Cm with sigma values on the diagonal.
-        sigma is a list of numbers, as long as you have components of slip (1, 2 or 3).
-        extra_params is a list of extra parameters.
-        '''
-   
-        # Get the number of slip directions
-        slipdir = len(self.slipdir)
-        patch = len(self.patch)
-
-        # Number of parameters
-        Np = patch*slipdir
-        if extra_params is not None:
-            Np += len(extra_params)
-
-        # Create Cm
-        Cm = np.zeros((Np, Np))
-
-        # Loop over slip dir
-        for i in range(slipdir):
-            Cmt = np.diag(sigma[i] * np.ones(len(self.patch),))
-            Cm[i*patch:(i+1)*patch,i*patch:(i+1)*patch] = Cmt
-
-        # Put the extra parameter sigma values
-        st = patch*slipdir
-        if extra_params is not None:
-            for i in range(len(extra_params)):
-                Cm[st+i, st+i] = extra_params[i]
-
-        # Stores Cm
-        self.Cm = Cm
-
-        # all done
-        return
-
-
-    def buildCm(self, sigma, lam, lam0=None, extra_params=None, lim=None, verbose=True):
-        '''
-        Builds a model covariance matrix using the equation described in Radiguet et al 2010.
-        Args:
-            * sigma         : Amplitude of the correlation.
-            * lam           : Characteristic length scale.
-            * lam0          : Normalizing distance (if None, lam0=min(distance between patches)).
-            * extra_params  : Add some extra values on the diagonal.
-            * lim           : Limit distance parameter (see self.distancePatchToPatch)
-        '''
-
-        # print
-        if verbose:
-            print ("---------------------------------")
-            print ("---------------------------------")
-            print ("Assembling the Cm matrix ")
-            print ("Sigma = {}".format(sigma))
-            print ("Lambda = {}".format(lam))
-
-        # Need the patch geometry
-        if self.patch is None:
-            print("You should build the patches and the Green's functions first.")
-            return
-
-        # Geth the desired slip directions
-        slipdir = self.slipdir
-
-        # Get the patch centers
-        self.centers = np.array(self.getcenters())
-
-        # Sets the lambda0 value
-        if lam0 is None:
-            xd = (np.unique(self.centers[:,0]).max() - np.unique(self.centers[:,0]).min())/(np.unique(self.centers[:,0]).size)
-            yd = (np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())/(np.unique(self.centers[:,1]).size)
-            zd = (np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())/(np.unique(self.centers[:,2]).size)
-            lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
-        if verbose:
-            print ("Lambda0 = {}".format(lam0))
-        C = (sigma*lam0/lam)**2
-
-        # Creates the principal Cm matrix
-        Np = len(self.patch)*len(slipdir)
-        if extra_params is not None:
-            Np += len(extra_params)
-        Cmt = np.zeros((len(self.patch), len(self.patch)))
-        Cm = np.zeros((Np, Np))
-
-        # Loop over the patches
-        i = 0
-        for p1 in self.patch:
-            j = 0
-            for p2 in self.patch:
-                # Compute the distance
-                d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
-                # Compute Cm
-                Cmt[i,j] = C * np.exp( -1.0*d/lam)
-                Cmt[j,i] = C * np.exp( -1.0*d/lam)
-                # Upgrade counter
-                j += 1
-            # upgrade counter
-            i += 1
-
-        # Store that into Cm
-        st = 0
-        for i in range(len(slipdir)):
-            se = st + len(self.patch)
-            Cm[st:se, st:se] = Cmt
-            st += len(self.patch)
-
-        # Put the extra values
-        if extra_params is not None:
-            for i in range(len(extra_params)):
-                Cm[st+i, st+i] = extra_params[i]
-
-        # Store Cm into self
-        self.Cm = Cm
-
-        # All done
-        return

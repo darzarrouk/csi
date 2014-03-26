@@ -1,7 +1,7 @@
 '''
 A parent class that deals with triangular patches fault
 
-Written by R. Jolivet, Z. Duputel and Bryan Riel November 2013
+Written by Bryan Riel, Z. Duputel and R. Jolivet November 2013
 '''
 
 # Externals
@@ -201,6 +201,10 @@ class TriangularPatches(Fault):
             * patch         : Can be 'normal' or 'equiv'
         '''
 
+        # Check size
+        if self.N_slip!=None and self.N_slip!=len(self.patch):
+            raise NotImplementedError('Only works for len(slip)==len(patch)')
+
         # Write something
         print('Writing geometry to file {}'.format(filename))
 
@@ -396,7 +400,8 @@ class TriangularPatches(Fault):
     def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False):
         '''
         Computes the segment indicating the slip direction.
-        scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+            * scale : can be a real number or a string in 'total', 'strikeslip', 
+                                    'dipslip' or 'tensile'
         '''
 
         # Create the array
@@ -408,12 +413,14 @@ class TriangularPatches(Fault):
             assert(self.Cm!=None), 'Provide Cm values'
 
         # Loop over the patches
-        for p in range(len(self.patch)):  
-            
+        if self.N_slip == None:
+            self.N_slip = len(self.patch)
+        for p in range(self.N_slip):              
             # Get some geometry
             xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True) 
             # Get the slip vector
-            slip = self.getslip(self.patch[p]) 
+            #slip = self.getslip(self.patch[p]) # This is weird
+            slip = self.slip[p,:]
             rake = np.arctan2(slip[1],slip[0])
 
             # Compute the vector
@@ -465,8 +472,11 @@ class TriangularPatches(Fault):
 
         # Remove the patch
         del self.patch[patch]
-        del self.patchll[patch]
-        self.slip = np.delete(self.slip, patch, axis=0)
+        del self.patchll[patch]        
+        if self.N_slip!=None and self.N_slip==len(self.patch):
+            self.slip = np.delete(self.slip, patch, axis=0)
+        else:
+            raise NotImplementedError('Only works for len(slip)==len(patch)')
 
         # All done
         return
@@ -506,14 +516,17 @@ class TriangularPatches(Fault):
         self.patch.append(patch)
 
         # modify the slip
-        sh = self.slip.shape
-        nl = sh[0] + 1
-        nc = 3
-        tmp = np.zeros((nl, nc))
-        if nl > 1:                      # Case where slip is empty
-            tmp[:nl-1,:] = self.slip
-        tmp[-1,:] = slip
-        self.slip = tmp
+        if self.N_slip!=None and self.N_slip==len(self.patch):
+            sh = self.slip.shape
+            nl = sh[0] + 1
+            nc = 3
+            tmp = np.zeros((nl, nc))
+            if nl > 1:                      # Case where slip is empty
+                tmp[:nl-1,:] = self.slip
+            tmp[-1,:] = slip
+            self.slip = tmp 
+        else:
+            raise NotImplementedError('Only works for len(slip)==len(patch)')
 
         # All done
         return
@@ -565,6 +578,38 @@ class TriangularPatches(Fault):
             return x1, x2, x3, width, length, strike, dip, normal
         else:
             return x1, x2, x3, width, length, strike, dip
+
+
+
+    def distanceVertexToVertex(self, vertex1, vertex2, lim=None):
+        '''
+        Measures the distance between two vertexes.
+        Args:
+            * patch1    : first patch or its index
+            * patch2    : second patch or its index
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+        '''
+
+        if distance is 'center':
+
+            # Get the centers
+            x1, y1, z1 = vertex1
+            x2, y2, z2 = vertex2
+
+            # Compute the distance
+            dis = np.sqrt((x1 -x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
+
+            # Check
+            if lim is not None:
+                if dis > lim[0]:
+                    dis = lim[1]
+
+        else:
+            raise NotImplementedError('only distance=center is implemented')
+
+        # All done
+        return dis            
+
 
 
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
@@ -1034,35 +1079,6 @@ class TriangularPatches(Fault):
         return D
 
 
-    def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
-        '''
-        Measures the distance between two patches.
-        Args:
-            * patch1    : geometry of the first patch.
-            * patch2    : geometry of the second patch.
-            * distance  : distance estimation mode
-                            center : distance between the centers of the patches.
-                            no other method is implemented for now.
-            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
-        '''
-
-        if distance is 'center':
-
-            # Get the centers
-            x1, y1, z1 = self.getcenter(patch1)
-            x2, y2, z2 = self.getcenter(patch2)
-
-            # Compute the distance
-            dis = np.sqrt( (x1 -x2)**2 + (y1 - y2)**2 + (z1 - z2)**2)
-
-            # Check
-            if lim is not None:
-                if dis>lim[0]:
-                    dis = lim[1]
-
-        # All done
-        return dis
-
     def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False, w_file=True):
         '''
         Write the subParam file needed for the interpolation of the green's function in EDKS.
@@ -1269,6 +1285,10 @@ class TriangularPatches(Fault):
             * lonlat    : Arrays of lat and lon. [lon, lat]
         '''
 
+        # Check size
+        if self.N_slip!=None and self.N_slip!=len(self.patch):
+            raise NotImplementedError('Only works for len(slip)==len(patch)')
+        
         # create a fake gps object
         from .gpsrates import gpsrates
         self.sim = gpsrates('simulation', utmzone=self.utmzone)
@@ -1650,6 +1670,10 @@ class TriangularPatches(Fault):
             orientation: defines the direction of positive distances.
         '''
 
+        # Check size
+        if self.N_slip!=None and self.N_slip!=len(self.patch):
+            raise NotImplementedError('Only works for len(slip)==len(patch)')
+
         # Dictionary to store these guys
         if not hasattr(self, 'AlongStrike'):
             self.AlongStrike = {}
@@ -1957,12 +1981,17 @@ class TriangularPatches(Fault):
 
     def mapFault2Fault(self, Map, fault):
         '''
-        User provides a Mapping function np.array((len(self.patch), len(fault.patch))) and a fault and the slip from the argument
+        User provides a Mapping function np.array((len(self.patch), len(fault.patch))) 
+        and a fault and the slip from the argument
         fault is mapped into self.slip.
         Function just does:
         self.slip[:,0] = np.dot(Map,fault.slip)
         ...
         '''
+
+        # Check size
+        if self.N_slip!=None and self.N_slip!=len(self.patch):
+            raise NotImplementedError('Only works for len(slip)==len(patch)')
 
         # Get the number of patches
         nPatches = len(self.patch)
