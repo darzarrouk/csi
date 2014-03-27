@@ -129,13 +129,24 @@ class multifaultsolve(object):
         # All done
         return
 
+
+    def sensitivity(self):
+        '''
+        Calculates sqrt(diag(GtG))/len(d)
+        '''
+        s = np.sqrt(np.diag(np.dot(self.G.T,self.G)))/self.d.size
+
+        # All done
+        return s
+            
+
     def describeParams(self, faults):
         '''
         Prints to screen  which parameters are what...
         '''
 
         # Prepare the table
-        print('  Fault Name   ||   Strike Slip   ||   Dip Slip   ||   Tensile   ||   Orbits   ')
+        print('          Fault Name          ||   Strike Slip   ||   Dip Slip   ||   Tensile   ||   Orbits   ')
 
         # initialize the counters
         ns = 0 
@@ -177,7 +188,7 @@ class multifaultsolve(object):
                 op = 'None'
             
             # print things
-            print('{:15s}||{:17s}||{:14s}||{:13s}||{:12s}'.format(fault.name, ss, ds, ts, op))
+            print('{:30s}||{:17s}||{:14s}||{:13s}||{:12s}'.format(fault.name, ss, ds, ts, op))
 
         # all done
         return

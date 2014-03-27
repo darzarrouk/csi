@@ -874,6 +874,7 @@ class Fault(SourceInv):
         st = 0
         for data in datas:
             # Fill in Cd
+            print data.name,self.d[data.name].shape
             se = st + self.d[data.name].shape[0]
             Cd[st:se, st:se] = data.Cd
             # Add some Cp if asked

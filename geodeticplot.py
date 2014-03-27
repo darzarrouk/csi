@@ -241,7 +241,7 @@ class geodeticplot(object):
         '''
         Args:
             * fault         : Fault class from verticalfault.
-            * slip          : Can be 'strikeslip', 'dipslip' or 'opening'
+            * slip          : Can be 'strikeslip', 'dipslip', 'opening' or 'total'
             * Norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
             * plot_on_2d    : if True, adds the patches on the map.
