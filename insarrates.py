@@ -261,6 +261,8 @@ class insarrates(SourceInv):
         self.los[:,1] *= Sn
         self.los[:,2] *= Su
 
+        print 'LOS: ',self.los
+
         # all done
         return
 

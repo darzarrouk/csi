@@ -102,7 +102,7 @@ class TriangularPatches(Fault):
         return
 
 
-    def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_depth=1., set_trace=False):
+    def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0e-3, factor_depth=1., set_trace=False):
         """
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
         """
@@ -123,7 +123,8 @@ class TriangularPatches(Fault):
             faces    = []
             for line in fid:
                 if line.startswith('VRTX'):
-                    name, vid, x, y, z = line.split()
+                    items = line.split()
+                    name, vid, x, y, z = items[:5]
                     vids.append(vid)
                     vertices.append([float(x), float(y), negFactor*float(z)])
                 elif line.startswith('TRGL'):
@@ -131,13 +132,14 @@ class TriangularPatches(Fault):
                     faces.append([int(p1), int(p2), int(p3)])
             fid.close()
             vids = np.array(vids,dtype=int) - 1
-            vertices = np.array(vertices, dtype=float)[vids,:]
+            i    = np.argsort(vids)
+            vertices = np.array(vertices, dtype=float)[i,:]
             faces = np.array(faces, dtype=int) - 1
 
         # Resample vertices to UTM
         if utm:
-            vx = vertices[:,0].copy()*1.0e-3
-            vy = vertices[:,1].copy()*1.0e-3
+            vx = vertices[:,0].copy()*factor_xy
+            vy = vertices[:,1].copy()*factor_xy
             vertices[:,0],vertices[:,1] = self.xy2ll(vx,vy)
         else:
             vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
@@ -145,6 +147,11 @@ class TriangularPatches(Fault):
         self.gocad_vertices = np.column_stack((vx, vy, vz))
         self.gocad_vertices_ll = vertices
         self.gocad_faces = faces
+        print('min/max depth: {} km/ {} km'.format(vz.min(),vz.max()))
+        print('min/max lat: {} deg/ {} deg'.format(vertices[:,1].min(),vertices[:,1].max()))
+        print('min/max lon: {} deg/ {} deg'.format(vertices[:,0].min(),vertices[:,0].max()))
+        print('min/max x: {} km/ {} km'.format(vx.min(),vx.max()))
+        print('min/max y: {} km/ {} km'.format(vy.min(),vy.max()))
 
         # Loop over faces and create a triangular patch consisting of coordinate tuples
         self.numpatch = faces.shape[0]
@@ -174,9 +181,10 @@ class TriangularPatches(Fault):
         if set_trace:
             self.xf = []
             self.yf = []
+            minz = np.round(vz.min()+5.,1)
             for p,pl in zip(self.patch,self.patchll):
                 for v,vl in zip(p,pl):
-                    if v[-1]!=0.:
+                    if np.round(v[2],1)>=minz:
                         continue
                     self.xf.append(v[0])
                     self.yf.append(v[1])
@@ -189,7 +197,31 @@ class TriangularPatches(Fault):
         # All done
         return
    
- 
+
+
+    def writeGocadPatches(self, filename, utm=False):
+        """
+        Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
+        """
+        # Get the geographic vertices and connectivities from the Gocad file
+        
+        fid = open(filename, 'w') 
+        if utm:
+            vertices = self.gocad_vertices*1.0e3
+        else:
+            vertices = self.gocad_vertices_ll
+        for i in range(vertices.shape[0]):
+            v = vertices[i]
+            fid.write('VRTX {} {} {} {}\n'.format(i+1,v[0],v[1],v[2]))
+        for i in range(self.gocad_faces.shape[0]):
+            vid = self.gocad_faces[i,:]+1
+            fid.write('TRGL {} {} {}\n'.format(vid[0],vid[1],vid[2]))
+        fid.close()
+
+        # All done
+        return 
+
+
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
         '''
         Writes the patch corners in a file that can be used in psxyz.
@@ -570,6 +602,8 @@ class TriangularPatches(Fault):
 
         # Get the strike vector and strike angle
         strike = np.arctan2(-normal[0], normal[1])
+        if strike<0.:
+            strike += 2*np.pi
 
         # Set the dip vector
         dip = np.arccos(-normal[2])

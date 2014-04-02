@@ -132,9 +132,13 @@ class multifaultsolve(object):
 
     def sensitivity(self):
         '''
-        Calculates sqrt(diag(GtG))/len(d)
+        Calculates sqrt(diag(G^t Cd^-1 G))
         '''
-        s = np.sqrt(np.diag(np.dot(self.G.T,self.G)))/self.d.size
+        # Import things
+        import scipy.linalg as scilin
+        # Invert Cd
+        iCd = scilin.inv(self.Cd)
+        s = np.sqrt(np.diag(np.dot(self.G.T,np.dot(iCd,self.G))))
 
         # All done
         return s

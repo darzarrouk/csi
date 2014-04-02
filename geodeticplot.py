@@ -47,8 +47,6 @@ class geodeticplot(object):
                 carte.set_xlabel('Longitude')
                 carte.set_ylabel('Latitude')
 
-                
-
         # store plots
         self.faille_flag = Faille
         self.carte_flag  = Carte
