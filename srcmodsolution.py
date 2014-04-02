@@ -99,7 +99,7 @@ class srcmodsolution(object):
         return
 
     def trace(self, Lon, Lat):
-        ''' 
+        '''
         Set the surface fault trace.
 
         Args:
@@ -122,7 +122,7 @@ class srcmodsolution(object):
             * filename      : Name of the fault file (GMT lon lat format).
         '''
 
-        # Allocate a list 
+        # Allocate a list
         self.addfaults = []
 
         # Read the file
@@ -146,7 +146,7 @@ class srcmodsolution(object):
         for fault in self.addfaults:
             x,y = self.ll2xy(fault[:,0], fault[:,1])
             self.addfaultsxy.append([x,y])
-        
+
         # All done
         return
 
@@ -172,8 +172,8 @@ class srcmodsolution(object):
         for i in range(len(A)):
             Lon.append(np.float(A[i].split()[0]))
             Lat.append(np.float(A[i].split()[1]))
-            
-        # Create the trace 
+
+        # Create the trace
         self.trace(Lon, Lat)
 
         # All done
@@ -195,11 +195,11 @@ class srcmodsolution(object):
         return
 
     def trace2xy(self):
-        ''' 
+        '''
         Transpose the surface trace of the fault into the UTM reference.
         '''
 
-        # do it 
+        # do it
         self.xf, self.yf = self.ll2xy(self.lon, self.lat)
 
         # All done
@@ -210,7 +210,7 @@ class srcmodsolution(object):
         Do the lat lon 2 utm transform
         '''
 
-        # Transpose 
+        # Transpose
         x, y = self.putm(lon, lat)
 
         # Put it in Km
@@ -245,7 +245,7 @@ class srcmodsolution(object):
 
         # Loop over the lines
         while l!=len(Text):
-            
+
             # Get the line string
             Lstr = Text[l].split()
             Lful = Text[l]
@@ -254,7 +254,7 @@ class srcmodsolution(object):
             if Lstr[0] is '%':
 
                 if len(Lstr) > 2:
-                    
+
                     if Lstr[1] == 'Event':
                         self.article = Lful.split('[')[-1][:-2]
                         self.date = Lful.split('[')[0].split().pop()
@@ -299,16 +299,16 @@ class srcmodsolution(object):
                     else:
                         if (Lstr[2] in ('TOTAL')) and (Lstr[3] in ('SLIP')):
                             # There is Nx lines to read
-                            Slip = np.array([ [np.float(Text[i].split()[j]) for j in range(len(Text[i].split()))] for i in range(l+1,l+self.rupture['Nx']+1)])
+                            Slip = np.array([ [np.float(Text[i].split()[j]) for j in range(len(Text[i].split()))] for i in range(l+1,l+self.rupture['Nz']+1)])
                             self.rupture['Slip'] = Slip
                             # update l
-                            l += self.rupture['Nx']+1
+                            l += self.rupture['Nz']+1
                         elif (Lstr[2] in ('LOCAL')) and (Lstr[3] in ('RAKE')):
                             # There is Nx lines to read
-                            Rake = np.array([Text[i].split() for i in range(l+1,l+self.rupture['Nx']+1)])
+                            Rake = np.array([Text[i].split() for i in range(l+1,l+self.rupture['Nz']+1)])
                             self.rupture['Rake'] = Rake
                             # update l
-                            l += self.rupture['Nx']+1
+                            l += self.rupture['Nz']+1
                         else:
                             l += 1
 
@@ -335,7 +335,7 @@ class srcmodsolution(object):
         fin = open(filename, 'r')
         Text = fin.readlines()
         fin.close()
-        
+
         # Set the line counter
         l = 0
 
@@ -389,7 +389,7 @@ class srcmodsolution(object):
                     else:
                         # nothing to do, update l
                         l += 1
-                elif (Lstr[1] in ('SOURCE')): 
+                elif (Lstr[1] in ('SOURCE')):
                     if (Lstr[2] in ('MODEL')):
                         # Get the number of patches
                         self.rupture['Npatch'] = np.int(Text[l+1].split()[3])
@@ -415,8 +415,8 @@ class srcmodsolution(object):
 
                 # nothing to do, update l
                 l += 1
-    
-        # Set depth 
+
+        # Set depth
         self.depth = 2*self.rupture['DEP']
 
         # all done
@@ -426,7 +426,7 @@ class srcmodsolution(object):
         '''
         Reads both the fsp and slp files.
         '''
-        
+
         # Read the FSP
         self.readFSP(filename+'.fsp')
 
@@ -477,7 +477,7 @@ class srcmodsolution(object):
             lon2, lat2 = self.xy2ll(x2, y2)
 
             # Build the 3rd corner
-            x3 = x2 + dz/np.tan(dip*np.pi/180.)*np.cos(strike*np.pi/180.) 
+            x3 = x2 + dz/np.tan(dip*np.pi/180.)*np.cos(strike*np.pi/180.)
             y3 = y2 + dz/np.tan(dip*np.pi/180.)*np.sin(strike*np.pi/180.)
             z3 = depth+dz
             lon3, lat3 = self.xy2ll(x3, y3)
@@ -488,7 +488,7 @@ class srcmodsolution(object):
             z4 = depth+dz
             lon4, lat4 = self.xy2ll(x4, y4)
 
-            # fill p 
+            # fill p
             p = np.zeros((4,3))
             p[0,:] = [x1, y1, z1]
             p[1,:] = [x2, y2, z2]
@@ -527,13 +527,13 @@ class srcmodsolution(object):
 
         # The first patch is the upper left corner
         x1, y1, z1, w, l, s, d = self.getpatchgeometry(self.patch[0])
-        
+
         # Get some values
         length = self.rupture['Dx']
         width = self.rupture['Dz']
         Tlen = self.rupture['LEN']
         dip = (self.rupture['Dip'])*np.pi/180.
-        strike = (self.rupture['Strike'])*np.pi/180. 
+        strike = (self.rupture['Strike'])*np.pi/180.
 
         # Loop
         X = []; Y = []; Z = []
@@ -547,7 +547,7 @@ class srcmodsolution(object):
             xc = x1 + xf*np.sin(strike) + yf*np.cos(dip)*np.cos(strike+np.pi/2.)
             yc = y1 + xf*np.cos(strike) + yf*np.cos(dip)*np.sin(strike+np.pi/2.)
             zc = z1 + yf*np.sin(dip)
-            
+
             # Append to lists
             X.append(xc)
             Y.append(yc)
@@ -573,7 +573,7 @@ class srcmodsolution(object):
         Flat = self.rupture['Slip']
 
         # Extract the contours
-        C = plt.contour(Flat, [value]) 
+        C = plt.contour(Flat, [value])
         #plt.imshow(Flat)
         #plt.colorbar(orientation='horizontal', shrink=0.6)
         #plt.show()
@@ -586,7 +586,7 @@ class srcmodsolution(object):
             y = [s[i][1] for i in range(len(s))]
             X, Y, Z = self.Flat23D(x,y)
             Contour.append([X, Y, Z])
-        
+
         # Self contour
         self.contour = Contour
 
@@ -627,8 +627,9 @@ class srcmodsolution(object):
     def Patch2Trace(self):
         '''
         Builds a fake trace from the patches.
+        @todo plot only the shallowest fault trace
         '''
-        
+
         # Create a depth list
         dlist = []
 
@@ -684,7 +685,7 @@ class srcmodsolution(object):
 
         # determine which corners are in common, needs at least two
         if ((patch1[0]==patch2[1]).all() and (patch1[3]==patch2[2]).all()):     # patch2 is above patch1
-            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:] 
+            newpatch[0,:] = patch2[0,:]; newpatchll[0,:] = patch2ll[0,:]
             newpatch[1,:] = patch1[1,:]; newpatchll[1,:] = patch1ll[1,:]
             newpatch[2,:] = patch1[2,:]; newpatchll[2,:] = patch1ll[2,:]
             newpatch[3,:] = patch2[3,:]; newpatchll[3,:] = patch2ll[3,:]
@@ -749,7 +750,7 @@ class srcmodsolution(object):
                     string = '-Z{}'.format(slp)
 
             # Put the parameter number in the file as well if it exists
-            parameter = ' ' 
+            parameter = ' '
             if hasattr(self,'index_parameter'):
                 i = np.int(self.index_parameter[p,0])
                 j = np.int(self.index_parameter[p,1])
@@ -772,14 +773,14 @@ class srcmodsolution(object):
         # Close th file
         fout.close()
 
-        # All done 
+        # All done
         return
 
     def getslip(self, p):
         '''
         Returns the slip vector for a patch.
         '''
-        
+
         # output index
         io = None
 
@@ -793,7 +794,7 @@ class srcmodsolution(object):
 
     def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False):
         '''
-        Write a psxyz compatible file to draw lines starting from the center of each patch, 
+        Write a psxyz compatible file to draw lines starting from the center of each patch,
         indicating the direction of slip.
         Tensile slip is not used...
         scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
@@ -810,7 +811,7 @@ class srcmodsolution(object):
 
         # Loop over the patches
         for p in self.slipdirection:
-            
+
             # Write the > sign to the file
             fout.write('> \n')
 
@@ -844,19 +845,19 @@ class srcmodsolution(object):
         self.slipdirection = []
 
         # Loop over the patches
-        for p in self.patch:  
-            
+        for p in self.patch:
+
             # Get some geometry
-            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)                                   
+            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)
             # Get the slip vector
-            slip = self.getslip(p) 
+            slip = self.getslip(p)
             rake = np.arctan(slip[1]/slip[0])
 
             # Compute the vector
-            x = np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake) 
+            x = np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake)
             y = np.cos(strike)*np.cos(rake) - np.sin(strike)*np.cos(dip)*np.sin(rake)
             z = np.sin(dip)*np.sin(rake)
-        
+
             # Scale these
             if scale.__class__ is float:
                 sca = scale
@@ -875,12 +876,12 @@ class srcmodsolution(object):
             x *= sca
             y *= sca
             z *= sca
-        
-            # update point 
+
+            # update point
             xe = xc + x
             ye = yc + y
-            ze = zc + z                                                                          
- 
+            ze = zc + z
+
             # Append
             self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])
 
@@ -890,7 +891,7 @@ class srcmodsolution(object):
     def deletepatch(self, patch):
         '''
         Deletes a patch.
-        Args:   
+        Args:
             * patch     : index of the patch to remove.
         '''
 
@@ -1097,7 +1098,7 @@ class srcmodsolution(object):
         else:                           # Else
             SLP.append(0.0)
         if 'd' in slipdir:              # If dip slip is asked
-            SLP.append(1.0) 
+            SLP.append(1.0)
         else:                           # Else
             SLP.append(0.0)
         if 't' in slipdir:              # If tensile is asked
@@ -1112,7 +1113,7 @@ class srcmodsolution(object):
         for p in range(len(self.patch)):
             sys.stdout.write('\r Patch: {} / {} '.format(p+1,len(self.patch)))
             sys.stdout.flush()
-            
+
             # get the surface displacement corresponding to unit slip
             ss, ds, op = self.slip2dis(data, p, slip=SLP)
 
@@ -1147,7 +1148,7 @@ class srcmodsolution(object):
             if 't' in slipdir:
                 G['tensile'][:,p] = op
 
-        # Clean the screen 
+        # Clean the screen
         sys.stdout.write('\n')
         sys.stdout.flush()
 
@@ -1165,7 +1166,7 @@ class srcmodsolution(object):
         print('Writing Greens functions to file for fault {}'.format(self.name))
 
         # Loop over the keys in self.G
-        for data in self.G.keys(): 
+        for data in self.G.keys():
 
             # Get the Green's function
             G = self.G[data]
@@ -1196,8 +1197,8 @@ class srcmodsolution(object):
 
     def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None, vertical=False, dtype='d'):
         '''
-        Sets the Green's functions from binary files. Be carefull, these have to be in the 
-        good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and 
+        Sets the Green's functions from binary files. Be carefull, these have to be in the
+        good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and
         if insar, GF are projected already)
         Args:
             * data          : Data structure from gpsrates or insarrates.
@@ -1234,7 +1235,7 @@ class srcmodsolution(object):
 
         # Cut the Matrices following what data do we have and set the GFs
         if datatype is 'gpsrates':
-         
+
             # Initialize
             GssE = None; GdsE = None; GtsE = None
             GssN = None; GdsN = None; GtsN = None
@@ -1266,7 +1267,7 @@ class srcmodsolution(object):
             GssLOS = None; GdsLOS = None; GtsLOS = None
 
             # Get the values
-            if strikeslip is not None: 
+            if strikeslip is not None:
                 GssLOS = Gss
             if dipslip is not None:
                 GdsLOS = Gds
@@ -1275,7 +1276,7 @@ class srcmodsolution(object):
 
             # set the GFs
             self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS], vertical=True)
-        
+
         # all done
         return
 
@@ -1321,7 +1322,7 @@ class srcmodsolution(object):
             U_ss = strikeslip[2]
             ss = []
             nd = 0
-            if (E_ss is not None) and (N_ss is not None): 
+            if (E_ss is not None) and (N_ss is not None):
                 d = E_ss.shape[0]
                 m = E_ss.shape[1]
                 ss.append(E_ss)
@@ -1350,7 +1351,7 @@ class srcmodsolution(object):
             U_ds = dipslip[2]
             ds = []
             nd = 0
-            if (E_ds is not None) and (N_ds is not None): 
+            if (E_ds is not None) and (N_ds is not None):
                 d = E_ds.shape[0]
                 m = E_ds.shape[1]
                 ds.append(E_ds)
@@ -1365,7 +1366,7 @@ class srcmodsolution(object):
                 ds = np.array(ss)
                 ds = ds.reshape((nd*d, m))
                 G['dipslip'] = ds
-        
+
         elif len(dipslip) == 1:             # InSAR case
 
             LOS_ds = dipslip[0]
@@ -1380,7 +1381,7 @@ class srcmodsolution(object):
             U_ts = tensile[2]
             ts = []
             nd = 0
-            if (E_ts is not None) and (N_ts is not None): 
+            if (E_ts is not None) and (N_ts is not None):
                 d = E_ts.shape[0]
                 m = E_ts.shape[1]
                 ts.append(E_ts)
@@ -1415,7 +1416,7 @@ class srcmodsolution(object):
                               1 -> estimate a constant offset
                               3 -> estimate z = ax + by + c
                               4 -> estimate z = axy + bx + cy + d
-                              'full' -> Only for GPS, estimates a rotation, translation and scaling with 
+                              'full' -> Only for GPS, estimates a rotation, translation and scaling with
                                         respect to the center of the network (Helmert transform).
             * slipdir       : which directions of slip to include. can be any combination of s, d and t.
         '''
@@ -1463,7 +1464,7 @@ class srcmodsolution(object):
                 if data.obs_per_station==3:
                     Npo += 7                    # 3D Helmert transform is 7 parameters
                     self.helmert[data.name] = 7
-                else:   
+                else:
                     Npo += 4                    # 2D Helmert transform is 4 parameters
                     self.helmert[data.name] = 4
             else:
@@ -1504,7 +1505,7 @@ class srcmodsolution(object):
             # Get the corresponding G
             Ndlocal = self.d[data.name].shape[0]
             Glocal = np.zeros((Ndlocal, Nps))
-            
+
             # Fill Glocal
             ec = 0
             for sp in sliplist:
@@ -1551,7 +1552,7 @@ class srcmodsolution(object):
 
             # Update el to check where we are
             el = el + Ndlocal
-            
+
         # Store G in self
         self.Gassembled = G
 
@@ -1597,7 +1598,7 @@ class srcmodsolution(object):
 
         # Allocate a Helmert base
         H = np.zeros((data.obs_per_station,nc))
-        
+
         # put the translation in it (that part never changes)
         H[:,:data.obs_per_station] = np.eye(data.obs_per_station)
 
@@ -1627,11 +1628,11 @@ class srcmodsolution(object):
             if nc==7:
                 Hf[i+2*ns,:] = H[2]
 
-        # all done 
+        # all done
         return Hf
 
     def assembled(self, datas):
-        ''' 
+        '''
         Assembles the data vector corresponding to the stored green's functions.
         Args:
             * datas         : list of the data object involved (from gpsrates and insarrates).
@@ -1810,7 +1811,7 @@ class srcmodsolution(object):
     def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False):
         '''
         Write the subParam file needed for the interpolation of the green's function in EDKS.
-        Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source, 
+        Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source,
         then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
         If amax is specified, the minimum size is fixed.
         Args:
@@ -1866,7 +1867,7 @@ class srcmodsolution(object):
         fout.write("EDKSfilename = '{}'\n".format(edksfilename))
         fout.write("prefix = '{}'\n".format(prefix))
         fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
-        
+
         # Close the file
         fout.close()
 
@@ -1944,12 +1945,12 @@ class srcmodsolution(object):
         return center
 
     def getcenter(self, p):
-        ''' 
+        '''
         Get the center of one patch.
         Args:
             * p    : Patch geometry.
         '''
-    
+
         # Get center
         x = (p[1][0] + p[2][0])/2.
         y = (p[1][1] + p[2][1])/2.
@@ -1959,7 +1960,7 @@ class srcmodsolution(object):
         return x,y,z
 
     def surfacesimulation(self, box=None, disk=None, err=None, npoints=None):
-        ''' 
+        '''
         Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
         Args:
             * box       : Can be a list of [minlon, maxlon, minlat, maxlat].
@@ -2057,14 +2058,14 @@ class srcmodsolution(object):
 
         # Computes the total slip
         self.totalslip = np.sqrt(self.slip[:,0]**2 + self.slip[:,1]**2 + self.slip[:,2]**2)
-    
+
         # All done
         return
 
-    def plot(self,ref='utm', figure=134, add=False, maxdepth=None):
+    def plot(self, ref='utm', figure=134, add=False, maxdepth=None, show=True):
         '''
         Plot the available elements of the fault.
-        
+
         Args:
             * ref           : Referential for the plot ('utm' or 'lonlat').
             * figure        : Number of the figure.
@@ -2102,22 +2103,23 @@ class srcmodsolution(object):
                 self.trace2xy()
             ax.plot(self.xf, self.yf, '-b')
         else:
-            ax.plot(self.lon, self.lat,'-b')
+            ax.plot(self.lon, self.lat, '-b')
+
 
         # Compute the total slip
         self.computetotalslip()
 
         # Plot the patches
         if self.patch is not None:
-            
+
             # import stuff
             import mpl_toolkits.mplot3d.art3d as art3d
             import matplotlib.colors as colors
             import matplotlib.cm as cmx
-            
+
             # set z axis
             ax.set_zlim3d([-1.0*(self.depth+5), 0])
-            
+
             # set color business
             cmap = plt.get_cmap('jet')
             cNorm  = colors.Normalize(vmin=0, vmax=self.totalslip.max())
@@ -2143,7 +2145,7 @@ class srcmodsolution(object):
                 rect.set_edgecolors('k')
                 ax.add_collection3d(rect)
 
-            # put up a colorbar        
+            # put up a colorbar
             scalarMap.set_array(self.totalslip)
             plt.colorbar(scalarMap)
 
@@ -2162,7 +2164,8 @@ class srcmodsolution(object):
         ax.axis('equal')
 
         # show
-        plt.show()
+        if show is True:
+            plt.show()
 
         # All done
         return
