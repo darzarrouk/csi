@@ -102,7 +102,7 @@ class TriangularPatches(Fault):
         return
 
 
-    def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0e-3, factor_depth=1., set_trace=False):
+    def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0, factor_depth=1.0, set_trace=False):
         """
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
         """
