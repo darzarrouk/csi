@@ -102,9 +102,16 @@ class TriangularPatches(Fault):
         return
 
 
-    def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0, factor_depth=1.0, set_trace=False):
+    def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0, 
+                         factor_depth=1.0):
         """
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
+        Args:
+            * filename:  tsurf file to read
+            * neg_depth: if true, use negative depth 
+            * utm: if true, input file is given as utm coordinates (if false -> lon/lat)
+            * factor_xy: if utm==True, multiplication factor for x and y 
+            * factor_depth: multiplication factor for z
         """
         # Initialize the lists of patches
         self.patch   = []
@@ -114,7 +121,7 @@ class TriangularPatches(Fault):
         if neg_depth:
             negFactor = -1.0
         else:
-            negFactor = 1.0
+            negFactor =  1.0
         
         # Get the geographic vertices and connectivities from the Gocad file
         with open(filename, 'r') as fid:
@@ -143,7 +150,7 @@ class TriangularPatches(Fault):
             vertices[:,0],vertices[:,1] = self.xy2ll(vx,vy)
         else:
             vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
-        vz = vertices[:,2]*factor_depth
+        vz = vertices[:,2]*factor_depth        
         self.gocad_vertices = np.column_stack((vx, vy, vz))
         self.gocad_vertices_ll = vertices
         self.gocad_faces = faces
@@ -172,27 +179,34 @@ class TriangularPatches(Fault):
             
         # Update the depth of the bottom of the fault
         if neg_depth:
+            self.top   = np.max(vz)
             self.depth = np.min(vz)
         else:
+            self.top   = np.min(vz)
             self.depth = np.max(vz)
         self.z_patches = np.linspace(self.depth, 0.0, 5)
 
-        # Fault trace
-        if set_trace:
-            self.xf = []
-            self.yf = []
-            minz = np.round(vz.min()+5.,1)
-            for p,pl in zip(self.patch,self.patchll):
-                for v,vl in zip(p,pl):
-                    if np.round(v[2],1)>=minz:
-                        continue
-                    self.xf.append(v[0])
-                    self.yf.append(v[1])
-            self.xf = np.array(self.xf)
-            self.yf = np.array(self.yf)
-            i = np.argsort(self.yf)
-            self.xf = self.xf[i]
-            self.yf = self.yf[i]
+    def setTrace(self,delta_depth=0.):
+        '''
+        Set Trace from patches (assuming positive depth)
+        Arg:
+            * delta_depth: The trace is made of all patch vertices at a depth smaller 
+                           than fault_top+trace_delta_depth
+        '''
+        self.xf = []
+        self.yf = []
+        minz = np.round(self.top+delta_depth,1)
+        for p,pl in zip(self.patch,self.patchll):
+            for v,vl in zip(p,pl):
+                if np.round(v[2],1)>=minz:
+                    continue
+                self.xf.append(v[0])
+                self.yf.append(v[1])
+        self.xf = np.array(self.xf)
+        self.yf = np.array(self.yf)
+        i = np.argsort(self.yf)
+        self.xf = self.xf[i]
+        self.yf = self.yf[i]
 
         # All done
         return
