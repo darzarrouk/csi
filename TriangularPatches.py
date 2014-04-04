@@ -101,9 +101,25 @@ class TriangularPatches(Fault):
         # all done
         return
 
+    def selectPatches(self,minlon,maxlon,minlat,maxlat,mindep,maxdep):
+        
+        xmin,ymin = self.ll2xy(minlon,minlat)
+        xmax,ymax = self.ll2xy(maxlon,maxlat)
+
+        for p in range(len(self.patch)-1,-1,-1):
+            x1, x2, x3, width, length, strike, dip = self.getpatchgeometry(p)
+            if x1<xmin or x1>xmax or x2<ymin or x2>ymax or x3<mindep or x3>maxdep:
+                self.deletepatch(p)
+
+        for i in range(len(self.xf)-1,-1,-1):
+            x1 = self.xf[i]
+            x2 = self.yf[i]
+            if x1<xmin or x1>xmax or x2<ymin or x2>ymax:
+                self.xf = np.delete(self.xf,i)
+                self.yf = np.delete(self.yf,i)
 
     def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0, 
-                         factor_depth=1.0):
+                         factor_depth=1.0, box=None):
         """
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
         Args:
@@ -122,7 +138,7 @@ class TriangularPatches(Fault):
             negFactor = -1.0
         else:
             negFactor =  1.0
-        
+
         # Get the geographic vertices and connectivities from the Gocad file
         with open(filename, 'r') as fid:
             vertices = []
@@ -186,6 +202,29 @@ class TriangularPatches(Fault):
             self.depth = np.max(vz)
         self.z_patches = np.linspace(self.depth, 0.0, 5)
 
+    def writeGocadPatches(self, filename, utm=False):
+        """
+        Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
+        """
+        # Get the geographic vertices and connectivities from the Gocad file
+        
+        fid = open(filename, 'w') 
+        if utm:
+            vertices = self.gocad_vertices*1.0e3
+        else:
+            vertices = self.gocad_vertices_ll
+        for i in range(vertices.shape[0]):
+            v = vertices[i]
+            fid.write('VRTX {} {} {} {}\n'.format(i+1,v[0],v[1],v[2]))
+        for i in range(self.gocad_faces.shape[0]):
+            vid = self.gocad_faces[i,:]+1
+            fid.write('TRGL {} {} {}\n'.format(vid[0],vid[1],vid[2]))
+        fid.close()
+
+        # All done
+        return 
+
+
     def setTrace(self,delta_depth=0.):
         '''
         Set Trace from patches (assuming positive depth)
@@ -210,30 +249,32 @@ class TriangularPatches(Fault):
 
         # All done
         return
-   
 
 
-    def writeGocadPatches(self, filename, utm=False):
-        """
-        Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
-        """
-        # Get the geographic vertices and connectivities from the Gocad file
-        
-        fid = open(filename, 'w') 
-        if utm:
-            vertices = self.gocad_vertices*1.0e3
-        else:
-            vertices = self.gocad_vertices_ll
-        for i in range(vertices.shape[0]):
-            v = vertices[i]
-            fid.write('VRTX {} {} {} {}\n'.format(i+1,v[0],v[1],v[2]))
-        for i in range(self.gocad_faces.shape[0]):
-            vid = self.gocad_faces[i,:]+1
-            fid.write('TRGL {} {} {}\n'.format(vid[0],vid[1],vid[2]))
-        fid.close()
+    def setTrace(self,delta_depth=0.):
+        '''
+        Set Trace from patches (assuming positive depth)
+        Arg:
+            * delta_depth: The trace is made of all patch vertices at a depth smaller 
+                           than fault_top+trace_delta_depth
+        '''
+        self.xf = []
+        self.yf = []
+        minz = np.round(self.top+delta_depth,1)
+        for p,pl in zip(self.patch,self.patchll):
+            for v,vl in zip(p,pl):
+                if np.round(v[2],1)>=minz:
+                    continue
+                self.xf.append(v[0])
+                self.yf.append(v[1])
+        self.xf = np.array(self.xf)
+        self.yf = np.array(self.yf)
+        i = np.argsort(self.yf)
+        self.xf = self.xf[i]
+        self.yf = self.yf[i]
 
         # All done
-        return 
+        return
 
 
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
@@ -519,10 +560,11 @@ class TriangularPatches(Fault):
         # Remove the patch
         del self.patch[patch]
         del self.patchll[patch]        
-        if self.N_slip!=None and self.N_slip==len(self.patch):
+        if self.N_slip!=None or self.N_slip==len(self.patch):
             self.slip = np.delete(self.slip, patch, axis=0)
+            self.N_slip = len(self.slip)
         else:
-            raise NotImplementedError('Only works for len(slip)==len(patch)')
+            raise NotImplementedError('Only works for len(slip)==len(patch)',self.N_slip,len(self.slip),len(self.patch))
 
         # All done
         return
