@@ -470,9 +470,17 @@ class Fault(SourceInv):
         if data.dtype is 'insarrates':
             data.obs_per_station = 1
         elif data.dtype is 'gpsrates':
-            data.obs_per_station = 2
+            data.obs_per_station = 0
+            # Check components
+            if not np.isnan(data.vel_enu[:,0]).any():
+                data.obs_per_station += 1
+            if not np.isnan(data.vel_enu[:,1]).any():
+                data.obs_per_station += 1
             if vertical:
-                data.obs_per_station = 3
+                if np.isnan(data.vel_enu[:,2]).any():
+                    raise ValueError('Vertical can only be true if all stations have vertical components')
+                data.obs_per_station += 1
+            
         elif data.dtype is 'cosicorrrates':
             data.obs_per_station = 2
             if vertical:
@@ -493,7 +501,9 @@ class Fault(SourceInv):
                     self.d[data.name] = data.vel_enu.T.flatten()
                 else:
                     self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
+                print data.name,'before ',self.d[data.name].shape
                 self.d[data.name]=self.d[data.name][-np.isnan(self.d[data.name])]
+                print data.name,'after ',self.d[data.name].shape
             elif data.dtype is 'cosicorrrates':
                 self.d[data.name] = np.hstack((data.east.T.flatten(), 
                                                data.north.T.flatten()))
