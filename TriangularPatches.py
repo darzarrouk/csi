@@ -563,6 +563,7 @@ class TriangularPatches(Fault):
         if self.N_slip!=None or self.N_slip==len(self.patch):
             self.slip = np.delete(self.slip, patch, axis=0)
             self.N_slip = len(self.slip)
+            self.numpatch -= 1
         else:
             raise NotImplementedError('Only works for len(slip)==len(patch)',self.N_slip,len(self.slip),len(self.patch))
 
