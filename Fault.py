@@ -382,23 +382,47 @@ class Fault(SourceInv):
             GssE = None; GdsE = None; GtsE = None
             GssN = None; GdsN = None; GtsN = None
             GssU = None; GdsU = None; GtsU = None
-
+            
+            # Check components
+            east  = False
+            north = False
+            if not np.isnan(data.vel_enu[:,0]).any():
+                east = True
+            if not np.isnan(data.vel_enu[:,1]).any():
+                north = True
+            if vertical and np.isnan(data.vel_enu[:,2]).any():
+                raise ValueError('vertical can only be true if all stations have vertical components')
+            
             # Get the values
             if strikeslip is not None:
-                GssE = Gss[range(0,data.vel_enu.shape[0]),:]
-                GssN = Gss[range(data.vel_enu.shape[0],data.vel_enu.shape[0]*2),:]
+                N = 0
+                if east:                    
+                    GssE = Gss[range(0,data.vel_enu.shape[0]),:]
+                    N += data.vel_enu.shape[0]
+                if north:
+                    GssN = Gss[range(N,N+data.vel_enu.shape[0]),:]
+                    N += data.vel_enu.shape[0]
                 if vertical:
-                    GssU = Gss[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
+                    GssU = Gss[range(N,N+data.vel_enu.shape[0]),:]
             if dipslip is not None:
-                GdsE = Gds[range(0,data.vel_enu.shape[0]),:]
-                GdsN = Gds[range(data.vel_enu.shape[0],data.vel_enu.shape[0]*2),:]
+                N = 0
+                if east:
+                    GdsE = Gds[range(0,data.vel_enu.shape[0]),:]
+                    N += data.vel_enu.shape[0]
+                if north:
+                    GdsN = Gds[range(N,N+data.vel_enu.shape[0]),:]
+                    N += data.vel_enu.shape[0]
                 if vertical:
-                    GdsU = Gds[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
+                    GdsU = Gds[range(N,N+data.vel_enu.shape[0]),:]
             if tensile is not None:
-                GtsE = Gts[range(0,data.vel_enu.shape[0]),:]
-                GtsN = Gts[range(data.vel_enu.shape[0],data.vel_enu.shape[0]*2),:]
+                if east:
+                    GtsE = Gts[range(0,data.vel_enu.shape[0]),:]
+                    N += data.vel_enu.shape[0]
+                if north:                    
+                    GtsN = Gts[range(N,N+data.vel_enu.shape[0]),:]
+                    N += data.vel_enu.shape[0]
                 if vertical:
-                    GtsU = Gts[range(data.vel_enu.shape[0]*2,data.vel_enu.shape[0]*3),:]
+                    GtsU = Gts[range(N,N+data.vel_enu.shape[0]),:]
 
             # set the GFs
             self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU], 
@@ -469,6 +493,7 @@ class Fault(SourceInv):
                     self.d[data.name] = data.vel_enu.T.flatten()
                 else:
                     self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
+                self.d[data.name]=self.d[data.name][-np.isnan(self.d[data.name])]
             elif data.dtype is 'cosicorrrates':
                 self.d[data.name] = np.hstack((data.east.T.flatten(), 
                                                data.north.T.flatten()))
@@ -732,6 +757,7 @@ class Fault(SourceInv):
             ec = 0
             for sp in sliplist:
                 Glocal[:,ec:ec+self.N_slip] = self.G[data.name][sp]
+                print data.name
                 ec += self.N_slip
 
             # Put Glocal into the big G
