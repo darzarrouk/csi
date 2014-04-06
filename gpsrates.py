@@ -1256,6 +1256,7 @@ class gpsrates(SourceInv):
         # All done
         return
 
+
     def buildsynth(self, faults, direction='sd', poly=None):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
@@ -1267,6 +1268,17 @@ class gpsrates(SourceInv):
 
         # Number of data
         Nd = self.x.shape[0]
+
+        # Check components
+        east     = False
+        north    = False
+        vertical = False
+        if not np.isnan(self.vel_enu[:,0]).any():
+            east = True
+        if not np.isnan(self.vel_enu[:,1]).any():
+            north = True
+        if not np.isnan(self.vel_enu[:,2]).any():
+            vertical = True
 
         # Clean synth
         self.synth = np.zeros((Nd,3))
@@ -1281,26 +1293,47 @@ class gpsrates(SourceInv):
                 Gs = G['strikeslip']
                 Ss = fault.slip[:,0]
                 ss_synth = np.dot(Gs,Ss)
-                self.synth[:,0] += ss_synth[0:Nd]
-                self.synth[:,1] += ss_synth[Nd:2*Nd]
-                if ss_synth.size > 2*Nd:
-                    self.synth[:,2] += ss_synth[2*Nd:3*Nd]
+                N = 0
+                if east:
+                    self.synth[:,0] += ss_synth[0:Nd]
+                    N += Nd
+                if north:
+                    self.synth[:,1] += ss_synth[N:N+Nd]
+                    N += Nd
+                if vertical:
+                    if ss_synth.size <= 2*Nd and east and north:
+                        raise ValueError('Missing vertical components for {}'.format(self.name))
+                    self.synth[:,2] += ss_synth[N:N+Nd]
             if ('d' in direction) and ('dipslip' in G.keys()):
                 Gd = G['dipslip']
                 Sd = fault.slip[:,1]
                 ds_synth = np.dot(Gd, Sd)
-                self.synth[:,0] += ds_synth[0:Nd]
-                self.synth[:,1] += ds_synth[Nd:2*Nd]
-                if ds_synth.size >2*Nd:
-                    self.synth[:,2] += ds_synth[2*Nd:3*Nd]
+                N = 0
+                if east:
+                    self.synth[:,0] += ds_synth[0:Nd]
+                    N += Nd
+                if north:
+                    self.synth[:,1] += ds_synth[N:N+Nd]
+                    N += Nd
+                if vertical:
+                    if ds_synth.size <=2*Nd and east and north:
+                        raise ValueError('Missing vertical components for {}'.format(self.name))
+                    self.synth[:,2] += ds_synth[N:N+Nd]
             if ('t' in direction) and ('tensile' in G.keys()):
                 Gt = G['tensile']
                 St = fault.slip[:,2]
                 op_synth = np.dot(Gt, St)
-                self.synth[:,0] += op_synth[0:Nd]
-                self.synth[:,1] += op_synth[Nd:2*Nd]
-                if op_synth.size >2*Nd:
-                    self.synth[:,2] += op_synth[2*Nd:3*Nd]
+                N = 0
+                if east:                
+                    self.synth[:,0] += op_synth[0:Nd]
+                    N += Nd
+                if north:
+                    self.synth[:,1] += op_synth[N:N+Nd]
+                    N += Nd
+                if vertical:
+                    if op_synth.size<=2*Nd and east and north:
+                        raise ValueError('Missing vertical components for {}'.format(self.name))
+                    self.synth[:,2] += op_synth[N:N+Nd]
 
             if poly == 'build' or poly == 'include':
                 if (self.name in fault.poly.keys()):
@@ -1320,6 +1353,7 @@ class gpsrates(SourceInv):
 
         # All done
         return
+
 
     def writeEDKSdata(self):
         '''
