@@ -170,15 +170,15 @@ class gpsrates(SourceInv):
         st = 0
         if 'e' in direction:
             se = st + Nd
-            Cd[st:se, st:se] = np.diag(self.err_enu[:,0]*err_enu[:,0])
+            Cd[st:se, st:se] = np.diag(self.err_enu[:,0]*self.err_enu[:,0])
             st += Nd
         if 'n' in direction:
             se = st + Nd
-            Cd[st:se, st:se] = np.diag(self.err_enu[:,1]*err_enu[:,1])
+            Cd[st:se, st:se] = np.diag(self.err_enu[:,1]*self.err_enu[:,1])
             st += Nd
         if 'u' in direction:
             se = st + Nd
-            Cd[st:se, st:se] = np.diag(self.err_enu[:,2]*err_enu[:,2])
+            Cd[st:se, st:se] = np.diag(self.err_enu[:,2]*self.err_enu[:,2])
 
         # Store Cd
         self.Cd = Cd
