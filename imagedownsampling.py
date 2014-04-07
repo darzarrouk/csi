@@ -95,7 +95,7 @@ class imagedownsampling(object):
         # All done
         return
 
-    def initialstate(self, startingsize, minimumsize, tolerance=0.5, plot=False):
+    def initialstate(self, startingsize, minimumsize, tolerance=0.5, plot=False, decimorig=10):
         '''
         Does the first cut onto the data.
         Args:
@@ -103,6 +103,7 @@ class imagedownsampling(object):
             * minimumsize   : Minimum Size of the blocks.
             * tolerance     : Between 0 and 1. If 1, all the pixels must have a value so that the box is kept, 
                                                If 0, no pixels are needed... Default is 0.5
+            * decimorig     : Decimation ofr plotting purposes only.
         '''
 
         # Set the tolerance
@@ -124,12 +125,12 @@ class imagedownsampling(object):
                 blocks.append(block)
 
         # Generate the sampling to test
-        self.downsample(blocks, plot=plot)
+        self.downsample(blocks, plot=plot, decimorig=decimorig)
 
         # All done
         return
 
-    def downsample(self, blocks, plot=False):
+    def downsample(self, blocks, plot=False, decimorig=10):
         '''
         From the saved list of blocks, computes the downsampled data set and the informations that come along.
         '''
@@ -239,14 +240,18 @@ class imagedownsampling(object):
 
         # LOS
         if self.datatype is 'insarrates':
-            newimage.inchd2los(self.incidence, self.heading)
+            if hasattr(self.image, 'origininchd'):
+                self.origininchd = self.image.origininchd
+            else:
+                self.origininchd = 'onefloat'
+            newimage.inchd2los(self.incidence, self.heading, origin=self.origininchd)
 
         # Store newimage
         self.newimage = newimage
 
         # plot y/n
         if plot:
-            self.plotDownsampled()
+            self.plotDownsampled(decimorig=decimorig)
 
         # All done
         return
@@ -290,7 +295,7 @@ class imagedownsampling(object):
         # all done
         return b1, b2, b3, b4
 
-    def ResolutionBasedIterations(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum'):
+    def ResolutionBasedIterations(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum', decimorig=10):
         '''
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
         Args:
@@ -337,7 +342,7 @@ class imagedownsampling(object):
                     else:
                         newblocks.append(block)
                 # Do the downsampling
-                self.downsample(newblocks, plot=plot)
+                self.downsample(newblocks, plot=plot, decimorig=decimorig)
             else:
                 do_cut = True
 
@@ -428,7 +433,7 @@ class imagedownsampling(object):
         # all done
         return
 
-    def plotDownsampled(self, figure=145, axis='equal', ref='utm', Norm=None, data2plot='north'):
+    def plotDownsampled(self, figure=145, axis='equal', ref='utm', Norm=None, data2plot='north', decimorig=1):
         '''
         Plots the downsampling as it is at this step.
         Args:
@@ -486,13 +491,13 @@ class imagedownsampling(object):
         # Plot original dataset
         if ref is 'utm':
             # image
-            sca = full.scatter(original.x, original.y, s=10, c=data, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
+            sca = full.scatter(original.x[::decimorig], original.y[::decimorig], s=10, c=data[::decimorig], cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
             # Faults
             for fault in self.faults:
                 full.plot(fault.xf, fault.yf, '-k')
         else:
             # image
-            sca = full.scatter(original.lon, original.lat, s=10, c=data, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.) 
+            sca = full.scatter(original.lon[::decimorig], original.lat[::decimorig], s=10, c=data[::decimorig], cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.) 
             # Faults
             for fault in self.faults:
                 full.plot(fault.lon, fault.lat, '-k')

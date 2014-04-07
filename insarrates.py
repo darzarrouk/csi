@@ -173,7 +173,8 @@ class insarrates(SourceInv):
         self.factor = factor
 
         # Compute the LOS
-        self.inchd2los(incidence, heading)
+        self.inchd2los(incidence, heading, origin='binary')
+        self.los = self.los[iFinite,:]
 
         # compute x, y
         self.x, self.y = self.ll2xy(self.lon, self.lat)
@@ -234,17 +235,33 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def inchd2los(self, incidence, heading):
+    def inchd2los(self, incidence, heading, origin='onefloat'):
         '''
         From the incidence and the heading, defines the LOS vector.
         Args:
             * incidence : Incidence angle.
             * heading   : Heading angle.
+            * origin    : What are these numbers onefloat: One number
+                                                      grd: grd files
+                                                   binary: Binary files
         '''
 
         # Save values
         self.incidence = incidence
         self.heading = heading
+
+        # Read the files if needed
+        if origin in ('grd', 'GRD'):
+            import scipy.io.netcdf as netcdf
+            fincidence = netcdf.netcdf_file(incidence)
+            fheading = netcdf.netcdf_file(heading)
+            incidence = fincidence.variables['z'][:,:].flatten()
+            heading = fheading.variables['z'][:,:].flatten()
+            self.origininchd = origin
+        elif origin in ('binary', 'bin'):
+            incidence = np.fromfile(incidence, dtype=np.float32)
+            heading = np.fromfile(heading, dtype=np.float32)
+            self.origininchd = origin
 
         # Convert angles
         alpha = (heading+90.)*np.pi/180.
@@ -256,18 +273,19 @@ class insarrates(SourceInv):
         Su = np.cos(phi)
 
         # Store it
-        self.los = np.ones((self.lon.shape[0],3))
+        if origin in ('grd', 'GRD', 'binary', 'bin'):
+            self.los = np.ones((alpha.shape[0],3))
+        else:
+            self.los = np.ones((self.lon.shape[0],3))
         self.los[:,0] *= Se
         self.los[:,1] *= Sn
         self.los[:,2] *= Su
-
-        print 'LOS: ',self.los
 
         # all done
         return
 
     def read_from_grd(self, filename, factor=1.0, step=0.0, incidence=None, heading=None,
-                      los=None):
+                      los=None, keepnans=False):
         '''
         Reads velocity map from a grd file.
         Args:
@@ -307,11 +325,12 @@ class insarrates(SourceInv):
         self.grd_shape = Lon.shape
 
         # Keep the non-nan pixels only
-        u = np.flatnonzero(np.isfinite(self.vel))
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.vel = self.vel[u]
-        self.err = self.err[u]
+        if not keepnans:
+            u = np.flatnonzero(np.isfinite(self.vel))
+            self.lon = self.lon[u]
+            self.lat = self.lat[u]
+            self.vel = self.vel[u]
+            self.err = self.err[u]
 
         # Convert to utm
         self.x, self.y = self.ll2xy(self.lon, self.lat) 
@@ -319,7 +338,7 @@ class insarrates(SourceInv):
         # Deal with the LOS
         self.los = np.ones((self.lon.shape[0],3))
         if heading is not None and incidence is not None and los is None:
-            self.inchd2los(incidence, heading)
+            self.inchd2los(incidence, heading, origin='grd')
         elif los is not None:
             self.los[:,0] *= los[0]
             self.los[:,1] *= los[1]

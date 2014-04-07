@@ -533,7 +533,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def insar_scatter(self, insar, norm=None, colorbar=True, data='data'):
+    def insar_scatter(self, insar, norm=None, colorbar=True, data='data', decimate=1):
         '''
         Args:
             * insar     : insar object from insarrates.
@@ -562,9 +562,9 @@ class geodeticplot(object):
 
         # Plot the insar
         if self.ref is 'utm':
-            sc = self.carte.scatter(insar.x, insar.y, s=30, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
+            sc = self.carte.scatter(insar.x[::decimate], insar.y[::decimate], s=30, c=d[::decimate], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
         else:
-            sc = self.carte.scatter(insar.lon, insar.lat, s=30, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
+            sc = self.carte.scatter(insar.lon[::decimate], insar.lat[::decimate], s=30, c=d[::decimate], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
 
         # plot colorbar
         if colorbar:
