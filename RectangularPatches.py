@@ -453,7 +453,7 @@ class RectangularPatches(Fault):
                 rake = np.float(text[9])*np.pi/180.
 
                 D.append(depth)
-
+                
                 # Build a patch with that
                 x1 = xtl
                 y1 = ytl
@@ -755,7 +755,7 @@ class RectangularPatches(Fault):
             # Get the center of the patch
             xc, yc, zc = p[0]
             lonc, latc = self.xy2ll(xc, yc)
-            if not neg_depth:
+            if neg_depth:
                 zc = -1.0*zc
             fout.write('{} {} {} \n'.format(lonc, latc, zc))
 
@@ -869,12 +869,16 @@ class RectangularPatches(Fault):
             xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True) 
             # Get the slip vector
             slip = self.getslip(self.patch[p]) 
+            print slip
             rake = np.arctan2(slip[1],slip[0])
 
             # Compute the vector
-            x = (np.sin(strike+np.pi)*np.cos(rake) + np.sin(strike+np.pi)*np.cos(dip)*np.sin(rake))
-            y = (np.cos(strike+np.pi)*np.cos(rake) - np.cos(strike+np.pi)*np.cos(dip)*np.sin(rake))
-            z = -1.0*np.sin(dip)*np.sin(rake)
+            #x = (np.sin(strike+np.pi)*np.cos(rake) + np.sin(strike+np.pi)*np.cos(dip)*np.sin(rake))
+            #y = (np.cos(strike+np.pi)*np.cos(rake) - np.cos(strike+np.pi)*np.cos(dip)*np.sin(rake))
+            #z = -1.0*np.sin(dip)*np.sin(rake)
+            x = (np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake))
+            y = (np.cos(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake))
+            z =  1.0*np.sin(dip)*np.sin(rake)
         
             # Scale these
             if scale.__class__ is float:
@@ -902,7 +906,7 @@ class RectangularPatches(Fault):
  
             # Append ellipse 
             if ellipse:
-                self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze]))
+                self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze],factor=factor))
 
             # Append slip direction
             self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])
