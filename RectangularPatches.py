@@ -762,7 +762,7 @@ class RectangularPatches(Fault):
             # Get the end of the vector
             xc, yc, zc = p[1]
             lonc, latc = self.xy2ll(xc, yc)
-            if not neg_depth:
+            if neg_depth:
                 zc = -1.0*zc
             fout.write('{} {} {} \n'.format(lonc, latc, zc))
 
