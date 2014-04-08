@@ -608,7 +608,7 @@ class geodeticplot(object):
             if self.ref is 'utm':
                 sc = self.carte.scatter(earthquakes.x, earthquakes.y, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0)
             else:
-                sc = self.carte.scatter(earthquakes.lon, earthquakes.lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0)
+                sc = self.carte.scatter(earthquakes.lon, earthquakes.lat, s=markersize/100., c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0)
 
             if colorbar:
                 self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
@@ -749,7 +749,7 @@ class geodeticplot(object):
         # plot colorbar
         if colorbar:
             scalarMap.set_array(d)
-            plt.colorbar(scalarMap)
+            plt.colorbar(scalarMap,shrink=0.6, orientation='horizontal')
 
         # All done
         return

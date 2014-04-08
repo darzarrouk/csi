@@ -188,6 +188,62 @@ class seismiclocations(SourceInv):
         # All done
         return
 
+    def read_ascii(self, infile, header=0):
+        '''
+        Reads data from an ascii file.
+        columns are time (isoformat, lat, lon, depth, mag).
+        '''
+
+        # open the file
+        fin = open(infile, 'r')
+
+        # Read all
+        All = fin.readlines()
+
+        # Initialize things
+        self.time = []
+        self.lon = []
+        self.lat = []
+        self.depth = []
+        self.mag = []
+
+        # Loop 
+        for i in range(header, len(All)):
+
+            # Get the splitted string
+            tmp = All[i].split()
+
+            # Get values
+            time = dt.datetime.strptime(tmp[0], "%Y-%m-%dT%H:%M:%S.%fZ")
+            lon = np.float(tmp[2])
+            lat = np.float(tmp[1])
+            depth = np.float(tmp[3])
+            mag = np.float(tmp[4])
+
+            # Store things
+            self.time.append(time)
+            self.lon.append(lon)
+            self.lat.append(lat)
+            self.depth.append(depth)
+            self.mag.append(mag)
+
+        # Close the file
+        fin.close()
+
+        # Make arrays
+        self.time = np.array(self.time)
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+        self.depth = np.array(self.depth)
+        self.mag = np.array(self.mag)
+
+        # Create the utm
+        self.lonlat2xy()
+
+        # All done
+        return
+
+
     def selectbox(self, minlon, maxlon, minlat, maxlat, depth=100000.):
         ''' 
         Select the earthquakes in a box defined by min and max, lat and lon.
@@ -221,7 +277,7 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-    def selecttime(self, start=[2001, 1, 1], end=[2001, 1, 1]):
+    def selecttime(self, start=[2001, 1, 1], end=[2101, 1, 1]):
         '''
         Selects the earthquake in between two dates. Dates can be datetime.datetime or lists.
         Args:
@@ -353,6 +409,40 @@ class seismiclocations(SourceInv):
         Fits a B-value to a Gutemberg-Righter distribution.
         option: if b is provided, then the fit is forced to have a slope b.
         '''
+
+        # All done
+        return
+
+    def distance2fault(self, faults, distance=5.):
+        '''
+        Selects the earthquakes that are located less than distance away from the fault plane.
+        Args:
+            * faults    : List of faults
+            * distance  : Threshold
+        '''
+
+        # Create the list
+        u = []
+
+        # Loop over the faults
+        for fault in faults:
+            dis = np.array(self._getDistance2FaultPlane(fault))
+            ut = np.flatnonzero( dis < distance ) 
+            for i in ut:
+                u.append(i)
+
+        # make u an array
+        u = np.array(u)
+        u = np.unique(u)
+
+        # Select the stations
+        self.lon = self.lon[u]
+        self.lat = self.lat[u]
+        self.x = self.x[u]
+        self.y = self.y[u]
+        self.time = self.time[u]
+        self.depth = self.depth[u]
+        self.mag = self.mag[u]
 
         # All done
         return
@@ -583,6 +673,44 @@ class seismiclocations(SourceInv):
         dis = []
         for p in PP.geoms:
             dis.append(trace.distance(p))
+
+        # All done
+        return dis
+
+    def _getDistance2FaultPlane(self, fault):
+        '''
+        Computes the distance between the fault plane and all the earthquakes.
+        '''
+
+        # import scipy
+        import scipy.spatial.distance as scidis
+        
+        # Create a list
+        dis = []
+
+        # Create the list of vertices
+        if fault.patchType in ('triangle'):
+            vertices = fault.gocad_vertices
+        elif fault.patchType in ('rectangle'):
+            vertices = []
+            for p in fault.patch:
+                for i in range(4):
+                    vertices.append(p[i])
+
+        # Loop on the earthquakes
+        for i in range(self.mag.shape[0]):
+            
+            # Get position
+            x = self.x[i]
+            y = self.y[i]
+            z = self.depth[i]
+
+            # Get the min distance
+            d = scidis.cdist([[x, y, z]], vertices).min()
+            print d
+
+            # Append
+            dis.append(d)
 
         # All done
         return dis
@@ -862,6 +990,55 @@ class seismiclocations(SourceInv):
 
         # All done
         return ipatch
+
+    def momentEvolution(self, plot=False):
+        '''
+        Computes the evolution of the moment with time.
+        '''
+
+        # Lets consider self.mag is the moment magnitude :-)
+        self.Mo = 10.**(1.5*self.mag + 9.1)
+
+        # Make sure these are sorted
+        self.sortInTime()
+
+        # Compute the cumulative moment
+        self.cumMo = np.cumsum(self.Mo)
+
+        # Compute the cumulative number of earthquakes
+        self.cumEQ = np.cumsum(np.ones(len(self.mag)))
+
+        # Plot?
+        if plot:
+            fig = plt.figure(1)
+            axmo = fig.add_subplot(111)
+            axec = axmo.twinx()
+            axmo.plot(self.time, self.cumMo, '-', color='black', label='Cum. Moment (N.m)')
+            plt.legend()
+            axec.plot(self.time, self.cumEQ, '-', color='gray', label='Cum. # of Eq')
+            plt.legend()
+            plt.show()
+
+        # All done
+        return
+
+    def sortInTime(self):
+        '''
+        Sorts the earthquakes in Time
+        '''
+
+        # Get the ordering
+        i = np.argsort(self.time)
+
+        # Sort 
+        self.time = self.time[i]
+        self.lat = self.lat[i]
+        self.lon = self.lon[i]
+        self.mag = self.mag[i]
+        self.depth = self.depth[i]
+
+        # All done
+        return
 
     def write2file(self, filename):
         '''
