@@ -1761,25 +1761,25 @@ class RectangularPatches(Fault):
             dip_rad    = dip*np.pi/180.
             dstrike_x  =  0.5 * length * np.sin(strike_rad)
             dstrike_y  =  0.5 * length * np.cos(strike_rad)
-            ddip_x     =  0.5 * width  * np.cos(dip_rad)*np.cos(strike_rad)
-            ddip_y     = -0.5 * width  * np.cos(dip_rad)*np.sin(strike_rad)
-            ddip_z     =  0.5 * width  * np.sin(dip_rad)
+            ddip_x     =  0.5 * width  * np.cos(dip_rad) * np.cos(strike_rad)
+            ddip_y     = -0.5 * width  * np.cos(dip_rad) * np.sin(strike_rad)
+            ddip_z     =  0.5 * width  * np.sin(dip_rad)    
 
-            x1 = xc - dstrike_x + ddip_x
-            y1 = yc - dstrike_y + ddip_y
-            z1 = zc + ddip_z
+            x1 = xc - dstrike_x - ddip_x
+            y1 = yc - dstrike_y - ddip_y
+            z1 = zc - ddip_z
             
-            x2 = xc - dstrike_x - ddip_x
-            y2 = yc - dstrike_y - ddip_y
+            x2 = xc + dstrike_x - ddip_x
+            y2 = yc + dstrike_y - ddip_y
             z2 = zc - ddip_z            
 
-            x3 = xc + dstrike_x - ddip_x
-            y3 = yc + dstrike_y - ddip_y
-            z3 = zc - ddip_z
+            x3 = xc + dstrike_x + ddip_x
+            y3 = yc + dstrike_y + ddip_y
+            z3 = zc + ddip_z
 
-            x4 = xc + dstrike_x + ddip_x
-            y4 = yc + dstrike_y + ddip_y
-            z4 = zc + ddip_z            
+            x4 = xc - dstrike_x + ddip_x
+            y4 = yc - dstrike_y + ddip_y
+            z4 = zc + ddip_z     
             
             if self.top == None:
                 self.top = z2
@@ -1807,6 +1807,7 @@ class RectangularPatches(Fault):
             pll[1,:] = [lon2, lat2, z2]
             pll[2,:] = [lon3, lat3, z3]
             pll[3,:] = [lon4, lat4, z4]
+            p1,p2,p3,p4 = p
             self.patch.append(p)
             self.patchll.append(pll)            
             self.z_patches.append(z1)

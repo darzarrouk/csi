@@ -44,6 +44,9 @@ class seismic(SourceInv):
         self.x    = np.array([],dtype='float64')
         self.y    = np.array([],dtype='float64')
     
+        # Data
+        self.d = {}
+
         # All done
         return
 
@@ -113,6 +116,32 @@ class seismic(SourceInv):
 
         # All done
         return    
+
+    def readSac(self,sacfiles):
+        '''
+        Read sac data files
+        '''
+        # Import personnal sac module
+        import sacpy
+
+        # Read sac files
+        self.lon  = []
+        self.lat  = []
+        self.data = {}
+        for sacfile in sacfiles:
+            sac = sacpy.sac()
+            sac.rsac(sacfile)
+            self.lon.append(sac.stlo)
+            self.lat.append(sac.stla)
+            if not self.data.has_key(sac.kstnm):
+                self.data = {}
+            if not self.data[sac.kstnm].has_key(sac.kcmpnm):
+                self.data[sac.kstnm][sac.kcmpnm] = {}
+            self.data[sac.kstnm][sac.kcmpnm[-1]] = sac.copy()
+
+        # All done
+        return
+            
 
     def initWaveInt(self,waveform_engine):
         '''

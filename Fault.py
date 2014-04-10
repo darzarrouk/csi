@@ -491,7 +491,7 @@ class Fault(SourceInv):
         '''
 
         # Get the number of data per point
-        if data.dtype is 'insarrates':
+        if data.dtype == 'insarrates' or data.dtype == 'tsunami':
             data.obs_per_station = 1
         elif data.dtype is 'gpsrates':
             data.obs_per_station = 0
@@ -520,6 +520,9 @@ class Fault(SourceInv):
             if data.dtype is 'insarrates':
                 self.d[data.name] = data.vel
                 vertical = True # Always true for InSAR
+            elif data.dtype is 'tsunami':
+                self.d[data.name] = data.d
+                vertical = True
             elif data.dtype is 'gpsrates':
                 if vertical:
                     self.d[data.name] = data.vel_enu.T.flatten()
@@ -559,11 +562,11 @@ class Fault(SourceInv):
                 ss = ss.reshape((nd*d, m))
                 G['strikeslip'] = ss
 
-        elif len(strikeslip) == 1:          # InSAR case
+        elif len(strikeslip) == 1:          # InSAR/Tsunami case 
 
-            LOS_ss = strikeslip[0]
-            if LOS_ss is not None:
-                G['strikeslip'] = LOS_ss
+            Green_ss = strikeslip[0]
+            if Green_ss is not None:
+                G['strikeslip'] = Green_ss
 
         # DipSlip
         if len(dipslip) == 3:               # GPS case
@@ -588,13 +591,13 @@ class Fault(SourceInv):
                 ds = ds.reshape((nd*d, m))
                 G['dipslip'] = ds
         
-        elif len(dipslip) == 1:             # InSAR case
+        elif len(dipslip) == 1:             # InSAR/Tsunami case
 
-            LOS_ds = dipslip[0]
-            if LOS_ds is not None:
-                G['dipslip'] = LOS_ds
+            Green_ds = dipslip[0]
+            if Green_ds is not None:
+                G['dipslip'] = Green_ds
 
-        # StrikeSlip
+        # Tensile
         if len(tensile) == 3:               # GPS case
 
             E_ts = tensile[0]
@@ -618,11 +621,10 @@ class Fault(SourceInv):
                 ts = ts.reshape((nd*d, m))
                 G['tensile'] = ts
 
-        elif len(tensile) == 1:             # InSAR Case
-
-            LOS_ts = tensile[0]
-            if LOS_ts is not None:
-                G['dipslip'] = LOS_ds
+        elif len(tensile) == 1:             # InSAR/Tsunami Case
+            Green_ts = tensile[0]
+            if Green_ts is not None:
+                G['dipslip'] = Green_ts
 
         # All done
         return

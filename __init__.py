@@ -9,8 +9,8 @@ from .SourceInv import SourceInv
 
 # Parent class(es)
 from .Fault import Fault
-from .RectangularPatches import RectangularPatches
-from .TriangularPatches import TriangularPatches
+from .RectangularPatches    import RectangularPatches
+from .TriangularPatches     import TriangularPatches
 
 # Secondary
 ## Static Faults
@@ -23,6 +23,7 @@ from .fault3D import fault3D
 from .planarfault import planarfault
 
 ## Kinematic faults
+from .RectangularPatchesKin import RectangularPatchesKin
 from .planarfaultkinematic import planarfaultkinematic
 
 ## Data
@@ -32,7 +33,8 @@ from .imagedownsampling import imagedownsampling
 from .multifaultsolve import multifaultsolve
 from .cosicorrrates import cosicorrrates
 from .creepmeters import creepmeters
-from .seismic       import seismic
+from .seismic import seismic
+from .tsunami import tsunami
 from .insartimeseries import insartimeseries
 #from .gpstimeseries import gpstimeseries
 #from .gpsstation import gpsstation
