@@ -9,6 +9,7 @@ import numpy as np
 import pyproj as pp
 import datetime as dt
 import matplotlib.pyplot as plt
+import copy
 
 # Personals
 from .SourceInv import SourceInv
@@ -215,17 +216,16 @@ class seismiclocations(SourceInv):
 
             # Get values
             time = dt.datetime.strptime(tmp[0], "%Y-%m-%dT%H:%M:%S.%fZ")
-            lon = np.float(tmp[2])
-            lat = np.float(tmp[1])
-            depth = np.float(tmp[3])
-            mag = np.float(tmp[4])
-
-            # Store things
-            self.time.append(time)
-            self.lon.append(lon)
-            self.lat.append(lat)
-            self.depth.append(depth)
-            self.mag.append(mag)
+            if len(tmp)>=5:
+                lon = np.float(tmp[2])
+                lat = np.float(tmp[1])
+                depth = np.float(tmp[3])
+                mag = np.float(tmp[4])
+                self.time.append(time)
+                self.lon.append(lon)
+                self.lat.append(lat)
+                self.depth.append(depth)
+                self.mag.append(mag)
 
         # Close the file
         fin.close()
@@ -707,7 +707,6 @@ class seismiclocations(SourceInv):
 
             # Get the min distance
             d = scidis.cdist([[x, y, z]], vertices).min()
-            print d
 
             # Append
             dis.append(d)
@@ -991,16 +990,16 @@ class seismiclocations(SourceInv):
         # All done
         return ipatch
 
-    def momentEvolution(self, plot=False):
+    def momentEvolution(self, plot=False, outfile=None):
         '''
         Computes the evolution of the moment with time.
         '''
 
-        # Lets consider self.mag is the moment magnitude :-)
-        self.Mo = 10.**(1.5*self.mag + 9.1)
-
         # Make sure these are sorted
         self.sortInTime()
+
+        # Lets consider self.mag is the moment magnitude :-)
+        self.Mo = 10.**(1.5*self.mag + 9.1)
 
         # Compute the cumulative moment
         self.cumMo = np.cumsum(self.Mo)
@@ -1008,15 +1007,36 @@ class seismiclocations(SourceInv):
         # Compute the cumulative number of earthquakes
         self.cumEQ = np.cumsum(np.ones(len(self.mag)))
 
+        # Output?
+        if outfile is not None:
+            fout = open(outfile, 'w')
+            fout.write('# Time | Cum. Moment (N.m) | Cum. Num. of Eq. \n')
+            # First point 
+            t = self.time[0].isoformat()
+            Mo = 0.1
+            Ec = 0
+            fout.write('{} {} {} \n'.format(t, Mo, Ec))
+            # All the rest
+            for i in range(1,len(self.time)):
+                t = self.time[i].isoformat()
+                Mo = self.cumMo[i-1]
+                Ec = self.cumEQ[i-1]
+                fout.write('{} {} {} \n'.format(t, Mo, Ec))
+                t = self.time[i].isoformat()
+                Mo = self.cumMo[i]
+                Ec = self.cumEQ[i]
+                fout.write('{} {} {} \n'.format(t, Mo, Ec))
+            fout.close()
+
         # Plot?
         if plot:
             fig = plt.figure(1)
             axmo = fig.add_subplot(111)
             axec = axmo.twinx()
             axmo.plot(self.time, self.cumMo, '-', color='black', label='Cum. Moment (N.m)')
-            plt.legend()
             axec.plot(self.time, self.cumEQ, '-', color='gray', label='Cum. # of Eq')
-            plt.legend()
+            #axmo.legend()
+            #axec.legend()
             plt.show()
 
         # All done
@@ -1040,7 +1060,7 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-    def write2file(self, filename):
+    def write2file(self, filename, add_column=None):
         '''
         Write the earthquakes to a file.
         Args:
@@ -1051,16 +1071,45 @@ class seismiclocations(SourceInv):
         fout = open(filename, 'w')
 
         # Write a header
-        fout.write('# Lon | Lat | Depth (km) | Mw \n')
+        fout.write('# Lon | Lat | Depth (km) | Mw | time \n')
 
         # Loop over the earthquakes
         for u in range(len(self.lon)):
-            fout.write('{} {} {} {} \n'.format(self.lon[u], self.lat[u], self.depth[u], self.mag[u]))
+            if add_column is not None:
+                last = '{} {}'.format(self.time[u].isoformat(), add_column[u])
+            else:
+                last = '{}'.format(self.time[u].isoformat())
+            fout.write('{} {} {} {} {} \n'.format(self.lon[u], self.lat[u], self.depth[u], self.mag[u], last))
         
         # Close the file
         fout.close()
 
         # all done
+        return
+
+    def writeSelectedMagRange(self, filename, minMag=5.0, maxMag=10.):
+        '''
+        Write to a file the earthquakes with a magnitude larger than minMag and 
+        smaller than maxMag.
+        Args:
+            * filename  : Name of the output file
+            * minMag    : minimum Magnitude.
+            * maxMag    : maximum Magnitude.
+        '''
+
+        # Create a new object
+        eq = copy.deepcopy(self)
+
+        # Remove the small earthquakes
+        eq.selectmagnitude(minMag, maximum=maxMag)
+
+        # Write to a file
+        eq.write2file(filename)
+
+        # Delete the object
+        del eq
+
+        # All done
         return
 
     def mergeCatalog(self, catalog):

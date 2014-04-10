@@ -159,6 +159,7 @@ class imagedownsampling(object):
         if self.datatype is 'insarrates':
             newimage.vel = []
             newimage.err = []
+            newimage.los = []
         elif self.datatype is 'cosicorrrates':
             newimage.east = []
             newimage.north = []
@@ -181,6 +182,9 @@ class imagedownsampling(object):
 
         # Over each block, we average the position and the phase to have a new point
         for i in range(len(blocks)):
+            #sys.stdout.write('\r Downsampling {}/{} '.format(i, len(blocks)))
+            #sys.stdout.flush()
+            # Get block
             block = blocks[i]
             # Create a path
             p = path.Path(block, closed=False)
@@ -195,6 +199,9 @@ class imagedownsampling(object):
                 if self.datatype is 'insarrates':
                     vel = np.mean(self.image.vel[ii])
                     err = np.std(self.image.vel[ii])
+                    los0 = np.mean(self.image.los[ii,0])
+                    los1 = np.mean(self.image.los[ii,1])
+                    los2 = np.mean(self.image.los[ii,2])
                 elif self.datatype is 'cosicorrrates':
                     east = np.mean(self.image.east[ii])
                     north = np.mean(self.image.north[ii])
@@ -207,6 +214,7 @@ class imagedownsampling(object):
                 if self.datatype is 'insarrates':
                     newimage.vel.append(vel)
                     newimage.err.append(err)
+                    newimage.los.append([los0, los1, los2])
                 elif self.datatype is 'cosicorrrates':
                     newimage.east.append(east)
                     newimage.north.append(north)
@@ -227,6 +235,7 @@ class imagedownsampling(object):
         if self.datatype is 'insarrates':
             newimage.vel = np.array(newimage.vel)
             newimage.err = np.array(newimage.err)
+            newimage.los = np.array(newimage.los)
         elif self.datatype is 'cosicorrrates':
             newimage.east = np.array(newimage.east)
             newimage.north = np.array(newimage.north)
@@ -237,14 +246,6 @@ class imagedownsampling(object):
         newimage.lon = np.array(newimage.lon)
         newimage.lat = np.array(newimage.lat)
         newimage.wgt = np.array(newimage.wgt)
-
-        # LOS
-        if self.datatype is 'insarrates':
-            if hasattr(self.image, 'origininchd'):
-                self.origininchd = self.image.origininchd
-            else:
-                self.origininchd = 'onefloat'
-            newimage.inchd2los(self.incidence, self.heading, origin=self.origininchd)
 
         # Store newimage
         self.newimage = newimage

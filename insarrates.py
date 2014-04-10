@@ -134,7 +134,6 @@ class insarrates(SourceInv):
         else:
             vel = data.flatten()*factor + step
             
-
         # Get the lon
         if type(lon) is str:
             lon = np.fromfile(lon, dtype=dtype)
@@ -244,6 +243,7 @@ class insarrates(SourceInv):
             * origin    : What are these numbers onefloat: One number
                                                       grd: grd files
                                                    binary: Binary files
+                                              binaryfloat: Arrays of float
         '''
 
         # Save values
@@ -261,6 +261,8 @@ class insarrates(SourceInv):
         elif origin in ('binary', 'bin'):
             incidence = np.fromfile(incidence, dtype=np.float32)
             heading = np.fromfile(heading, dtype=np.float32)
+            self.origininchd = origin
+        elif origin in ('binaryfloat'):
             self.origininchd = origin
 
         # Convert angles

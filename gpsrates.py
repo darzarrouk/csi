@@ -530,6 +530,72 @@ class gpsrates(SourceInv):
         # All done
         return d
 
+    def read_from_en(self, velfile, factor=1., minerr=1., header=0):
+        '''
+        Reading velocities from a enu file:
+        Lon | Lat | e_vel | n_vel | e_err | n_err | StationName
+        Args:
+            * velfile   : File containing the velocities.
+            * factor    : multiplication factor for velocities
+            * minerr    : if err=0, then err=minerr.
+        '''
+
+        print ("Read data from file {} into data set {}".format(velfile, self.name))
+
+        # Keep the file
+        self.velfile = velfile
+
+        # open the file
+        fvel = open(self.velfile, 'r')
+
+        # read it 
+        Vel = fvel.readlines()
+
+        # Initialize things
+        self.lon = []           # Longitude list
+        self.lat = []           # Latitude list
+        self.vel_enu = []       # ENU velocities list
+        self.err_enu = []       # ENU errors list
+        self.station = []       # Name of the stations
+
+        for i in range(header,len(Vel)):
+
+            A = Vel[i].split()
+            if 'nan' not in A:
+
+                self.station.append(A[6])
+                self.lon.append(np.float(A[0]))
+                self.lat.append(np.float(A[1]))
+
+                east = np.float(A[2])
+                north = np.float(A[3])
+                self.vel_enu.append([east, north, 0.0])
+
+                east = np.float(A[4])
+                north = np.float(A[5])
+                up = 0.0
+                if east == 0.:
+                    east = minerr
+                if north == 0.:
+                    north = minerr
+                if up == 0:
+                    up = minerr
+                self.err_enu.append([east, north, up])
+
+        # Make np array with that
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+        self.vel_enu = np.array(self.vel_enu)*factor
+        self.err_enu = np.array(self.err_enu)*factor
+        self.station = np.array(self.station)
+        self.factor = factor
+
+        # Pass to xy 
+        self.lonlat2xy()
+
+        # All done
+        return
+
     def read_from_enu(self, velfile, factor=1., minerr=1., header=0):
         '''
         Reading velocities from a enu file:
