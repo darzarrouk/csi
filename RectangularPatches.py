@@ -1720,6 +1720,104 @@ class RectangularPatches(Fault):
         # All done
         return
 
+    def read3DsquareGrid(self, filename):
+        '''
+        This routine read the square fault geometry
+        Format: lon lat E[km] N[km] Dep[km] strike dip Area ID
+
+        These files are to be used with edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
+        or edks/MPI_EDKS/calcGreenFunctions_EDKS_subSquares.py
+        '''
+
+        # Open the output file
+        flld = open(filename,'r')
+                
+        # Loop over the patches
+        self.patch     = []
+        self.patchll   = []
+        self.z_patches = []
+        for l in flld:
+            if l.strip()[0]=='#':
+                continue
+            items  = l.strip().split()
+            
+            # Get patch properties
+            lonc   = float(items[0])
+            latc   = float(items[1])
+            zc     = float(items[4])
+            strike = float(items[5])
+            dip    = float(items[6])
+            area   = float(items[7])
+            PID    = int(items[8])
+            #if strike<0.:
+            #    strike += 360.
+            length = np.sqrt(area)
+            width  = np.sqrt(area)
+            
+            xc,yc = self.ll2xy(lonc,latc)
+            
+            # Build a patch with that
+            strike_rad = strike*np.pi/180.
+            dip_rad    = dip*np.pi/180.
+            dstrike_x  =  0.5 * length * np.sin(strike_rad)
+            dstrike_y  =  0.5 * length * np.cos(strike_rad)
+            ddip_x     =  0.5 * width  * np.cos(dip_rad)*np.cos(strike_rad)
+            ddip_y     = -0.5 * width  * np.cos(dip_rad)*np.sin(strike_rad)
+            ddip_z     =  0.5 * width  * np.sin(dip_rad)
+
+            x1 = xc - dstrike_x + ddip_x
+            y1 = yc - dstrike_y + ddip_y
+            z1 = zc + ddip_z
+            
+            x2 = xc - dstrike_x - ddip_x
+            y2 = yc - dstrike_y - ddip_y
+            z2 = zc - ddip_z            
+
+            x3 = xc + dstrike_x - ddip_x
+            y3 = yc + dstrike_y - ddip_y
+            z3 = zc - ddip_z
+
+            x4 = xc + dstrike_x + ddip_x
+            y4 = yc + dstrike_y + ddip_y
+            z4 = zc + ddip_z            
+            
+            if self.top == None:
+                self.top = z2
+            elif self.top > z2:
+                self.top = z2
+            if self.depth == None:
+                self.depth = z1
+            elif self.depth > z1:
+                self.depth = z2
+
+            # Convert to lat lon
+            lon1, lat1 = self.xy2ll(x1, y1)
+            lon2, lat2 = self.xy2ll(x2, y2)
+            lon3, lat3 = self.xy2ll(x3, y3)
+            lon4, lat4 = self.xy2ll(x4, y4)
+
+            # Fill the patch
+            p = np.zeros((4, 3))
+            pll = np.zeros((4, 3))
+            p[0,:] = [x1, y1, z1]
+            p[1,:] = [x2, y2, z2]
+            p[2,:] = [x3, y3, z3]
+            p[3,:] = [x4, y4, z4]
+            pll[0,:] = [lon1, lat1, z1]
+            pll[1,:] = [lon2, lat2, z2]
+            pll[2,:] = [lon3, lat3, z3]
+            pll[3,:] = [lon4, lat4, z4]
+            self.patch.append(p)
+            self.patchll.append(pll)            
+            self.z_patches.append(z1)
+
+        # Close the files
+        flld.close()
+        self.equivpatch   = self.patch
+        self.equivpatchll = self.patchll
+        # All done
+        return
+
 
     def getcenter(self, p):
         ''' 

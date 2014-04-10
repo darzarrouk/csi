@@ -251,30 +251,30 @@ class TriangularPatches(Fault):
         return
 
 
-    def setTrace(self,delta_depth=0.):
-        '''
-        Set Trace from patches (assuming positive depth)
-        Arg:
-            * delta_depth: The trace is made of all patch vertices at a depth smaller 
-                           than fault_top+trace_delta_depth
-        '''
-        self.xf = []
-        self.yf = []
-        minz = np.round(self.top+delta_depth,1)
-        for p,pl in zip(self.patch,self.patchll):
-            for v,vl in zip(p,pl):
-                if np.round(v[2],1)>=minz:
-                    continue
-                self.xf.append(v[0])
-                self.yf.append(v[1])
-        self.xf = np.array(self.xf)
-        self.yf = np.array(self.yf)
-        i = np.argsort(self.yf)
-        self.xf = self.xf[i]
-        self.yf = self.yf[i]
+    # def setTrace(self,delta_depth=0.):
+    #     '''
+    #     Set Trace from patches (assuming positive depth)
+    #     Arg:
+    #         * delta_depth: The trace is made of all patch vertices at a depth smaller 
+    #                        than fault_top+trace_delta_depth
+    #     '''
+    #     self.xf = []
+    #     self.yf = []
+    #     minz = np.round(self.top+delta_depth,1)
+    #     for p,pl in zip(self.patch,self.patchll):
+    #         for v,vl in zip(p,pl):
+    #             if np.round(v[2],1)>=minz:
+    #                 continue
+    #             self.xf.append(v[0])
+    #             self.yf.append(v[1])
+    #     self.xf = np.array(self.xf)
+    #     self.yf = np.array(self.yf)
+    #     i = np.argsort(self.yf)
+    #     self.xf = self.xf[i]
+    #     self.yf = self.yf[i]
 
-        # All done
-        return
+    #     # All done
+    #     return
 
 
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):

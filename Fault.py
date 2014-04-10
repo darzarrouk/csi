@@ -164,6 +164,30 @@ class Fault(SourceInv):
         return
 
 
+    def setTrace(self,delta_depth=0.):
+        '''
+        Set Trace from patches (assuming positive depth)
+        Arg:
+            * delta_depth: The trace is made of all patch vertices at a depth smaller 
+                           than fault_top+trace_delta_depth
+        '''
+        self.xf = []
+        self.yf = []
+        minz = np.round(self.top+delta_depth,1)
+        for p in self.patch:
+            for v in p:
+                if np.round(v[2],1)>=minz:
+                    continue
+                self.xf.append(v[0])
+                self.yf.append(v[1])
+        self.xf = np.array(self.xf)
+        self.yf = np.array(self.yf)
+        i = np.argsort(self.yf)
+        self.xf = self.xf[i]
+        self.yf = self.yf[i]
+
+        # All done
+        return
 
     def trace(self, x, y, utm=False):
         ''' 
