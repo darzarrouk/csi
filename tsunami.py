@@ -1,0 +1,115 @@
+''' 
+A class that deals with seismic or high-rate GPS data (not finished)
+
+Written by Z. Duputel, April 2013.
+'''
+
+# Externals
+import os
+import sys
+import copy
+import shutil
+import numpy  as np
+import pyproj as pp
+import matplotlib.pyplot as plt
+
+
+# Personals
+#xfrom WaveMod    import sac
+from .SourceInv import SourceInv
+
+class tsunami(SourceInv):
+    
+    def __init__(self,name,dtype='tsunami',utmzone=None,ellps='WGS84'):
+        '''
+        Args:
+            * name      : Name of the dataset.
+            * dtype     : data type (optional, default='seismic')
+            * utmzone   : UTM zone  (optional, default=None)
+            * ellps     : ellipsoid (optional, default='WGS84')
+        '''
+        
+        super(self.__class__,self).__init__(name,utmzone,ellps) 
+
+        # Initialize the data set 
+        self.dtype = dtype
+        
+        # Data
+        self.d = []
+
+        # All done
+        return
+
+    def readFromTxtFile(self,filename):
+        '''
+        Read d, Cd from files filename.d filename.Cd 
+        '''
+
+        self.Cd = np.loadtxt(filename+'.Cd')
+        self.d  = np.loadtxt(filename+'.data')
+        
+        # All done 
+        return 
+
+    def getGF(self,filename,fault):
+        '''
+        Read GF from file filename.gf
+        returns GF_SS and GF_DS
+        '''
+        GF = np.loadtxt(filename+'.gf')
+        n  = GF.shape[1]/2
+        assert n == len(fault.patch), 'Incompatible tsunami GF size'
+        GF_SS = GF[:,:n]
+        GF_DS = GF[:,n:]
+        print GF_SS.shape
+
+        #  All done 
+        return GF_SS, GF_DS
+
+    def buildsynth(self, faults, direction='sd'):
+        '''
+        Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
+        Args:
+            * faults        : list of faults to include.
+            * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
+        '''
+
+        Nd = len(self.d)
+        
+        # Clean synth
+        self.synth = np.zeros(self.d.shape)
+        
+        for fault in faults:
+            
+            # Get the good part of G
+            G = fault.G[self.name]
+            
+            if ('s' in direction) and ('strikeslip' in G.keys()):
+                Gs = G['strikeslip']
+                Ss = fault.slip[:,0]
+                self.synth += np.dot(Gs,Ss)
+            if ('d' in direction) and ('dipslip' in G.keys()):
+                Gd = G['dipslip']
+                Sd = fault.slip[:,1]
+                self.synth += np.dot(Gd, Sd)
+
+        # All done
+        return
+
+
+    def plot(self, nobs_per_trace, plot_synth=False):
+        '''
+        Plot tsunami traces
+        '''
+        plt.figure()
+        nsamp = nobs_per_trace
+        nstat = len(self.d)/nobs_per_trace
+        for i in range(nstat): 
+            data  = self.d[i*nsamp:nsamp*i+nsamp]
+            synth = self.synth[i*nsamp:nsamp*i+nsamp]
+            plt.subplot(2,nstat/2,i+1)
+            plt.plot(data,'k')
+            plt.plot(synth,'r')
+
+        # All done
+        return
