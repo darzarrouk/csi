@@ -40,28 +40,27 @@ class tsunami(SourceInv):
         # All done
         return
 
-    def readFromTxtFile(self,filename):
+    def readFromTxtFile(self,filename,factor=1.0):
         '''
         Read d, Cd from files filename.d filename.Cd 
         '''
 
-        self.Cd = np.loadtxt(filename+'.Cd')
-        self.d  = np.loadtxt(filename+'.data')
+        self.Cd = np.loadtxt(filename+'.Cd')*factor*factor
+        self.d  = np.loadtxt(filename+'.data')*factor
         
         # All done 
         return 
 
-    def getGF(self,filename,fault):
+    def getGF(self,filename,fault,factor=1.0):
         '''
         Read GF from file filename.gf
         returns GF_SS and GF_DS
         '''
-        GF = np.loadtxt(filename+'.gf')
+        GF = np.loadtxt(filename+'.gf')*factor
         n  = GF.shape[1]/2
         assert n == len(fault.patch), 'Incompatible tsunami GF size'
         GF_SS = GF[:,:n]
         GF_DS = GF[:,n:]
-        print GF_SS.shape
 
         #  All done 
         return GF_SS, GF_DS

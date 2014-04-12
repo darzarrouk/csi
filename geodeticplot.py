@@ -293,8 +293,11 @@ class geodeticplot(object):
                     x.append(fault.patchll[p][i][0])
                     y.append(fault.patchll[p][i][1])
                     z.append(-1.0*fault.patchll[p][i][2])
-            verts = [zip(x, y, z)]
-            rect = art3d.Poly3DCollection(verts)
+            #verts = [zip(x, y, z)] Doesn' work in py33
+            verts = []
+            for xi,yi,zi in zip(x,y,z):
+                verts.append((xi,yi,zi))            
+            rect = art3d.Poly3DCollection([verts])
             rect.set_color(scalarMap.to_rgba(slip[p]))
             rect.set_edgecolors('k')
             rect.set_linewidth(linewidth)
@@ -732,8 +735,11 @@ class geodeticplot(object):
                 # down left
                 x.append(insar.xycorner[i,0])
                 y.append(insar.xycorner[i,3])
-                verts = [zip(x, y)]
-                rect = colls.PolyCollection(verts)
+                #verts = zip(x, y) doesn' work in py33
+                verts = []
+                for xi,yi in zip(x,y):
+                    verts.append((xi,yi))
+                rect = colls.PolyCollection([verts])
                 rect.set_color(scalarMap.to_rgba(d[i]))
                 rect.set_edgecolors('k')
                 self.carte.add_collection(rect)

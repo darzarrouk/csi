@@ -12,7 +12,7 @@ import h5py
 
 # Personals
 from .SourceInv import SourceInv
-import okadafull as okada
+from . import okadafull as okada
 
 class stressfield(SourceInv):
 

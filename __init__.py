@@ -40,7 +40,7 @@ from .insartimeseries import insartimeseries
 #from .gpsstation import gpsstation
 
 ## Green's functions
-import okadafull
+from . import okadafull
 
 ## Metadata
 from .seismiclocations import seismiclocations

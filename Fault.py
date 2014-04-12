@@ -303,7 +303,7 @@ class Fault(SourceInv):
         return
 
 
-    def saveGFs(self, dtype='d', outputDir='.', suffix={'strikeslip':'SS','dipslip':'DS','tensile':'DS'}):
+    def saveGFs(self, dtype='d', outputDir='.', suffix={'strikeslip':'SS','dipslip':'DS','tensile':'TS'}):
         '''
         Saves the Green's functions in different files
         Args:
@@ -528,9 +528,7 @@ class Fault(SourceInv):
                     self.d[data.name] = data.vel_enu.T.flatten()
                 else:
                     self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
-                print data.name,'before ',self.d[data.name].shape
                 self.d[data.name]=self.d[data.name][-np.isnan(self.d[data.name])]
-                print data.name,'after ',self.d[data.name].shape
             elif data.dtype is 'cosicorrrates':
                 self.d[data.name] = np.hstack((data.east.T.flatten(), 
                                                data.north.T.flatten()))
@@ -793,7 +791,7 @@ class Fault(SourceInv):
             ec = 0
             for sp in sliplist:
                 Glocal[:,ec:ec+self.N_slip] = self.G[data.name][sp]
-                print data.name
+                print(data.name)
                 ec += self.N_slip
 
             # Put Glocal into the big G

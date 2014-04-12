@@ -18,7 +18,7 @@ import os
 # Personals
 from .Fault import Fault
 from .stressfield import stressfield
-import okadafull
+from . import okadafull
 
 class RectangularPatches(Fault):
     
@@ -648,7 +648,6 @@ class RectangularPatches(Fault):
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
         '''
-
         # Write something
         print('Writing geometry to file {}'.format(filename))
 
@@ -869,7 +868,6 @@ class RectangularPatches(Fault):
             xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True) 
             # Get the slip vector
             slip = self.getslip(self.patch[p]) 
-            print slip
             rake = np.arctan2(slip[1],slip[0])
 
             # Compute the vector
@@ -1810,8 +1808,9 @@ class RectangularPatches(Fault):
             p1,p2,p3,p4 = p
             self.patch.append(p)
             self.patchll.append(pll)            
-            self.z_patches.append(z1)
-
+            self.z_patches.append(z1)            
+            
+            
         # Close the files
         flld.close()
         self.equivpatch   = self.patch
