@@ -182,8 +182,8 @@ class imagedownsampling(object):
 
         # Over each block, we average the position and the phase to have a new point
         for i in range(len(blocks)):
-            #sys.stdout.write('\r Downsampling {}/{} '.format(i, len(blocks)))
-            #sys.stdout.flush()
+            sys.stdout.write('\r Downsampling {}/{} '.format(i, len(blocks)))
+            sys.stdout.flush()
             # Get block
             block = blocks[i]
             # Create a path
