@@ -35,7 +35,11 @@ class tsunami(SourceInv):
         self.dtype = dtype
         
         # Data
-        self.d = []
+        self.d   = []
+        self.Cd  = None
+        self.sta = None
+
+        self.G = None
 
         # All done
         return
@@ -47,6 +51,7 @@ class tsunami(SourceInv):
 
         self.Cd = np.loadtxt(filename+'.Cd')*factor*factor
         self.d  = np.loadtxt(filename+'.data')*factor
+        self.sta = open(filename+'.id').readlines()
         
         # All done 
         return 
@@ -109,6 +114,11 @@ class tsunami(SourceInv):
             plt.subplot(2,nstat/2,i+1)
             plt.plot(data,'k')
             plt.plot(synth,'r')
+            plt.title(self.sta[i])
+            if not i%2:
+                plt.ylabel('Water height, m')
+            if i>=nstat/2:
+                plt.xlabel('Time since arrival, min')
 
         # All done
         return
