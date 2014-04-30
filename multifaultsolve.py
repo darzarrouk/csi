@@ -14,11 +14,11 @@ import pyproj as pp
 import matplotlib.pyplot as plt
 
 class multifaultsolve(object):
-        
+
     def __init__(self, name, faults):
         '''
         Class initialization routine.
-        
+
         Args:
             * name          : Name of the project.
             * faults        : List of faults from verticalfault.
@@ -61,7 +61,7 @@ class multifaultsolve(object):
                 print("Data vectors are not consistent, please re-consider your data in fault structure {}".format(fault.name))
                 return
 
-        # Check that the data covariance matrix is the same 
+        # Check that the data covariance matrix is the same
         self.Cd = faults[0].Cd
         for fault in faults:
             if (fault.Cd != self.Cd).all():
@@ -74,9 +74,14 @@ class multifaultsolve(object):
         # Store an array of the patch areas
         patchAreas = []
         for fault in faults:
-            fault.computeArea()
-            for patchIndex in range(len(fault.patch)):
-                patchAreas.append(fault.area[patchIndex])
+            if fault.patchType == 'triangletent':
+                fault.computeTentArea()
+                for vertIndex in range(fault.numvert):
+                    patchAreas.append(fault.area_tent[vertIndex])
+            else:
+                fault.computeArea()
+                for patchIndex in range(len(fault.patch)):
+                    patchAreas.append(fault.area[patchIndex])
         self.patchAreas = np.array(patchAreas)
 
         # All done
@@ -142,7 +147,7 @@ class multifaultsolve(object):
 
         # All done
         return s
-            
+
 
     def describeParams(self, faults):
         '''
@@ -153,12 +158,12 @@ class multifaultsolve(object):
         print('          Fault Name          ||   Strike Slip   ||   Dip Slip   ||   Tensile   ||   Orbits   ')
 
         # initialize the counters
-        ns = 0 
+        ns = 0
         ne = 0
 
         # Loop over the faults
         for fault in faults:
-            
+
             # Where does this fault starts
             nfs = copy.deepcopy(ns)
 
@@ -190,7 +195,7 @@ class multifaultsolve(object):
                 ns += no
             else:
                 op = 'None'
-            
+
             # print things
             print('{:30s}||{:17s}||{:14s}||{:13s}||{:12s}'.format(fault.name, ss, ds, ts, op))
 
@@ -206,20 +211,20 @@ class multifaultsolve(object):
         faults = self.faults
 
         # Get the size of Cm
-        Np = 0                                                                            
+        Np = 0
         st = []
         se = []
         if self.fault_indexes is None:
             self.fault_indexes = {}
         for fault in faults:
-            st.append(Np)                                                                 
+            st.append(Np)
             Np += fault.Gassembled.shape[1]
-            se.append(Np) 
+            se.append(Np)
             self.fault_indexes[fault.name] = [st[-1], se[-1]]
 
         # Allocate Cm
         self.Cm = np.zeros((Np, Np))
-        
+
         # Store the guys
         for fault in faults:
             st = self.fault_indexes[fault.name][0]
@@ -233,10 +238,10 @@ class multifaultsolve(object):
         return
 
     def affectIndexParameters(self, fault):
-        ''' 
+        '''
         Build the index parameter for a fault.
         '''
- 
+
         # Get indexes
         st = self.fault_indexes[fault.name][0]
         se = self.fault_indexes[fault.name][1]
@@ -253,8 +258,8 @@ class multifaultsolve(object):
         if 'u' in fault.slipdir:
             fault.index_parameter[:,2] = range(st, st+fault.slip.shape[0])
 
-        # All done 
-        return 
+        # All done
+        return
 
     def distributem(self, verbose=False):
         '''
@@ -267,7 +272,7 @@ class multifaultsolve(object):
         # Loop over the faults
         for fault in faults:
 
-            if verbose:            
+            if verbose:
                 print("Distribute the slip values to fault {}".format(fault.name))
 
             # Store the mpost
@@ -356,7 +361,7 @@ class multifaultsolve(object):
 
         # All done
         return
-    
+
     def SimpleLeastSquareSoln(self):
         '''
         Solves the simple least square problem:
@@ -367,7 +372,7 @@ class multifaultsolve(object):
 
         # Import things
         import scipy.linalg as scilin
-        
+
         # Print
         print ("---------------------------------")
         print ("---------------------------------")
@@ -377,19 +382,19 @@ class multifaultsolve(object):
         G = self.G
         d = self.d
 
-        # Copmute 
+        # Copmute
         mpost = np.dot( np.dot( scilin.inv(np.dot( G.T, G )), G.T ), d)
- 
+
         # Store mpost
         self.mpost = mpost
 
         # All done
-        return       
-    
+        return
+
     def UnregularizedLeastSquareSoln(self, mprior=None):
-        ''' 
+        '''
         Solves the unregularized generalized least-square problem using the following formula (Tarantolla, 2005, "Inverse Problem Theory", SIAM):
-        
+
             m_post = m_prior + (G.T * Cd-1 * G)-1 * G.T * Cd-1 * (d - G*m_prior)
 
         Args:
@@ -398,7 +403,7 @@ class multifaultsolve(object):
 
         '''
 
-        # Assert 
+        # Assert
         assert self.ready, 'You need to assemble the GFs'
 
         # Import things
@@ -444,21 +449,21 @@ class multifaultsolve(object):
         return
 
     def GeneralizedLeastSquareSoln(self, mprior=None, rcond=None):
-        ''' 
+        '''
         Solves the generalized least-square problem using the following formula (Tarantolla, 2005, "Inverse Problem Theory", SIAM):
-        
+
             m_post = m_prior + (G.T * Cd-1 * G + Cm-1)-1 * G.T * Cd-1 * (d - G*m_prior)
 
         Args:
             * mprior        : A Priori model. If None, then mprior = np.zeros((Nm,)).
         '''
 
-        # Assert 
+        # Assert
         assert self.ready, 'You need to assemble the GFs'
 
         # Import things
         import scipy.linalg as scilin
-        
+
         # Print
         print ("---------------------------------")
         print ("---------------------------------")
@@ -471,7 +476,7 @@ class multifaultsolve(object):
         Cm = self.Cm
 
         # Get the number of model parameters
-        Nm = Cm.shape[0]       
+        Nm = Cm.shape[0]
 
         # Check If Cm is symmetric and positive definite
         if (Cm.transpose() != Cm).all():
@@ -513,9 +518,9 @@ class multifaultsolve(object):
 
     def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10., bounds=None,
                                    method='SLSQP', rcond=None):
-        """ 
+        """
         Solves the least squares problem:
-    
+
             min (d - G*m).T * Cd-1 * (d - G*m) + m.T * Cm-1 * m
             subject to:
                 Mw <= Mw_bound
@@ -535,7 +540,7 @@ class multifaultsolve(object):
 
         # Check the provided method is valid
         assert method == 'SLSQP' or method == 'COBYLA', 'unsupported minimizing method'
-        
+
         # Print
         print ("---------------------------------")
         print ("---------------------------------")
@@ -624,7 +629,7 @@ class multifaultsolve(object):
         '''
         Writes the solution to a file.
         '''
-    
+
         # Check
         assert (hasattr(self, 'mpost')), 'Compute mpost first, you idiot...'
 
@@ -637,7 +642,7 @@ class multifaultsolve(object):
         # Loop over mpost
         for i in range(self.mpost.shape[0]):
             fout.write('{:3d} {} 0.0000 \n'.format(i, self.mpost[i]))
-    
+
         # Close file
         fout.close()
 
@@ -651,7 +656,7 @@ class multifaultsolve(object):
 
         self.mpost.tofile(outfile)
 
-        # all done 
+        # all done
         return
 
     def writeGFs2BinaryFile(self, outfile='GF.dat', dtype='f'):
@@ -664,7 +669,7 @@ class multifaultsolve(object):
 
         # Assert
         assert self.ready, 'You need to assemble the GFs'
-        
+
         # data type
         if dtype in ('f', 'float'):
             dtype = np.float32
@@ -697,13 +702,13 @@ class multifaultsolve(object):
 
         # Assert
         assert self.ready, 'You need to assemble the GFs'
-        
+
         # data type
         if dtype in ('f', 'float'):
             dtype = np.float32
         elif dtype in ('d', 'double'):
             dtype = np.float64
-        
+
         # Convert the data
         d = self.d.astype(dtype)
 
@@ -730,7 +735,7 @@ class multifaultsolve(object):
 
         # Assert
         assert self.ready, 'You need to assemble the GFs'
-        
+
         # data type
         if dtype in ('f', 'float'):
             dtype = np.float32
@@ -756,10 +761,10 @@ class multifaultsolve(object):
         '''
         Runs Altar on the d = Gm problem with a Cd covariance matrix.
         Args:
-            * tasks         : Number of mpi tasks.                                        
-            * chains        : Number of chains.                                           
+            * tasks         : Number of mpi tasks.
+            * chains        : Number of chains.
             * steps         : Number of metropolis steps.
-            * support       : Upper and Lower bounds of the parameter exploration.        
+            * support       : Upper and Lower bounds of the parameter exploration.
         '''
 
         # Create the cfg and py file
@@ -776,7 +781,7 @@ class multifaultsolve(object):
     def writeAltarCfgFile(self, prefix='linearfullcov', tasks=2, chains=1024, steps=100, support=(-10, 10), minimumratio=0.000001):
         '''
         Writes a cfg and a py file to be used by altar.
-        Args:   
+        Args:
             * outfile       : Prefix of problem
             * tasks         : Number of mpi tasks.
             * chains        : Number of chains.
@@ -892,7 +897,7 @@ class multifaultsolve(object):
         return
 
 
-    def writePatchAreasFile(self, outfile='PatchAreas.dat', dtype='d', 
+    def writePatchAreasFile(self, outfile='PatchAreas.dat', dtype='d',
                             npadStart=None, npadEnd=None):
         """
         Write a binary file for the patch areas to be read into altar.
