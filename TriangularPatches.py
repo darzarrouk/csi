@@ -170,7 +170,6 @@ class TriangularPatches(Fault):
         self.gocad_vertices = np.column_stack((vx, vy, vz))
         self.gocad_vertices_ll = vertices
         self.gocad_faces = faces
-        self.numvert = vertices.shape[0]
         print('min/max depth: {} km/ {} km'.format(vz.min(),vz.max()))
         print('min/max lat: {} deg/ {} deg'.format(vertices[:,1].min(),vertices[:,1].max()))
         print('min/max lon: {} deg/ {} deg'.format(vertices[:,0].min(),vertices[:,0].max()))
@@ -202,6 +201,10 @@ class TriangularPatches(Fault):
             self.top   = np.min(vz)
             self.depth = np.max(vz)
         self.z_patches = np.linspace(self.depth, 0.0, 5)
+
+        # All done
+        return
+
 
     def writeGocadPatches(self, filename, utm=False):
         """

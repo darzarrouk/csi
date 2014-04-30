@@ -76,8 +76,8 @@ class multifaultsolve(object):
         for fault in faults:
             if fault.patchType == 'triangletent':
                 fault.computeTentArea()
-                for vertIndex in range(fault.numvert):
-                    patchAreas.append(fault.area_tent[vertIndex])
+                for tentIndex in range(len(fault.tent)):
+                    patchAreas.append(fault.area_tent[tentIndex])
             else:
                 fault.computeArea()
                 for patchIndex in range(len(fault.patch)):
