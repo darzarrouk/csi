@@ -1,4 +1,4 @@
-''' 
+'''
 A class that deals with seismic or high-rate GPS data (not finished)
 
 Written by Z. Duputel, April 2013.
@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from .SourceInv import SourceInv
 
 class tsunami(SourceInv):
-    
+
     def __init__(self,name,dtype='tsunami',utmzone=None,ellps='WGS84'):
         '''
         Args:
@@ -28,12 +28,12 @@ class tsunami(SourceInv):
             * utmzone   : UTM zone  (optional, default=None)
             * ellps     : ellipsoid (optional, default='WGS84')
         '''
-        
-        super(self.__class__,self).__init__(name,utmzone,ellps) 
 
-        # Initialize the data set 
+        super(self.__class__,self).__init__(name,utmzone,ellps)
+
+        # Initialize the data set
         self.dtype = dtype
-        
+
         # Data
         self.d   = []
         self.Cd  = None
@@ -46,15 +46,15 @@ class tsunami(SourceInv):
 
     def readFromTxtFile(self,filename,factor=1.0):
         '''
-        Read d, Cd from files filename.d filename.Cd 
+        Read d, Cd from files filename.d filename.Cd
         '''
 
         self.Cd = np.loadtxt(filename+'.Cd')*factor*factor
         self.d  = np.loadtxt(filename+'.data')*factor
         self.sta = open(filename+'.id').readlines()
-        
-        # All done 
-        return 
+
+        # All done
+        return
 
     def getGF(self,filename,fault,factor=1.0):
         '''
@@ -63,11 +63,11 @@ class tsunami(SourceInv):
         '''
         GF = np.loadtxt(filename+'.gf')*factor
         n  = GF.shape[1]/2
-        assert n == len(fault.patch), 'Incompatible tsunami GF size'
+        assert n == len(fault.slip), 'Incompatible tsunami GF size'
         GF_SS = GF[:,:n]
         GF_DS = GF[:,n:]
 
-        #  All done 
+        #  All done
         return GF_SS, GF_DS
 
     def buildsynth(self, faults, direction='sd'):
@@ -79,15 +79,15 @@ class tsunami(SourceInv):
         '''
 
         Nd = len(self.d)
-        
+
         # Clean synth
         self.synth = np.zeros(self.d.shape)
-        
+
         for fault in faults:
-            
+
             # Get the good part of G
             G = fault.G[self.name]
-            
+
             if ('s' in direction) and ('strikeslip' in G.keys()):
                 Gs = G['strikeslip']
                 Ss = fault.slip[:,0]
@@ -108,7 +108,7 @@ class tsunami(SourceInv):
         plt.figure()
         nsamp = nobs_per_trace
         nstat = len(self.d)/nobs_per_trace
-        for i in range(nstat): 
+        for i in range(nstat):
             data  = self.d[i*nsamp:nsamp*i+nsamp]
             synth = self.synth[i*nsamp:nsamp*i+nsamp]
             plt.subplot(2,nstat/2,i+1)

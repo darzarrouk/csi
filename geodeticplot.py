@@ -59,8 +59,8 @@ class geodeticplot(object):
         self.ref  = ref
 
     def show(self, mapaxis='equal', triDaxis='auto', Faille=True, Carte=True):
-        ''' 
-        Show to screen 
+        '''
+        Show to screen
         '''
 
         # Change axis of the map
@@ -164,8 +164,8 @@ class geodeticplot(object):
         #for direction in (-1, 1):
         #    for point in np.diag(direction * max_range * np.array([1,1,1])):
         #        self.faille.plot([point[0]+x0], [point[1]+y0], [point[2]+z0], 'w')
-        
-        return 
+
+        return
 
     def set_xymap(self, xlim, ylim):
         '''
@@ -183,7 +183,7 @@ class geodeticplot(object):
         Args:
             * fault         : Fault class from verticalfault.
             * color         : Color of the fault.
-            * add           : plot the faults in fault.addfaults    
+            * add           : plot the faults in fault.addfaults
         '''
 
         # Plot the added faults before
@@ -211,7 +211,7 @@ class geodeticplot(object):
         else:
             if self.faille_flag:
                 self.faille.plot(fault.lon, fault.lat, '-{}'.format(color), linewidth=2)
-            if self.carte_flag:                
+            if self.carte_flag:
                 self.carte.plot(fault.lon, fault.lat, '-{}'.format(color), linewidth=2)
 
         # All done
@@ -234,7 +234,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True, 
+    def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True,
                      plot_on_2d=False, revmap=False, linewidth=1.0):
         '''
         Args:
@@ -296,7 +296,7 @@ class geodeticplot(object):
             #verts = [zip(x, y, z)] Doesn' work in py33
             verts = []
             for xi,yi,zi in zip(x,y,z):
-                verts.append((xi,yi,zi))            
+                verts.append((xi,yi,zi))
             rect = art3d.Poly3DCollection([verts])
             rect.set_color(scalarMap.to_rgba(slip[p]))
             rect.set_edgecolors('k')
@@ -321,7 +321,7 @@ class geodeticplot(object):
                 self.carte.plot([x1, x2, x3, x4,x1], [y1, y2, y3, y4,y1], '-k', linewidth=1)
                 self.carte.plot([(x1+x3)/2.], [(y1+y3)/2.], '.r', markersize=5)
 
-        # put up a colorbar        
+        # put up a colorbar
         if colorbar:
             scalarMap.set_array(slip)
             self.fig1.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
@@ -350,7 +350,18 @@ class geodeticplot(object):
                 zticks.append(-1.0*z)
         self.faille.set_zticks(zticks)
         self.faille.set_zticklabels(zticklabels)
-        
+
+        # All done
+        return
+
+    def setview(self, elev=30.0, azim=180.0):
+        '''
+        Set the 3D view direction
+        Args:
+            * elevation : in degree, angle from horizontal plane, positive looking downwards
+            * azimuth   : in degree, 0 for North-to-South direction
+        '''
+        self.faille.view_init(elev=elev, azim=azim)
         # All done
         return
 
@@ -365,7 +376,7 @@ class geodeticplot(object):
             * Norm          : Scales the color bar.
             * colorbar      : if true, plots a colorbar
         '''
-        
+
         # Get values
         if component.__class__ is str:
             if component in ('normal'):
@@ -399,7 +410,7 @@ class geodeticplot(object):
 
         # colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')   
+            self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
 
         # All don
         return
@@ -428,12 +439,12 @@ class geodeticplot(object):
                 q = self.carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
 
             # If there is some synthetics
-            if gps.synth is not None:                                                        
-                if self.ref is 'utm':                                                              
-                    p = self.carte.quiver(gps.x, gps.y, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)   
+            if gps.synth is not None:
+                if self.ref is 'utm':
+                    p = self.carte.quiver(gps.x, gps.y, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)
                     q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
-                else:                                                                         
-                    p = self.carte.quiver(gps.lon, gps.lat, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)  
+                else:
+                    p = self.carte.quiver(gps.lon, gps.lat, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)
                     q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
         elif data is 'res':
             if self.ref is 'utm':
@@ -447,10 +458,10 @@ class geodeticplot(object):
             # If there is some synthetics
             if gps.synth is not None:
                 if self.ref is 'utm':
-                    p = self.carte.quiver(gps.x, gps.y, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)   
+                    p = self.carte.quiver(gps.x, gps.y, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)
                     q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
-                else:                                                                         
-                    p = self.carte.quiver(gps.lon, gps.lat, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)  
+                else:
+                    p = self.carte.quiver(gps.lon, gps.lat, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)
                     q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
 
         # Plot the name of the stations if asked
@@ -577,7 +588,7 @@ class geodeticplot(object):
         return
 
     def earthquakes(self, earthquakes, plot='2d3d', color='k', markersize=5, norm=None, colorbar=False):
-        ''' 
+        '''
         Args:
             * earthquakes   : object from seismic locations.
             * plot          : any combination of 2d and 3d.
@@ -625,7 +636,7 @@ class geodeticplot(object):
 
             if colorbar:
                 self.fig1.colorbar(sc, shrink=0.6, orientation='horizontal')
-         
+
         # All done
         return
 
@@ -680,7 +691,7 @@ class geodeticplot(object):
 
     def insar_decimate(self, insar, norm=None, colorbar=True, data='data',
                        plotType='rect', gmtCmap=None):
-        ''' 
+        '''
         Args:
             * insar     : insar object from insarrates.
             * norm      : lower and upper bound of the colorbar.
@@ -713,7 +724,7 @@ class geodeticplot(object):
                 import basemap_utils as bu
                 cmap = bu.gmtColormap(gmtCmap)
             except ImportError:
-                cmap = plt.get_cmap('jet') 
+                cmap = plt.get_cmap('jet')
         else:
             cmap = plt.get_cmap('jet')
         cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
@@ -743,7 +754,7 @@ class geodeticplot(object):
                 rect.set_color(scalarMap.to_rgba(d[i]))
                 rect.set_edgecolors('k')
                 self.carte.add_collection(rect)
-            
+
         elif plotType is 'scatter':
             for i in range(insar.x.size):
                 color = scalarMap.to_rgba(d[i])
@@ -762,7 +773,7 @@ class geodeticplot(object):
 
     def cosicorr_decimate(self, corr, norm=None, colorbar=True, data='dataEast',
                           plotType='rect', gmtCmap=None, decimate=None):
-        ''' 
+        '''
         Args:
             * insar     : insar object from insarrates.
             * norm      : lower and upper bound of the colorbar.
@@ -803,7 +814,7 @@ class geodeticplot(object):
                 import basemap_utils as bu
                 cmap = bu.gmtColormap(gmtCmap)
             except ImportError:
-                cmap = plt.get_cmap('jet') 
+                cmap = plt.get_cmap('jet')
         else:
             cmap = plt.get_cmap('jet')
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
@@ -830,7 +841,7 @@ class geodeticplot(object):
                 rect.set_color(scalarMap.to_rgba(d[i]))
                 rect.set_edgecolors('k')
                 self.carte.add_collection(rect)
-            
+
         elif plotType is 'scatter':
             if decimate != None:
                 self.carte.scatter(corr.x[::decimate], corr.y[::decimate], s=10., c=d[::decimate], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
@@ -869,5 +880,5 @@ class geodeticplot(object):
 
         # All done
         return
-            
+
 

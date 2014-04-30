@@ -1,5 +1,5 @@
-''' 
-Init file for StaticInv 
+'''
+Init file for StaticInv
 
 Written by R. Jolivet, April 2013.
 '''
@@ -11,6 +11,7 @@ from .SourceInv import SourceInv
 from .Fault import Fault
 from .RectangularPatches    import RectangularPatches
 from .TriangularPatches     import TriangularPatches
+from .TriangularTents       import TriangularTents
 
 # Secondary
 ## Static Faults

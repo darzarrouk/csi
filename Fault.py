@@ -20,7 +20,7 @@ from .SourceInv import SourceInv
 
 
 class Fault(SourceInv):
-    
+
     def __init__(self, name, utmzone=None, ellps='WGS84'):
         '''
         Args:
@@ -36,7 +36,7 @@ class Fault(SourceInv):
         print ("---------------------------------")
         print ("---------------------------------")
         print ("Initializing fault {}".format(self.name))
-        
+
         # Specify the type of patch
         self.patchType = None
 
@@ -51,40 +51,40 @@ class Fault(SourceInv):
         self.yi   = None
         self.loni = None # regularly spaced coordinates (geographical)
         self.lati = None
-        
+
         # Allocate depth attributes
         self.top = None             # Depth of the top of the fault
         self.depth = None           # Depth of the bottom of the fault
-        
+
         # Allocate patches
         self.patch     = None
         self.slip      = None
         self.N_slip    = None # This will be the number of slip values
         self.totalslip = None
         self.Cm        = None
-        
+
         # Create a dictionnary for the polysol
         self.polysol = {}
-        
+
         # Create a dictionary for the Green's functions and the data vector
         self.G = {}
         self.d = {}
-        
+
         # Create structure to store the GFs and the assembled d vector
         self.Gassembled = None
         self.dassembled = None
-        
+
         # Adjacency map for the patches
         self.adjacencyMap = None
-        
+
         # All done
         return
-        
+
     def duplicateFault(self):
         '''
         Returns a copy of the fault.
         '''
-        
+
         return copy.deepcopy(self)
 
     def initializeslip(self, n=None):
@@ -93,7 +93,7 @@ class Fault(SourceInv):
         Args:
             * n     : Number of slip values. If None, it'll take the number of patches.
         '''
-        
+
         if n is None:
            self.N_slip = len(self.patch)
         else:
@@ -112,7 +112,7 @@ class Fault(SourceInv):
             * filename      : Name of the fault file (GMT lon lat format).
         '''
 
-        # Allocate a list 
+        # Allocate a list
         self.addfaults = []
 
         # Read the file
@@ -136,28 +136,28 @@ class Fault(SourceInv):
         for fault in self.addfaults:
             x,y = self.ll2xy(fault[:,0], fault[:,1])
             self.addfaultsxy.append([x,y])
-        
+
         # All done
         return
 
 
     def trace2xy(self):
-        ''' 
+        '''
         Transpose the fault trace lat/lon into the UTM reference.
         '''
 
-        # do it 
+        # do it
         self.xf, self.yf = self.ll2xy(self.lon, self.lat)
 
         # All done
         return
 
     def trace2ll(self):
-        ''' 
+        '''
         Transpose the fault trace UTM coordinates into lat/lon.
         '''
 
-        # do it 
+        # do it
         self.lon, self.lat = self.ll2xy(self.xf, self.yf)
 
         # All done
@@ -168,7 +168,7 @@ class Fault(SourceInv):
         '''
         Set Trace from patches (assuming positive depth)
         Arg:
-            * delta_depth: The trace is made of all patch vertices at a depth smaller 
+            * delta_depth: The trace is made of all patch vertices at a depth smaller
                            than fault_top+trace_delta_depth
         '''
         self.xf = []
@@ -190,7 +190,7 @@ class Fault(SourceInv):
         return
 
     def trace(self, x, y, utm=False):
-        ''' 
+        '''
         Set the surface fault trace from Lat/Lon or UTM coordinates
 
         Args:
@@ -236,8 +236,8 @@ class Fault(SourceInv):
         for i in range(len(A)):
             x.append(np.float(A[i].split()[0]))
             y.append(np.float(A[i].split()[1]))
-            
-        # Create the trace 
+
+        # Create the trace
         self.trace(x, y, utm)
 
         # All done
@@ -265,7 +265,7 @@ class Fault(SourceInv):
         '''
         Returns the slip vector for a patch.
         '''
-            
+
         # Get patch index
         io = self.getindex(p)
 
@@ -289,10 +289,10 @@ class Fault(SourceInv):
             x = self.lon
             y = self.lat
 
-        # Open file 
+        # Open file
         fout = open(filename, 'w')
 
-        # Write 
+        # Write
         for i in range(x.shape[0]):
             fout.write('{} {} \n'.format(x[i], y[i]))
 
@@ -316,18 +316,18 @@ class Fault(SourceInv):
         print('Writing Greens functions to file for fault {}'.format(self.name))
 
         # Loop over the keys in self.G
-        for data in self.G.keys(): 
+        for data in self.G.keys():
 
             # Get the Green's function
             G = self.G[data]
 
-            # Create one file for each slip componenets 
+            # Create one file for each slip componenets
             for c in G.keys():
                 g = G[c].flatten()
                 filename = '{}_{}_{}.gf'.format(self.name, data, suffix[c])
                 g = g.astype(dtype)
                 g.tofile(os.path.join(outputDir, filename))
- 
+
        # All done
         return
 
@@ -338,37 +338,37 @@ class Fault(SourceInv):
         Args:
             * dtype       : Format of the binary data saved.
             * outputDir   : Directory to save binary data.
-        '''        
-        
+        '''
+
         # Print stuff
         print('Writing Greens functions to file for fault {}'.format(self.name))
-        
+
         # Loop over the data names in self.d
-        for data in self.d.keys(): 
-            
+        for data in self.d.keys():
+
             # Get data
             D = self.d[data]
-            
-            # Write data file 
+
+            # Write data file
             filename = '{}_{}.data'.format(self.name, data)
             D.tofile(os.path.join(outputDir, filename))
-           
+
         # All done
         return
 
 
-    def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None, 
+    def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None,
                        vertical=False, dtype='d'):
         '''
-        Sets the Green's functions from binary files. Be carefull, these have to be in the 
-        good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and 
+        Sets the Green's functions from binary files. Be carefull, these have to be in the
+        good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and
         if insar, GF are projected already)
         Args:
             * data          : Data structure from gpsrates or insarrates.
             * strikeslip    : File containing the Green's functions for strikeslip displacements.
             * dipslip       : File containing the Green's functions for dipslip displacements.
             * tensile       : File containing the Green's functions for tensile displacements.
-            * vertical      : Deal with the UP component (gps: default is false, 
+            * vertical      : Deal with the UP component (gps: default is false,
                               insar: it will be true anyway).
             * dtype         : Type of binary data.
         '''
@@ -401,12 +401,12 @@ class Fault(SourceInv):
 
         # Cut the Matrices following what data do we have and set the GFs
         if datatype is 'gpsrates':
-         
+
             # Initialize
             GssE = None; GdsE = None; GtsE = None
             GssN = None; GdsN = None; GtsN = None
             GssU = None; GdsU = None; GtsU = None
-            
+
             # Check components
             east  = False
             north = False
@@ -416,11 +416,11 @@ class Fault(SourceInv):
                 north = True
             if vertical and np.isnan(data.vel_enu[:,2]).any():
                 raise ValueError('vertical can only be true if all stations have vertical components')
-            
+
             # Get the values
             if strikeslip is not None:
                 N = 0
-                if east:                    
+                if east:
                     GssE = Gss[range(0,data.vel_enu.shape[0]),:]
                     N += data.vel_enu.shape[0]
                 if north:
@@ -442,14 +442,14 @@ class Fault(SourceInv):
                 if east:
                     GtsE = Gts[range(0,data.vel_enu.shape[0]),:]
                     N += data.vel_enu.shape[0]
-                if north:                    
+                if north:
                     GtsN = Gts[range(N,N+data.vel_enu.shape[0]),:]
                     N += data.vel_enu.shape[0]
                 if vertical:
                     GtsU = Gts[range(N,N+data.vel_enu.shape[0]),:]
 
             # set the GFs
-            self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU], 
+            self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU],
                         tensile=[GtsE, GtsN, GtsU], vertical=vertical)
 
         elif datatype is 'insarrates':
@@ -458,7 +458,7 @@ class Fault(SourceInv):
             GssLOS = None; GdsLOS = None; GtsLOS = None
 
             # Get the values
-            if strikeslip is not None: 
+            if strikeslip is not None:
                 GssLOS = Gss
             if dipslip is not None:
                 GdsLOS = Gds
@@ -466,7 +466,7 @@ class Fault(SourceInv):
                 GtsLOS = Gts
 
             # set the GFs
-            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS], 
+            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS],
                         vertical=True)
 
         elif datatype is 'cosicorrrates':
@@ -475,10 +475,10 @@ class Fault(SourceInv):
             self.setGFs(data, strikeslip=[Gss], dipslip=[Gds], tensile=[Gts], vertical=vertical)
 
         # all done
-        return    
+        return
 
 
-    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None], 
+    def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None],
                tensile=[None, None, None], vertical=False, synthetic=False):
         '''
         Stores the input Green's functions matrices into the fault structure.
@@ -504,7 +504,7 @@ class Fault(SourceInv):
                 if np.isnan(data.vel_enu[:,2]).any():
                     raise ValueError('Vertical can only be true if all stations have vertical components')
                 data.obs_per_station += 1
-            
+
         elif data.dtype is 'cosicorrrates':
             data.obs_per_station = 2
             if vertical:
@@ -530,7 +530,7 @@ class Fault(SourceInv):
                     self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
                 self.d[data.name]=self.d[data.name][-np.isnan(self.d[data.name])]
             elif data.dtype is 'cosicorrrates':
-                self.d[data.name] = np.hstack((data.east.T.flatten(), 
+                self.d[data.name] = np.hstack((data.east.T.flatten(),
                                                data.north.T.flatten()))
                 if vertical:
                     self.d[data.name] = np.hstack((self.d[data.name],
@@ -544,7 +544,7 @@ class Fault(SourceInv):
             U_ss = strikeslip[2]
             ss = []
             nd = 0
-            if (E_ss is not None) and (N_ss is not None): 
+            if (E_ss is not None) and (N_ss is not None):
                 d = E_ss.shape[0]
                 m = E_ss.shape[1]
                 ss.append(E_ss)
@@ -560,7 +560,7 @@ class Fault(SourceInv):
                 ss = ss.reshape((nd*d, m))
                 G['strikeslip'] = ss
 
-        elif len(strikeslip) == 1:          # InSAR/Tsunami case 
+        elif len(strikeslip) == 1:          # InSAR/Tsunami case
 
             Green_ss = strikeslip[0]
             if Green_ss is not None:
@@ -573,7 +573,7 @@ class Fault(SourceInv):
             U_ds = dipslip[2]
             ds = []
             nd = 0
-            if (E_ds is not None) and (N_ds is not None): 
+            if (E_ds is not None) and (N_ds is not None):
                 d = E_ds.shape[0]
                 m = E_ds.shape[1]
                 ds.append(E_ds)
@@ -588,7 +588,7 @@ class Fault(SourceInv):
                 ds = np.array(ds)
                 ds = ds.reshape((nd*d, m))
                 G['dipslip'] = ds
-        
+
         elif len(dipslip) == 1:             # InSAR/Tsunami case
 
             Green_ds = dipslip[0]
@@ -603,7 +603,7 @@ class Fault(SourceInv):
             U_ts = tensile[2]
             ts = []
             nd = 0
-            if (E_ts is not None) and (N_ts is not None): 
+            if (E_ts is not None) and (N_ts is not None):
                 d = E_ts.shape[0]
                 m = E_ts.shape[1]
                 ts.append(E_ts)
@@ -629,7 +629,7 @@ class Fault(SourceInv):
 
 
     def assembled(self, datas):
-        ''' 
+        '''
         Assembles the data vector corresponding to the stored green's functions.
         Args:
             * datas         : list of the data object involved (from gpsrates and insarrates).
@@ -682,9 +682,9 @@ class Fault(SourceInv):
                               1 -> estimate a constant offset
                               3 -> estimate z = ax + by + c
                               4 -> estimate z = axy + bx + cy + d
-                              'full' -> For GPS, estimates a rotation, translation and scaling 
+                              'full' -> For GPS, estimates a rotation, translation and scaling
                               with respect to the center of the network (Helmert transform).
-                              'strain' -> For GPS, estimate the full strain tensor (Rotation 
+                              'strain' -> For GPS, estimate the full strain tensor (Rotation
                               + Translation + Internal strain)
             * slipdir       : directions of slip to include. can be any combination of s,d,t.
         '''
@@ -735,7 +735,7 @@ class Fault(SourceInv):
                 if data.obs_per_station==3:
                     Npo += 7                    # 3D Helmert transform is 7 parameters
                     self.helmert[data.name] = 7
-                else:   
+                else:
                     Npo += 4                    # 2D Helmert transform is 4 parameters
                     self.helmert[data.name] = 4
             elif self.poly[data.name] is 'strain':
@@ -786,7 +786,7 @@ class Fault(SourceInv):
             # Get the corresponding G
             Ndlocal = self.d[data.name].shape[0]
             Glocal = np.zeros((Ndlocal, Nps))
-            
+
             # Fill Glocal
             ec = 0
             for sp in sliplist:
@@ -907,7 +907,7 @@ class Fault(SourceInv):
                     polstart += nc
             # Update el to check where we are
             el = el + Ndlocal
-            
+
         # Store G in self
         self.Gassembled = G
 
@@ -956,7 +956,7 @@ class Fault(SourceInv):
         Args:
            * extra_params : a list of extra parameters.
         '''
-   
+
         # Get the number of slip directions
         slipdir = len(self.slipdir)
         if self.N_slip==None:
@@ -1040,7 +1040,7 @@ class Fault(SourceInv):
         Cmt = np.zeros((self.N_slip, self.N_slip))
         Cm = np.zeros((Np, Np))
 
-        # Loop over the patches                
+        # Loop over the patches
         if self.N_slip == len(self.patch):
             flag_patch = True
             vertices = None
