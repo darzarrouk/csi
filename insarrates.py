@@ -123,24 +123,28 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14, dtype=np.float32, remove_nan=True):
+    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14, dtype=np.float32, remove_nan=True, downsample=1):
         '''
         Read from binary file or from array.
         '''
 
         # Get the data
         if type(data) is str:
-            vel = np.fromfile(data, dtype=dtype)*factor + step
+            vel = np.fromfile(data, dtype=dtype)[::downsample]*factor + step
         else:
-            vel = data.flatten()*factor + step
+            vel = data.flatten()[::downsample]*factor + step
             
         # Get the lon
         if type(lon) is str:
-            lon = np.fromfile(lon, dtype=dtype)
+            lon = np.fromfile(lon, dtype=dtype)[::downsample]
+        else:
+            lon = lon[::downsample]
 
         # Get the lat
         if type(lat) is str:
-            lat = np.fromfile(lat, dtype=dtype)
+            lat = np.fromfile(lat, dtype=dtype)[::downsample]
+        else:
+            lat = lat[::downsample]
 
         # Check sizes
         assert vel.shape==lon.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)  
@@ -149,7 +153,7 @@ class insarrates(SourceInv):
         # Get the error
         if err is not None:
             if type(err) is str:
-                err = np.fromfile(err, dtype=dtype)
+                err = np.fromfile(err, dtype=dtype)[::downsample]
             err = err * factor
             assert vel.shape==err.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)
 
@@ -173,6 +177,7 @@ class insarrates(SourceInv):
 
         # Compute the LOS
         self.inchd2los(incidence, heading, origin='binary')
+        self.los = self.los[::downsample,:]
         self.los = self.los[iFinite,:]
 
         # compute x, y
