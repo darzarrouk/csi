@@ -167,6 +167,7 @@ class TriangularPatches(Fault):
         else:
             vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
         vz = vertices[:,2]*factor_depth
+        self.factor_depth = factor_depth
         self.gocad_vertices = np.column_stack((vx, vy, vz))
         self.gocad_vertices_ll = vertices
         self.gocad_faces = faces
@@ -1308,7 +1309,8 @@ class TriangularPatches(Fault):
         for v in range(self.gocad_vertices.shape[0]):
             xv,yv,zv = self.gocad_vertices[v,:]
             lonv,latv,zv2 = self.gocad_vertices_ll[v,:]
-            assert zv == zv2*1.0e-3, 'inconsistend depth in gocad_vertices and gocad_vertices_ll'
+            assert zv == zv2*self.factor_depth, \
+                'inconsistent depth in gocad_vertices and gocad_vertices_ll'
             if ref is not None:
                 xv -= refx
                 yv -= refy
