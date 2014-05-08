@@ -2,6 +2,7 @@
 A parent class that deals with piece-wise linear triangular fault discretization
 
 Written by Junle Jiang Apr, 2014
+
 '''
 
 # Externals
@@ -80,7 +81,7 @@ class TriangularTents(TriangularPatches):
 
         x, y, z = self.tent[u]
         strike, dip = 0, 0
-        nbr_faces = self.adjacencyMapVT[u]
+        nbr_faces = self.adjacencyMapVT[self.tentid[u]]
 
         for pid in nbr_faces:
             xc, yc, zc, w, l, stk, dp = self.getpatchgeometry(pid, center=True)
@@ -92,6 +93,100 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return x, y, z, strike, dip
+
+
+    def deleteTent(self, tent):
+        '''
+        Deletes a tent.
+        Args:
+            * tent     : index of the tent to remove.
+        '''
+
+        # Remove the patch
+        del self.tent[tent]
+        del self.tentll[tent]
+        del self.tentid[tent]
+
+        if self.N_slip!=None or self.N_slip==len(self.tent):
+            self.slip = np.delete(self.slip, tent, axis=0)
+            self.N_slip = len(self.slip)
+            self.numtent -= 1
+        else:
+            raise NotImplementedError('Only works for len(slip)==len(tent)', self.N_slip, len(self.slip), len(self.tent))
+
+        # All done
+        return
+
+
+    def deleteTents(self, tents):
+        '''
+        Deletes a list of tents.
+        '''
+
+        while len(tents)>0:
+
+            # Get index to delete
+            i = tents.pop()
+
+            # delete it
+            self.deleteTent(i)
+
+            # Upgrade list
+            for u in range(len(tents)):
+                if tents[u]>i:
+                    tents[u] -= 1
+
+        # All done
+        return
+
+
+    def addTent(self, tent, slip=[0, 0, 0]):
+        '''
+        Append a tent to the current list.
+        Args:
+            * tent      : tent to add
+            * slip      : List of the strike, dip and tensile slip.
+        '''
+
+        # append the patch
+        self.tent.append(tent)
+        z = tent[2]
+        lon, lat = self.xy2ll(tent[0], tent[1])
+        self.tentll.append([lon, lat, z])
+
+        # modify the slip
+        if self.N_slip!=None and self.N_slip==len(self.tent)-1:
+            sh = self.slip.shape
+            nl = sh[0] + 1
+            nc = 3
+            tmp = np.zeros((nl, nc))
+            if nl > 1:                      # Case where slip is empty
+                tmp[:nl-1,:] = self.slip
+            tmp[-1,:] = slip
+            self.slip = tmp
+            self.N_slip = len(self.slip)
+        else:
+            raise NotImplementedError('Only works for len(slip)==len(patch)')
+
+        # All done
+        return
+
+
+    def addTents(self, tents, slip=None):
+        '''
+        Adds a tent to the list.
+        Args:
+            * tents      : tent to add
+            * slip      : List of the strike, dip and tensile slip.
+        '''
+        if (slip is None) or (slip == [0, 0, 0]):
+            slip = np.zeros((len(tents),3))
+
+        for i in range(len(tents)):
+            self.addTent(tents[i], list(slip[i,:]))
+
+        # All done
+        return
 
 
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
@@ -266,7 +361,8 @@ class TriangularTents(TriangularPatches):
 
         areas = np.array(self.area)
         # Loop over vertices
-        for vid in range(self.numtent):
+        for i in range(self.numtent):
+            vid = self.tentid[i]
 
             # find the triangle neighbors for each vertex
             nbr_triangles = self.adjacencyMapVT[vid]
@@ -292,6 +388,7 @@ class TriangularTents(TriangularPatches):
         self.patchll = []
         self.tent   = []
         self.tentll = []
+        self.tentid   = []
 
         # Factor to correct input negative depths (we want depths to be positive)
         if neg_depth:
@@ -363,6 +460,7 @@ class TriangularTents(TriangularPatches):
             # Store the patch
             self.tent.append(p)
             self.tentll.append(pll)
+            self.tentid.append(i)
 
         # Update the depth of the bottom of the fault
         if neg_depth:
