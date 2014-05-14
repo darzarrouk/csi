@@ -1,5 +1,6 @@
 '''
 A class that deals with seismic catalogs.
+This class can also deal with moment tensors.
 
 Written by R. Jolivet, April 2013.
 '''
@@ -243,6 +244,101 @@ class seismiclocations(SourceInv):
         # All done
         return
 
+    def read_CMTSolutions(self, infile):
+        '''
+        Reads data and moment tensors from an ascii file listing CMT solutions format
+        Args:
+            infile: Input file.
+        '''
+
+        # open the file
+        fin = open(infile, 'r')
+
+        # Read all
+        All = fin.readlines()
+
+        # Initialize things
+        self.time = []
+        self.lon = []
+        self.lat = []
+        self.depth = []
+        self.mag = []
+        self.CMTinfo = []
+
+        # Initialize counter
+        i = 0
+
+        # Loop over the lines
+        while i<len(All):
+            
+            # split the line
+            line = All[i].split()
+
+            # Check if line is empty
+            if len(line)>0:
+            
+                # Check the first character
+                if line[0][0] in ('P'):
+                
+                    # Time
+                    yr = np.int(line[0][4:])
+                    mo = np.int(line[1])
+                    da = np.int(line[2])
+                    hr = np.int(line[3])
+                    mn = np.int(line[4])
+                    sd = np.int(np.float(line[5]))
+                    time = dt.datetime(yr, mo, da, hr, mn, sd)
+
+                    # cmt informations
+                    info = {}
+                    i += 1
+                    for j in range(12):
+                        line = All[i].split(':')
+                        name = line[0]
+                        value = line[1].split()[0]
+                        if name not in ('event name'):
+                            value = np.float(value)
+                        info[name] = value
+                        i += 1
+
+                    # Get values
+                    lat = info['latitude']
+                    lon = info['longitude']
+                    depth = info['depth']
+
+                    # set in self
+                    self.time.append(time)
+                    self.lon.append(lon)
+                    self.lat.append(lat)
+                    self.depth.append(depth)
+                    self.CMTinfo.append(info)
+
+                # Else
+                else:
+                    i += 1
+
+            # Else
+            else:
+                i += 1
+    
+        # Close the file
+        fin.close()
+
+        # Make arrays
+        self.time = np.array(self.time)
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+        self.depth = np.array(self.depth)
+
+        # Compute the magnitudes
+        self.Cmt2Dislocation(size=1e-1, mu=44e9, choseplane='nochoice', moment_from_tensor=True)
+        self.Mo2mag()
+
+        # Create the utm
+        self.lonlat2xy()
+
+        # All done
+        return
 
     def selectbox(self, minlon, maxlon, minlat, maxlat, depth=100000.):
         ''' 
@@ -265,17 +361,12 @@ class seismiclocations(SourceInv):
         print( "Selecting the earthquakes in the box Lon: {} to {} and Lat: {} to {}".format(minlon, maxlon, minlat, maxlat))
         u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon) & (self.depth < depth))
 
-        # Select the stations
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.x = self.x[u]
-        self.y = self.y[u]
-        self.time = self.time[u]
-        self.depth = self.depth[u]
-        self.mag = self.mag[u]
+        # make the selection
+        self._select(u)
 
         # All done
         return
+
 
     def selecttime(self, start=[2001, 1, 1], end=[2101, 1, 1]):
         '''
@@ -326,15 +417,9 @@ class seismiclocations(SourceInv):
         print ("Selecting earthquake between {} and {}".format(st.isoformat(),ed.isoformat()))
         u = np.flatnonzero((self.time > st) & (self.time < ed))
 
-        # Select the stations
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.x = self.x[u]
-        self.y = self.y[u]
-        self.time = self.time[u]
-        self.depth = self.depth[u]
-        self.mag = self.mag[u] 
-                
+        # Selection 
+        self._select(u)
+
         # All done
         return  
 
@@ -353,26 +438,8 @@ class seismiclocations(SourceInv):
         print ("Selecting earthquake between magnitudes {} and {}".format(minimum, maximum))
         u = np.flatnonzero((self.mag > minimum) & (self.mag < maximum))
 
-        # Select the stations
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.x = self.x[u]
-        self.y = self.y[u]
-        self.time = self.time[u]
-        self.depth = self.depth[u]
-        self.mag = self.mag[u] 
-                
-        # All done
-        return  
-
-    def lonlat2xy(self):
-        '''
-        Converts the lat lon positions into utm coordinates.
-        '''
-
-        x, y = self.putm(self.lon, self.lat)
-        self.x = x/1000.
-        self.y = y/1000.
+        # Selection 
+        self._select(u)
 
         # All done
         return
@@ -435,14 +502,8 @@ class seismiclocations(SourceInv):
         u = np.array(u)
         u = np.unique(u)
 
-        # Select the stations
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.x = self.x[u]
-        self.y = self.y[u]
-        self.time = self.time[u]
-        self.depth = self.depth[u]
-        self.mag = self.mag[u]
+        # Selection
+        self._select(u)
 
         # All done
         return
@@ -485,15 +546,9 @@ class seismiclocations(SourceInv):
         u = np.array(u)
         u = np.unique(u)
 
-        # Select the stations
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.x = self.x[u]
-        self.y = self.y[u]
-        self.time = self.time[u]
-        self.depth = self.depth[u]
-        self.mag = self.mag[u]
-            
+        # selection
+        self._select(u)
+
         # All done
         return  
 
@@ -528,15 +583,9 @@ class seismiclocations(SourceInv):
             for i in ut:
                 u.append(i)
 
-        # Select the stations
-        self.lon = np.delete(self.lon, u)
-        self.lat = np.delete(self.lat,u)
-        self.x = np.delete(self.x, u)
-        self.y = np.delete(self.y, u)
-        self.time = np.delete(self.time, u)
-        self.depth = np.delete(self.depth, u)
-        self.mag = np.delete(self.mag, u)
-            
+        # Selection
+        self._select(u)
+
         # All done
         return  
 
@@ -990,6 +1039,28 @@ class seismiclocations(SourceInv):
         # All done
         return ipatch
 
+    def mag2Mo(self):
+        '''
+        Compute the moment from the magnitude.
+        Result in N.m
+        '''
+
+        # Compute
+        self.Mo = 10.**(1.5*self.mag + 9.1)     
+
+        # All done
+        return
+
+    def Mo2mag(self):
+        '''
+        Compute the magnitude from the moment.
+        '''
+
+        self.mag = 2./3. * (np.log10(self.Mo) - 9.1)
+
+        # All done
+        return
+
     def momentEvolution(self, plot=False, outfile=None):
         '''
         Computes the evolution of the moment with time.
@@ -999,7 +1070,7 @@ class seismiclocations(SourceInv):
         self.sortInTime()
 
         # Lets consider self.mag is the moment magnitude :-)
-        self.Mo = 10.**(1.5*self.mag + 9.1)
+        self.mag2Mo()
 
         # Compute the cumulative moment
         self.cumMo = np.cumsum(self.Mo)
@@ -1050,12 +1121,8 @@ class seismiclocations(SourceInv):
         # Get the ordering
         i = np.argsort(self.time)
 
-        # Sort 
-        self.time = self.time[i]
-        self.lat = self.lat[i]
-        self.lon = self.lon[i]
-        self.mag = self.mag[i]
-        self.depth = self.depth[i]
+        # selection
+        self._select(i)
 
         # All done
         return
@@ -1112,6 +1179,103 @@ class seismiclocations(SourceInv):
         # All done
         return
 
+    def Cmt2Dislocation(self, size=1, mu=30e9, choseplane='nochoice', moment_from_tensor=False, verbose=True):
+        '''
+        Returns a single square patch fault from the cmt solutions.
+        If no condition is given, it returns the first value.
+
+        Args:
+            * size          : Size of one side of the fault patch (km).
+            * mu            : Shear modulus (Pa).
+            * choseplane    : Choice of the focal plane to use (can be 'smallestdip', 'highestdip', 'nochoice')
+            * moment_from_tensor: Computes the scalar moment from the cmt.
+        '''
+
+        if verbose:
+            print('---------------------------------')
+            print('---------------------------------')
+            print('Convert CMTs to dislocation')
+
+        # Import what is needed
+        from .planarfault import planarfault
+
+        # Create a list of faults
+        self.faults = []
+
+        # Check something
+        if not hasattr(self, 'Mo'):
+            self.Mo = np.zeros(self.lon.shape)
+
+        # Loop on the earthquakes
+        for i in range(len(self.CMTinfo)):
+
+            # Get the event
+            eq = self.CMTinfo[i]
+
+            # Get the event name
+            event = eq['event name']
+
+            # Get the moment tensor
+            cmt = [ [eq['Mrr'], eq['Mrt'], eq['Mrp']], 
+                    [eq['Mrt'], eq['Mtt'], eq['Mtp']],
+                    [eq['Mrp'], eq['Mtp'], eq['Mpp']] ]
+
+            # Get strike dip rake
+            sdr1, sdr2, Mo = self._cmt2strikediprake(cmt, returnMo=True)
+            self.CMTinfo[i]['cmt'] = cmt
+            
+            # Moment
+            if moment_from_tensor:
+                self.Mo[i] = Mo
+
+            # Condition to chose strike dip rake
+            if choseplane in ('smallestdip'):
+                if sdr1[1]<sdr2[1]:
+                    sdr = sdr1
+                else:
+                    sdr = sdr2
+            elif choseplane in ('highestdip'):
+                if sdr1[1]>sdr2[1]:
+                    sdr = sdr1
+                else:
+                    sdr = sdr2
+            elif choseplane in ('nochoice'):
+                sdr = sdr1
+            strike, dip, rake = sdr
+            self.CMTinfo[i]['sdr1'] = sdr1
+            self.CMTinfo[i]['sdr2'] = sdr2
+
+            # Get the depth
+            depth = eq['depth']
+
+            # Shear Modulus (I should code PREM here)
+            if (mu.__class__ is float):
+                Mu = mu
+
+            # Build a planar fault
+            fault = planarfault(event, utmzone=self.utmzone, verbose=False)
+            fault.buildPatches(self.lon[i], self.lat[i], depth, strike*180./np.pi, dip*180./np.pi, size, size, 1, 1, verbose=False)
+
+            # Components of slip
+            ss = np.cos(rake) * self.Mo[i] / (Mu * size * size * 1000. * 1000.)
+            ds = np.sin(rake) * self.Mo[i] / (Mu * size * size * 1000. * 1000.)
+
+            # Set slip
+            fault.slip[0,0] = ss
+            fault.slip[0,1] = ds
+            fault.slip[0,2] = 0.0
+
+            # Put the fault in the list
+            self.faults.append(fault)
+
+            # Save the strike, dip rake infos
+            eq['strike'] = strike
+            eq['dip'] = dip
+            eq['rake'] = rake
+
+        # all done
+        return
+
     def mergeCatalog(self, catalog):
         '''
         Merges another catalog into this one.
@@ -1132,3 +1296,127 @@ class seismiclocations(SourceInv):
         # all done 
         return
 
+    def lonlat2xy(self):
+        '''
+        Pass the position into the utm coordinate system.
+        '''
+
+        x, y = self.putm(self.lon, self.lat)
+        self.x = x/1000.
+        self.y = y/1000.
+
+        # All done
+        return
+
+    def xy2lonlat(self):
+        '''
+        Pass the position from utm to lonlat.
+        '''
+
+        lon, lat = self.putm(x*1000., y*1000.)
+        self.lon = lon
+        self.lat = lat
+
+        # all done
+        return
+
+    def _select(self, u):
+        '''
+        Makes a selection.
+        '''
+
+        # Select the stations
+        self.lon = self.lon[u]
+        self.lat = self.lat[u]
+        self.x = self.x[u]
+        self.y = self.y[u]
+        self.time = self.time[u]
+        self.depth = self.depth[u]
+        self.mag = self.mag[u]
+
+        # Conditional
+        if hasattr(self, 'CMTinfo'):
+            self.CMTinfo = np.array(self.CMTinfo)
+            self.CMTinfo = self.CMTinfo[u]
+            self.CMTinfo = self.CMTinfo.tolist()
+
+        # Conditional
+        if hasattr(self, 'Mo'):
+            self.Mo = self.Mo[u]
+
+        # All done
+        return
+
+    def _cmt2strikediprake(self, cmt, returnMo=False):
+        '''
+        From a moment tensor in Harvard convention, returns 2 tuples of (strike, dip, rake)
+        Args:
+            * cmt   : Array (3,3) with the CMT.
+        '''
+
+        # 1. Compute the eigenvalues and eigenvectors
+        EigValues, EigVectors = np.linalg.eig(cmt)
+
+        # 2. Sort them => T = max(Eig)
+        #                 N = Neutral
+        #                 P = min(Eig)
+        #    Then, n = (T+P)/sqrt(2)    # Normal
+        #          s = (P-T)/sqrt(2)    # Slip
+        T = EigVectors[:,np.argmax(EigValues)]
+        P = EigVectors[:,np.argmin(EigValues)]
+        n = (T+P)/np.sqrt(2.)
+        s = (T-P)/np.sqrt(2.)
+
+        # 3. Compute the moment
+        Mo = (np.abs(np.min(EigValues)) + np.abs(np.max(EigValues)))
+        Mo /= 2e7
+
+        # 4. Get strike, dip and rake from vectors
+        sdr1 = self._ns2sdr(n,s)
+        sdr2 = self._ns2sdr(s,n)
+
+        # All done
+        if returnMo:
+            return sdr1, sdr2, Mo
+        else:
+            return sdr1, sdr2
+
+    def _ns2sdr(self, n, s, epsilon=0.0001):
+        '''
+        From the normal and the slip vector, returns the strike, dip and rake.
+        Args:
+            * n     : Normal vector.
+            * s     : Slip vector.
+        '''
+
+        # Case: If normal downwards, flip them
+        if n[0]<0.:
+            n = -1.0*n
+            s = -1.0*s
+
+        # Case: if normal is vertical (i.e. if the plane is horizontal)
+        if n[0]>(1-epsilon):
+            strike = 0.0
+            dip = 0.0
+            rake = np.arctan2(-s[2], -s[1])
+
+        # Case: if normal is horizontal (i.e. plane if vertical)
+        elif n[0]<epsilon:
+            strike = np.arctan2(n[1], n[2])
+            dip = np.pi/2.
+            rake = np.arctan2(s[0], -s[1]*n[2] + s[2]*n[1])
+
+        # General Case:
+        else:
+            strike = np.arctan2(n[1], n[2])
+            dip = np.arccos(n[0])
+            rake = np.arctan2(-s[1]*n[1]-s[2]*n[2], (-s[1]*n[2]+s[2]*n[1])*n[0])
+        
+        # Strike
+        if strike < 0.:
+            strike += 2*np.pi
+
+        # All done
+        return strike, dip, rake
+
+# EOF

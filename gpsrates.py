@@ -10,9 +10,11 @@ import pyproj as pp
 import matplotlib.pyplot as plt
 import os
 import copy
+import sys
 
 # Personals
 from .SourceInv import SourceInv
+from .gpstimeseries import gpstimeseries
 
 class gpsrates(SourceInv):
 
@@ -112,21 +114,28 @@ class gpsrates(SourceInv):
         # Set station attributes
         self.setStat(sta_name,X,Y,loc_format)
 
+        # Initialize the vel_enu array
+        self.vel_enu = np.zeros((len(sta_name), 3))
+
         # All done
         return    
 
-    def getvelo(self, station):
+    def getvelo(self, station, data='data'):
         '''
         Gets the velocities enu for the station.
         Args:
             * station   : name of the station.
+            * data      : which velocity do you want ('data' or 'synth')
         '''
 
         # Get the index
-        u = np.     latnonzero(self.station == station)
+        u = np.flatnonzero(np.array(self.station) == station)
 
         # return the values
-        return self.vel_enu[u,0], self.vel_enu[u,1], self.vel_enu[u,2]
+        if data in ('data'):
+            return self.vel_enu[u,0], self.vel_enu[u,1], self.vel_enu[u,2]
+        elif data in ('synth'):
+            return self.synth[u,0], self.synth[u,1], self.synth[u,2]
 
     def geterr(self, station):
         '''
@@ -848,11 +857,12 @@ class gpsrates(SourceInv):
         # Select the stations
         self.lon = self.lon[u]
         self.lat = self.lat[u]
-        self.station = self.station[u]
+        self.station = np.array(self.station)[u]
         self.x = self.x[u]
         self.y = self.y[u]
         self.vel_enu = self.vel_enu[u,:]
-        self.err_enu = self.err_enu[u,:]
+        if self.err_enu is not None:
+            self.err_enu = self.err_enu[u,:]
         if self.rot_enu is not None:
             self.rot_enu = self.rot_enu[u,:]
 
@@ -1367,9 +1377,8 @@ class gpsrates(SourceInv):
                     self.synth[:,1] += ss_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if ss_synth.size <= 2*Nd and east and north:
-                        raise ValueError('Missing vertical components for {}'.format(self.name))
-                    self.synth[:,2] += ss_synth[N:N+Nd]
+                    if ss_synth.size > 2*Nd and east and north:
+                        self.synth[:,2] += ss_synth[N:N+Nd]
             if ('d' in direction) and ('dipslip' in G.keys()):
                 Gd = G['dipslip']
                 Sd = fault.slip[:,1]
@@ -1382,9 +1391,8 @@ class gpsrates(SourceInv):
                     self.synth[:,1] += ds_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if ds_synth.size <=2*Nd and east and north:
-                        raise ValueError('Missing vertical components for {}'.format(self.name))
-                    self.synth[:,2] += ds_synth[N:N+Nd]
+                    if ds_synth.size > 2*Nd and east and north:
+                        self.synth[:,2] += ds_synth[N:N+Nd]
             if ('t' in direction) and ('tensile' in G.keys()):
                 Gt = G['tensile']
                 St = fault.slip[:,2]
@@ -1397,9 +1405,8 @@ class gpsrates(SourceInv):
                     self.synth[:,1] += op_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if op_synth.size<=2*Nd and east and north:
-                        raise ValueError('Missing vertical components for {}'.format(self.name))
-                    self.synth[:,2] += op_synth[N:N+Nd]
+                    if op_synth.size > 2*Nd and east and north:
+                        self.synth[:,2] += op_synth[N:N+Nd]
 
             if poly == 'build' or poly == 'include':
                 if (self.name in fault.poly.keys()):
@@ -1561,6 +1568,245 @@ class gpsrates(SourceInv):
 
         # All done
 
+    def initializeTimeSeries(self, start, end, interval=1, verbose=False):
+        '''
+        Initializes a time series for all the stations.
+        Args:
+            * start     : Starting date
+            * end       : Ending date
+            * interval  : in days (default=1).
+        '''
+
+        # Create a list
+        self.timeseries = {}
+
+        # Loop over the stations
+        for station in self.station:
+            
+            self.timeseries[station] = gpstimeseries(station, utmzone=self.utmzone, verbose=verbose)
+            self.timeseries[station].initializeTimeSeries(start, end, interval=interval)
+
+        # All done
+        return
+
+    def simulateTimeSeriesFromCMT(self, sismo, scale=1., verbose=True, elasticstructure='okada'):
+        '''
+        Takes a seismolocation object with CMT informations and computes the time series from these.
+        Args:
+            * sismo     : seismiclocation object (needs to have CMTinfo object and the corresponding faults list of dislocations).
+            * scale     : Scales the results (default is 1.).
+        '''
+
+        # Check sismo
+        assert hasattr(sismo, 'CMTinfo'), '{} object (seismiclocation class) needs a CMTinfo dictionary...'.format(sismo.name)
+        assert hasattr(sismo, 'faults'), '{} object (seismiclocation class) needs a list of faults. Please run Cmt2Dislocation...'.format(sismo.name)
+            
+        # Check self
+        assert hasattr(self, 'timeseries'), '{} object (gpsrates class) needs a timeseries list. Please run initializeTimeSeries...'.format(self.name)
+
+        # Re-set the time series
+        for station in self.station:
+            self.timeseries[station].east[:] = 0.0
+            self.timeseries[station].north[:] = 0.0
+            self.timeseries[station].up[:] = 0.0
+
+        # Loop over the earthquakes
+        for i in range(len(sismo.CMTinfo)):
+
+            # Get the time of the earthquake
+            eqTime = sismo.time[i]
+
+            # Get the fault
+            fault = sismo.faults[i]
+
+            # Verbose
+            if verbose:
+                name = sismo.CMTinfo[i]['event name']
+                mag = sismo.mag[i]
+                strike = sismo.CMTinfo[i]['strike']
+                dip = sismo.CMTinfo[i]['dip']
+                rake = sismo.CMTinfo[i]['rake']
+                depth = sismo.CMTinfo[i]['depth']
+                print('Running for event {}:'.format(name))
+                print('                 Mw : {}'.format(mag))
+                print('               Time : {}'.format(eqTime.isoformat()))
+                print('             strike : {}'.format(strike*180./np.pi))
+                print('                dip : {}'.format(dip*180./np.pi))
+                print('               rake : {}'.format(rake*180./np.pi))
+                print('              depth : {}'.format(depth))
+                print('        slip vector : {}'.format(fault.slip))
+                
+            # Compute the Green's functions
+            if elasticstructure in ('okada'):
+                fault.buildGFs(self, verbose=verbose)
+            else:
+                from calcGreenFunctions_EDKS_subRectangles import *
+                subpfile, RectanglesPropFile, ReceiverFile, Method = fault.writeEDKSsubParams(self, elasticstructure)
+                GeSS, GeDS, GnSS, GnDS, GuSS, GuDS, = calcGreenFunctions_EDKS_subRectangles(RectanglesPropFile, ReceiverFile, Method, False)
+                fault.setGFs(self, strikeslip = [GeSS, GnSS, GuSS], dipslip = [GeDS, GnDS, GuDS])
+
+            # Compute the synthetics
+            self.buildsynth([fault])
+
+            # Loop over the stations to add the step
+            for station in self.station:
+
+                # Get some informations
+                TStime = np.array(self.timeseries[station].time)
+                TSlength = len(TStime)
+            
+                # Create the time vector
+                step = np.zeros(TSlength)
+
+                # Put ones where needed
+                step[TStime>eqTime] = 1.0
+
+                # Add step to the time series
+                e, n, u = self.getvelo(station, data='synth')
+                e = step*e*scale
+                n = step*n*scale
+                u = step*u*scale
+                self.timeseries[station].east += e
+                self.timeseries[station].north += n
+                self.timeseries[station].up += u
+
+        # All done
+        return
+
+    def extractTimeSeriesOffsets(self, date1, date2, destination='data'):
+        '''
+        Puts the offset from the time series between date1 and date2 into an instance of self.
+        Args:
+            * date1         : datetime object.
+            * date2         : datetime object.
+            * destination   : if 'data', results are in vel_enu
+                              if 'synth', results are in synth
+        '''
+
+        # Initialize
+        vel = np.zeros((len(self.station), 3))
+        err = np.zeros((len(self.station), 3))
+
+        # Loop
+        for i in range(len(self.lon)):
+            station = self.station[i]
+            e, n, u = self.timeseries[station].getOffset(date1, date2, data='data')
+            es, ns, us = self.timeseries[station].getOffset(date1, date2, data='std')
+            vel[i,0] = e
+            vel[i,1] = n
+            vel[i,2] = u
+            err[i,0] = es
+            err[i,1] = ns
+            err[i,2] = us
+
+        # Get destination
+        if destination in ('data'):
+            self.vel_enu = vel
+        elif destination in ('synth'):
+            self.synth = vel
+        self.err_enu = err
+
+        # All done
+        return
+
+    def simulateTimeSeriesFromCMTWithRandomPerturbation(self, sismo, N, xstd=10., ystd=10., depthstd=10., Moperc=30., scale=1., verbose=True, plot='jhasgc', elasticstructure='okada'):
+        '''
+        Runs N simulations of time series from CMT.
+        xtsd, ystd, depthstd are the standard deviation of the Gaussian used to perturbe the location
+        The moment will be perturbed by a fraction of the moment (Moperc).
+        '''
+
+        if verbose:
+            print ('Running {} perturbed earthquakes to derive the Synthetic GPS Time Series'.format(N))
+
+        # Loop and Generate new time series
+        # the time series are going to be stored in 'station name id'
+        # Example: 'atjn 0001', 'atjn 0002', atjn 0003', etc and the mean will be 'atjn'
+        for n in range(N):
+        
+            if verbose:
+                sys.stdout.write('\r {}/{:03d} models'.format(n, N))
+                sys.stdout.flush()
+
+            # Copy the sismo object
+            earthquakes = copy.deepcopy(sismo)
+
+            # Pertubate
+            for fault in earthquakes.faults:
+
+                # Move the fault
+                dx = np.random.randn()*xstd
+                dy = np.random.randn()*ystd
+                dz = np.random.randn()*depthstd
+                fault.moveFault(dx, dy, dz)
+
+                # Scale the slip by Moperc %
+                fault.slip[:,0] = fault.slip[:,0] + fault.slip[:,0]*Moperc/100.
+                fault.slip[:,1] = fault.slip[:,1] + fault.slip[:,1]*Moperc/100.
+                fault.slip[:,2] = fault.slip[:,2] + fault.slip[:,2]*Moperc/100.
+
+            # Compute the simulation for that set of faults
+            self.simulateTimeSeriesFromCMT(earthquakes, scale=scale, elasticstructure=elasticstructure, verbose=False)
+
+            # Take these simulation and copy them
+            for station in self.station:
+                self.timeseries['{}_{:03d}'.format(station,n)] = copy.deepcopy(self.timeseries['{}'.format(station)])
+
+        if verbose:
+            print('Done')
+
+        # Compute the average and the standard deviation
+        for station in self.station:
+            
+            # Verbose
+            if verbose:
+                sys.stdout.write('\r {}'.format(station))
+                sys.stdout.flush()
+
+            # Re-set the time series
+            self.timeseries[station].east[:] = 0.0
+            self.timeseries[station].north[:] = 0.0
+            self.timeseries[station].up[:] = 0.0
+            self.timeseries[station].std_east[:] = 0.0
+            self.timeseries[station].std_north[:] = 0.0
+            self.timeseries[station].std_up[:] = 0.0
+
+            # Loop over the samples to get the mean
+            for n in range(N):
+                self.timeseries[station].east += self.timeseries['{}_{:03d}'.format(station,n)].east
+                self.timeseries[station].north += self.timeseries['{}_{:03d}'.format(station,n)].north
+                self.timeseries[station].up += self.timeseries['{}_{:03d}'.format(station,n)].up
+            # Mean
+            self.timeseries[station].east /= np.float(N)
+            self.timeseries[station].north /= np.float(N)
+            self.timeseries[station].up /= np.float(N)
+
+            # Loop over the samples to get the std
+            for n in range(N):
+                self.timeseries[station].std_east += (self.timeseries['{}_{:03d}'.format(station,n)].east - self.timeseries[station].east)**2
+                self.timeseries[station].std_north += (self.timeseries['{}_{:03d}'.format(station,n)].north - self.timeseries[station].north)**2
+                self.timeseries[station].std_up += (self.timeseries['{}_{:03d}'.format(station,n)].up - self.timeseries[station].up)**2
+            # Samples
+            self.timeseries[station].std_east /= np.float(N)
+            self.timeseries[station].std_north /= np.float(N)
+            self.timeseries[station].std_up /= np.float(N)
+            # Std
+            self.timeseries[station].std_east = np.sqrt(self.timeseries[station].std_east)
+            self.timeseries[station].std_north = np.sqrt(self.timeseries[station].std_north)
+            self.timeseries[station].std_up = np.sqrt(self.timeseries[station].std_up)
+
+            # plot
+            if plot in (station):
+                for n in range(N):
+                    self.timeseries['{}_{:03d}'.format(station,n)].plot(styles=['-k'], show=False)
+                self.timeseries[station].plot(styles=['-r'])
+
+        # Clean screen
+        print ('Done')
+
+        # all done
+        return
+
     def plot(self, ref='utm', faults=None, figure=135, name=False, legendscale=10., color='b', scale=150, plot_los=False, show=True):
         '''
         Args:
@@ -1651,4 +1897,6 @@ class gpsrates(SourceInv):
 
         # All done
         return
+
+
 

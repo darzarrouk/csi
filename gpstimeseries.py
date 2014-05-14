@@ -7,18 +7,18 @@ Written by R. Jolivet, April 2013.
 import numpy as np
 import pyproj as pp
 import datetime as dt
-#import sopac as sopac
-#import .gpsstation as gpssta
+import matplotlib.pyplot as plt
 import sys
 
 class gpstimeseries:
 
-    def __init__(self, name, utmzone='10'):
+    def __init__(self, name, utmzone='10', verbose=True):
         '''
         Args:
-            * name      : Name of the dataset.
+            * name      : Name of the station.
             * datatype  : can be 'gps' or 'insar' for now.
             * utmzone   : UTM zone. Default is 10 (Western US).
+            * verbose   : Speak to me (default=True)
         '''
 
         # Set things
@@ -27,61 +27,18 @@ class gpstimeseries:
         self.utmzone = utmzone
  
         # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initialize GPS array {}".format(self.name))
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize GPS Time Series {}".format(self.name))
 
         # Create a utm transformation
         self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
 
-        # Initialize things
-        self.data = None
-
         # All done
         return
 
-    def get_station_list_from_sopac(self, coordfile):
-        '''
-        Reading velocities from Sopac file and converting to mm/yr.
-        Args:
-            * coordfile : File containing the coordinates.
-        '''
-
-        print ("Read data from file {} into data set {}".format(coordfile, self.name))
-
-        # Keep the files, to remember
-        self.coordfile = coordfile
-
-        # open the files
-        fcor = open(self.coordfile, 'r')
-
-        # read them
-        Cor = fcor.readlines()
-
-        # Initialize things
-        self.lon = []           # Longitude list
-        self.lat = []           # Latitude list
-        self.station = []       # List of the stations
-
-        # Loop
-        for c in range(len(Cor)):
-
-            self.lon.append(np.float(Cor[c].split()[9]))
-            self.lat.append(np.float(Cor[c].split()[8]))
-            self.station.append(Cor[c].split()[0])
-
-        # Make np array with that
-        self.lon = np.array(self.lon)
-        self.lat = np.array(self.lat)
-        self.station = np.array(self.station)
-
-        # Pass to xy 
-        self.ll2xy()
-
-        # All done
-        return
-
-    def ll2xy(self):
+    def lonlat2xy(self):
         '''
         Pass the position into the utm coordinate system.
         '''
@@ -93,354 +50,172 @@ class gpstimeseries:
         # All done
         return
 
-    def select_stations(self, minlon, maxlon, minlat, maxlat):
-        ''' 
-        Select the stations in a box defined by min and max, lat and lon.
-        
-        Args:
-            * minlon        : Minimum longitude.
-            * maxlon        : Maximum longitude.
-            * minlat        : Minimum latitude.
-            * maxlat        : Maximum latitude.
+    def xy2lonlat(self):
+        '''
+        Pass the position from utm to lonlat.
         '''
 
-        # Store the corners
-        self.minlon = minlon
-        self.maxlon = maxlon
-        self.minlat = minlat
-        self.maxlat = maxlat
+        lon, lat = self.putm(x*1000., y*1000.)
+        self.lon = lon
+        self.lat = lat
 
-        # Select on latitude and longitude
-        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon))
+        # all done
+        return
 
-        # Select the stations
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.station = self.station[u]
-        self.x = self.x[u]
-        self.y = self.y[u]
-        if self.data is not None:
-            self.data = self.data[u,:]
+    def initializeTimeSeries(self, start, end, interval=1):
+        '''
+        Initializes the time series by creating whatever is necessary.
+        Args:
+            * starttime:        Begining of the time series.
+            * endtime:          End of the time series.
+            * interval:         In days.
+        '''
+    
+        # check start and end
+        if (start.__class__ is float) or (start.__class__ is int) :
+            st = dt.datetime(start, 1, 1)
+        if (start.__class__ is list):
+            if len(start) == 1:
+                st = dt.datetime(start[0], 1, 1)
+            elif len(start) == 2:
+                st = dt.datetime(start[0], start[1], 1)
+            elif len(start) == 3:
+                st = dt.datetime(start[0], start[1], start[2])
+            elif len(start) == 4:
+                st = dt.datetime(start[0], start[1], start[2], start[3])
+            elif len(start) == 5:
+                st = dt.datetime(start[0], start[1], start[2], start[3], start[4])
+            elif len(start) == 6:
+                st = dt.datetime(start[0], start[1], start[2], start[3], start[4], start[5])
+        if start.__class__ is dt.datetime:
+            st = start
+
+        if (end.__class__ is float) or (end.__class__ is int) :
+            ed = dt.datetime(np.int(end), 1, 1)
+        if (end.__class__ is list):
+            if len(end) == 1:
+                ed = dt.datetime(end[0], 1, 1)
+            elif len(end) == 2:
+                ed = dt.datetime(end[0], end[1], 1)
+            elif len(end) == 3:
+                ed = dt.datetime(end[0], end[1], end[2])
+            elif len(end) == 4:
+                ed = dt.datetime(end[0], end[1], end[2], end[3])
+            elif len(end) == 5:
+                ed = dt.datetime(end[0], end[1], end[2], end[3], end[4])
+            elif len(end) == 6:
+                ed = dt.datetime(end[0], end[1], end[2], end[3], end[4], end[5])
+        if end.__class__ is dt.datetime:
+            ed = end
+
+        # Initialize a time vector
+        delta = ed - st
+        delta_sec = delta.days * 24 * 60 * 60 + delta.seconds
+        time_step = interval * 24 * 60 * 60
+        self.time = [st + dt.timedelta(0, t) for t in range(0, delta_sec, time_step)]
+
+        # Initialize position vectors
+        self.north = np.zeros(len(self.time))
+        self.east = np.zeros(len(self.time))
+        self.up = np.zeros(len(self.time))
+
+        # Initialize uncertainties
+        self.std_north = np.zeros(len(self.time))
+        self.std_east = np.zeros(len(self.time))
+        self.std_up = np.zeros(len(self.time))
 
         # All done
         return
 
-    def reject_stations(self, station):
+    def getOffset(self, date1, date2, nodate=np.nan, data='data'):
         '''
-        Reject the stations named in stations.
+        Get the offset between date1 and date2.
+        If the 2 dates are not available, returns NaN.
         Args:
-            * station   : name or list of names of station.
+            date1       : datetime object
+            date2       : datetime object
+            data        : can be 'data' or 'std'
         '''
 
-        if station.__class__ is str:
+        # Get the indexes
+        u1 = np.flatnonzero(np.array(self.time)==date1)
+        u2 = np.flatnonzero(np.array(self.time)==date2)
 
-            # Get the concerned station
-            u = np.flatnonzero(self.station == station)
+        # Check
+        if len(u1)==0:
+            return nodate, nodate, nodate
+        if len(u2)==0:
+            return nodate, nodate, nodate
 
-            # Get the name
-            sta = self.station[u]
+        # Select 
+        if data in ('data'):
+            east = self.east
+            north = self.north
+            up = self.up
+        elif data in ('std'):
+            east = self.std_east
+            north = self.std_north
+            up = self.std_up
 
-            if u.size != 0:
+        # all done
+        return east[u2]-east[u1], north[u2]-north[u1], up[u2]-up[u1]
 
-                # Delete
-                self.station = np.delete(self.station, u, axis=0)
-                self.lon = np.delete(self.lon, u, axis=0)
-                self.lat = np.delete(self.lat, u, axis=0)
-
-            if (self.data is not None):
-                if (sta in self.data.keys()):
-                    del self.data[sta]
-
-        elif station.__class__ is list:
-
-            for sta in station:
-
-                # Get the concerned station
-                u = np.flatnonzero(self.station == sta)
-
-                # get the name
-                sta = self.station[u]
-
-                if u.size != 0:
-
-                    # Delete
-                    self.station = np.delete(self.station, u, axis=0)
-                    self.lon = np.delete(self.lon, u, axis=0)
-                    self.lat = np.delete(self.lat, u, axis=0)
-                
-                if (self.data is not None):
-                    if (sta in self.data.keys()):
-                        del self.data[sta]
-
-        # Update x and y
-        self.ll2xy()
-
-        # All done
-        return
-
-    def read_stations(self, directory='/Users/jolivetinsar/Documents/ParkfieldCreep/GPS/TimeSeries/Filtered', scale=1000.):
+    def write2file(self, outfile):
         '''
-        Reads all the station time series from the sopac files.
-        This fills in the self.data with gpstation objects.
-        Args:
-            * directory     : Where to find the GPS files.
-            * scale         : Scale to mm.
+        Writes the time series to a file.
+        Args:   
+            * outfile   : output file.
         '''
 
-        # Store things
-        self.directory = directory
-        self.scale = scale
+        # Open the file
+        fout = open(outfile, 'w')
+        fout.write('# Time | east | north | up | east std | north std | up std \n')
 
-        # Create a directory
-        self.data = {}
-        
-        # Create a rejection map
-        reject = []
+        # Loop over the dates
+        for i in range(len(self.time)):
+            t = self.time[i]
+            e = self.east[i]
+            n = self.north[i]
+            u = self.up[i]
+            es = self.std_east[i]
+            ns = self.std_north[i]
+            us = self.std_up[i]
+            fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
 
-        # Loop over the stations
-        for sta in self.station:
-            
-            site = gpssta.gpsstation(sta, directory=directory)
-
-            if site.valid:
-                string = '\r Importing station {}'.format(sta)
-                sys.stdout.write(string)
-                sys.stdout.flush()
-                site.read_sopac_timeseries()
-                site.read_sopac_model()
-                site.scaledisp(scale)
-                self.data[sta] = site
-            else:
-                reject.append(sta)
-
-        # Reject the bad stations
-        self.reject_stations(reject)
-
-        # Clean the screen
-        sys.stdout.write('\n')
-        sys.stdout.flush()
-
-        # All done
-        return
-
-    def getlonlat(self, sta):
-        '''
-        Gets the longitude and latitude of a station.
-        Args:
-            * sta       : Name of the station.
-        '''
-        
-        # Get index
-        u = np.flatnonzero(self.station == sta)
-
-        # All done
-        return self.lon[u], self.lat[u]
-
-    def velocity2file(self, filename, period=[2006, 2012]):
-        '''
-        Takes the velocity out of the sopac model for the period and makes a file:
-        StationName | Lon | Lat | e_vel | n_vel | u_vel | e_err | n_err | u_err
-        Args:
-            * filename  : Name of the output file.
-            * period    : Period for the velocity estimation.
-        '''
-
-        # open the output file
-        fout = open(filename, 'w')
-
-        # Loop over the stations
-        for stn in self.data:
-            
-            # get the station
-            sta = self.data[stn]
-
-            # Get the velocity dictionary
-            velo = sta.velo
-
-            # Get lon and lat
-            lon = sta.lon
-            lat = sta.lat
-
-            # Initialize velocities
-            e_vel = np.nan
-            e_err = np.nan
-            n_vel = np.nan
-            n_err = np.nan
-            u_vel = np.nan
-            u_err = np.nan
-
-            # East
-            v = velo['east']
-            vitesse = 0
-            erreur = 0
-            n = 0
-            for i in range(len(v)):
-                win = v[i][2]
-                if (win[0]<=period[0]) and (win[1]>=period[1]):
-                    n += 1
-                    vitesse += v[i][0]
-                    erreur += v[i][1]
-            if n>0:
-                e_vel = vitesse / n
-                e_err = erreur / n
-
-            # North
-            v = velo['north']
-            vitesse = 0
-            erreur = 0
-            n = 0
-            for i in range(len(v)):
-                win = v[i][2]
-                if (win[0]<=period[0]) and (win[1]>=period[1]):
-                    n += 1
-                    vitesse += v[i][0]
-                    erreur += v[i][1]
-            if n>0:
-                n_vel = vitesse / n
-                n_err = erreur / n
-
-            # Up
-            v = velo['up']
-            vitesse = 0
-            erreur = 0
-            n = 0
-            for i in range(len(v)):
-                win = v[i][2]
-                if (win[0]<=period[0]) and (win[1]>=period[1]):
-                    n += 1
-                    vitesse += v[i][0]
-                    erreur += v[i][1]
-            if n>0:
-                u_vel = vitesse / n
-                u_err = erreur / n
-
-            # Create the string
-            string = '{} {} {} {} {} {} {} {} {} \n'.format(sta.name, lon, lat, e_vel, n_vel, u_vel, e_err, n_err, u_err)
-            fout.write(string)
-
-        # Close file
+        # Done 
         fout.close()
 
         # All done
         return
 
-    def extract_velocities(self):
+    def plot(self, figure=1, styles=['.r'], show=True):
         '''
-        Extracts the velocities for all the stations
-        Velocity dictionaries for each station are stored in velo
-        '''
-
-        # Loop over the stations
-        for sta in self.station:
-
-            # Get station
-            stn = self.data[sta]
-
-            # Get lon lat
-            lon, lat = self.getlonlat(sta)
-
-            # Store these
-            stn.lon = lon
-            stn.lat = lat
-
-            # Get the velocity dictionnary
-            velo = stn.spitsopacvelocity()
-
-            # Create the storage in the station
-            self.data[sta].velo = velo
-
-        # All done
-        return
-
-    def err_lower_bound(self, low):
-        '''
-        Take the errors that are smaller than "low" and substitute these by "low".
+        Plots the time series.
         Args:
-            * low       : Threshold value.
+            figure  :   Figure id number (default=1)
+            styles  :   List of styles (default=['.r'])
+            show    :   Show to me (default=True)
         '''
 
-        for sta in self.station:
+        # Create a figure
+        fig = plt.figure(figure)
 
-            # Get station
-            stn = self.data[sta]
+        # Create axes
+        axnorth = fig.add_subplot(311)
+        axeast = fig.add_subplot(312)
+        axup = fig.add_subplot(313)
 
-            # Get the velo dictionary
-            velo = stn.velo
+        # Plot ts
+        for style in styles:
+            axnorth.plot(self.time, self.north, style)
+            axeast.plot(self.time, self.east, style)
+            axup.plot(self.time, self.up, style)
 
-            # East
-            n = len(velo['east'])
-            for i in range(n):
-                if velo['east'][i][1] < low:
-                    velo['east'][i][1] = low
-
-            # North
-            n = len(velo['north'])
-            for i in range(n):
-                if velo['north'][i][1] < low:
-                    velo['north'][i][1] = low
-
-            # Up
-            n = len(velo['up'])
-            for i in range(n):
-                if velo['up'][i][1] < low:
-                    velo['up'][i][1] = low
+        # show
+        if show:
+            plt.show()
 
         # All done
         return
 
-    def substitute_errors(self, gpsrates):
-        '''
-        Takes the errors of a gpsrates object and substitute these to the errors in place.
-        Args:
-            * gpsrates      : gpsrates object with errors OK.
-        '''
-
-        for sta in self.station:
-
-            # Get station
-            stn = self.data[sta]
-
-            # Check if attribute
-            if not hasattr(stn, 'velo'):
-                velo = stn.spitsopacvelocity()
-                stn.velo = velo
-
-            # Get the velo dictionary
-            velo = stn.velo
-
-            # Modify the errors
-            i = np.flatnonzero(gpsrates.station == stn.name)
-            if len(i)>0:
-                i = i[0]
-                # Get the values
-                err_e = gpsrates.err_enu[i, 0]
-                err_n = gpsrates.err_enu[i, 1]
-                err_u = gpsrates.err_enu[i, 2]
-                # Store those
-                n = len(velo['east'])
-                for i in range(n):
-                    velo['east'][i][1] = err_e
-                n = len(velo['north'])
-                for i in range(n):
-                    velo['north'][i][1] = err_n
-                n = len(velo['up'])
-                for i in range(n):
-                    velo['up'][i][1] = err_u
-
-        # All done
-        return
-
-    def plotstation(self, station):
-        '''
-        Plots the time series for a station.
-        Args:
-            * station       : Name of the station.
-        '''
-
-        # check first
-        if self.data is not None:
-            self.data[sta].plot()
-
-        # All done
-        return
 

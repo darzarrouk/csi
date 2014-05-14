@@ -37,7 +37,8 @@ from .creepmeters import creepmeters
 from .seismic import seismic
 from .tsunami import tsunami
 from .insartimeseries import insartimeseries
-#from .gpstimeseries import gpstimeseries
+from .gpstimeseries import gpstimeseries
+#from .gpssopactimeseries import gpstimeseries
 #from .gpsstation import gpsstation
 
 ## Green's functions

@@ -21,7 +21,7 @@ from .SourceInv import SourceInv
 
 class Fault(SourceInv):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84'):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True):
         '''
         Args:
             * name          : Name of the fault.
@@ -33,9 +33,10 @@ class Fault(SourceInv):
         super(Fault,self).__init__(name, utmzone, ellps)
 
         # Initialize the fault
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initializing fault {}".format(self.name))
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initializing fault {}".format(self.name))
 
         # Specify the type of patch
         self.patchType = None

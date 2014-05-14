@@ -24,7 +24,7 @@ if major==2:
 
 class planarfault(RectangularPatches):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84'):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True):
         '''
         Args:
             * name          : Name of the fault.
@@ -33,11 +33,10 @@ class planarfault(RectangularPatches):
         '''
 
         # Parent class init
-        super(planarfault,self).__init__(name,utmzone,ellps)
+        super(planarfault,self).__init__(name,utmzone,ellps,verbose=verbose)
         
         # All done
         return
-
 
     def discretize(self, lon, lat, strike, length, n_strike):
         '''
@@ -72,9 +71,8 @@ class planarfault(RectangularPatches):
 
         # All done
         return
-        
 
-    def buildPatches(self, lon, lat, dep, strike, dip, f_length, f_width, n_strike, n_dip):
+    def buildPatches(self, lon, lat, dep, strike, dip, f_length, f_width, n_strike, n_dip, verbose=True):
         '''
         Builds a dipping fault.
         Args:
@@ -87,15 +85,16 @@ class planarfault(RectangularPatches):
         '''
         
         # Print
-        print("Building a dipping fault")
-        print("         Lat, Lon, Dep : {} deg, {} deg, {} km ".format(lat,lon,dep))
-        print("         Strike Angle    : {} degrees".format(strike))
-        print("         Dip Angle       : {} degrees".format(dip))
-        print("         Dip Direction   : {} degrees".format(strike+90.))
-        print("         Length          : {} km".format(f_length))
-        print("         Width           : {} km".format(f_width))
-        print("         {} patches along strike".format(n_strike))
-        print("         {} patches along dip".format(n_dip))
+        if verbose:
+            print("Building a dipping fault")
+            print("         Lat, Lon, Dep : {} deg, {} deg, {} km ".format(lat,lon,dep))
+            print("         Strike Angle    : {} degrees".format(strike))
+            print("         Dip Angle       : {} degrees".format(dip))
+            print("         Dip Direction   : {} degrees".format(strike+90.))
+            print("         Length          : {} km".format(f_length))
+            print("         Width           : {} km".format(f_width))
+            print("         {} patches along strike".format(n_strike))
+            print("         {} patches along dip".format(n_dip))
         
         # Initialize the structures
         self.patch        = []        
@@ -359,3 +358,24 @@ class planarfault(RectangularPatches):
         
         # All done
         return
+
+    def moveFault(self, dx, dy, dz):
+        '''
+        Translates all the patches by dx, dy, dz.
+        '''
+
+        # Check if the fault will not fly in the air
+        zmin = np.min(self.z_patches)
+        if zmin+dz < 0.:
+            dz = zmin
+
+        # Move the fault
+        for i in range(len(self.patch)):
+            self.patch[i] += np.array([ [dx, dy, dz],
+                                        [dx, dy, dz],
+                                        [dx, dy, dz],
+                                        [dx, dy, dz] ])
+
+        # All done
+        return
+
