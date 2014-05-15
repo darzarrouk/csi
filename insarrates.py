@@ -48,6 +48,58 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def read_from_ascii(self, filename, factor=1.0, step=0.0, header=0):
+        '''
+        Read the InSAR data from an ascii file.
+        Args:
+            * filename      : Name of the input file. Lon | Lat | los measurement | los uncertainty | los E | los N | los U.
+            * factor        : Factor to multiply the LOS velocity.
+            * step          : Add a value to the velocity.
+            * header        : Size of the header.
+        '''
+
+        # Open the file
+        fin = open(filename, 'r')
+
+        # Read it all
+        Lines = fin.readlines()
+        fin.close()
+
+        # Initialize the business
+        self.vel = []
+        self.lon = []
+        self.lat = []
+        self.err = []
+        self.los = []
+        self.corner = []
+
+        # Loop over yje lines
+        for i in range(len(Lines)):
+            # Get values
+            line = Lines[i].split()
+            # Fill in the values
+            self.lon.append(np.float(line[0]))
+            self.lat.append(np.float(line[1]))
+            self.vel.append(np.float(line[2]))
+            self.err.append(np.float(line[3]))
+            self.los.append([np.float(line[4]), np.float(line[5]), np.float(line[6])])
+
+        # Make arrays
+        self.vel = (np.array(self.vel)+step)*factor
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+        self.err = np.array(self.err)*factor
+        self.los = np.array(self.los)
+        
+        # Compute lon lat to utm
+        self.x, self.y = self.ll2xy(self.lon,self.lat)
+
+        # store the factor
+        self.factor = factor
+
+        # All done
+        return
+
     def read_from_varres(self,filename, factor=1.0, step=0.0, header=2, cov=False):
         '''
         Read the InSAR LOS rates from the VarRes output.

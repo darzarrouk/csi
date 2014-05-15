@@ -22,7 +22,7 @@ from . import okadafull
 
 class RectangularPatches(Fault):
     
-    def __init__(self, name, utmzone=None, ellps='WGS84'):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True):
         '''
         Args:
             * name          : Name of the fault.
@@ -31,7 +31,7 @@ class RectangularPatches(Fault):
         '''
         
         # Base class init
-        super(RectangularPatches,self).__init__(name,utmzone,ellps)
+        super(RectangularPatches,self).__init__(name,utmzone,ellps, verbose=verbose)
 
         # Specify the type of patch
         self.patchType = 'rectangle'
@@ -728,7 +728,7 @@ class RectangularPatches(Fault):
         return
 
 
-    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False, ellipse=False):
+    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False, ellipse=False, flipstrike=False):
         '''
         Write a psxyz compatible file to draw lines starting from the center of each patch, 
         indicating the direction of slip.
@@ -737,7 +737,7 @@ class RectangularPatches(Fault):
         '''
 
         # Copmute the slip direction
-        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse)
+        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse, flipstrike=flipstrike)
 
         # Write something
         print('Writing slip direction to file {}'.format(filename))
@@ -789,7 +789,8 @@ class RectangularPatches(Fault):
                 fout.write('> \n')
 
                 for lon,lat,z in zip(lone,late,ez):
-                    fout.write('{} {} {} \n'.format(lon, lat, -1.*z))
+                    fout.write('{} {} {} \n'.format(lon, lat, z))
+
             # Close file
             fout.close()            
 
@@ -810,8 +811,6 @@ class RectangularPatches(Fault):
         
         # Get strike and dip
         xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(patch, center=True) 
-        dip    *= np.pi/180.
-        strike *= np.pi/180.
         if ellipseCenter!=None:
             xc,yc,zc = ellipseCenter
         
@@ -847,7 +846,7 @@ class RectangularPatches(Fault):
         # All done
         return RE
 
-    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False):
+    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False, flipstrike=False):
         '''
         Computes the segment indicating the slip direction.
         scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
@@ -871,12 +870,14 @@ class RectangularPatches(Fault):
             rake = np.arctan2(slip[1],slip[0])
 
             # Compute the vector
-            #x = (np.sin(strike+np.pi)*np.cos(rake) + np.sin(strike+np.pi)*np.cos(dip)*np.sin(rake))
-            #y = (np.cos(strike+np.pi)*np.cos(rake) - np.cos(strike+np.pi)*np.cos(dip)*np.sin(rake))
-            #z = -1.0*np.sin(dip)*np.sin(rake)
-            x = (np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake))
-            y = (np.cos(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake))
-            z =  1.0*np.sin(dip)*np.sin(rake)
+            if flipstrike:
+                x = (np.sin(strike+np.pi)*np.cos(rake) + np.sin(strike+np.pi)*np.cos(dip)*np.sin(rake))
+                y = (np.cos(strike+np.pi)*np.cos(rake) - np.cos(strike+np.pi)*np.cos(dip)*np.sin(rake))
+                z = np.sin(dip)*np.sin(rake)
+            else:
+                x = (np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake))
+                y = (np.cos(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake))
+                z = np.sin(dip)*np.sin(rake)
         
             # Scale these
             if scale.__class__ is float:
@@ -904,7 +905,7 @@ class RectangularPatches(Fault):
  
             # Append ellipse 
             if ellipse:
-                self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze],factor=factor))
+                self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze],factor=factor*ellipse))
 
             # Append slip direction
             self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])
@@ -1089,7 +1090,6 @@ class RectangularPatches(Fault):
 
         # All done
         return x1, x2, x3, width, length, strike, dip
-
 
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
         '''
@@ -2430,6 +2430,8 @@ class RectangularPatches(Fault):
             p = getindex(p)
 
         # Compute the cumulative distance
+        if self.xi is None:
+            self.discretize(every=0.5, tol=0.05, fracstep=0.02)
         dis = self.cumdistance(discretized=discretized)
 
         # Get the fault
