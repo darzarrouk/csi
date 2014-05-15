@@ -2430,6 +2430,8 @@ class RectangularPatches(Fault):
             p = getindex(p)
 
         # Compute the cumulative distance
+        if self.xi is None:
+            self.discretize(every=0.5, tol=0.05, fracstep=0.02)
         dis = self.cumdistance(discretized=discretized)
 
         # Get the fault

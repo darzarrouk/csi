@@ -1009,7 +1009,88 @@ class seismiclocations(SourceInv):
 
         # All done
         return
-        
+ 
+    def estimateSeismicityRate(self, fault, extra_div=1.0, epsilon=0.00001):
+        '''
+        Counts the number of earthquakes per patches and divides by the area of the patches.
+        Args:
+            * fault         : Fault object.
+            * extra_div     : Extra divider to get the seismicity rate.
+            * epsilon       : Epsilon value for precision of earthquake location.
+        '''
+
+        # Make sure the area of the fault patches is computed
+        fault.computeArea()
+
+        # Project the earthquakes on fault patches 
+        ipatch = self.getEarthquakesOnPatches(fault, epsilon=epsilon)
+
+        # Count
+        number = np.zeros(len(fault.patch))
+
+        # Loop 
+        for i in range(len(fault.patch)):
+            number[i] = len(ipatch[i].tolist())/(fault.area[i]*extra_div)
+
+        # Store that in the fault
+        fault.seismicityRate = number
+
+        # All done
+        return
+
+    def getEarthquakesOnPatches(self, fault, epsilon=0.01):
+        '''
+        Project each earthquake on a fault patch.
+        Should work with any fault patch type.
+        '''
+
+        # Make a list for each patch of the earthquakes that are in the patch
+        InPatch = []
+
+        # 1. Compute the side and normal vectors for each patch
+        for p in fault.patch:
+
+            # 1.1 Get the side vectors
+            v1 = np.array([ p[1][0]-p[0][0], p[1][1]-p[0][1], p[1][2]-p[0][2] ])
+            v2 = np.array([ p[3][0]-p[0][0], p[3][1]-p[0][1], p[3][2]-p[0][2] ])
+
+            # 1.2 Dot product is the normal vector
+            v3 = np.cross(v1, v2)
+
+            # 1.3 Normalize the normal vector so that it has a length of 1 km
+            l = np.linalg.norm(v3)
+            v3 /= l
+
+            # Get a few things
+            A = p[0]; x = self.x; y = self.y; z = self.depth
+
+            # 2.1 Compute the distance between each earthquake and the plane of the patch
+            distances = (A[0]*v3[0] + A[1]*v3[1] + A[2]*v3[2]) / ((v3[0]+x)*v3[0] + (v3[1]+y)*v3[1] + (v3[2] + z)*v3[2])
+
+            # 2.2 Compute the projection of the earthquake on the plane of the patch
+            x_proj = distances*(v3[0] + x)
+            y_proj = distances*(v3[1] + y)
+            z_proj = distances*(v3[2] + z)
+            projected = np.array([ [x_proj[i], y_proj[i], z_proj[i]] for i in range(x_proj.shape[0])])
+
+            # 2.3 Check if the point is inside the polygon (works with any kind of fault patch)
+            angle = np.zeros(x_proj.shape[0])
+            for i in range(len(p)):
+                if i<(len(p)-1):
+                    j = i+1
+                else:
+                    j = 0
+                a = np.array([p[i][0], p[i][1], p[i][2]])
+                b = np.array([p[j][0], p[j][1], p[j][2]]) 
+                v1 = a - projected
+                v2 = b - projected
+                angle += np.arccos(np.sum(np.multiply(v1, v2), axis=1)/(np.linalg.norm(v1, axis=1)*np.linalg.norm(v2, axis=1)))
+            iInside = np.flatnonzero(angle>=(2*np.pi-epsilon))
+            InPatch.append(iInside)
+
+        # All done
+        return InPatch
+
     def getClosestFaultPatch(self, fault):
         '''
         Returns a list of index for all the earthquakes containing the index of the closest fault patch.

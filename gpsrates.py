@@ -15,6 +15,8 @@ import sys
 # Personals
 from .SourceInv import SourceInv
 from .gpstimeseries import gpstimeseries
+if (sys.version_info[0]==2) and ('EDKS_HOME' in os.environ.keys()):
+    from calcGreenFunctions_EDKS_subRectangles import *
 
 class gpsrates(SourceInv):
 
@@ -1640,7 +1642,6 @@ class gpsrates(SourceInv):
             if elasticstructure in ('okada'):
                 fault.buildGFs(self, verbose=verbose)
             else:
-                from calcGreenFunctions_EDKS_subRectangles import *
                 subpfile, RectanglesPropFile, ReceiverFile, Method = fault.writeEDKSsubParams(self, elasticstructure)
                 GeSS, GeDS, GnSS, GnDS, GuSS, GuDS, = calcGreenFunctions_EDKS_subRectangles(RectanglesPropFile, ReceiverFile, Method, False)
                 fault.setGFs(self, strikeslip = [GeSS, GnSS, GuSS], dipslip = [GeDS, GnDS, GuDS])
