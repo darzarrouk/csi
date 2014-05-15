@@ -47,9 +47,9 @@ class seismiclocations(SourceInv):
 
     def read_from_SCSN(self,filename, header=65):
         '''
-        Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
+        Read the Seismic catalog from the SCSN networks (Template from E. Haukssen).
         Args:
-            * filename      : Name of the input file. 
+            * filename      : Name of the input file.
             * header        : Size of the header.
         '''
 
@@ -75,7 +75,7 @@ class seismiclocations(SourceInv):
 
         # Loop over the A, there is a header line header
         for i in range(header, len(A)):
-            # Split the string line 
+            # Split the string line
             tmp = A[i].split()
 
             # Get the values
@@ -95,8 +95,8 @@ class seismiclocations(SourceInv):
             if mi<=-1:
                 mi = 0
             d = dt.datetime(yr, mo, da, hr, mi)
-            
-            # Store things in self 
+
+            # Store things in self
             self.time.append(d)
             self.lat.append(lat)
             self.lon.append(lon)
@@ -123,7 +123,7 @@ class seismiclocations(SourceInv):
         '''
         Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
         Args:
-            * filename      : Name of the input file. 
+            * filename      : Name of the input file.
             * header        : Size of the header.
         '''
 
@@ -149,7 +149,7 @@ class seismiclocations(SourceInv):
 
         # Loop over the A, there is a header line header
         for i in range(header, len(A)):
-            # Split the string line 
+            # Split the string line
             tmp = A[i].split()
 
             # Get the values
@@ -165,8 +165,8 @@ class seismiclocations(SourceInv):
 
             # Create the time object
             d = dt.datetime(yr, mo, da, hr, mi)
-            
-            # Store things in self 
+
+            # Store things in self
             self.time.append(d)
             self.lat.append(lat)
             self.lon.append(lon)
@@ -208,7 +208,7 @@ class seismiclocations(SourceInv):
         self.depth = []
         self.mag = []
 
-        # Loop 
+        # Loop
         for i in range(header, len(All)):
 
             # Get the splitted string
@@ -244,10 +244,10 @@ class seismiclocations(SourceInv):
         return
 
 
-    def selectbox(self, minlon, maxlon, minlat, maxlat, depth=100000.):
-        ''' 
+    def selectbox(self, minlon, maxlon, minlat, maxlat, depth=100000., mindepth=0.0):
+        '''
         Select the earthquakes in a box defined by min and max, lat and lon.
-        
+
         Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
@@ -263,7 +263,7 @@ class seismiclocations(SourceInv):
 
         # Select on latitude and longitude
         print( "Selecting the earthquakes in the box Lon: {} to {} and Lat: {} to {}".format(minlon, maxlon, minlat, maxlat))
-        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon) & (self.depth < depth))
+        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon) & (self.depth < depth) & (self.depth > mindepth))
 
         # Select the stations
         self.lon = self.lon[u]
@@ -333,10 +333,10 @@ class seismiclocations(SourceInv):
         self.y = self.y[u]
         self.time = self.time[u]
         self.depth = self.depth[u]
-        self.mag = self.mag[u] 
-                
+        self.mag = self.mag[u]
+
         # All done
-        return  
+        return
 
     def selectmagnitude(self, minimum, maximum=10):
         '''
@@ -345,7 +345,7 @@ class seismiclocations(SourceInv):
             * minimum   : Minimum earthquake magnitude wanted.
             * maximum   : Maximum earthquake magnitude wanted.
         '''
-        
+
         # Get the magnitude
         mag = self.mag
 
@@ -360,10 +360,10 @@ class seismiclocations(SourceInv):
         self.y = self.y[u]
         self.time = self.time[u]
         self.depth = self.depth[u]
-        self.mag = self.mag[u] 
-                
+        self.mag = self.mag[u]
+
         # All done
-        return  
+        return
 
     def lonlat2xy(self):
         '''
@@ -378,7 +378,7 @@ class seismiclocations(SourceInv):
         return
 
     def computeGR(self, plot=False, bins=20):
-        ''' 
+        '''
         Plots the Gutemberg-Richter distribution.
         Args:
             * ion       : Turns on the plt.ion().
@@ -403,7 +403,7 @@ class seismiclocations(SourceInv):
 
         # All done
         return
-    
+
     def fitBvalue(self, b=None):
         '''
         Fits a B-value to a Gutemberg-Righter distribution.
@@ -427,7 +427,7 @@ class seismiclocations(SourceInv):
         # Loop over the faults
         for fault in faults:
             dis = np.array(self._getDistance2FaultPlane(fault))
-            ut = np.flatnonzero( dis < distance ) 
+            ut = np.flatnonzero( dis < distance )
             for i in ut:
                 u.append(i)
 
@@ -461,7 +461,7 @@ class seismiclocations(SourceInv):
         # Create a list with the earthquakes locations
         LL = np.vstack((self.x, self.y)).T.tolist()
 
-        # Create a MultiPoint object 
+        # Create a MultiPoint object
         PP = sg.MultiPoint(LL)
 
         # Loop over faults
@@ -493,9 +493,9 @@ class seismiclocations(SourceInv):
         self.time = self.time[u]
         self.depth = self.depth[u]
         self.mag = self.mag[u]
-            
+
         # All done
-        return  
+        return
 
     def delete2Close2Trace(self, faults, distance=1.):
         '''
@@ -508,7 +508,7 @@ class seismiclocations(SourceInv):
         # Create a list with the earthquakes locations
         LL = np.vstack((self.x, self.y)).T.tolist()
 
-        # Create a MultiPoint object 
+        # Create a MultiPoint object
         PP = sg.MultiPoint(LL)
 
         # Loop over faults
@@ -536,13 +536,13 @@ class seismiclocations(SourceInv):
         self.time = np.delete(self.time, u)
         self.depth = np.delete(self.depth, u)
         self.mag = np.delete(self.mag, u)
-            
+
         # All done
-        return  
+        return
 
     def ProjectOnFaultTrace(self, fault, discretized=True, filename=None):
         '''
-        Projects the location of the earthquake along the fault trace. 
+        Projects the location of the earthquake along the fault trace.
         This routine is not a 3D one, it just deals with the surface trace of the fault.
         Args:
             fault:       Fault object that has a surface trace
@@ -628,7 +628,7 @@ class seismiclocations(SourceInv):
                 jm = imin2
             qdis = dis[jm] + np.sqrt( (qx-x[jm])**2 + (qy-y[jm])**2 )
             # Compute the distance to the fault
-            dl = np.sqrt( (x[imin1]-x[imin2])**2 + (y[imin1]-y[imin2])**2 ) # 3 side of the triangle 
+            dl = np.sqrt( (x[imin1]-x[imin2])**2 + (y[imin1]-y[imin2])**2 ) # 3 side of the triangle
             semiperi = (dmin1 + dmin2 + dl)/2.                              # Semi-perimeter of the triangle
             A = semiperi*(semiperi-dmin1)*(semiperi-dmin2)*(semiperi-dl)    # Area of the triangle (Heron's formula)
             qh = 2*A/dl                                                     # Height of the triangle
@@ -657,7 +657,7 @@ class seismiclocations(SourceInv):
         '''
         Computes the distance between the fault trace and all the earthquakes.
         '''
-        
+
         # Import
         import shapely.geometry as sg
 
@@ -684,7 +684,7 @@ class seismiclocations(SourceInv):
 
         # import scipy
         import scipy.spatial.distance as scidis
-        
+
         # Create a list
         dis = []
 
@@ -699,7 +699,7 @@ class seismiclocations(SourceInv):
 
         # Loop on the earthquakes
         for i in range(self.mag.shape[0]):
-            
+
             # Get position
             x = self.x[i]
             y = self.y[i]
@@ -732,7 +732,7 @@ class seismiclocations(SourceInv):
         self.histogram['xedges'] = xedges
         self.histogram['yedges'] = yedges
         self.histogram['values'] = hist
-        
+
         # Store (x,y) locations
         x = (xedges[1:] - xedges[:-1])/2. + xedges[:-1]
         y = (yedges[1:] - yedges[:-1])/2. + yedges[:-1]
@@ -806,7 +806,7 @@ class seismiclocations(SourceInv):
 
         # On every point of the fault
         for i in range(len(xf)):
-        
+
             # 1. Get the earthquakes in between x-width/2. and x+width/2.
             U = np.flatnonzero( (Das<=df[i]+width/2.) & (Das>=df[i]-width/2.) ).tolist()
 
@@ -815,35 +815,35 @@ class seismiclocations(SourceInv):
             ye = np.array([y[u] for u in U])
             ze = np.array([z[u] for u in U])
             de = np.array([Dff[u] for u in U])
-            
+
             if planemode in ('bestfit'):
 
                 if xe.shape[0]>3: # Only do the thing if we have more than 3 earthquakes
-            
+
                     # 3.1 Get those earthquakes in between -2.0 and 2.0 km from the fault trace
                     #     A reasonable thing to do would be to code a L1-regression, but for some places it is a nigthmare
                     M = np.flatnonzero( (de<=2.) & (de>=-2.) ).tolist()
-                    xee = np.array([xe[m] for m in M])    
-                    yee = np.array([ye[m] for m in M])    
-                    zee = np.array([ze[m] for m in M])    
+                    xee = np.array([xe[m] for m in M])
+                    yee = np.array([ye[m] for m in M])
+                    zee = np.array([ze[m] for m in M])
 
-                    # 3.2 Find the center of the best fitting plane 
+                    # 3.2 Find the center of the best fitting plane
                     c = [xee.sum()/len(xee), yee.sum()/len(yee), zee.sum()/len(zee)]
 
                     # 3.3 Find the normal of the best fitting plane
-                    sumxx = ((xee-c[0])*(xee-c[0])).sum() 
-                    sumyy = ((yee-c[1])*(yee-c[1])).sum() 
-                    sumzz = ((zee-c[2])*(zee-c[2])).sum() 
-                    sumxy = ((xee-c[0])*(yee-c[1])).sum() 
-                    sumxz = ((xee-c[0])*(zee-c[2])).sum() 
-                    sumyz = ((yee-c[1])*(zee-c[2])).sum() 
+                    sumxx = ((xee-c[0])*(xee-c[0])).sum()
+                    sumyy = ((yee-c[1])*(yee-c[1])).sum()
+                    sumzz = ((zee-c[2])*(zee-c[2])).sum()
+                    sumxy = ((xee-c[0])*(yee-c[1])).sum()
+                    sumxz = ((xee-c[0])*(zee-c[2])).sum()
+                    sumyz = ((yee-c[1])*(zee-c[2])).sum()
                     M = np.array([ [sumxx, sumxy, sumxz],
                                    [sumxy, sumyy, sumyz],
                                    [sumxz, sumyz, sumzz] ])
                     w, v = np.linalg.eig(M)
                     u = w.argmin()
                     N = v[:,u]
-                    
+
                     # 3.4 If the normal points toward the west, rotate it 180 deg
                     if N[0]<0.0:
                         N[0] *= -1.0
@@ -865,16 +865,16 @@ class seismiclocations(SourceInv):
 
             elif planemode in ('verticalfault'):
 
-                # 3.1 Get the fault points 
+                # 3.1 Get the fault points
                 F = np.flatnonzero( (df<=df[i]+10.) & (df>=df[i]-10.) ).tolist()
                 xif = np.array([xf[u] for u in F])
                 yif = np.array([yf[u] for u in F])
 
                 # 3.2 Get the center of the fault points
                 c = [xif.sum()/len(xif), yif.sum()/len(yif), ze.mean()]
-                 
+
                 # 3.3 Get the normal to the fault
-                sumxx = ((xif-c[0])*(xif-c[0])).sum() 
+                sumxx = ((xif-c[0])*(xif-c[0])).sum()
                 sumyy = ((yif-c[1])*(yif-c[1])).sum()
                 sumxy = ((xif-c[0])*(yif-c[1])).sum()
                 M = np.array([ [sumxx, sumxy],
@@ -912,7 +912,7 @@ class seismiclocations(SourceInv):
             xi = df[i] - Ref
             for k in range(len(hist)):
                 yi = (edges[k+1] - edges[k])/2. + edges[k]
-                zi = hist[k] 
+                zi = hist[k]
                 frough.write('{} {} {} \n'.format(xi, yi, zi))
 
             # 5. Fit the histogram with a Gaussian and center it
@@ -931,7 +931,7 @@ class seismiclocations(SourceInv):
             else:
                 hist, edges = np.histogram(distance, bins=bins, normed=False, range=Range)
 
-            # check 
+            # check
             if plot and df[i]>107. and df[i]<108.:
                 import matplotlib.pyplot as plt
                 fig = plt.figure(23)
@@ -960,7 +960,7 @@ class seismiclocations(SourceInv):
 
         # All done
         return
-        
+
     def getClosestFaultPatch(self, fault):
         '''
         Returns a list of index for all the earthquakes containing the index of the closest fault patch.
@@ -1011,7 +1011,7 @@ class seismiclocations(SourceInv):
         if outfile is not None:
             fout = open(outfile, 'w')
             fout.write('# Time | Cum. Moment (N.m) | Cum. Num. of Eq. \n')
-            # First point 
+            # First point
             t = self.time[0].isoformat()
             Mo = 0.1
             Ec = 0
@@ -1050,7 +1050,7 @@ class seismiclocations(SourceInv):
         # Get the ordering
         i = np.argsort(self.time)
 
-        # Sort 
+        # Sort
         self.time = self.time[i]
         self.lat = self.lat[i]
         self.lon = self.lon[i]
@@ -1080,7 +1080,7 @@ class seismiclocations(SourceInv):
             else:
                 last = '{}'.format(self.time[u].isoformat())
             fout.write('{} {} {} {} {} \n'.format(self.lon[u], self.lat[u], self.depth[u], self.mag[u], last))
-        
+
         # Close the file
         fout.close()
 
@@ -1089,7 +1089,7 @@ class seismiclocations(SourceInv):
 
     def writeSelectedMagRange(self, filename, minMag=5.0, maxMag=10.):
         '''
-        Write to a file the earthquakes with a magnitude larger than minMag and 
+        Write to a file the earthquakes with a magnitude larger than minMag and
         smaller than maxMag.
         Args:
             * filename  : Name of the output file
@@ -1129,6 +1129,6 @@ class seismiclocations(SourceInv):
         # Compute the xy
         self.lonlat2xy()
 
-        # all done 
+        # all done
         return
 

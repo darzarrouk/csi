@@ -119,6 +119,20 @@ class tsunami(SourceInv):
                 plt.ylabel('Water height, m')
             if i>=nstat/2:
                 plt.xlabel('Time since arrival, min')
+        plt.subplots_adjust(hspace=0.2, wspace=0.2)
+
+        # All done
+        return
+
+
+    def write2file(self, namefile, data='synth'):
+        '''
+        Plot tsunami traces
+        '''
+        if data == 'synth':
+            np.savetxt(namefile, self.synth.T)
+        elif data == 'data':
+            np.savetxt(namefile, self.d.T)
 
         # All done
         return

@@ -88,8 +88,8 @@ class TriangularTents(TriangularPatches):
             strike += stk
             dip += dp
 
-        strike /= sum(nbr_faces)
-        dip /= sum(nbr_faces)
+        strike /= len(nbr_faces)
+        dip /= len(nbr_faces)
 
         # All done
         return x, y, z, strike, dip
@@ -867,8 +867,8 @@ class TriangularTents(TriangularPatches):
 
         # Get strike and dip
         xc, yc, zc, strike, dip = self.getTentInfo(tent)
-        dip *= np.pi/180.
-        strike *= np.pi/180.
+        # dip *= np.pi/180.
+        # strike *= np.pi/180.
         if ellipseCenter!=None:
             xc, yc, zc = ellipseCenter
 
@@ -1007,6 +1007,7 @@ class TriangularTents(TriangularPatches):
             y = (np.cos(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake))
             z =  1.0*np.sin(dip)*np.sin(rake)
 
+            print("strike, dip, rake, x, y, z: ", strike, dip, rake, x, y, z)
             # Scale these
             if scale.__class__ is float:
                 sca = scale
