@@ -154,10 +154,12 @@ class TriangularPatches(Fault):
                     name, p1, p2, p3 = line.split()
                     faces.append([int(p1), int(p2), int(p3)])
             fid.close()
-            vids = np.array(vids,dtype=int) - 1
+            vids = np.array(vids,dtype=int)
+            i0 = np.min(vids)
+            vids = vids - i0
             i    = np.argsort(vids)
             vertices = np.array(vertices, dtype=float)[i,:]
-            faces = np.array(faces, dtype=int) - 1
+            faces = np.array(faces, dtype=int) - i0
 
         # Resample vertices to UTM
         if utm:
@@ -205,7 +207,6 @@ class TriangularPatches(Fault):
 
         # All done
         return
-
 
     def writeGocadPatches(self, filename, utm=False):
         """
@@ -643,7 +644,7 @@ class TriangularPatches(Fault):
             u = patch
         else:
             for i in range(len(self.patch)):
-                if (self.patch[i]==patch).all():
+                if (self.patch[i]==patch):
                     u = i
 
         # Get the center of the patch
