@@ -1010,34 +1010,6 @@ class seismiclocations(SourceInv):
         # All done
         return
  
-    def estimateSeismicityRate(self, fault, extra_div=1.0, epsilon=0.00001):
-        '''
-        Counts the number of earthquakes per patches and divides by the area of the patches.
-        Args:
-            * fault         : Fault object.
-            * extra_div     : Extra divider to get the seismicity rate.
-            * epsilon       : Epsilon value for precision of earthquake location.
-        '''
-
-        # Make sure the area of the fault patches is computed
-        fault.computeArea()
-
-        # Project the earthquakes on fault patches 
-        ipatch = self.getEarthquakesOnPatches(fault, epsilon=epsilon)
-
-        # Count
-        number = np.zeros(len(fault.patch))
-
-        # Loop 
-        for i in range(len(fault.patch)):
-            number[i] = len(ipatch[i].tolist())/(fault.area[i]*extra_div)
-
-        # Store that in the fault
-        fault.seismicityRate = number
-
-        # All done
-        return
-
     def getEarthquakesOnPatches(self, fault, epsilon=0.01):
         '''
         Project each earthquake on a fault patch.
