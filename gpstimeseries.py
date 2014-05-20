@@ -110,8 +110,8 @@ class gpstimeseries:
 
         # Initialize a time vector
         delta = ed - st
-        delta_sec = delta.days * 24 * 60 * 60 + delta.seconds
-        time_step = interval * 24 * 60 * 60
+        delta_sec = np.int(np.floor(delta.days * 24 * 60 * 60 + delta.seconds))
+        time_step = np.int(np.floor(interval * 24 * 60 * 60))
         self.time = [st + dt.timedelta(0, t) for t in range(0, delta_sec, time_step)]
 
         # Initialize position vectors
@@ -124,6 +124,32 @@ class gpstimeseries:
         self.std_east = np.zeros(len(self.time))
         self.std_up = np.zeros(len(self.time))
 
+        # All done
+        return
+
+    def addPointInTime(self, time, east=0.0, north=0.0, up = 0.0, std_east=0.0, std_north=0.0, std_up=0.0):
+        '''
+        Augments the time series by one point.
+        time is a datetime object.
+        if east, north and up values are not provided, 0.0 is used.
+        '''
+
+        # Find the index
+        u = 0
+        t = self.time[u]
+        while t<time:
+            u += 1
+            t = self.time[u]
+
+        # insert
+        self.time.insert(u, time)
+        self.east = np.insert(self.east, u, east)
+        self.north = np.insert(self.north, u, north)
+        self.up = np.insert(self.up, u, up)
+        self.std_east = np.insert(self.std_east, u, std_east)
+        self.std_north = np.insert(self.std_north, u, std_north)
+        self.std_up = np.insert(self.std_up, u, std_up)
+        
         # All done
         return
 
