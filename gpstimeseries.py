@@ -173,7 +173,7 @@ class gpstimeseries:
 
         # Loop over the dates
         for i in range(len(self.time)):
-            t = self.time[i]
+            t = self.time[i].isoformat()
             e = self.east[i]
             n = self.north[i]
             u = self.up[i]
