@@ -160,11 +160,12 @@ class gpstimeseries:
         # all done
         return east[u2]-east[u1], north[u2]-north[u1], up[u2]-up[u1]
 
-    def write2file(self, outfile):
+    def write2file(self, outfile, steplike=False):
         '''
         Writes the time series to a file.
         Args:   
             * outfile   : output file.
+            * steplike  : doubles the output each time so that the plot looks like steps.
         '''
 
         # Open the file
@@ -172,7 +173,7 @@ class gpstimeseries:
         fout.write('# Time | east | north | up | east std | north std | up std \n')
 
         # Loop over the dates
-        for i in range(len(self.time)):
+        for i in range(len(self.time)-1):
             t = self.time[i].isoformat()
             e = self.east[i]
             n = self.north[i]
@@ -181,6 +182,23 @@ class gpstimeseries:
             ns = self.std_north[i]
             us = self.std_up[i]
             fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
+            if steplike:
+                e = self.east[i+1]
+                n = self.north[i+1]
+                u = self.up[i+1]
+                es = self.std_east[i+1]
+                ns = self.std_north[i+1]
+                us = self.std_up[i+1]
+                fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
+
+        t = self.time[i].isoformat()
+        e = self.east[i]
+        n = self.north[i]
+        u = self.up[i]
+        es = self.std_east[i]
+        ns = self.std_north[i]
+        us = self.std_up[i]
+        fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
 
         # Done 
         fout.close()
