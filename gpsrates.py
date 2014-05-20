@@ -1114,10 +1114,10 @@ class gpsrates(SourceInv):
         print('Parameters: ')
         print('  X Translation :    {} '.format(Svec[0]))
         print('  Y Translation :    {} '.format(Svec[1]))
-        print('     Strain xx  :    {} '.format(Svec[3]/base_max))
-        print('     Strain xy  :    {} '.format(Svec[4]/base_max))
-        print('     Strain yy  :    {} '.format(Svec[5]/base_max))
-        print('     Rotation   :    {}'.format(Svec[2]))
+        print('     Strain xx  :    {} '.format(Svec[2]/base_max))
+        print('     Strain xy  :    {} '.format(Svec[3]/base_max))
+        print('     Strain yy  :    {} '.format(Svec[4]/base_max))
+        print('     Rotation   :    {}'.format(Svec[5]))
 
         # Write 2 a file
         if write2file:
@@ -1129,10 +1129,10 @@ class gpsrates(SourceInv):
             fout.write('# X-axis | Y-axis \n')
             fout.write('   {}       {} \n'.format(Svec[0],Svec[1]))
             fout.write('# Strain Tensor: \n')
+            fout.write(' {}  {}  \n'.format(Svec[2]/base_max, Svec[3]/base_max))
             fout.write(' {}  {}  \n'.format(Svec[3]/base_max, Svec[4]/base_max))
-            fout.write(' {}  {}  \n'.format(Svec[4]/base_max, Svec[5]/base_max))
             fout.write('# Rotation term: \n')
-            fout.write(' {} \n'.format(Svec[2]))
+            fout.write(' {} \n'.format(Svec[5]))
             fout.write('# In GMT, the line to feed psvelo -Sx{scale} would be:\n')
             
             # Get the eigen values
@@ -1166,7 +1166,7 @@ class gpsrates(SourceInv):
             H[0,5] = 0.5*y1 
             H[1,3] = 0.5*x1
             H[1,4] = y1
-            H[1,5] = -0.5*y1  
+            H[1,5] = -0.5*x1  
 
             # Do the transform
             newv = np.dot(H, Svec)

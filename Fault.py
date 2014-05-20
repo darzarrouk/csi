@@ -1152,7 +1152,7 @@ class Fault(SourceInv):
             H[0,5] = 0.5*y1
             H[1,3] = 0.5*x1
             H[1,4] = y1
-            H[1,5] = -0.5*y1
+            H[1,5] = -0.5*x1
 
             # Put the lines where they should be
             Hf[i,:] = H[0,:]
