@@ -316,7 +316,7 @@ class multifaultsolve(object):
                             fault.polysol[dset] = fault.mpost[st:se]
                             fault.polysolindex[dset] = range(st,se)
                             st += nh
-                        if fault.poly[dset] is 'strain':
+                        if fault.poly[dset] in ('strain', 'strainnorotation'):
                             nh = fault.strain[dset]
                             se = st + nh
                             fault.polysol[dset] = fault.mpost[st:se]

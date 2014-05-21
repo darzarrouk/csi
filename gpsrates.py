@@ -1075,11 +1075,17 @@ class gpsrates(SourceInv):
 
         # Get the number of obs per station
         if not hasattr(self, 'obs_per_station'):
-            if Nh == 6:
+            if (Nh == 6) or (Nh == 5):
                 self.obs_per_station = 2
             else:
                 print('Strain estimation for 3d not implemented')
         No = self.obs_per_station
+
+        # Is there rotation?
+        if Nh == 6:
+            rotation = True
+        else:
+            rotation = False
 
         # Get the position of the center of the network
         x0 = np.mean(self.x)
@@ -1117,7 +1123,8 @@ class gpsrates(SourceInv):
         print('     Strain xx  :    {} '.format(Svec[2]/base_max))
         print('     Strain xy  :    {} '.format(Svec[3]/base_max))
         print('     Strain yy  :    {} '.format(Svec[4]/base_max))
-        print('     Rotation   :    {}'.format(Svec[5]))
+        if rotation:
+            print('     Rotation   :    {}'.format(Svec[5]))
 
         # Write 2 a file
         if write2file:
@@ -1131,8 +1138,9 @@ class gpsrates(SourceInv):
             fout.write('# Strain Tensor: \n')
             fout.write(' {}  {}  \n'.format(Svec[2]/base_max, Svec[3]/base_max))
             fout.write(' {}  {}  \n'.format(Svec[3]/base_max, Svec[4]/base_max))
-            fout.write('# Rotation term: \n')
-            fout.write(' {} \n'.format(Svec[5]))
+            if rotation:
+                fout.write('# Rotation term: \n')
+                fout.write(' {} \n'.format(Svec[5]))
             fout.write('# In GMT, the line to feed psvelo -Sx{scale} would be:\n')
             
             # Get the eigen values
@@ -1163,10 +1171,11 @@ class gpsrates(SourceInv):
             # Store the rest
             H[0,2] = x1 
             H[0,3] = 0.5*y1 
-            H[0,5] = 0.5*y1 
             H[1,3] = 0.5*x1
             H[1,4] = y1
-            H[1,5] = -0.5*x1  
+            if rotation:
+                H[0,5] = 0.5*y1 
+                H[1,5] = -0.5*x1  
 
             # Do the transform
             newv = np.dot(H, Svec)

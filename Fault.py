@@ -687,6 +687,7 @@ class Fault(SourceInv):
                               with respect to the center of the network (Helmert transform).
                               'strain' -> For GPS, estimate the full strain tensor (Rotation
                               + Translation + Internal strain)
+                              'strainnorotation' -> For GPS, estimate the strain tensor, no rotation).
             * slipdir       : directions of slip to include. can be any combination of s,d,t.
         '''
 
@@ -747,6 +748,15 @@ class Fault(SourceInv):
                     self.strain[data.name] = 6
                 else:
                     print('3d strain has not been implemented')
+                    return
+            elif self.poly[data.name] is 'strainnorotation':
+                if not hasattr(self, 'strain'):
+                    self.strain = {}
+                if data.obs_per_station==2:
+                    Npo += 5
+                    self.strain[data.name] = 5
+                else:
+                    print('3d strain ahs not been implemented')
                     return
             else:
                 Npo += (self.poly[data.name])
@@ -895,17 +905,19 @@ class Fault(SourceInv):
                         nc = 7
                     elif data.obs_per_station==2:
                         nc = 4
-                    # Put it into G for as much observable per station we have
-                    polend = polstart + nc
-                    G[el:el+Ndlocal, polstart:polend] = orb
-                    polstart += nc
                 if self.poly[data.name] is 'strain':
                     orb = self.get2DstrainEst(data)
                     if data.obs_per_station == 2:
                         nc = 6
-                    polend = polstart + nc
-                    G[el:el+Ndlocal, polstart:polend] = orb
-                    polstart += nc
+                if self.poly[data.name] is 'strainnorotation':
+                    orb = self.get2DstrainEst(data, norotation=True)
+                    if data.obs_per_station == 2:
+                        nc = 5
+                # Put it into G for as much observable per station we have
+                polend = polstart + nc
+                G[el:el+Ndlocal, polstart:polend] = orb
+                polstart += nc
+
             # Update el to check where we are
             el = el + Ndlocal
 
@@ -1087,7 +1099,7 @@ class Fault(SourceInv):
         # All done
         return
 
-    def get2DstrainEst(self, data):
+    def get2DstrainEst(self, data, norotation=False):
         '''
         Returns the matrix to estimate the full 2d strain tensor.
         '''
@@ -1103,7 +1115,10 @@ class Fault(SourceInv):
 
         # Get the number of parameters to look for
         if data.obs_per_station==2:
-            nc = 6
+            if norotation:
+                nc = 5
+            else:
+                nc = 6
         else:
             print('Not implemented')
             return
@@ -1150,10 +1165,11 @@ class Fault(SourceInv):
             # Store them
             H[0,2] = x1
             H[0,3] = 0.5*y1
-            H[0,5] = 0.5*y1
             H[1,3] = 0.5*x1
             H[1,4] = y1
-            H[1,5] = -0.5*x1
+            if not norotation:
+                H[0,5] = 0.5*y1
+                H[1,5] = -0.5*x1
 
             # Put the lines where they should be
             Hf[i,:] = H[0,:]
