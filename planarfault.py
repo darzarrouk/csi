@@ -107,7 +107,6 @@ class planarfault(RectangularPatches):
         # Set depth patch attributes
         p_width = f_width/float(n_dip)
         self.setdepth(n_dip,p_width,dep)
-
         
         # Discretize the surface trace of the fault
         self.discretize(lon,lat,strike,f_length,n_strike)

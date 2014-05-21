@@ -916,7 +916,7 @@ class Fault(SourceInv):
         return
 
 
-    def assembleCd(self, datas, add_prediction=None):
+    def assembleCd(self, datas, add_prediction=None, verbose=False):
         '''
         Assembles the data covariance matrixes that have been built by each data structure.
         add_prediction: Precentage of displacement to add to the Cd diagonal to simulate a Cp (prediction error).
@@ -935,7 +935,8 @@ class Fault(SourceInv):
         st = 0
         for data in datas:
             # Fill in Cd
-            print("{0:s}: data vector shape {1:s}".format(data.name, self.d[data.name].shape))
+            if verbose:
+                print("{0:s}: data vector shape {1:s}".format(data.name, self.d[data.name].shape))
             se = st + self.d[data.name].shape[0]
             Cd[st:se, st:se] = data.Cd
             # Add some Cp if asked
