@@ -328,12 +328,18 @@ class multifaultsolve(object):
         # All done
         return
 
-    def SetSolutionFromExternal(self, soln):
+    def SetSolutionFromExternal(self, soln, dtype=np.float32):
         '''
         Takes a vector where the solution of the problem is and affects it to mpost.
+        By default, the input has to be an array.
+        It can be a string with a file name.
         '''
 
-        # put it in mpost
+        # If it is a file, read it (binary)
+        if type(soln) is str:
+            soln = np.fromfile(soln, dtype=dtype)
+        
+        # Put it where it needs to be
         self.mpost = soln
 
         # All done
