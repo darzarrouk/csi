@@ -46,6 +46,77 @@ class seismiclocations(SourceInv):
         # All done
         return
 
+    def read_from_Hauksson(self,filename, header=0):
+        '''
+        Read the Seismic catalog from the SCSN networks (Template from E. Hauksson, Caltech).
+        Args:
+            * filename      : Name of the input file.
+            * header        : Size of the header.
+        '''
+
+        print ("Read from file {} into data set {}".format(filename, self.name))
+
+        # Open the file
+        fin = open(filename,'r')
+
+        # Read it all
+        A = fin.readlines()
+
+        # Initialize the business
+        self.time = []
+        self.lon = []
+        self.lat = []
+        self.depth = []
+        self.mag = []
+
+        # Read the header to figure out where is the magnitude
+        desc = A[header-2].split()
+        #imag = np.flatnonzero(np.array(desc)=='MAG').tolist()[0]
+        #imag += 4
+
+        # Loop over the A, there is a header line header
+        for i in range(header, len(A)):
+            # Split the string line
+            tmp = A[i].split()
+
+            # Get the values
+            yr = np.int(tmp[0])
+            mo = np.int(tmp[1])
+            da = np.int(tmp[2])
+            hr = np.int(tmp[3])
+            mi = np.int(tmp[4])
+            sd = np.int(np.floor(np.float(tmp[5])))
+            lat = np.float(tmp[7])
+            lon = np.float(tmp[6])
+            depth = np.float(tmp[8])
+            mag = np.float(tmp[9])
+
+            # Create the time object
+            d = dt.datetime(yr, mo, da, hr, mi, sd)
+
+            # Store things in self
+            self.time.append(d)
+            self.lat.append(lat)
+            self.lon.append(lon)
+            self.depth.append(depth)
+            self.mag.append(mag)
+
+        # Close the file
+        fin.close()
+
+        # Make arrays
+        self.time = np.array(self.time)
+        self.lat = np.array(self.lat)
+        self.lon = np.array(self.lon)
+        self.depth = np.array(self.depth)
+        self.mag = np.array(self.mag)
+
+        # Create the utm coordinates
+        self.lonlat2xy()
+
+        # All done
+        return
+
     def read_from_SCSN(self,filename, header=65):
         '''
         Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
@@ -340,7 +411,7 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-    def selectbox(self, minlon, maxlon, minlat, maxlat, depth=100000., mindepth=0.0):
+    def selectbox(self, minlon, maxlon, minlat, maxlat, depth=100000., mindep=0.0):
         '''
         Select the earthquakes in a box defined by min and max, lat and lon.
 
@@ -359,7 +430,7 @@ class seismiclocations(SourceInv):
 
         # Select on latitude and longitude
         print( "Selecting the earthquakes in the box Lon: {} to {} and Lat: {} to {}".format(minlon, maxlon, minlat, maxlat))
-        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon) & (self.depth < depth) & (self.depth > mindepth))
+        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon) & (self.depth<depth) & (self.depth>mindep))
 
         # make the selection
         self._select(u)
@@ -1006,34 +1077,6 @@ class seismiclocations(SourceInv):
         # Close the file
         frough.close()
         fsmooth.close()
-
-        # All done
-        return
-
-    def estimateSeismicityRate(self, fault, extra_div=1.0, epsilon=0.00001):
-        '''
-        Counts the number of earthquakes per patches and divides by the area of the patches.
-        Args:
-            * fault         : Fault object.
-            * extra_div     : Extra divider to get the seismicity rate.
-            * epsilon       : Epsilon value for precision of earthquake location.
-        '''
-
-        # Make sure the area of the fault patches is computed
-        fault.computeArea()
-
-        # Project the earthquakes on fault patches
-        ipatch = self.getEarthquakesOnPatches(fault, epsilon=epsilon)
-
-        # Count
-        number = np.zeros(len(fault.patch))
-
-        # Loop
-        for i in range(len(fault.patch)):
-            number[i] = len(ipatch[i].tolist())/(fault.area[i]*extra_div)
-
-        # Store that in the fault
-        fault.seismicityRate = number
 
         # All done
         return

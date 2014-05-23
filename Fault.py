@@ -687,6 +687,7 @@ class Fault(SourceInv):
                               with respect to the center of the network (Helmert transform).
                               'strain' -> For GPS, estimate the full strain tensor (Rotation
                               + Translation + Internal strain)
+                              'strainnorotation' -> For GPS, estimate the strain tensor, no rotation).
             * slipdir       : directions of slip to include. can be any combination of s,d,t.
         '''
 
@@ -747,6 +748,15 @@ class Fault(SourceInv):
                     self.strain[data.name] = 6
                 else:
                     print('3d strain has not been implemented')
+                    return
+            elif self.poly[data.name] is 'strainnorotation':
+                if not hasattr(self, 'strain'):
+                    self.strain = {}
+                if data.obs_per_station==2:
+                    Npo += 5
+                    self.strain[data.name] = 5
+                else:
+                    print('3d strain ahs not been implemented')
                     return
             else:
                 Npo += (self.poly[data.name])
@@ -895,17 +905,19 @@ class Fault(SourceInv):
                         nc = 7
                     elif data.obs_per_station==2:
                         nc = 4
-                    # Put it into G for as much observable per station we have
-                    polend = polstart + nc
-                    G[el:el+Ndlocal, polstart:polend] = orb
-                    polstart += nc
                 if self.poly[data.name] is 'strain':
                     orb = self.get2DstrainEst(data)
                     if data.obs_per_station == 2:
                         nc = 6
-                    polend = polstart + nc
-                    G[el:el+Ndlocal, polstart:polend] = orb
-                    polstart += nc
+                if self.poly[data.name] is 'strainnorotation':
+                    orb = self.get2DstrainEst(data, norotation=True)
+                    if data.obs_per_station == 2:
+                        nc = 5
+                # Put it into G for as much observable per station we have
+                polend = polstart + nc
+                G[el:el+Ndlocal, polstart:polend] = orb
+                polstart += nc
+
             # Update el to check where we are
             el = el + Ndlocal
 
@@ -916,7 +928,7 @@ class Fault(SourceInv):
         return
 
 
-    def assembleCd(self, datas, add_prediction=None):
+    def assembleCd(self, datas, add_prediction=None, verbose=False):
         '''
         Assembles the data covariance matrixes that have been built by each data structure.
         add_prediction: Precentage of displacement to add to the Cd diagonal to simulate a Cp (prediction error).
@@ -935,7 +947,8 @@ class Fault(SourceInv):
         st = 0
         for data in datas:
             # Fill in Cd
-            print("{0:s}: data vector shape {1:s}".format(data.name, self.d[data.name].shape))
+            if verbose:
+                print("{0:s}: data vector shape {1:s}".format(data.name, self.d[data.name].shape))
             se = st + self.d[data.name].shape[0]
             Cd[st:se, st:se] = data.Cd
             # Add some Cp if asked
@@ -1085,5 +1098,186 @@ class Fault(SourceInv):
 
         # All done
         return
+
+    def get2DstrainEst(self, data, norotation=False):
+        '''
+        Returns the matrix to estimate the full 2d strain tensor.
+        '''
+
+        # Check
+        assert (data.dtype is 'gpsrates')
+
+        # Get the number of gps stations
+        ns = data.station.shape[0]
+
+        # Get the data vector size
+        nd = self.d[data.name].shape[0]
+
+        # Get the number of parameters to look for
+        if data.obs_per_station==2:
+            if norotation:
+                nc = 5
+            else:
+                nc = 6
+        else:
+            print('Not implemented')
+            return
+
+        # Check something
+        assert data.obs_per_station*ns==nd
+
+        # Get the center of the network
+        x0 = np.mean(data.x)
+        y0 = np.mean(data.y)
+
+        # Compute the baselines
+        base_x = data.x - x0
+        base_y = data.y - y0
+
+        # Normalize the baselines
+        base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
+        base_x /= base_max
+        base_y /= base_max
+
+        # Store the normalizing factor
+        if not hasattr(self, 'StrainNormalizingFactor'):
+            self.StrainNormalizingFactor = {}
+        self.StrainNormalizingFactor[data.name] = base_max
+
+        # Allocate a Base
+        H = np.zeros((data.obs_per_station,nc))
+
+        # Put the transaltion in the base
+        H[:,:data.obs_per_station] = np.eye(data.obs_per_station)
+
+        # Allocate the full matrix
+        Hf = np.zeros((nd,nc))
+
+        # Loop over the stations
+        for i in range(ns):
+
+            # Clean the part that changes
+            H[:,data.obs_per_station:] = 0.0
+
+            # Get the values
+            x1, y1 = base_x[i], base_y[i]
+
+            # Store them
+            H[0,2] = x1
+            H[0,3] = 0.5*y1
+            H[1,3] = 0.5*x1
+            H[1,4] = y1
+            if not norotation:
+                H[0,5] = 0.5*y1
+                H[1,5] = -0.5*x1
+
+            # Put the lines where they should be
+            Hf[i,:] = H[0,:]
+            Hf[i+ns,:] = H[1,:]
+
+        # All done
+        return Hf
+
+    def getHelmertMatrix(self, data):
+        '''
+        Returns a Helmert matrix for a gps data set.
+        '''
+
+        # Check
+        assert (data.dtype is 'gpsrates')
+
+        # Get the number of stations
+        ns = data.station.shape[0]
+
+        # Get the data vector size
+        nd = self.d[data.name].shape[0]
+
+        # Get the number of helmert transform parameters
+        if data.obs_per_station==3:
+            nc = 7
+        else:
+            nc = 4
+
+        # Check something
+        assert data.obs_per_station*ns==nd
+
+        # Get the position of the center of the network
+        x0 = np.mean(data.x)
+        y0 = np.mean(data.y)
+        z0 = 0              # We do not deal with the altitude of the stations yet (later)
+
+        # Compute the baselines
+        base_x = data.x - x0
+        base_y = data.y - y0
+        base_z = 0
+
+        # Normalize the baselines
+        base_x_max = np.abs(base_x).max(); base_x /= base_x_max
+        base_y_max = np.abs(base_y).max(); base_y /= base_y_max
+
+        # Allocate a Helmert base
+        H = np.zeros((data.obs_per_station,nc))
+        
+        # put the translation in it (that part never changes)
+        H[:,:data.obs_per_station] = np.eye(data.obs_per_station)
+
+        # Allocate the full matrix
+        Hf = np.zeros((nd,nc))
+
+        # Loop over the stations
+        for i in range(ns):
+
+            # Clean the part that changes
+            H[:,data.obs_per_station:] = 0.0
+
+            # Put the rotation components and the scale components
+            x1, y1, z1 = base_x[i], base_y[i], base_z
+            if nc==7:
+                H[:,3:6] = np.array([[0.0, -z1, y1],
+                                     [z1, 0.0, -x1],
+                                     [-y1, x1, 0.0]])
+                H[:,6] = np.array([x1, y1, z1])
+            else:
+                H[:,2] = np.array([y1, -x1])
+                H[:,3] = np.array([x1, y1])
+
+            # put the lines where they should be
+            Hf[i,:] = H[0]
+            Hf[i+ns,:] = H[1]
+            if nc==7:
+                Hf[i+2*ns,:] = H[2]
+
+        # all done 
+        return Hf
+
+    def estimateSeismicityRate(self, earthquake, extra_div=1.0, epsilon=0.00001):
+        '''
+        Counts the number of earthquakes per patches and divides by the area of the patches.
+        Args:
+            * earthquake    : seismiclocation object
+            * extra_div     : Extra divider to get the seismicity rate.
+            * epsilon       : Epsilon value for precision of earthquake location.
+        '''
+
+        # Make sure the area of the fault patches is computed
+        self.computeArea()
+
+        # Project the earthquakes on fault patches 
+        ipatch = earthquake.getEarthquakesOnPatches(self, epsilon=epsilon)
+
+        # Count
+        number = np.zeros(len(self.patch))
+
+        # Loop 
+        for i in range(len(self.patch)):
+            number[i] = len(ipatch[i].tolist())/(self.area[i]*extra_div)
+
+        # Store that in the fault
+        self.earthquakesInPatch = ipatch
+        self.seismicityRate = number
+
+        # All done
+        return
+
 
 

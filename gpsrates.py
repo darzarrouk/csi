@@ -1064,7 +1064,7 @@ class gpsrates(SourceInv):
         # all done
         return
 
-    def compute2Dstrain(self, fault):
+    def compute2Dstrain(self, fault, write2file=False):
         '''
         Computes the 2D strain tensor stored in the fault given as an argument.
         '''
@@ -1075,11 +1075,17 @@ class gpsrates(SourceInv):
 
         # Get the number of obs per station
         if not hasattr(self, 'obs_per_station'):
-            if Nh == 6:
+            if (Nh == 6) or (Nh == 5):
                 self.obs_per_station = 2
             else:
                 print('Strain estimation for 3d not implemented')
         No = self.obs_per_station
+
+        # Is there rotation?
+        if Nh == 6:
+            rotation = True
+        else:
+            rotation = False
 
         # Get the position of the center of the network
         x0 = np.mean(self.x)
@@ -1107,13 +1113,51 @@ class gpsrates(SourceInv):
         Svec = fault.polysol[self.name]
         self.StrainTensor = Svec
         print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name))
+        print('Note: Extension is negative...')
+        print('Note: Counter ClockWise Rotation is positive...')
+        print('Note: There might be a scaling factor to apply to get the things right.')
+        print('         Example: if data is mm and distances in km ==> factor = 10e-6')
         print('Parameters: ')
-        print('  X Translation :    {} mm/yr'.format(Svec[0]))
-        print('  Y Translation :    {} mm/yr'.format(Svec[1]))
-        print('     Strain xx  :    {} mm/yr/km'.format(Svec[2]/base_max))
-        print('     Strain xy  :    {} mm/yr/km'.format(Svec[3]/base_max))
-        print('     Strain yy  :    {} mm/yr/km'.format(Svec[4]/base_max))
-        print('     Rotation   :    {}'.format(Svec[5]))
+        print('  X Translation :    {} '.format(Svec[0]))
+        print('  Y Translation :    {} '.format(Svec[1]))
+        print('     Strain xx  :    {} '.format(Svec[2]/base_max))
+        print('     Strain xy  :    {} '.format(Svec[3]/base_max))
+        print('     Strain yy  :    {} '.format(Svec[4]/base_max))
+        if rotation:
+            print('     Rotation   :    {}'.format(Svec[5]))
+
+        # Write 2 a file
+        if write2file:
+            filename = '{}_{}_strain.dat'.format(self.name.replace(" ",""),fault.name.replace(" ",""))
+            fout = open(filename, 'w')
+            fout.write('# Strain Estimated on the data set {}\n'.format(self.name))
+            fout.write('# Be carefull. There might be a corrective factor to apply to be in strain units\n')
+            fout.write('# Translation terms:\n')
+            fout.write('# X-axis | Y-axis \n')
+            fout.write('   {}       {} \n'.format(Svec[0],Svec[1]))
+            fout.write('# Strain Tensor: \n')
+            fout.write(' {}  {}  \n'.format(Svec[2]/base_max, Svec[3]/base_max))
+            fout.write(' {}  {}  \n'.format(Svec[3]/base_max, Svec[4]/base_max))
+            if rotation:
+                fout.write('# Rotation term: \n')
+                fout.write(' {} \n'.format(Svec[5]))
+            fout.write('# In GMT, the line to feed psvelo -Sx{scale} would be:\n')
+
+            # Get the eigen values
+            s = np.array([[Svec[2]/base_max, Svec[3]/base_max],[Svec[3]/base_max,Svec[4]/base_max]])
+            a,v = np.linalg.eig(s)
+
+            # Get the most extensional (flip sign for GMT)
+            i = np.argmin(a)
+            eps1 = -1.0*a[i]
+            i = np.argmax(a)
+            eps2 = -1.0*a[i]
+            v2 = np.array([v[0,i], v[1,i]])
+            alpha = 360. - np.arctan2(v2[0], v2[1])*180./np.pi
+
+            #write GMT
+            fout.write('LON LAT {} {} {} \n'.format(eps1, eps2, alpha))
+            fout.close()
 
         # Loop over the station
         for i in range(self.station.shape[0]):
@@ -1127,10 +1171,11 @@ class gpsrates(SourceInv):
             # Store the rest
             H[0,2] = x1
             H[0,3] = 0.5*y1
-            H[0,5] = 0.5*y1
             H[1,3] = 0.5*x1
             H[1,4] = y1
-            H[1,5] = -0.5*y1
+            if rotation:
+                H[0,5] = 0.5*y1
+                H[1,5] = -0.5*x1
 
             # Do the transform
             newv = np.dot(H, Svec)
@@ -1707,11 +1752,12 @@ class gpsrates(SourceInv):
         # All done
         return
 
-    def simulateTimeSeriesFromCMTWithRandomPerturbation(self, sismo, N, xstd=10., ystd=10., depthstd=10., Moperc=30., scale=1., verbose=True, plot='jhasgc', elasticstructure='okada'):
+    def simulateTimeSeriesFromCMTWithRandomPerturbation(self, sismo, N, xstd=10., ystd=10., depthstd=10., Moperc=30., scale=1., verbose=True, plot='jhasgc', elasticstructure='okada', relative_location_is_ok=False):
         '''
         Runs N simulations of time series from CMT.
         xtsd, ystd, depthstd are the standard deviation of the Gaussian used to perturbe the location
         The moment will be perturbed by a fraction of the moment (Moperc).
+        if relative_location_is_ok is True, then all the mechanisms are moved by a common translation.
         '''
 
         if verbose:
@@ -1729,19 +1775,33 @@ class gpsrates(SourceInv):
             # Copy the sismo object
             earthquakes = copy.deepcopy(sismo)
 
+            # Check
+            if relative_location_is_ok:
+                DX = np.random.randn()*xstd
+                DY = np.random.randn()*ystd
+                DZ = np.random.randn()*depthstd
+                DMo = np.random.randn()*Moperc
+
             # Pertubate
             for fault in earthquakes.faults:
 
                 # Move the fault
-                dx = np.random.randn()*xstd
-                dy = np.random.randn()*ystd
-                dz = np.random.randn()*depthstd
+                if not relative_location_is_ok:
+                    dx = np.random.randn()*xstd
+                    dy = np.random.randn()*ystd
+                    dz = np.random.randn()*depthstd
+                    dmo = np.random.randn()*Moperc
+                else:
+                    dx = DX
+                    dy = DY
+                    dz = DZ
+                    dmo = DMo
                 fault.moveFault(dx, dy, dz)
 
                 # Scale the slip by Moperc %
-                fault.slip[:,0] = fault.slip[:,0] + fault.slip[:,0]*Moperc/100.
-                fault.slip[:,1] = fault.slip[:,1] + fault.slip[:,1]*Moperc/100.
-                fault.slip[:,2] = fault.slip[:,2] + fault.slip[:,2]*Moperc/100.
+                fault.slip[:,0] = fault.slip[:,0] + fault.slip[:,0]*dmo/100.
+                fault.slip[:,1] = fault.slip[:,1] + fault.slip[:,1]*dmo/100.
+                fault.slip[:,2] = fault.slip[:,2] + fault.slip[:,2]*dmo/100.
 
             # Compute the simulation for that set of faults
             self.simulateTimeSeriesFromCMT(earthquakes, scale=scale, elasticstructure=elasticstructure, verbose=False)
