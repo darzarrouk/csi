@@ -796,7 +796,7 @@ class Fault(SourceInv):
 
             # Build the polynomial function
             if data.dtype is 'gpsrates':
-                orb = data.getTransformEstimator(self.poly[data.name])) 
+                orb = data.getTransformEstimator(self.poly[data.name]) 
             elif data.dtype in ('insarrates', 'cosicorrrates'):
                 orb = getPolyEstimator(self.poly[data.name])
 
