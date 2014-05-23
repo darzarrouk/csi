@@ -120,7 +120,7 @@ class TriangularTents(TriangularPatches):
 
     def deleteTents(self, tents):
         '''
-        Deletes a list of tents.
+        Deletes a list of tent (indices)
         '''
 
         while len(tents)>0:
@@ -135,6 +135,31 @@ class TriangularTents(TriangularPatches):
             for u in range(len(tents)):
                 if tents[u]>i:
                     tents[u] -= 1
+
+        # All done
+        return
+
+
+    def chooseTents(self, tents):
+        '''
+        Choose a subset of tents (indices)
+        '''
+        tent_new = []
+        tentll_new = []
+        tentid_new = []
+
+        for it in tents:
+            tent_new.append(self.tent[it])
+            tentll_new.append(self.tentll[it])
+            tentid_new.append(self.tentid[it])
+
+        self.tent = tent_new
+        self.tentll = tentll_new
+        self.tentid = tentid_new
+
+        self.slip = self.slip[tents,:]
+        self.N_slip = len(self.slip)
+        self.numtent = len(tents)
 
         # All done
         return
@@ -1007,7 +1032,8 @@ class TriangularTents(TriangularPatches):
             y = (np.cos(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake))
             z =  1.0*np.sin(dip)*np.sin(rake)
 
-            print("strike, dip, rake, x, y, z: ", strike, dip, rake, x, y, z)
+            # print("strike, dip, rake, x, y, z: ", strike, dip, rake, x, y, z)
+
             # Scale these
             if scale.__class__ is float:
                 sca = scale

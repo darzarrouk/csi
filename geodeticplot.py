@@ -709,6 +709,8 @@ class geodeticplot(object):
             d = insar.synth
         elif data == 'res':
             d = insar.vel - insar.synth
+        elif data == 'poly':
+            d = insar.orb
         else:
             print('Unknown data type')
             return

@@ -1,4 +1,4 @@
-''' 
+'''
 A class that deals with gps rates.
 
 Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
@@ -29,11 +29,11 @@ class gpsrates(SourceInv):
         '''
 
         # Base class init
-        super(self.__class__,self).__init__(name,utmzone,ellps) 
-        
+        super(self.__class__,self).__init__(name,utmzone,ellps)
+
         # Set things
         self.dtype = 'gpsrates'
- 
+
         # print
         print ("---------------------------------")
         print ("---------------------------------")
@@ -53,14 +53,14 @@ class gpsrates(SourceInv):
         Set station names and locations attributes
         Args:
             * sta_name: station names
-            * x: x coordinate (longitude or UTM) 
+            * x: x coordinate (longitude or UTM)
             * y: y coordinate (latitude or UTM)
             * loc_format: location format ('LL' for lon/lat or 'XY' for UTM)
         '''
 
         # Check input parameters
         assert len(sta_name)==len(x)==len(y), 'sta_name, x and y must have the same length'
-        assert loc_format=='LL' or loc_format=='XY', 'loc_format can be LL or XY'        
+        assert loc_format=='LL' or loc_format=='XY', 'loc_format can be LL or XY'
         if type(x)==list:
             x = np.array(x)
         if type(y)==list:
@@ -72,18 +72,18 @@ class gpsrates(SourceInv):
         self.lat = np.array([],dtype='float64')
         self.x   = np.array([],dtype='float64')
         self.y   = np.array([],dtype='float64')
-        if loc_format=='LL':            
+        if loc_format=='LL':
             self.lon = np.append(self.lon,x)
             self.lat = np.append(self.lat,y)
             self.x, self.y = self.ll2xy(self.lon,self.lat)
         else:
             self.x = np.append(self.x,x)
             self.y = np.append(self.y,y)
-            self.lon, self.lat = self.ll2xy(self.x,self.y)            
+            self.lon, self.lat = self.ll2xy(self.x,self.y)
 
         # All done
         return
-    
+
     def readStat(self,station_file,loc_format='LL'):
         '''
         Read simple station ascii file and populate station attributes
@@ -94,14 +94,14 @@ class gpsrates(SourceInv):
         STNAME  X_COORD Y_COORD (if loc_format='XY')
         STNAME  LON LAT (if loc_format='LL')
         '''
-        
+
         # Assert if station file exists
         assert os.path.exists(station_file), 'Cannot read %s (no such file)'%(station_file)
 
         # Assert file format
         assert loc_format=='LL' or loc_format=='XY', 'loc_format can be either LL or XY'
-        
-        # Read the file 
+
+        # Read the file
         X = []
         Y = []
         sta_name = []
@@ -120,7 +120,7 @@ class gpsrates(SourceInv):
         self.vel_enu = np.zeros((len(sta_name), 3))
 
         # All done
-        return    
+        return
 
     def getvelo(self, station, data='data'):
         '''
@@ -216,7 +216,7 @@ class gpsrates(SourceInv):
 
     def getprofile(self, name, loncenter, latcenter, length, azimuth, width, data='data'):
         '''
-        Project the GPS velocities onto a profile. 
+        Project the GPS velocities onto a profile.
         Works on the lat/lon coordinates system.
         Args:
             * name              : Name of the profile.
@@ -265,18 +265,18 @@ class gpsrates(SourceInv):
         y1 = ye1 + (width/2.)*np.sin(alpha)
         x2 = xe1 + (width/2.)*np.cos(alpha)
         y2 = ye1 - (width/2.)*np.sin(alpha)
-        x3 = xe2 + (width/2.)*np.cos(alpha) 
-        y3 = ye2 - (width/2.)*np.sin(alpha) 
-        x4 = xe2 - (width/2.)*np.cos(alpha) 
+        x3 = xe2 + (width/2.)*np.cos(alpha)
+        y3 = ye2 - (width/2.)*np.sin(alpha)
+        x4 = xe2 - (width/2.)*np.cos(alpha)
         y4 = ye2 + (width/2.)*np.sin(alpha)
-        
+
         # Convert the box into lon/lat for further things
         lon1, lat1 = self.xy2ll(x1, y1)
         lon2, lat2 = self.xy2ll(x2, y2)
         lon3, lat3 = self.xy2ll(x3, y3)
         lon4, lat4 = self.xy2ll(x4, y4)
 
-        # make the box 
+        # make the box
         box = []
         box.append([x1, y1])
         box.append([x2, y2])
@@ -285,7 +285,7 @@ class gpsrates(SourceInv):
 
         # make latlon box
         boxll = []
-        boxll.append([lon1, lat1]) 
+        boxll.append([lon1, lat1])
         boxll.append([lon2, lat2])
         boxll.append([lon3, lat3])
         boxll.append([lon4, lat4])
@@ -294,13 +294,13 @@ class gpsrates(SourceInv):
         # Import shapely and path
         import shapely.geometry as geom
         import matplotlib.path as path
-        
+
         # 1. Create an array with the GPS positions
         GPSXY = np.vstack((self.x, self.y)).T
 
         # 2. Create a box
         rect = path.Path(box, closed=False)
-        
+
         # 3. Find those who are inside
         Bol = rect.contains_points(GPSXY)
 
@@ -337,10 +337,10 @@ class gpsrates(SourceInv):
             Ealong.append(np.dot(vec1,err[p,0:2]))
             Vup.append(vel[p,2])
             Eup.append(err[p,2])
-            
+
         # Store it in the profile list
         self.profiles[name] = {}
-        dic = self.profiles[name] 
+        dic = self.profiles[name]
         dic['Center'] = [loncenter, latcenter]
         dic['Length'] = length
         dic['Width'] = width
@@ -359,7 +359,7 @@ class gpsrates(SourceInv):
         lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
         dic['EndPointsLL'] = [[lone1, late1],
                               [lone2, late2]]
-    
+
         # all done
         return
 
@@ -386,16 +386,16 @@ class gpsrates(SourceInv):
         fout.write('#           {} {} \n'.format(dic['Box'][1][0],dic['Box'][1][1]))
         fout.write('#           {} {} \n'.format(dic['Box'][2][0],dic['Box'][2][1]))
         fout.write('#           {} {} \n'.format(dic['Box'][3][0],dic['Box'][3][1]))
-        
-        # Place faults in the header                                                     
+
+        # Place faults in the header
         if fault is not None:
-            if fault.__class__ is not list:                                             
+            if fault.__class__ is not list:
                 fault = [fault]
-            fout.write('# Fault Positions: \n')                                          
+            fout.write('# Fault Positions: \n')
             for f in fault:
                 d = self.intersectProfileFault(name, f)
                 fout.write('# {}          {} \n'.format(f.name, d))
-        
+
         fout.write('#---------------------------------------------------\n')
 
         # Write the values
@@ -484,7 +484,7 @@ class gpsrates(SourceInv):
         # axis of the map
         carte.axis('equal')
 
-        # Show to screen 
+        # Show to screen
         if show:
             plt.show()
 
@@ -508,7 +508,7 @@ class gpsrates(SourceInv):
 
         # import shapely
         import shapely.geometry as geom
-        
+
         # Build a linestring with the profile center
         Lp = geom.LineString(prof['EndPoints'])
 
@@ -529,7 +529,7 @@ class gpsrates(SourceInv):
         lonc, latc = prof['Center']
         xc, yc = self.ll2xy(lonc, latc)
 
-        # Get the sign 
+        # Get the sign
         xa,ya = prof['EndPoints'][0]
         vec1 = [xa-xc, ya-yc]
         vec2 = [p[0]-xc, p[1]-yc]
@@ -559,7 +559,7 @@ class gpsrates(SourceInv):
         # open the file
         fvel = open(self.velfile, 'r')
 
-        # read it 
+        # read it
         Vel = fvel.readlines()
 
         # Initialize things
@@ -601,7 +601,7 @@ class gpsrates(SourceInv):
         self.station = np.array(self.station)
         self.factor = factor
 
-        # Pass to xy 
+        # Pass to xy
         self.lonlat2xy()
 
         # All done
@@ -625,7 +625,7 @@ class gpsrates(SourceInv):
         # open the file
         fvel = open(self.velfile, 'r')
 
-        # read it 
+        # read it
         Vel = fvel.readlines()
 
         # Initialize things
@@ -668,7 +668,7 @@ class gpsrates(SourceInv):
         self.station = np.array(self.station)
         self.factor = factor
 
-        # Pass to xy 
+        # Pass to xy
         self.lonlat2xy()
 
         # All done
@@ -687,7 +687,7 @@ class gpsrates(SourceInv):
         # open the file
         fvel = open(self.velfile, 'r')
 
-        # read it 
+        # read it
         Vel = fvel.readlines()
 
         # Initialize things
@@ -730,7 +730,7 @@ class gpsrates(SourceInv):
         self.station = np.array(self.station)
         self.factor = factor
 
-        # Pass to xy 
+        # Pass to xy
         self.lonlat2xy()
 
         # All done
@@ -808,7 +808,7 @@ class gpsrates(SourceInv):
         self.err_enu = np.array(self.err_enu)*factor
         self.station = np.array(self.station)
 
-        # Pass to xy 
+        # Pass to xy
         self.lonlat2xy()
 
         # All done
@@ -819,12 +819,12 @@ class gpsrates(SourceInv):
         '''
         Pass the position of the stations into the utm coordinate system.
         '''
-        
+
         # Transform
         self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # All done
-        return 
+        return
 
     def xy2lonlat(self):
         '''
@@ -834,12 +834,12 @@ class gpsrates(SourceInv):
         self.lon, self.lat = self.xy2ll(self.x, self.y)
 
         # all done
-        return 
+        return
 
     def select_stations(self, minlon, maxlon, minlat, maxlat):
-        ''' 
+        '''
         Select the stations in a box defined by min and max, lat and lon.
-        
+
         Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
@@ -885,11 +885,11 @@ class gpsrates(SourceInv):
         los = np.array(los)
         self.los = los
 
-        # Loop over 
+        # Loop over
         for i in range(self.vel_enu.shape[0]):
             self.vel_los[i] = np.dot( self.vel_enu[i,:], self.los )
 
-        # All done 
+        # All done
         return
 
     def keep_stations(self, stations):
@@ -910,14 +910,14 @@ class gpsrates(SourceInv):
         # Rejection list
         rejsta = allsta.tolist()
 
-        # Reject 
+        # Reject
         self.reject_stations(rejsta)
 
         # All done
         return
 
     def reject_stations_fault(self, dis, faults):
-        ''' 
+        '''
         Rejects the pixels that are dis km close to the fault.
         Args:
             * dis       : Threshold distance.
@@ -927,7 +927,7 @@ class gpsrates(SourceInv):
         # Import stuff
         import shapely.geometry as geom
 
-        # Check something 
+        # Check something
         if faults.__class__ is not list:
             faults = [faults]
 
@@ -949,7 +949,7 @@ class gpsrates(SourceInv):
 
         # Find the close ones
         u = np.where(d<=dis)[0].tolist()
-        
+
         # reject them
         self.reject_stations(self.station[u].tolist())
 
@@ -1007,12 +1007,12 @@ class gpsrates(SourceInv):
         Args:
             * station   : name of the station or list of station names.
         '''
-    
+
         if station.__class__ is str:
 
             # Get the concerned station
             u = np.flatnonzero(self.station == station)
-           
+
             # Case station missing
             if len(u) == 0:
                 print("This station is not part of your network")
@@ -1040,7 +1040,7 @@ class gpsrates(SourceInv):
 
         # All done
         return
-    
+
     def removePoly(self, fault):
         '''
         Removes the polynomial form inverted.
@@ -1063,7 +1063,7 @@ class gpsrates(SourceInv):
 
         # all done
         return
-    
+
     def compute2Dstrain(self, fault):
         '''
         Computes the 2D strain tensor stored in the fault given as an argument.
@@ -1095,18 +1095,18 @@ class gpsrates(SourceInv):
         base_y /= base_max
 
         # Allocate a Strain base
-        H = np.zeros((No,Nh)) 
+        H = np.zeros((No,Nh))
 
         # Fill in the part that does not change
-        H[:,:No] = np.eye(No) 
+        H[:,:No] = np.eye(No)
 
         # Store the transform here
-        self.Strain = np.zeros(self.vel_enu.shape) 
+        self.Strain = np.zeros(self.vel_enu.shape)
 
         # Get the parameters for this data set
         Svec = fault.polysol[self.name]
         self.StrainTensor = Svec
-        print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name)) 
+        print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name))
         print('Parameters: ')
         print('  X Translation :    {} mm/yr'.format(Svec[0]))
         print('  Y Translation :    {} mm/yr'.format(Svec[1]))
@@ -1125,12 +1125,12 @@ class gpsrates(SourceInv):
             x1, y1 = base_x[i], base_y[i]
 
             # Store the rest
-            H[0,2] = x1 
-            H[0,3] = 0.5*y1 
-            H[0,5] = 0.5*y1 
+            H[0,2] = x1
+            H[0,3] = 0.5*y1
+            H[0,5] = 0.5*y1
             H[1,3] = 0.5*x1
             H[1,4] = y1
-            H[1,5] = -0.5*y1  
+            H[1,5] = -0.5*y1
 
             # Do the transform
             newv = np.dot(H, Svec)
@@ -1138,7 +1138,7 @@ class gpsrates(SourceInv):
 
         # All done
         return
-         
+
     def remove2Dstrain(self, fault):
         '''
         Computess the 2D strain and removes it.
@@ -1147,7 +1147,7 @@ class gpsrates(SourceInv):
         # Computes the strain
         self.compute2Dstrain(fault)
 
-        # Correct 
+        # Correct
         self.vel_enu = self.vel_enu - self.Strain
 
         # All done
@@ -1234,7 +1234,7 @@ class gpsrates(SourceInv):
         # Computes the strain
         self.computeHelmertTransform(fault)
 
-        # Correct 
+        # Correct
         self.vel_enu = self.vel_enu - self.HelmTransform
 
         # All done
@@ -1274,7 +1274,7 @@ class gpsrates(SourceInv):
         # Convert pole parameters to Cartesian
         evec_xyz = eu.llh2xyz(elat, elon, 0.0)
         self.epole = omega * evec_xyz / np.linalg.norm(evec_xyz)
-        
+
         # Predicted station velocities
         Pxyz = eu.llh2xyz(self.lat*np.pi/180., self.lon*np.pi/180., np.zeros(self.lon.shape))
         self.rot_enu = eu.euler2gps(self.epole, Pxyz.T)*self.factor
@@ -1283,12 +1283,12 @@ class gpsrates(SourceInv):
         self.vel_enu = self.vel_enu - self.rot_enu
 
         # All done
-        return 
+        return
 
     def makeDelaunay(self, plot=False):
         '''
         Builds a Delaunay triangulation of the GPS network.
-        Args:   
+        Args:
             * plot          : True/False(default).
         '''
 
@@ -1379,8 +1379,7 @@ class gpsrates(SourceInv):
                     self.synth[:,1] += ss_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if ss_synth.size > 2*Nd and east and north:
-                        self.synth[:,2] += ss_synth[N:N+Nd]
+                    self.synth[:,2] += ss_synth[N:N+Nd]
             if ('d' in direction) and ('dipslip' in G.keys()):
                 Gd = G['dipslip']
                 Sd = fault.slip[:,1]
@@ -1393,22 +1392,20 @@ class gpsrates(SourceInv):
                     self.synth[:,1] += ds_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if ds_synth.size > 2*Nd and east and north:
-                        self.synth[:,2] += ds_synth[N:N+Nd]
+                    self.synth[:,2] += ds_synth[N:N+Nd]
             if ('t' in direction) and ('tensile' in G.keys()):
                 Gt = G['tensile']
                 St = fault.slip[:,2]
                 op_synth = np.dot(Gt, St)
                 N = 0
-                if east:                
+                if east:
                     self.synth[:,0] += op_synth[0:Nd]
                     N += Nd
                 if north:
                     self.synth[:,1] += op_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if op_synth.size > 2*Nd and east and north:
-                        self.synth[:,2] += op_synth[N:N+Nd]
+                    self.synth[:,2] += op_synth[N:N+Nd]
 
             if poly == 'build' or poly == 'include':
                 if (self.name in fault.poly.keys()):
@@ -1477,7 +1474,7 @@ class gpsrates(SourceInv):
             for a in self.name.split():
                 filename = filename+a+'_'
             filename = outDir+filename+data+'.dat'
-        else: 
+        else:
             filename = outDir+namefile
 
         print ("Write {} set {} to file {}".format(data, self.name, filename))
@@ -1488,7 +1485,7 @@ class gpsrates(SourceInv):
         # write a header
         fout.write('# Name lon lat v_east v_north v_up e_east e_north e_up \n')
 
-        # Get the data 
+        # Get the data
         if data is 'data':
             z = self.vel_enu
         elif data is 'synth':
@@ -1501,14 +1498,14 @@ class gpsrates(SourceInv):
 
         # Loop over stations
         for i in range(len(self.station)):
-            fout.write('{} {} {} {} {} {} {} {} {} \n'.format(self.station[i], self.lon[i], self.lat[i], 
+            fout.write('{} {} {} {} {} {} {} {} {} \n'.format(self.station[i], self.lon[i], self.lat[i],
                                                         z[i,0], z[i,1], z[i,2],
                                                         self.err_enu[i,0], self.err_enu[i,1], self.err_enu[i,2]))
-        
+
         # Close file
         fout.close()
 
-        # All done 
+        # All done
         return
 
     def getRMS(self):
@@ -1532,33 +1529,33 @@ class gpsrates(SourceInv):
         # All done
 
     def getVariance(self):
-        '''                                                                                                      
-        Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
         '''
-        
-        # Get the number of points                                                                               
-        N = self.vel_enu.shape[0] * 3.                                                                           
-        
-        # Varianceof the data                                                                                        
-        dmean = self.vel_enu.flatten().mean()
-        dataVariance = ( 1./N * sum((self.vel_enu.flatten()-dmean)**2) ) 
-        
-        # Synthetics
-        if self.synth is not None:           
-            rmean = (self.vel_enu.flatten() - self.synth.flatten()).mean()
-            synthVariance = ( 1./N *sum( (self.vel_enu.flatten() - self.synth.flatten() - rmean)**2 ) )                
-            return dataVariance, synthVariance
-        else:
-            return dataVariance, 0.                                                                                   
-        
-        # All done       
-        
-    def getMisfit(self):
-        '''                                                                                                      
-        Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals                    
+        Computes the Variance of the data and if synthetics are computed, the RMS of the residuals
         '''
 
-        # Misfit of the data                                                                                        
+        # Get the number of points
+        N = self.vel_enu.shape[0] * 3.
+
+        # Varianceof the data
+        dmean = self.vel_enu.flatten().mean()
+        dataVariance = ( 1./N * sum((self.vel_enu.flatten()-dmean)**2) )
+
+        # Synthetics
+        if self.synth is not None:
+            rmean = (self.vel_enu.flatten() - self.synth.flatten()).mean()
+            synthVariance = ( 1./N *sum( (self.vel_enu.flatten() - self.synth.flatten() - rmean)**2 ) )
+            return dataVariance, synthVariance
+        else:
+            return dataVariance, 0.
+
+        # All done
+
+    def getMisfit(self):
+        '''
+        Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals
+        '''
+
+        # Misfit of the data
         dataMisfit = sum((self.vel_enu.flatten()))
 
         # Synthetics
@@ -1584,7 +1581,7 @@ class gpsrates(SourceInv):
 
         # Loop over the stations
         for station in self.station:
-            
+
             self.timeseries[station] = gpstimeseries(station, utmzone=self.utmzone, verbose=verbose)
             self.timeseries[station].initializeTimeSeries(start, end, interval=interval)
 
@@ -1602,7 +1599,7 @@ class gpsrates(SourceInv):
         # Check sismo
         assert hasattr(sismo, 'CMTinfo'), '{} object (seismiclocation class) needs a CMTinfo dictionary...'.format(sismo.name)
         assert hasattr(sismo, 'faults'), '{} object (seismiclocation class) needs a list of faults. Please run Cmt2Dislocation...'.format(sismo.name)
-            
+
         # Check self
         assert hasattr(self, 'timeseries'), '{} object (gpsrates class) needs a timeseries list. Please run initializeTimeSeries...'.format(self.name)
 
@@ -1637,7 +1634,7 @@ class gpsrates(SourceInv):
                 print('               rake : {}'.format(rake*180./np.pi))
                 print('              depth : {}'.format(depth))
                 print('        slip vector : {}'.format(fault.slip))
-                
+
             # Compute the Green's functions
             if elasticstructure in ('okada'):
                 fault.buildGFs(self, verbose=verbose)
@@ -1655,7 +1652,7 @@ class gpsrates(SourceInv):
                 # Get some informations
                 TStime = np.array(self.timeseries[station].time)
                 TSlength = len(TStime)
-            
+
                 # Create the time vector
                 step = np.zeros(TSlength)
 
@@ -1724,7 +1721,7 @@ class gpsrates(SourceInv):
         # the time series are going to be stored in 'station name id'
         # Example: 'atjn 0001', 'atjn 0002', atjn 0003', etc and the mean will be 'atjn'
         for n in range(N):
-        
+
             if verbose:
                 sys.stdout.write('\r {}/{:03d} models'.format(n, N))
                 sys.stdout.flush()
@@ -1758,7 +1755,7 @@ class gpsrates(SourceInv):
 
         # Compute the average and the standard deviation
         for station in self.station:
-            
+
             # Verbose
             if verbose:
                 sys.stdout.write('\r {}'.format(station))

@@ -24,9 +24,9 @@ class insarrates(SourceInv):
         '''
 
         # Base class init
-        super(self.__class__,self).__init__(name,utmzone,ellps) 
+        super(self.__class__,self).__init__(name,utmzone,ellps)
 
-        # Initialize the data set 
+        # Initialize the data set
         self.dtype = 'insarrates'
 
         if verbose:
@@ -90,7 +90,7 @@ class insarrates(SourceInv):
         self.lat = np.array(self.lat)
         self.err = np.array(self.err)*factor
         self.los = np.array(self.los)
-        
+
         # Compute lon lat to utm
         self.x, self.y = self.ll2xy(self.lon,self.lat)
 
@@ -138,7 +138,7 @@ class insarrates(SourceInv):
             self.err.append(np.float(tmp[6]))
             self.los.append([np.float(tmp[8]), np.float(tmp[9]), np.float(tmp[10])])
             tmp = B[i].split()
-            self.corner.append([np.float(tmp[6]), np.float(tmp[7]), np.float(tmp[8]), np.float(tmp[9])])    
+            self.corner.append([np.float(tmp[6]), np.float(tmp[7]), np.float(tmp[8]), np.float(tmp[9])])
 
         # Make arrays
         self.vel = (np.array(self.vel)+step)*factor
@@ -185,7 +185,7 @@ class insarrates(SourceInv):
             vel = np.fromfile(data, dtype=dtype)[::downsample]*factor + step
         else:
             vel = data.flatten()[::downsample]*factor + step
-            
+
         # Get the lon
         if type(lon) is str:
             lon = np.fromfile(lon, dtype=dtype)[::downsample]
@@ -199,8 +199,8 @@ class insarrates(SourceInv):
             lat = lat[::downsample]
 
         # Check sizes
-        assert vel.shape==lon.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)  
-        assert vel.shape==lat.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)  
+        assert vel.shape==lon.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)
+        assert vel.shape==lat.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)
 
         # Get the error
         if err is not None:
@@ -257,7 +257,7 @@ class insarrates(SourceInv):
         # Open the input file
         import scipy.io as scio
         A = scio.loadmat(filename)
-        
+
         # Get the phase values
         self.vel = (A['velo'].flatten()+ step)*factor
         self.err = A['verr'].flatten()
@@ -392,7 +392,7 @@ class insarrates(SourceInv):
             self.err = self.err[u]
 
         # Convert to utm
-        self.x, self.y = self.ll2xy(self.lon, self.lat) 
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # Deal with the LOS
         self.los = np.ones((self.lon.shape[0],3))
@@ -417,17 +417,17 @@ class insarrates(SourceInv):
 
     def ModelResolutionDownsampling(self, faults, threshold, damping, startingsize=10., minimumsize=0.5, tolerance=0.1, plot=False):
         '''
-        Downsampling algorythm based on Lohman & Simons, 2005, G3. 
+        Downsampling algorythm based on Lohman & Simons, 2005, G3.
         Args:
             faults          : List of faults, these need to have a buildGFs routine (ex: for RectangularPatches, it will be Okada).
             threshold       : Resolution threshold, if above threshold, keep dividing.
             damping         : Damping parameter. Damping is enforced through the addition of a identity matrix.
             startingsize    : Starting size of the downsampling boxes.
         '''
-        
+
         # If needed
         from .imagedownsampling import imagedownsampling
-        
+
         # Check if faults have patches and builGFs routine
         for fault in faults:
             assert (hasattr(fault, 'builGFs')), 'Fault object {} does not have a buildGFs attribute...'.format(fault.name)
@@ -454,7 +454,7 @@ class insarrates(SourceInv):
     def buildCd(self, sigma, lam, function='exp'):
         '''
         Builds the full Covariance matrix from values of sigma and lambda.
-        
+
         If function='exp':
 
             Cov(i,j) = sigma*sigma * exp(-d[i,j] / lam)
@@ -511,9 +511,9 @@ class insarrates(SourceInv):
         return d
 
     def select_pixels(self, minlon, maxlon, minlat, maxlat):
-        ''' 
+        '''
         Select the pixels in a box defined by min and max, lat and lon.
-        
+
         Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
@@ -746,20 +746,20 @@ class insarrates(SourceInv):
         return
 
     def reject_pixels_fault(self, dis, faults):
-        ''' 
+        '''
         Rejects the pixels that are dis km close to the fault.
         Args:
             * dis       : Threshold distance.
             * faults    : list of fault objects.
         '''
-        
+
         # Import shapely
         import shapely.geometry as geom
-        
+
         # Variables to trim are  self.corner,
         # self.xycorner, self.Cd, (self.synth)
 
-        # Check something 
+        # Check something
         if faults.__class__ is not list:
             faults = [faults]
 
@@ -781,7 +781,7 @@ class insarrates(SourceInv):
 
         # Find the close ones
         u = np.where(d<=dis)[0].tolist()
-            
+
         while len(u)>0:
             ind = u.pop()
             self.reject_pixel(ind)
@@ -791,7 +791,7 @@ class insarrates(SourceInv):
 
     def getprofile(self, name, loncenter, latcenter, length, azimuth, width):
         '''
-        Project the SAR velocities onto a profile. 
+        Project the SAR velocities onto a profile.
         Works on the lat/lon coordinates system.
         Args:
             * name              : Name of the profile.
@@ -846,7 +846,7 @@ class insarrates(SourceInv):
 
         # Get average value
         average = profile['LOS Velocity'][ii].mean()
-    
+
         # Set the reference
         profile['LOS Velocity'][:] -= average
 
@@ -870,7 +870,7 @@ class insarrates(SourceInv):
             if profile['LOS Error'] is not None:
                 profile['LOS Error'] = profile['LOS Error'][ii]
 
-        # Amplitude cleanup 
+        # Amplitude cleanup
         if zlim is not None:
             ii = self._getindexZlimProfile(name, zlim[0], zlim[1])
             profile['Distance'] = profile['Distance'][ii]
@@ -895,7 +895,7 @@ class insarrates(SourceInv):
 
         # Run a runing average on it
         for i in range(dis.shape[0]):
-            
+
             # Where am i?
             d = dis[i]
 
@@ -911,7 +911,7 @@ class insarrates(SourceInv):
             # Get the error
             e = vel[jj].std()
 
-            # Set it 
+            # Set it
             outvel[i] = m
             outerr[i] = e
 
@@ -1005,11 +1005,11 @@ class insarrates(SourceInv):
 
         # Convert the box into lon/lat for further things
         lon1, lat1 = self.xy2ll(x1, y1)
-        lon2, lat2 = self.xy2ll(x2, y2)     
+        lon2, lat2 = self.xy2ll(x2, y2)
         lon3, lat3 = self.xy2ll(x3, y3)
         lon4, lat4 = self.xy2ll(x4, y4)
 
-        # make the box 
+        # make the box
         box = []
         box.append([x1, y1])
         box.append([x2, y2])
@@ -1048,7 +1048,7 @@ class insarrates(SourceInv):
 
         # Check if lengths are ok
         if len(xg) > 5:
-        
+
             # 5. Get the sign of the scalar product between the line and the point
             vec = np.array([xe1-xc, ye1-yc])
             sarxy = np.vstack((xg-xc, yg-yc)).T
@@ -1059,7 +1059,7 @@ class insarrates(SourceInv):
             Dacros = []; Dalong = []; V = []; E = []
             # Build lines of the profile
             Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
-            Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]]) 
+            Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]])
             # Build a multipoint
             PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
             # Loop on the points
@@ -1107,11 +1107,11 @@ class insarrates(SourceInv):
         # All done
         return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2
 
-    def getAlongStrikeOffset(self, name, fault, interpolation=None, width=1.0, 
+    def getAlongStrikeOffset(self, name, fault, interpolation=None, width=1.0,
             length=10.0, faultwidth=1.0, tolerance=0.2, azimuthpad=2.0):
 
         '''
-        Runs along a fault to determine variations of the phase offset in the 
+        Runs along a fault to determine variations of the phase offset in the
         along strike direction.
         Args:
             * name              : name of the results stored in AlongStrikeOffsets
@@ -1141,7 +1141,7 @@ class insarrates(SourceInv):
         ASy = []
         ASazi = []
 
-        # Loop 
+        # Loop
         for i in range(len(xf)):
 
             # Write something
@@ -1159,7 +1159,7 @@ class insarrates(SourceInv):
             if np.isfinite(Az):
 
                 # Get the profile
-                dis, vel, err, norm = self.coord2prof(xp, yp, length, pAz, 
+                dis, vel, err, norm = self.coord2prof(xp, yp, length, pAz,
                         width, plot=False)[0:4]
 
                 # Keep only the non NaN values
@@ -1175,7 +1175,7 @@ class insarrates(SourceInv):
                     vel = vel[pts]
                     err = err[pts]
                     norm = np.array(norm)[pts]
-                    
+
                     # Symmetrize the profile
                     mindis = np.min(dis)
                     maxdis = np.max(dis)
@@ -1199,7 +1199,7 @@ class insarrates(SourceInv):
 
                         # Get offset
                         off = self._getoffset(dis, vel, faultwidth, plot=False)
-                            
+
                         # Store things in the lists
                         ASprof.append(off)
                         ASx.append(xp)
@@ -1207,7 +1207,7 @@ class insarrates(SourceInv):
                         ASazi.append(Az)
 
                     else:
-                        
+
                         # Store some NaNs
                         ASprof.append(np.nan)
                         ASx.append(xp)
@@ -1215,7 +1215,7 @@ class insarrates(SourceInv):
                         ASazi.append(Az)
 
                 else:
-                    
+
                     # Store some NaNs
                     ASprof.append(np.nan)
                     ASx.append(xp)
@@ -1254,7 +1254,7 @@ class insarrates(SourceInv):
         sys.stdout.write('\n')
         sys.stdout.flush()
 
-        # all done 
+        # all done
         return
 
     def writeAlongStrikeOffsets2File(self, name, filename):
@@ -1266,7 +1266,7 @@ class insarrates(SourceInv):
         fout = open(filename, 'w')
 
         # Write the header
-        fout.write('# Distance (km) || Offset || Azimuth (rad) || Lon || Lat \n')        
+        fout.write('# Distance (km) || Offset || Azimuth (rad) || Lon || Lat \n')
 
         # Get the values from the dictionary
         x = self.AlongStrikeOffsets[name]['distance']
@@ -1370,7 +1370,7 @@ class insarrates(SourceInv):
             x = self.lon
             y = self.lat
         carte.scatter(x, y, s=10, c=self.vel, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.0)
-        scalarMap.set_array(self.vel) 
+        scalarMap.set_array(self.vel)
         plt.colorbar(scalarMap)
 
         # plot the box on the map
@@ -1421,7 +1421,7 @@ class insarrates(SourceInv):
         # axis of the map
         carte.axis('equal')
 
-        # Show to screen 
+        # Show to screen
         plt.show()
 
         # All done
@@ -1468,7 +1468,7 @@ class insarrates(SourceInv):
         lonc, latc = prof['Center']
         xc, yc = self.ll2xy(lonc, latc)
 
-        # Get the sign 
+        # Get the sign
         xa,ya = prof['EndPoints'][0]
         vec1 = [xa-xc, ya-yc]
         vec2 = [p[0]-xc, p[1]-yc]
@@ -1481,34 +1481,34 @@ class insarrates(SourceInv):
         return d
 
     def getRMS(self):
-        '''                                                                                                      
-        Computes the RMS of the data and if synthetics are computed, the RMS of the residuals                    
         '''
-        
-        # Get the number of points                                                                               
-        N = self.vel.shape[0]                                                                           
-        
-        # RMS of the data                                                                                        
-        dataRMS = np.sqrt( 1./N * sum(self.vel**2) )                                               
-        
-        # Synthetics
-        if self.synth is not None:                                                                               
-            synthRMS = np.sqrt( 1./N *sum( (self.vel - self.synth)**2 ) )                
-            return dataRMS, synthRMS                                                                             
-        else:
-            return dataRMS, 0.                                                                                   
-        
-        # All done                                                                                               
-                                                                                                                 
-    def getVariance(self):
-        '''                                                                                                      
-        Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
+        Computes the RMS of the data and if synthetics are computed, the RMS of the residuals
         '''
 
-        # Get the number of points                                                                               
+        # Get the number of points
         N = self.vel.shape[0]
-        
-        # Varianceof the data                                                                                        
+
+        # RMS of the data
+        dataRMS = np.sqrt( 1./N * sum(self.vel**2) )
+
+        # Synthetics
+        if self.synth is not None:
+            synthRMS = np.sqrt( 1./N *sum( (self.vel - self.synth)**2 ) )
+            return dataRMS, synthRMS
+        else:
+            return dataRMS, 0.
+
+        # All done
+
+    def getVariance(self):
+        '''
+        Computes the Variance of the data and if synthetics are computed, the RMS of the residuals
+        '''
+
+        # Get the number of points
+        N = self.vel.shape[0]
+
+        # Varianceof the data
         dmean = self.vel.mean()
         dataVariance = ( 1./N * sum((self.vel-dmean)**2) )
 
@@ -1520,14 +1520,14 @@ class insarrates(SourceInv):
         else:
             return dataVariance, 0.
 
-        # All done  
+        # All done
 
     def getMisfit(self):
-        '''                                                                                                      
-        Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals                    
+        '''
+        Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals
         '''
 
-        # Misfit of the data                                                                                        
+        # Misfit of the data
         dataMisfit = sum((self.vel))
 
         # Synthetics
@@ -1537,7 +1537,7 @@ class insarrates(SourceInv):
         else:
             return dataMisfit, 0.
 
-        # All done  
+        # All done
 
     def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='data'):
         '''
@@ -1572,13 +1572,13 @@ class insarrates(SourceInv):
         # Plot the surface fault trace if asked
         if faults is not None:
             if faults.__class__ is not list:
-                faults = [faults] 
+                faults = [faults]
             for fault in faults:
                 if ref is 'utm':
                     ax.plot(fault.xf, fault.yf, '-b')
                 else:
                     ax.plot(fault.lon, fault.lat, '-b')
-        
+
         # Plot the gps if asked
         if gps is not None:
             for g in gps:
@@ -1587,7 +1587,7 @@ class insarrates(SourceInv):
                 else:
                         ax.quiver(g.lon, g.lat, g.vel_enu[:,0], g.vel_enu[:,1])
 
-        # Norm 
+        # Norm
         if norm is None:
             vmin = np.nanmin(z)
             vmax = np.nanmax(z)
@@ -1653,7 +1653,7 @@ class insarrates(SourceInv):
             * oversample: Oversampling factor.
             * data      : can be 'data' or 'synth'.
             * interp    : Number of points along lon and lat.
-            * cmd       : command used for the conversion( i.e., surface or xyz2gmt)
+            * cmd       : command used for the conversion( i.e., surface or xyz2grd)
         '''
 
         # Get variables
@@ -1663,6 +1663,8 @@ class insarrates(SourceInv):
             z = self.vel
         elif data is 'synth':
             z = self.synth
+        elif data is 'poly':
+            z = self.orb
 
         # Write these to a dummy file
         fout = open('xyz.xyz', 'w')
@@ -1710,7 +1712,34 @@ class insarrates(SourceInv):
 
         # All done
         return
-        
+
+
+    def write2ascii(self, fname, data='data'):
+        '''
+        Uses surface to write the output to a grd file.
+        Args:
+            * fname     : Filename
+            * data      : can be 'data' or 'synth'.
+        '''
+
+        # Get variables
+        x = self.lon
+        y = self.lat
+        if data is 'data':
+            z = self.vel
+        elif data is 'synth':
+            z = self.synth
+        elif data is 'poly':
+            z = self.orb
+
+        # Write these to a dummy file
+        fout = open(fname, 'w')
+        for i in range(x.shape[0]):
+            fout.write('{} {} {} \n'.format(x[i], y[i], z[i]))
+        fout.close()
+
+        return
+
 
     def _getazimuth(self, x, y, i, pad=2):
         '''
@@ -1740,7 +1769,7 @@ class insarrates(SourceInv):
     def _getoffset(self, x, y, w, plot=True):
         '''
         Computes the offset around zero along a profile.
-        Args:   
+        Args:
             * x         : X-axis of the profile
             * y         : Y-axis of the profile
             * w         : Width of the zero zone.
