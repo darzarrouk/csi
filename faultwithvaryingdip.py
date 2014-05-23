@@ -230,3 +230,4 @@ class faultwithvaryingdip(RectangularPatches):
         # All done
         return
 
+#EOF

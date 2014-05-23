@@ -157,3 +157,4 @@ class faultwithdip(RectangularPatches):
         # All done
         return
 
+#EOF

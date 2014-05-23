@@ -213,7 +213,7 @@ class gpsrates(SourceInv):
 
         # All done
         return
-
+    
     def getprofile(self, name, loncenter, latcenter, length, azimuth, width, data='data'):
         '''
         Project the GPS velocities onto a profile. 
@@ -1041,145 +1041,366 @@ class gpsrates(SourceInv):
         # All done
         return
     
-    def removePoly(self, fault):
+    def getNumberOfTransformParameters(self, transformation):
         '''
-        Removes the polynomial form inverted.
-        '''
-
-        # Get the parameters of the polynomial
-        Ns = fault.polysol[self.name].shape[0]
-        Cx = 0.0;
-        Cy = 0.0;
-        Cz = 0.0;
-        if Ns==2:
-            Cx, Cy = fault.polysol[self.name]
-        elif Ns==3:
-            Cx, Cy, Cz = fault.polysol[self.name]
-
-        # Add that to the values
-        self.vel_enu[:,0] -= Cx
-        self.vel_enu[:,1] -= Cy
-        self.vel_enu[:,2] -= Cz
-
-        # all done
-        return
-    
-    def compute2Dstrain(self, fault, write2file=False):
-        '''
-        Computes the 2D strain tensor stored in the fault given as an argument.
+        Returns the number of transform parameters for the given transformation.
+        Args:
+            * transformation : String. Can be
+                        'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
         '''
 
-        # Get the size of the strain tensor
-        assert fault.strain[self.name]
-        Nh = fault.strain[self.name]
-
-        # Get the number of obs per station
-        if not hasattr(self, 'obs_per_station'):
-            if (Nh == 6) or (Nh == 5):
-                self.obs_per_station = 2
+        # Helmert Transform
+        if transformation is 'full':
+            if self.obs_per_station==3:
+                Npo = 7                    # 3D Helmert transform is 7 parameters
             else:
-                print('Strain estimation for 3d not implemented')
-        No = self.obs_per_station
-
-        # Is there rotation?
-        if Nh == 6:
-            rotation = True
+                Npo = 4                    # 2D Helmert transform is 4 parameters
+        # Full Strain (Translation + Strain + Rotation)
+        elif transformation is 'strain':
+            assert self.obs_per_station==2, '3d strain has not been implemented'
+            Npo = 6
+        # Strain without rotation (Translation + Strain)
+        elif transformation is 'strainnorotation':
+            assert self.obs_per_station==2, '3d strain has not been implemented'
+            Npo = 5
+        # Strain Only (Strain)
+        elif transformation is 'strainonly':
+            assert self.obs_per_station==2, '3d strain has not been implemented'
+            Npo = 3
+        # Strain without translation (Strain + Rotation)
+        elif transformation is 'strainnotranslation':
+            assert self.obs_per_station==2, '3d strain has not been implemented'
+            Npo = 4
+        # Translation
+        elif transformation is 'translation':
+            assert self.obs_per_station==2, '3d strain has not been implemented'
+            Npo = 2
+        # Translation and Rotation
+        elif transformation is 'translationrotation':
+            assert self.obs_per_station==2, '3d strain has not been implemented'
+            Npo = 3
+        # Uknown
         else:
-            rotation = False
+            print('No Transformation asked for object {}'.format(self.name))
+            return 0
+            
+        # All done
+        return Npo
 
-        # Get the position of the center of the network
-        x0 = np.mean(self.x)
-        y0 = np.mean(self.y)
+    def getTransformEstimator(self, transformation):
+        '''
+        Returns the estimator for the transform.
+        Args:
+            * transformation : String. Can be
+                        'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
+        '''
+        
+        # Helmert Transform
+        if transformation is 'full':
+            orb = self.getHelmertMatrix(self, components=self.obs_per_station)
+        # Strain + Rotation + Translation
+        elif transformation is 'strain':
+            orb = self.get2DstrainEst(self)
+        # Strain + Translation
+        elif transformation is 'strainnorotation':
+            orb = self.get2DstrainEst(self, rotation=False)
+        # Strain
+        elif transformation is 'strainonly':
+            orb = self.get2DstrainEst(self, rotation=False, translation=False)
+        # Strain + Rotation
+        elif transformation is 'strainnotranslation':
+            orb = self.get2DstrainEst(self, translation=False)
+        # Translation
+        elif transformation is 'translation':
+            orb = self.get2DstrainEst(self, strain=False, rotation=False)
+        # Translation and Rotation
+        elif transformation is 'translationrotation': 
+            orb = self.get2DstrainEst(self, strain=False)
+        # Unknown case
+        else:
+            print('No Transformation asked for object {}'.format(self.name))
+            return None
+        
+        # All done
+        return orb
 
-        # Compute the baseline and normalize these
-        base_x = self.x - x0
-        base_y = self.y - y0
+    def computeTransformation(self, fault):
+        '''
+        Computes the transformation that is stored with a particular fault.
+        Stores it in transformation.
+        '''
+
+        # Get the transformation 
+        transformation = fault.poly[self.name]
+        if type(transformation) is list:
+            transformation = transformation[0]
+        print('Computing transformation of type {} on data set {}'.format(transformation, self.name))
+
+        # Get the estimator
+        orb = self.getTransformEstimator(transformation)
+
+        # make the array
+        self.transformation = np.zeros(self.vel_enu.shape)
+
+        # Check
+        if orb is None:
+            return
+
+        # Get the corresponding values
+        vec = fault.polysol[self.name]
+
+        # Compute the synthetics
+        tmpsynth = np.dot(orb, vec)
+
+        # Fill it
+        no = self.vel_enu.shape[0]
+        self.transformation[:,0] = tmpsynth[:no]
+        self.transformation[:,1] = tmpsynth[no:2*no]
+        if self.obs_per_station==3:
+            self.transformation[:,2] = tmpsynth[2*no:]
+
+        # All done
+        return
+
+    def removeTransformation(self, fault):
+        '''
+        Removes the transformation that is stored in a fault.
+        '''
+
+        # Compute the transformation
+        self.computeTransformation(fault)
+
+        # Do the correction
+        self.vel_enu -= self.transformation
+
+        # All done
+        return
+
+    def get2DstrainEst(self, strain=True, rotation=True, translation=True):
+        '''
+        Returns the matrix to estimate the full 2d strain tensor.
+        Only works with 2D.
+        '''
+
+        # Get the number of gps stations
+        ns = self.station.shape[0]
+
+        # Number of components
+        nd = 2*ns
+
+        # Parameter size
+        nc = 6
+
+        # Get the center of the network
+        x0 = np.mean(data.x)
+        y0 = np.mean(data.y)
+
+        # Compute the baselines
+        base_x = data.x - x0
+        base_y = data.y - y0
 
         # Normalize the baselines
-        base_max = fault.StrainNormalizingFactor[self.name]
+        base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
         base_x /= base_max
         base_y /= base_max
 
-        # Allocate a Strain base
-        H = np.zeros((No,Nh)) 
+        # Store the normalizing factor
+        self.StrainNormalizingFactor = base_max
 
-        # Fill in the part that does not change
-        H[:,:No] = np.eye(No) 
+        # Allocate a Base
+        H = np.zeros((2,nc))
 
-        # Store the transform here
-        self.Strain = np.zeros(self.vel_enu.shape) 
+        # Put the transaltion in the base
+        H[:,:nd] = np.eye(2)
 
-        # Get the parameters for this data set
-        Svec = fault.polysol[self.name]
-        self.StrainTensor = Svec
-        print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name)) 
-        print('Note: Extension is negative...')
-        print('Note: Counter ClockWise Rotation is positive...')
-        print('Note: There might be a scaling factor to apply to get the things right.')
-        print('         Example: if data is mm and distances in km ==> factor = 10e-6')
-        print('Parameters: ')
-        print('  X Translation :    {} '.format(Svec[0]))
-        print('  Y Translation :    {} '.format(Svec[1]))
-        print('     Strain xx  :    {} '.format(Svec[2]/base_max))
-        print('     Strain xy  :    {} '.format(Svec[3]/base_max))
-        print('     Strain yy  :    {} '.format(Svec[4]/base_max))
-        if rotation:
-            print('     Rotation   :    {}'.format(Svec[5]))
+        # Allocate the full matrix
+        Hf = np.zeros((nd,nc))
 
-        # Write 2 a file
-        if write2file:
-            filename = '{}_{}_strain.dat'.format(self.name.replace(" ",""),fault.name.replace(" ",""))
-            fout = open(filename, 'w')
-            fout.write('# Strain Estimated on the data set {}\n'.format(self.name))
-            fout.write('# Be carefull. There might be a corrective factor to apply to be in strain units\n')
-            fout.write('# Translation terms:\n')
-            fout.write('# X-axis | Y-axis \n')
-            fout.write('   {}       {} \n'.format(Svec[0],Svec[1]))
-            fout.write('# Strain Tensor: \n')
-            fout.write(' {}  {}  \n'.format(Svec[2]/base_max, Svec[3]/base_max))
-            fout.write(' {}  {}  \n'.format(Svec[3]/base_max, Svec[4]/base_max))
-            if rotation:
-                fout.write('# Rotation term: \n')
-                fout.write(' {} \n'.format(Svec[5]))
-            fout.write('# In GMT, the line to feed psvelo -Sx{scale} would be:\n')
-            
-            # Get the eigen values
-            s = np.array([[Svec[2]/base_max, Svec[3]/base_max],[Svec[3]/base_max,Svec[4]/base_max]])
-            a,v = np.linalg.eig(s)
-            
-            # Get the most extensional (flip sign for GMT)
-            i = np.argmin(a)
-            eps1 = -1.0*a[i]
-            i = np.argmax(a)
-            eps2 = -1.0*a[i]
-            v2 = np.array([v[0,i], v[1,i]])
-            alpha = 360. - np.arctan2(v2[0], v2[1])*180./np.pi
-            
-            #write GMT
-            fout.write('LON LAT {} {} {} \n'.format(eps1, eps2, alpha))
-            fout.close()
-
-        # Loop over the station
-        for i in range(self.station.shape[0]):
+        # Loop over the stations
+        for i in range(ns):
 
             # Clean the part that changes
-            H[:,No:] = 0.0
+            H[:,nd:] = 0.0
 
             # Get the values
             x1, y1 = base_x[i], base_y[i]
 
-            # Store the rest
-            H[0,2] = x1 
-            H[0,3] = 0.5*y1 
+            # Store them
+            H[0,2] = x1
+            H[0,3] = 0.5*y1
             H[1,3] = 0.5*x1
             H[1,4] = y1
-            if rotation:
-                H[0,5] = 0.5*y1 
-                H[1,5] = -0.5*x1  
+            H[0,5] = 0.5*y1
+            H[1,5] = -0.5*x1
 
-            # Do the transform
-            newv = np.dot(H, Svec)
-            self.Strain[i,:No] = newv
+            # Put the lines where they should be
+            Hf[i,:] = H[0,:]
+            Hf[i+ns,:] = H[1,:]
+
+        # Select what we send back
+        columns = []
+        if translation:
+            columns.append(0)
+            columns.append(1)
+        if strain:
+            columns.append(2)
+            columns.append(3)
+            columns.append(4)
+        if rotation:
+            columns.append(5)
+
+        # All done
+        return Hf[:,columns]
+
+    def getHelmertMatrix(self, components=2):
+        '''
+        Returns a Helmert matrix for a gps data set.
+        '''
+
+        # Get the number of stations
+        ns = self.station.shape[0]
+
+        # Get the data vector size
+        nd = ns*components
+
+        # Get the number of helmert transform parameters
+        if components==3:
+            nc = 7
+        else:
+            nc = 4
+
+        # Get the position of the center of the network
+        x0 = np.mean(data.x)
+        y0 = np.mean(data.y)
+        z0 = 0              # We do not deal with the altitude of the stations yet (later)
+
+        # Compute the baselines
+        base_x = data.x - x0
+        base_y = data.y - y0
+        base_z = 0
+
+        # Normalize the baselines
+        base_x_max = np.abs(base_x).max(); base_x /= base_x_max
+        base_y_max = np.abs(base_y).max(); base_y /= base_y_max
+
+        # Allocate a Helmert base
+        H = np.zeros((components,nc))
+        
+        # put the translation in it (that part never changes)
+        H[:,:components] = np.eye(components)
+
+        # Allocate the full matrix
+        Hf = np.zeros((nd,nc))
+
+        # Loop over the stations
+        for i in range(ns):
+
+            # Clean the part that changes
+            H[:,components:] = 0.0
+
+            # Put the rotation components and the scale components
+            x1, y1, z1 = base_x[i], base_y[i], base_z
+            if nc==7:
+                H[:,3:6] = np.array([[0.0, -z1, y1],
+                                     [z1, 0.0, -x1],
+                                     [-y1, x1, 0.0]])
+                H[:,6] = np.array([x1, y1, z1])
+            else:
+                H[:,2] = np.array([y1, -x1])
+                H[:,3] = np.array([x1, y1])
+
+            # put the lines where they should be
+            Hf[i,:] = H[0]
+            Hf[i+ns,:] = H[1]
+            if nc==7:
+                Hf[i+2*ns,:] = H[2]
+
+        # all done 
+        return Hf
+
+    def compute2Dstrain(self, fault, write2file=False, verbose=False):
+        '''
+        Computes the 2D strain tensor stored in the fault given as an argument.
+        '''
+
+        # Compute the transformation
+        self.computeTransformation(fault)
+
+        # Store the transform here
+        self.Strain = self.Transformation
+        self.StrainTensor = fault.polysol[self.name]
+
+        # Get some info
+        if write2file or verbose:
+            transformation = fault.polys[self.name]
+            if transformation is 'strain':
+                strain = True
+                translation = True
+                rotation = True
+            elif transformation is 'strainnorotation':
+                strain = True
+                translation = True
+                rotation = False
+            elif transformation is 'strainnotranslation':
+                strain = True
+                translation = False
+                rotation = True
+            elif transformation is 'translation':
+                strain = False
+                rotation = False
+                translation = True
+            elif transformation is 'translationrotation':
+                strain = False
+                rotation = True
+                translation = True
+            elif transformation is 'strainonly':
+                strain = True
+                rotation = False
+                translation = False
+
+        # Verbose?
+        if verbose:
+
+            # Print stuff
+            print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name)) 
+            print('Note: Extension is negative...')
+            print('Note: Counter ClockWise Rotation is positive...')
+            print('Note: There might be a scaling factor to apply to get the things right.')
+            print('         Example: if data is mm and distances in km ==> factor = 10e-6')
+            print('Parameters: ')
+            
+
+            # write stuff to the screen
+            Svec = self.StrainTensor
+            if translation:
+                print('  X Translation :    {} '.format(Svec[0]))
+                print('  Y Translation :    {} '.format(Svec[1]))
+            if rotation:
+                print('     Rotation   :    {}'.format(Svec[5]))
+            if strain:
+                print('     Strain xx  :    {} '.format(Svec[2]/base_max))
+                print('     Strain xy  :    {} '.format(Svec[3]/base_max))
+                print('     Strain yy  :    {} '.format(Svec[4]/base_max))
+
+        # Write 2 a file
+        if write2file:
+            # Filename
+            filename = '{}_{}_strain.dat'.format(self.name.replace(" ",""),fault.name.replace(" ",""))
+            fout = open(filename, 'w')
+            fout.write('# Strain Estimated on the data set {}\n'.format(self.name))
+            fout.write('# Be carefull. There might be a corrective factor to apply to be in strain units\n')
+            if translation:
+                fout.write('# Translation terms:\n')
+                fout.write('# X-axis | Y-axis \n')
+                fout.write('   {}       {} \n'.format(Svec[0],Svec[1]))
+            if rotation:
+                fout.write('# Rotation term: \n')
+                fout.write(' {} \n'.format(Svec[5]))
+            if strain:
+                fout.write('# Strain Tensor: \n')
+                fout.write(' {}  {}  \n'.format(Svec[2]/base_max, Svec[3]/base_max))
+                fout.write(' {}  {}  \n'.format(Svec[3]/base_max, Svec[4]/base_max))
+            fout.close()
 
         # All done
         return
@@ -1198,75 +1419,24 @@ class gpsrates(SourceInv):
         # All done
         return
 
-    def computeHelmertTransform(self, fault):
+    def computeHelmertTransform(self, fault, verbose=False):
         '''
         Removes the Helmert Transform stored in the fault given as argument.
         '''
 
-        # Get the size of the transform
-        assert fault.helmert[self.name]
-        Nh = fault.helmert[self.name]
-
-        # Get the number of observation per station
-        if not hasattr(self, 'obs_per_station'):
-            if Nh == 4:
-                self.obs_per_station = 2
-            else:
-                self.obs_per_station = 3
-        No = self.obs_per_station
-
-        # Get the position of the center of the network
-        x0 = np.mean(self.x)
-        y0 = np.mean(self.y)
-        z0 = 0                                              # No 3D for now, later
-
-        # Compute the baselines
-        base_x = self.x - x0
-        base_y = self.y - y0
-        base_z = 0
-
-        # Normalize the baselines
-        base_x_max = np.abs(base_x).max(); base_x /= base_x_max
-        base_y_max = np.abs(base_y).max(); base_y /= base_y_max
-
-        # Allocate a Helmert base
-        H = np.zeros((No,Nh))
-
-        # Fill in the part that does not change
-        H[:,:No] = np.eye(No)
+        # Compute transofmration
+        self.computeTransformation(fault)
 
         # Store the transform here
-        self.HelmTransform = np.zeros(self.vel_enu.shape)
+        self.HelmTransform = self.transformation
 
         # Get the parameters for this data set
-        Hvec = fault.polysol[self.name]
-        self.HelmertParameters = Hvec
-        print('Removing a {} parameters Helmert Tranform from the gpsrates {}'.format(Nh, self.name))
-        print('Parameters: {}'.format(tuple(Hvec[i] for i in range(Nh))))
-
-        # Loop over the station
-        for i in range(self.station.shape[0]):
-
-            # Clean the part that changes
-            H[:,No:] = 0.0
-
-            # Put the rotation components and the scale components
-            x1, y1, z1 = base_x[i], base_y[i], base_z
-            if Nh==7:
-                H[:,3:6] = np.array([[0.0, -z1, y1],
-                                     [z1, 0.0, -x1],
-                                     [-y1, x1, 0.0]])
-                H[:,7] = np.array([x1, y1, z1])
-            else:
-                H[:,2] = np.array([y1, -x1])
-                H[:,3] = np.array([x1, y1])
-
-            # Do the transform
-            newv = np.dot(H,Hvec)
-            self.HelmTransform[i,:No] = newv
-
-            # Correct the data
-            self.vel_enu[i,:No] -= newv
+        if verbose:
+            Hvec = fault.polysol[self.name]
+            Nh = Hvec.shape[0]
+            self.HelmertParameters = Hvec
+            print('Removing a {} parameters Helmert Tranform from the gpsrates {}'.format(Nh, self.name))
+            print('Parameters: {}'.format(tuple(Hvec[i] for i in range(Nh))))
 
         # All done
         return
@@ -1459,7 +1629,7 @@ class gpsrates(SourceInv):
                 if (self.name in fault.poly.keys()):
                     gpsref = fault.poly[self.name]
                     if type(gpsref) is str:
-                        if gpsref is 'strain':
+                        if gpsref in ('strain', 'strainonly', 'strainnorotation', 'strainnotranslation'):
                             self.compute2Dstrain(fault)
                             self.synth = self.synth + self.Strain
                         elif gpsref is 'full':
@@ -1959,5 +2129,4 @@ class gpsrates(SourceInv):
         # All done
         return
 
-
-
+#EOF

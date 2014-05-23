@@ -661,3 +661,4 @@ class imagedownsampling(object):
 
         # All done
         return Bsize
+#EOF

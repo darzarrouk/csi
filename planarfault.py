@@ -378,3 +378,4 @@ class planarfault(RectangularPatches):
         # All done
         return
 
+#EOF

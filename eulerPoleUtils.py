@@ -242,3 +242,4 @@ def matmatseq(mat1, mat2):
     out = (mat1[:,:,None]*mat2).sum(axis=1)
     return out   
 
+#EOF

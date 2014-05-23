@@ -573,52 +573,106 @@ class cosicorrrates(SourceInv):
         # All done
         return
 
-    def removePoly(self, fault):
+    def getPolyEstimator(self, ptype):
         '''
-        Removes a polynomial from the parameters that are in a fault.
+        Returns the Estimator for the polynomial form to estimate in the optical correlation data.
+        Args:
+            * ptype : integer.
+                if ptype==1:
+                    constant offset to the data
+                if ptype==3:
+                    constant and linear function of x and y
+                if ptype==4:
+                    constant, linear term and cross term.
+        Watch out: If vertical is True, you should only estimate polynomials for the horizontals.
         '''
 
-        # Get the number
-        Oo = fault.polysol[self.name].shape[0]
-        assert Oo == 6 or Oo == 12, 'Non 3rd or 4th-order poly for cosicorr'  
-        basePoly = Oo // 2
-        numPoints = self.east.shape[0]
+        # Get the basic size of the polynomial
+        basePoly = ptype / self.obs_per_station
+        assert basePoly == 3 or basePoly == 6, """
+            only support 3rd or 4th order poly for cosicorr
+            """
 
-        # Get the parameters
-        Op = fault.polysol[self.name]
+        # Get number of points
+        nd = self.east.shape[0]
 
-        # Get normalizing factors
-        x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
-        normX = fault.OrbNormalizingFactor[self.name]['x']
-        normY = fault.OrbNormalizingFactor[self.name]['y']
+        # Compute normalizing factors
+        x0 = self.x[0]
+        y0 = self.y[0]
+        normX = np.abs(self.x - x0).max()
+        normY = np.abs(self.y - y0).max()
 
-        # Pre-compute distance- and order-dependent functional forms
-        f1 = self.factor * np.ones((numPoints,))
-        f2 = self.factor * (self.x - x0) / normX
-        f3 = self.factor * (self.y - y0) / normY
-        f4 = self.factor * (self.x - x0) * (self.y - y0) / (normX*normY)
-        f5 = self.factor * (self.x - x0)**2 / normX**2
-        f6 = self.factor * (self.y - y0)**2 / normY**2
+        # Save them for later
+        self.OrbNormalizingFactor = {}
+        self.OrbNormalizingFactor['ref'] = [x0, y0]
+        self.OrbNormalizingFactor['x'] = normX
+        self.OrbNormalizingFactor['y'] = normY
+
+        # Pre-compute position-dependent functional forms
+        f1 = data.factor * np.ones((nd,))
+        f2 = data.factor * (self.x - x0) / normX
+        f3 = data.factor * (self.y - y0) / normY
+        f4 = data.factor * (self.x - x0) * (self.y - y0) / (normX*normY)
+        f5 = data.factor * (self.x - x0)**2 / normX**2
+        f6 = data.factor * (self.y - y0)**2 / normY**2
         polyFuncs = [f1, f2, f3, f4, f5, f6]
 
         # Fill in orb matrix given an order
-        orb = np.zeros((numPoints, basePoly))
-        for ind in xrange(basePoly):
+        orb = np.zeros((nd, basePoly))
+        for ind in range(basePoly):
             orb[:,ind] = polyFuncs[ind]
 
         # Block diagonal for both components
         orb = block_diag(orb, orb)
 
-        # Get the correction
-        self.orb = np.dot(orb, Op)
+        # Check to see if we're including verticals
+        if self.obs_per_station == 3:
+            orb = np.vstack((orb, np.zeros((nd, 2*basePoly))))
 
-        # Correct data
-        self.east -= self.orb[:numPoints]
-        self.north -= self.orb[numPoints:]
+        # All done
+        return orb
+
+    def computePoly(self, fault):
+        '''
+        Computes the orbital bias estimated in fault
+        Args:
+            * fault : Fault object that has a polysol structure.
+        '''
+
+        # Get the polynomial type
+        ptype = fault.poly[self.name]
+
+        # Get the parameters
+        params = fault.polysol[self.name]
+
+        # Get the estimator
+        Horb = self.getPolyEstimator(ptype)
+
+        # Compute the polynomial
+        tmporbit = np.dot(Horb, params)
+
+        # Store them
+        nd = self.east.shape[0]
+        self.east_orbit = tmporbit[:nd]
+        self.north_orbit = tmporbit[nd:2*nd]
 
         # All done
         return
 
+    def removePoly(self, fault):
+        '''
+        Removes a polynomial from the parameters that are in a fault.
+        '''
+
+        # Compute the polynomial
+        self.computePoly(fault)
+
+        # Correct data
+        self.east -= self.east_orbit
+        self.north -= self.north_orbit
+
+        # All done
+        return
 
     def removeRamp(self, order=3, maskPoly=None):
         '''
@@ -738,43 +792,14 @@ class cosicorrrates(SourceInv):
                 if vertical:
                     self.up_synth += st_synth[2*Nd:]
 
-            if poly == 'build' or poly == 'include':
-                if (self.name in fault.polysol.keys()):
-                    # Get the orbital parameters
-                    orb = fault.polysol[self.name]
-                    assert orb is not None, 'no orbit solution computed'
-                    assert orb.size in [6,12], 'wrong orbit shape for cosicorr'
-                    # Get orbit reference point and normalizing factors
-                    x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
-                    normX = fault.OrbNormalizingFactor[self.name]['x']
-                    normY = fault.OrbNormalizingFactor[self.name]['y']
-                    # Build the reference polynomials
-                    f1 = self.factor * np.ones((self.x.size,))
-                    f2 = self.factor * (self.x - x0) / normX
-                    f3 = self.factor * (self.y - y0) / normY
-                    f4 = self.factor * (self.x - x0) * (self.y - y0) / (normX*normY)
-                    f5 = self.factor * (self.x - x0)**2 / normX**2
-                    f6 = self.factor * (self.y - y0)**2 / normY**2
-                    # Make the polynomial fields
-                    if orb.size == 6:
-                        polyModelEast = orb[0] + orb[1]*f2 + orb[2]*f3
-                        polyModelNorth = orb[3] + orb[4]*f2 + orb[5]*f3
-                    else:
-                        polyModelEast = (orb[0] + orb[1]*f2 + orb[2]*f3 
-                                       + orb[3]*f4 + orb[4]*f5 + orb[5]*f6)
-                        polyModelNorth = (orb[6] + orb[7]*f2 + orb[8]*f3 
-                                        + orb[9]*f4 + orb[10]*f5 + orb[11]*f6)
-
+            if poly is not None:
+                self.computePoly(fault)
                 if poly == 'include':
-                    self.east_synth += polyModelEast
-                    self.north_synth += polyModelNorth
+                    self.east_synth += self.east_orbit
+                    self.north_synth += self.east_north
 
         # All done
-        if poly == 'build':
-            return polyModelEast, polyModelNorth
-        else:
-            return
-
+        return
 
     def writeEDKSdata(self):
         '''
@@ -1541,3 +1566,5 @@ class cosicorrrates(SourceInv):
 
         # All done
         return
+
+#EOF

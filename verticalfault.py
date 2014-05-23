@@ -660,3 +660,4 @@ class verticalfault(RectangularPatches):
         # all done
         return
 
+#EOF

@@ -3001,12 +3001,4 @@ class RectangularPatches(Fault):
         else:
             return n1, n2, n3
 
-
-
-
-
-
-
-
-
-
+#EOF

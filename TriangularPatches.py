@@ -2072,3 +2072,4 @@ class TriangularPatches(Fault):
         # All done
         return Map
 
+#EOF
