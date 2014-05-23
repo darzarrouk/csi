@@ -1185,19 +1185,16 @@ class gpsrates(SourceInv):
         # Get the number of gps stations
         ns = self.station.shape[0]
 
-        # Number of components
-        nd = 2*ns
-
         # Parameter size
         nc = 6
 
         # Get the center of the network
-        x0 = np.mean(data.x)
-        y0 = np.mean(data.y)
+        x0 = np.mean(self.x)
+        y0 = np.mean(self.y)
 
         # Compute the baselines
-        base_x = data.x - x0
-        base_y = data.y - y0
+        base_x = self.x - x0
+        base_y = self.y - y0
 
         # Normalize the baselines
         base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
@@ -1211,16 +1208,16 @@ class gpsrates(SourceInv):
         H = np.zeros((2,nc))
 
         # Put the transaltion in the base
-        H[:,:nd] = np.eye(2)
+        H[:,:2] = np.eye(2)
 
         # Allocate the full matrix
-        Hf = np.zeros((nd,nc))
+        Hf = np.zeros((ns*2,nc))
 
         # Loop over the stations
         for i in range(ns):
 
             # Clean the part that changes
-            H[:,nd:] = 0.0
+            H[:,2:] = 0.0
 
             # Get the values
             x1, y1 = base_x[i], base_y[i]
@@ -1327,12 +1324,12 @@ class gpsrates(SourceInv):
         self.computeTransformation(fault)
 
         # Store the transform here
-        self.Strain = self.Transformation
+        self.Strain = self.transformation
         self.StrainTensor = fault.polysol[self.name]
 
         # Get some info
         if write2file or verbose:
-            transformation = fault.polys[self.name]
+            transformation = fault.poly[self.name]
             if transformation is 'strain':
                 strain = True
                 translation = True
@@ -1360,6 +1357,10 @@ class gpsrates(SourceInv):
 
         # Verbose?
         if verbose:
+            
+            # Get things to write 
+            Svec = self.StrainTensor
+            base_max = self.StrainNormalizingFactor
 
             # Print stuff
             print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name)) 
@@ -1371,7 +1372,6 @@ class gpsrates(SourceInv):
             
 
             # write stuff to the screen
-            Svec = self.StrainTensor
             if translation:
                 print('  X Translation :    {} '.format(Svec[0]))
                 print('  Y Translation :    {} '.format(Svec[1]))
@@ -1384,6 +1384,11 @@ class gpsrates(SourceInv):
 
         # Write 2 a file
         if write2file:
+
+            # Get things to write 
+            Svec = self.StrainTensor
+            base_max = self.StrainNormalizingFactor
+
             # Filename
             filename = '{}_{}_strain.dat'.format(self.name.replace(" ",""),fault.name.replace(" ",""))
             fout = open(filename, 'w')

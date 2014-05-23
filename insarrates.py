@@ -593,7 +593,7 @@ class insarrates(SourceInv):
             orb[:,3] = orb[:,1] * orb[:,2]
 
         # Scale everything by the data factor
-        orb *= data.factor
+        orb *= self.factor
 
         # All done
         return orb

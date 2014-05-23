@@ -673,7 +673,7 @@ class Fault(SourceInv):
         return
 
 
-    def assembleGFs(self, datas, polys=0, slipdir='sd', verbose=True):
+    def assembleGFs(self, datas, polys=None, slipdir='sd', verbose=True):
         '''
         Assemble the Green's functions that have been built using build GFs.
         This routine spits out the General G and the corresponding data vector d.
@@ -706,24 +706,16 @@ class Fault(SourceInv):
         # Set poly right
         if polys.__class__ is not list:
             for data in datas:
-                if polys.__class__ is not str:
+                if (polys.__class__ is not str) and (polys is not None):
                     self.poly[data.name] = polys*data.obs_per_station
                 else:
-                    if data.dtype is 'gpsrates':
-                        self.poly[data.name] = polys
-                    else:
-                        print('Only GPS data have particular transformations implemented so far...')
-                        return
+                    self.poly[data.name] = polys
         elif polys.__class__ is list:
-            for d in range(len(datas)):
-                if polys[d].__class__ is not str:
-                    self.poly[datas[d].name] = polys[d]*datas[d].obs_per_station
+            for data, poly in zip(datas, polys):
+                if (poly.__class__ is not str) and (poly is not None):
+                    self.poly[data.name] = poly*data.obs_per_station
                 else:
-                    if datas[d].dtype is 'gpsrates':
-                        self.poly[datas[d].name] = polys[d]
-                    else:
-                        print('Only GPS data have particular transformations implemented so far...')
-                        return
+                    self.poly[data.name] = poly
 
         # Create the transformation holder
         if not hasattr(self, 'helmert'):
@@ -745,8 +737,8 @@ class Fault(SourceInv):
                     self.helmert[data.name] = tmpNpo
                 elif transformation in ('strain', 'strainonly', 'strainnorotation', 'strainnotranslation'):
                     self.strain[data.name] = tmpNpo
-            else:
-                Npo += (self.poly[data.name])
+            elif transformation is not None:
+                Npo += transformation*data.obs_per_station
         Np = Nps + Npo
 
         # Get the number of data
@@ -781,6 +773,8 @@ class Fault(SourceInv):
             if verbose:
                 print("Dealing with {} of type {}".format(data.name, data.dtype))
 
+            # Elastic Green's functions
+
             # Get the corresponding G
             Ndlocal = self.d[data.name].shape[0]
             Glocal = np.zeros((Ndlocal, Nps))
@@ -794,19 +788,22 @@ class Fault(SourceInv):
             # Put Glocal into the big G
             G[el:el+Ndlocal,0:Nps] = Glocal
 
-            # Build the polynomial function
-            if data.dtype is 'gpsrates':
-                orb = data.getTransformEstimator(self.poly[data.name]) 
-            elif data.dtype in ('insarrates', 'cosicorrrates'):
-                orb = getPolyEstimator(self.poly[data.name])
+            # Polynomes and strain
+            if self.poly[data.name] is not None:
 
-            # Number of columns
-            nc = orb.shape[1]
+                # Build the polynomial function
+                if data.dtype is 'gpsrates':
+                    orb = data.getTransformEstimator(self.poly[data.name]) 
+                elif data.dtype in ('insarrates', 'cosicorrrates'):
+                    orb = data.getPolyEstimator(self.poly[data.name])
 
-            # Put it into G for as much observable per station we have
-            polend = polstart + nc
-            G[el:el+Ndlocal, polstart:polend] = orb
-            polstart += nc
+                # Number of columns
+                nc = orb.shape[1]
+
+                # Put it into G for as much observable per station we have
+                polend = polstart + nc
+                G[el:el+Ndlocal, polstart:polend] = orb
+                polstart += nc
 
             # Update el to check where we are
             el = el + Ndlocal
