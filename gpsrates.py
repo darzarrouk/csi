@@ -20,7 +20,7 @@ if (sys.version_info[0]==2) and ('EDKS_HOME' in os.environ.keys()):
 
 class gpsrates(SourceInv):
 
-    def __init__(self, name, utmzone='10', ellps='WGS84'):
+    def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
         '''
         Args:
             * name      : Name of the dataset.
@@ -29,15 +29,16 @@ class gpsrates(SourceInv):
         '''
 
         # Base class init
-        super(self.__class__,self).__init__(name,utmzone,ellps) 
+        super(gpsrates,self).__init__(name,utmzone,ellps) 
         
         # Set things
         self.dtype = 'gpsrates'
  
         # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initialize GPS array {}".format(self.name))
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize GPS array {}".format(self.name))
 
         # Initialize things
         self.vel_enu = None
@@ -1097,25 +1098,25 @@ class gpsrates(SourceInv):
         
         # Helmert Transform
         if transformation is 'full':
-            orb = self.getHelmertMatrix(self, components=self.obs_per_station)
+            orb = self.getHelmertMatrix(components=self.obs_per_station)
         # Strain + Rotation + Translation
         elif transformation is 'strain':
-            orb = self.get2DstrainEst(self)
+            orb = self.get2DstrainEst()
         # Strain + Translation
         elif transformation is 'strainnorotation':
-            orb = self.get2DstrainEst(self, rotation=False)
+            orb = self.get2DstrainEst(rotation=False)
         # Strain
         elif transformation is 'strainonly':
-            orb = self.get2DstrainEst(self, rotation=False, translation=False)
+            orb = self.get2DstrainEst(rotation=False, translation=False)
         # Strain + Rotation
         elif transformation is 'strainnotranslation':
-            orb = self.get2DstrainEst(self, translation=False)
+            orb = self.get2DstrainEst(translation=False)
         # Translation
         elif transformation is 'translation':
-            orb = self.get2DstrainEst(self, strain=False, rotation=False)
+            orb = self.get2DstrainEst(strain=False, rotation=False)
         # Translation and Rotation
         elif transformation is 'translationrotation': 
-            orb = self.get2DstrainEst(self, strain=False)
+            orb = self.get2DstrainEst(strain=False)
         # Unknown case
         else:
             print('No Transformation asked for object {}'.format(self.name))
@@ -1179,6 +1180,7 @@ class gpsrates(SourceInv):
     def get2DstrainEst(self, strain=True, rotation=True, translation=True):
         '''
         Returns the matrix to estimate the full 2d strain tensor.
+        Positive is clockwise for the rotation.
         Only works with 2D.
         '''
 
@@ -1267,13 +1269,13 @@ class gpsrates(SourceInv):
             nc = 4
 
         # Get the position of the center of the network
-        x0 = np.mean(data.x)
-        y0 = np.mean(data.y)
+        x0 = np.mean(self.x)
+        y0 = np.mean(self.y)
         z0 = 0              # We do not deal with the altitude of the stations yet (later)
 
         # Compute the baselines
-        base_x = data.x - x0
-        base_y = data.y - y0
+        base_x = self.x - x0
+        base_y = self.y - y0
         base_z = 0
 
         # Normalize the baselines
@@ -1307,10 +1309,10 @@ class gpsrates(SourceInv):
                 H[:,3] = np.array([x1, y1])
 
             # put the lines where they should be
-            Hf[i,:] = H[0]
-            Hf[i+ns,:] = H[1]
+            Hf[i,:] = H[0,:]
+            Hf[i+ns,:] = H[1,:]
             if nc==7:
-                Hf[i+2*ns,:] = H[2]
+                Hf[i+2*ns,:] = H[2,:]
 
         # all done 
         return Hf
@@ -1365,7 +1367,7 @@ class gpsrates(SourceInv):
             # Print stuff
             print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name)) 
             print('Note: Extension is negative...')
-            print('Note: Counter ClockWise Rotation is positive...')
+            print('Note: ClockWise Rotation is positive...')
             print('Note: There might be a scaling factor to apply to get the things right.')
             print('         Example: if data is mm and distances in km ==> factor = 10e-6')
             print('Parameters: ')

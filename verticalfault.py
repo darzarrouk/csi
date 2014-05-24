@@ -27,7 +27,7 @@ class verticalfault(RectangularPatches):
         '''
 
         # Initialize base class
-        super(self.__class__,self).__init__(name,utmzone,ellps)
+        super(verticalfault,self).__init__(name,utmzone,ellps)
 
         # All done
         return

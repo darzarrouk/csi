@@ -1,7 +1,7 @@
 ''' 
-A class that deals with gps rates.
+A class that deals with multiple gps rates.
 
-Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
+Written by R. Jolivet, May 2014.
 '''
 
 # Externals
@@ -13,7 +13,6 @@ import copy
 import sys
 
 # Personals
-from .SourceInv import SourceInv
 from .gpsrates import gpsrates
 from .gpstimeseries import gpstimeseries
 if (sys.version_info[0]==2) and ('EDKS_HOME' in os.environ.keys()):
@@ -21,20 +20,22 @@ if (sys.version_info[0]==2) and ('EDKS_HOME' in os.environ.keys()):
 
 class multigps(gpsrates):
 
-    def __init__(self, name, gpsobjects=None, utmzone='10', ellps='WGS84'):
+    def __init__(self, name, gpsobjects=None, utmzone='10', ellps='WGS84', obs_per_station=2):
         '''
         Args:
-            * name      : Name of the dataset.
-            * gpsobjects: A list of GPS rates objects.
-            * utmzone   : UTM zone. (optional, default is 10 (Western US))
-            * ellps     : ellipsoid (optional, default='WGS84')
+            * name              : Name of the dataset.
+            * gpsobjects        : A list of GPS rates objects.
+            * utmzone           : UTM zone. (optional, default is 10 (Western US))
+            * ellps             : ellipsoid (optional, default='WGS84')
+            * obs_per_station   : Number of observations per stations.
         '''
 
         # Base class init
-        super(self.__class__,self).__init__(name,utmzone,ellps) 
+        super(multigps,self).__init__(name,utmzone,ellps,verbose=False) 
         
         # Set things
         self.dtype = 'multigps'
+        self.obs_per_station = obs_per_station
  
         # print
         print ("---------------------------------")
@@ -73,13 +74,16 @@ class multigps(gpsrates):
         self.factor = gpsobjects[0].factor
 
         # Create the arrays
-        self.station = np.zeros(ns)
+        self.station = np.zeros(ns).astype('|S4')
         self.lon = np.zeros(ns)
         self.lat = np.zeros(ns)
         self.x = np.zeros(ns)
         self.y = np.zeros(ns)
-        self.vel_enu = np.zeros(ns)
-        self.err_enu = np.zeros(ns)
+        self.vel_enu = np.zeros((ns,3))
+        self.err_enu = np.zeros((ns,3))
+
+        # obs per stations
+        obs_per_station = []
 
         # Loop over the gps objects to feed self
         ns = 0
@@ -101,8 +105,14 @@ class multigps(gpsrates):
             self.lat[st:ed] = gps.lat
             self.x[st:ed] = gps.x
             self.y[st:ed] = gps.y
-            self.vel_enu[st:ed] = gps.vel_enu
-            self.err_enu[st:ed] = gps.err_enu
+            self.vel_enu[st:ed,:] = gps.vel_enu
+            self.err_enu[st:ed,:] = gps.err_enu
+
+            # Force number of observation per station
+            gps.obs_per_station = self.obs_per_station
+
+            # Update ns
+            ns += gps.station.shape[0]
 
         # All done
         return
@@ -121,10 +131,10 @@ class multigps(gpsrates):
 
         # Assert
         assert type(mainTrans) is str, 'First Item of transformation list needs to be string'
-        assert type (subTrans) is str, 'Second Item of transformation list needs to be a list'
+        assert type (subTrans) is list, 'Second Item of transformation list needs to be a list'
 
         # Nhere
-        nMain = super(self.__class__,self).getNumberOfTransformParameters(transformation[0])
+        nMain = super(multigps,self).getNumberOfTransformParameters(transformation[0])
         
         # Each subnetwork
         nSub = 0
@@ -151,17 +161,17 @@ class multigps(gpsrates):
 
         # Assert
         assert type(mainTrans) is str, 'First Item of transformation list needs to be string'
-        assert type (subTrans) is str, 'Second Item of transformation list needs to be a list'
+        assert type (subTrans) is list, 'Second Item of transformation list needs to be a list'
 
         # Need the number of columns and lines
         nc = self.getNumberOfTransformParameters(transformation)
-        ns = self.station.shape[0]
+        ns = self.station.shape[0]*self.obs_per_station
 
         # Create the big holder
         orb = np.zeros((ns,nc))
 
         # Get the main transforms
-        Morb = self.getTransformEstimator(mainTrans)
+        Morb = super(multigps,self).getTransformEstimator(mainTrans)
         cst = Morb.shape[1]
 
         # Put it where it should be
@@ -180,6 +190,11 @@ class multigps(gpsrates):
             # Put it where it should be 
             orb[lst_east:led_east, cst:ced] = Sorb[:gps.station.shape[0],:]
             orb[lst_north:led_north, cst:ced] = Sorb[gps.station.shape[0]:,:]
+            # Update column
+            cst += Sorb.shape[1]
+            # update lines
+            lst_east += gps.station.shape[0]
+            lst_north += gps.station.shape[0]
 
         # All done
         return orb
@@ -202,11 +217,11 @@ class multigps(gpsrates):
 
         # Assert
         assert type(mainTrans) is str, 'First Item of transformation list needs to be string'
-        assert type (subTrans) is str, 'Second Item of transformation list needs to be a list'
+        assert type (subTrans) is list, 'Second Item of transformation list needs to be a list'
 
         # Compute the main transformation 
-        super(self.__class__, self).computeTransformation(fault)
-        st = super(self.__class__, self).getNumberOfTransformParameters(mainTrans)
+        super(multigps, self).computeTransformation(fault)
+        st = super(multigps, self).getNumberOfTransformParameters(mainTrans)
 
         # Loop over the transformations
         sst = 0

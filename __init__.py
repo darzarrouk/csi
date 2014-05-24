@@ -29,6 +29,7 @@ from .planarfaultkinematic import planarfaultkinematic
 
 ## Data
 from .gpsrates import gpsrates
+from .multigps import multigps
 from .insarrates import insarrates
 from .imagedownsampling import imagedownsampling
 from .multifaultsolve import multifaultsolve

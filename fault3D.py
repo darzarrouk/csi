@@ -32,7 +32,7 @@ class fault3D(RectangularPatches):
             * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
-        super(self.__class__,self).__init__(name,utmzone,ellps)
+        super(fault3D,self).__init__(name,utmzone,ellps)
 
         # All done
         return
