@@ -502,7 +502,7 @@ class verticalfault(RectangularPatches):
         for data in datas:
 
             # Check something
-            if data.dtype is not 'gpsrates':
+            if data.dtype not in ('gpsrates', 'multigps'):
                 print('This has not been implemented for other data set than gpsrates')
                 return
 

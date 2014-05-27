@@ -401,7 +401,7 @@ class Fault(SourceInv):
         datatype = data.dtype
 
         # Cut the Matrices following what data do we have and set the GFs
-        if datatype is 'gpsrates':
+        if datatype in ('gpsrates', 'multigps'):
 
             # Initialize
             GssE = None; GdsE = None; GtsE = None
@@ -478,7 +478,6 @@ class Fault(SourceInv):
         # all done
         return
 
-
     def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None],
                tensile=[None, None, None], vertical=False, synthetic=False):
         '''
@@ -494,7 +493,7 @@ class Fault(SourceInv):
         # Get the number of data per point
         if data.dtype == 'insarrates' or data.dtype == 'tsunami':
             data.obs_per_station = 1
-        elif data.dtype is 'gpsrates':
+        elif data.dtype in ('gpsrates', 'multigps'):
             data.obs_per_station = 0
             # Check components
             if not np.isnan(data.vel_enu[:,0]).any():
@@ -524,7 +523,7 @@ class Fault(SourceInv):
             elif data.dtype is 'tsunami':
                 self.d[data.name] = data.d
                 vertical = True
-            elif data.dtype is 'gpsrates':
+            elif data.dtype in ('gpsrates', 'multigps'):
                 if vertical:
                     self.d[data.name] = data.vel_enu.T.flatten()
                 else:
@@ -672,7 +671,6 @@ class Fault(SourceInv):
         # All done
         return
 
-
     def assembleGFs(self, datas, polys=None, slipdir='sd', verbose=True):
         '''
         Assemble the Green's functions that have been built using build GFs.
@@ -712,7 +710,7 @@ class Fault(SourceInv):
                     self.poly[data.name] = polys
         elif polys.__class__ is list:
             for data, poly in zip(datas, polys):
-                if (poly.__class__ is not str) and (poly is not None):
+                if (poly.__class__ is not str) and (poly is not None) and (poly.__class__ is not list):
                     self.poly[data.name] = poly*data.obs_per_station
                 else:
                     self.poly[data.name] = poly
@@ -722,6 +720,8 @@ class Fault(SourceInv):
             self.helmert = {}
         if not hasattr(self, 'strain'):
             self.strain = {}
+        if not hasattr(self, 'transformation'):
+            self.transformation = {}
 
         # Get the number of parameters
         if self.N_slip == None:
@@ -730,13 +730,16 @@ class Fault(SourceInv):
         Npo = 0
         for data in datas :
             transformation = self.poly[data.name]
-            if type(transformation) is str:
+            if type(transformation) in (str, list):
                 tmpNpo = data.getNumberOfTransformParameters(self.poly[data.name])
                 Npo += tmpNpo
-                if transformation in ('full'):
-                    self.helmert[data.name] = tmpNpo
-                elif transformation in ('strain', 'strainonly', 'strainnorotation', 'strainnotranslation'):
-                    self.strain[data.name] = tmpNpo
+                if type(transformation) is str:
+                    if transformation in ('full'):
+                        self.helmert[data.name] = tmpNpo
+                    elif transformation in ('strain', 'strainonly', 'strainnorotation', 'strainnotranslation'):
+                        self.strain[data.name] = tmpNpo
+                else:
+                    self.transformation[data.name] = tmpNpo
             elif transformation is not None:
                 Npo += transformation*data.obs_per_station
         Np = Nps + Npo
@@ -791,8 +794,10 @@ class Fault(SourceInv):
             # Polynomes and strain
             if self.poly[data.name] is not None:
 
+                print data.dtype
+
                 # Build the polynomial function
-                if data.dtype is 'gpsrates':
+                if data.dtype in ('gpsrates', 'multigps'):
                     orb = data.getTransformEstimator(self.poly[data.name]) 
                 elif data.dtype in ('insarrates', 'cosicorrrates'):
                     orb = data.getPolyEstimator(self.poly[data.name])
