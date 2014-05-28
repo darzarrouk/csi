@@ -130,7 +130,7 @@ class multigps(gpsrates):
         subTrans = transformation[1]
 
         # Assert
-        assert type(mainTrans) is str, 'First Item of transformation list needs to be string'
+        assert type(mainTrans) in (str, type(None)), 'First Item of transformation list needs to be string'
         assert type (subTrans) is list, 'Second Item of transformation list needs to be a list'
 
         # Nhere
@@ -160,7 +160,7 @@ class multigps(gpsrates):
         subTrans = transformation[1]
 
         # Assert
-        assert type(mainTrans) is str, 'First Item of transformation list needs to be string'
+        assert type(mainTrans) in (str, type(None)), 'First Item of transformation list needs to be string'
         assert type (subTrans) is list, 'Second Item of transformation list needs to be a list'
 
         # Need the number of columns and lines
@@ -172,10 +172,13 @@ class multigps(gpsrates):
 
         # Get the main transforms
         Morb = super(multigps,self).getTransformEstimator(mainTrans)
-        cst = Morb.shape[1]
 
         # Put it where it should be
-        orb[:, :cst] = Morb
+        if Morb is not None:
+            cst = Morb.shape[1]
+            orb[:, :cst] = Morb
+        else:
+            cst = 0
         
         # Loop over the subnetworks
         lst_east = 0
@@ -183,15 +186,16 @@ class multigps(gpsrates):
         for trans, gps in zip(subTrans, self.gpsobjects):
             # Get the transform
             Sorb = gps.getTransformEstimator(trans)
-            # Set the indexes right
-            ced = cst + Sorb.shape[1]
-            led_east = lst_east + gps.station.shape[0]
-            led_north = lst_north + gps.station.shape[0]
-            # Put it where it should be 
-            orb[lst_east:led_east, cst:ced] = Sorb[:gps.station.shape[0],:]
-            orb[lst_north:led_north, cst:ced] = Sorb[gps.station.shape[0]:,:]
-            # Update column
-            cst += Sorb.shape[1]
+            if Sorb is not None:
+                # Set the indexes right
+                ced = cst + Sorb.shape[1]
+                led_east = lst_east + gps.station.shape[0]
+                led_north = lst_north + gps.station.shape[0]
+                # Put it where it should be 
+                orb[lst_east:led_east, cst:ced] = Sorb[:gps.station.shape[0],:]
+                orb[lst_north:led_north, cst:ced] = Sorb[gps.station.shape[0]:,:]
+                # Update column
+                cst += Sorb.shape[1]
             # update lines
             lst_east += gps.station.shape[0]
             lst_north += gps.station.shape[0]
@@ -216,34 +220,43 @@ class multigps(gpsrates):
         Tvec = fault.polysol[self.name]
 
         # Assert
-        assert type(mainTrans) is str, 'First Item of transformation list needs to be string'
+        assert type(mainTrans) in (str, type(None)), 'First Item of transformation list needs to be string'
         assert type (subTrans) is list, 'Second Item of transformation list needs to be a list'
 
-        # Compute the main transformation 
-        super(multigps, self).computeTransformation(fault)
-        st = super(multigps, self).getNumberOfTransformParameters(mainTrans)
+        # Get the estimator
+        orb = self.getTransformEstimator(transformation)
 
         # Loop over the transformations
-        sst = 0
+        st = 0
         for trans, gps in zip(subTrans, self.gpsobjects):
             
             # Put the transform in the fault
             fault.poly[gps.name] = trans
 
             # Put the solution in the fault
-            ed = st + gps.getNumberOfTransformParameters(trans)
-            fault.polysol[self.name] = Tvec[st:ed]
+            nP = gps.getNumberOfTransformParameters(trans)     
+            ed = st + nP
+            fault.polysol[gps.name] = Tvec[st:ed]
 
-            # Do the transform 
-            gps.computeTransformation(fault)
+            # Edit st
+            st += nP
 
-            # Add it up
-            sed = sst + gps.station.shape[0]
-            self.transformation[sst:sed,:] += gps.transformation
+        # make the array
+        self.transformation = np.zeros(self.vel_enu.shape)
 
-            # Remove unwanted garbage in the fault
-            del fault.poly[gps.name]
-            del fault.polysol[gps.name]
+        # Check
+        if orb is None:
+            return
+
+        # Compute the synthetics
+        tmpsynth = np.dot(orb, Tvec)
+
+        # Fill it
+        no = self.vel_enu.shape[0]
+        self.transformation[:,0] = tmpsynth[:no]
+        self.transformation[:,1] = tmpsynth[no:2*no]
+        if self.obs_per_station==3:
+            self.transformation[:,2] = tmpsynth[2*no:]
 
         # All done
         return

@@ -1689,7 +1689,7 @@ class gpsrates(SourceInv):
         '''
         Args:
             * namefile  : Name of the output file.
-            * data      : data, synth, strain.
+            * data      : data, synth, strain, transformation.
 
         '''
 
@@ -1717,6 +1717,8 @@ class gpsrates(SourceInv):
             z = self.synth
         elif data is 'strain':
             z = self.Strain
+        elif data is 'transformation':
+            z = self.transformation
         else:
             print('Unknown data type to write...')
             return

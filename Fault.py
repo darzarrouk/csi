@@ -794,8 +794,6 @@ class Fault(SourceInv):
             # Polynomes and strain
             if self.poly[data.name] is not None:
 
-                print data.dtype
-
                 # Build the polynomial function
                 if data.dtype in ('gpsrates', 'multigps'):
                     orb = data.getTransformEstimator(self.poly[data.name]) 
@@ -990,7 +988,6 @@ class Fault(SourceInv):
         # All done
         return
 
-
     def estimateSeismicityRate(self, earthquake, extra_div=1.0, epsilon=0.00001):
         '''
         Counts the number of earthquakes per patches and divides by the area of the patches.
@@ -1016,6 +1013,47 @@ class Fault(SourceInv):
         # Store that in the fault
         self.earthquakesInPatch = ipatch
         self.seismicityRate = number
+
+        # All done
+        return
+
+    def gaussianSlipSmoothing(self, length):
+        '''
+        Smoothes the slip distribution using a Gaussian filter.
+        Args:
+            * length        : Correlation length.
+        '''
+
+        # Number of patches
+        nP = len(self.patch)
+
+        # Build the smoothing matrix
+        S = np.zeros((nP, nP))
+
+        # Iterate over the patches
+        for i1 in range(len(self.patch)):
+            for i2 in range(len(self.patch)):
+
+                # indexes
+                p1 = self.patch[i1]
+                p2 = self.patch[i2]
+
+                # distance
+                d = self.distancePatchToPatch(p1, p2, distance='center')
+
+                # set filter
+                S[i1, i2] = d**2
+
+        # Compute
+        S = np.exp(-0.5*S/(length**2))
+        div = 1./S.sum(axis=0)
+        S = np.multiply(S, div)
+        self.Smooth = S
+    
+        # Smooth
+        self.slip[:,0] = np.dot(S, self.slip[:,0])
+        self.slip[:,1] = np.dot(S, self.slip[:,1])
+        self.slip[:,2] = np.dot(S, self.slip[:,2])
 
         # All done
         return

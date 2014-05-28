@@ -1188,7 +1188,7 @@ class RectangularPatches(Fault):
         if data.dtype is 'insarrates':
             Ndt = Nd
             data.obs_per_station = 1
-        elif data.dtype is ('gpsrates', 'multigps'):
+        elif data.dtype in ('gpsrates', 'multigps'):
             Ndt = data.lon.shape[0]*2
             data.obs_per_station = 2
             if vertical:
@@ -1220,7 +1220,7 @@ class RectangularPatches(Fault):
         if data.dtype is 'insarrates':
             self.d[data.name] = data.vel
             vertical = True                 # In InSAR, you need to use the vertical, no matter what....
-        elif data.dtype is ('gpsrates', 'multigps'):
+        elif data.dtype in ('gpsrates', 'multigps'):
             if vertical:
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
