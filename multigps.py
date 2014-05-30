@@ -221,13 +221,15 @@ class multigps(gpsrates):
 
         # Assert
         assert type(mainTrans) in (str, type(None)), 'First Item of transformation list needs to be string'
-        assert type (subTrans) is list, 'Second Item of transformation list needs to be a list'
+        assert type(subTrans) is list, 'Second Item of transformation list needs to be a list'
 
         # Get the estimator
         orb = self.getTransformEstimator(transformation)
 
+        # Get the starting point
+        st = self.getNumberOfTransformParameters([mainTrans,[None for i in range(len(subTrans))]])
+
         # Loop over the transformations
-        st = 0
         for trans, gps in zip(subTrans, self.gpsobjects):
             
             # Put the transform in the fault

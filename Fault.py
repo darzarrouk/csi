@@ -851,7 +851,6 @@ class Fault(SourceInv):
         # All done
         return
 
-
     def buildCmGaussian(self, sigma, extra_params=None):
         '''
         Builds a diagonal Cm with sigma values on the diagonal.
@@ -889,7 +888,6 @@ class Fault(SourceInv):
 
         # all done
         return
-
 
     def buildCm(self, sigma, lam, lam0=None, extra_params=None, lim=None, verbose=True):
         '''
@@ -984,6 +982,216 @@ class Fault(SourceInv):
 
         # Store Cm into self
         self.Cm = Cm
+
+        # All done
+        return
+    
+    def buildCmSlipDirs(self, sigma, lam, lam0=None, extra_params=None, lim=None):
+        '''
+        Builds a model covariance matrix using the equation described in Radiguet et al 2010.
+        Here, Sigma and Lambda are lists specifying values for the slip directions
+        Args:
+            * sigma         : Amplitude of the correlation.
+            * lam           : Characteristic length scale.
+            * lam0          : Normalizing distance (if None, lam0=min(distance between patches)).
+            * extra_params  : Add some extra values on the diagonal.
+            * lim           : Limit distance parameter (see self.distancePatchToPatch)
+        '''
+
+        # print
+        print ("---------------------------------")
+        print ("---------------------------------")
+        print ("Assembling the Cm matrix ")
+        print ("Sigma = {}".format(sigma))
+        print ("Lambda = {}".format(lam))
+
+        # Need the patch geometry
+        if self.patch is None:
+            print("You should build the patches and the Green's functions first.")
+            return
+
+        # Geth the desired slip directions
+        slipdir = self.slipdir
+
+        # Get the patch centers
+        self.centers = np.array(self.getcenters())
+
+        # Sets the lambda0 value
+        if lam0 is None:
+            xd = (np.unique(self.centers[:,0]).max() - np.unique(self.centers[:,0]).min())/(np.unique(self.centers[:,0]).size)
+            yd = (np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())/(np.unique(self.centers[:,1]).size)
+            zd = (np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())/(np.unique(self.centers[:,2]).size)
+            lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
+
+        # Creates the principal Cm matrix
+        Np = len(self.patch)*len(slipdir)
+        if extra_params is not None:
+            Np += len(extra_params)
+        Cmt = np.zeros((len(self.patch), len(self.patch)))
+        Cm = np.zeros((Np, Np))
+
+        # Build the sigma and lambda lists
+        if type(sigma) is not list:
+            s = []; l = []
+            for sl in range(len(slipdir)):
+                s.append(sigma)
+                l.append(lam)
+            sigma = s
+            lam = l
+        assert (type(sigma) is list), 'Sigma is not a list, why???'
+        if type(sigma) is list:
+            assert(len(sigma)==len(lam)), 'Sigma and lambda must have the same length'
+            assert(len(sigma)==len(slipdir)), 'Need one value of sigma and one value of lambda per slip direction'
+
+        # Loop over the slipdirections
+        st = 0
+        for sl in range(len(slipdir)):
+            # pick the right values
+            la = lam[sl]
+            C = (sigma[sl]*lam0/la)**2
+            # Loop over the patches
+            i = 0
+            for p1 in self.patch:
+                j = 0
+                for p2 in self.patch:
+                    # Compute the distance
+                    d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
+                    # Compute Cm
+                    Cmt[i,j] = C * np.exp( -1.0*d/la)
+                    Cmt[j,i] = C * np.exp( -1.0*d/la)
+                    # Upgrade counter
+                    j += 1
+                # upgrade counter
+                i += 1
+
+            # Store that into Cm
+            se = st + len(self.patch)
+            Cm[st:se, st:se] = Cmt
+            st += len(self.patch)
+
+        # Put the extra values
+        if extra_params is not None:
+            for i in range(len(extra_params)):
+                Cm[st+i, st+i] = extra_params[i]
+
+        # Store Cm into self
+        self.Cm = Cm
+
+        # All done
+        return
+
+    def buildCmSensitivity(self, sigma, lam, lam0=None, extra_params=None, lim=None):
+        '''
+        Builds a model covariance matrix using the equation described in Radiguet et al 2010.
+        Then correlation length is weighted by the sensitivity matrix described in Ortega's PhD thesis.
+                     ==>       S = diag(G'G)
+        Here, Sigma and Lambda are lists specifying values for the slip directions
+        Args:
+            * sigma         : Amplitude of the correlation.
+            * lam           : Characteristic length scale.
+            * lam0          : Normalizing distance (if None, lam0=min(distance between patches)).
+            * extra_params  : Add some extra values on the diagonal.
+            * lim           : Limit distance parameter (see self.distancePatchToPatch)
+        '''
+
+        # print
+        print ("---------------------------------")
+        print ("---------------------------------")
+        print ("Assembling the Cm matrix ")
+        print ("Sigma = {}".format(sigma))
+        print ("Lambda = {}".format(lam))
+
+        # Assert
+        assert hasattr(self, 'Gassembled'), "Need to assemble the Green's functions"
+
+        # Need the patch geometry
+        if self.patch is None:
+            print("You should build the patches and the Green's functions first.")
+            return
+
+        # Geth the desired slip directions
+        slipdir = self.slipdir
+
+        # Get the patch centers
+        self.centers = np.array(self.getcenters())
+
+        # Sets the lambda0 value
+        if lam0 is None:
+            xd = (np.unique(self.centers[:,0]).max() - np.unique(self.centers[:,0]).min())/(np.unique(self.centers[:,0]).size)
+            yd = (np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())/(np.unique(self.centers[:,1]).size)
+            zd = (np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())/(np.unique(self.centers[:,2]).size)
+            lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
+
+        # Creates the principal Cm matrix
+        Np = len(self.patch)*len(slipdir)
+        if extra_params is not None:
+            Np += len(extra_params)
+        Cmt = np.zeros((len(self.patch), len(self.patch)))
+        lambdast = np.zeros((len(self.patch), len(self.patch)))
+        Cm = np.zeros((Np, Np))
+        Lambdas = np.zeros((Np, Np))
+
+        # Build the sigma and lambda lists
+        if type(sigma) is not list:
+            s = []; l = []
+            for sl in range(len(slipdir)):
+                s.append(sigma)
+                l.append(lam)
+            sigma = s
+            lam = l
+        if type(sigma) is list:
+            assert(len(sigma)==len(lam)), 'Sigma and lambda must have the same length'
+            assert(len(sigma)==len(slipdir)), 'Need one value of sigma and one value of lambda per slip direction'
+
+        # Loop over the slipdirections
+        st = 0
+        for sl in range(len(slipdir)):
+
+            # Update a counter
+            se = st + len(self.patch)
+            
+            # Get the greens functions and build sensitivity
+            G = self.Gassembled[:,st:se]
+            S = np.diag(np.dot(G.T, G)).copy()
+            ss = S.max()
+            S /= ss
+            
+            # pick the right values
+            la = lam[sl]
+
+            # Loop over the patches
+            i = 0
+            for p1 in self.patch:
+                j = 0
+                for p2 in self.patch:
+                    # Compute the distance
+                    d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
+                    # Weight Lambda by the relative sensitivity
+                    L = la/np.sqrt(S[i]*S[j])
+                    lambdast[i,j] = L
+                    lambdast[j,i] = L
+                    # Compute Cm
+                    C = (sigma[sl]*lam0/L)**2
+                    Cmt[i,j] = C * np.exp( -1.0*d/L)
+                    Cmt[j,i] = C * np.exp( -1.0*d/L)
+                    # Upgrade counter
+                    j += 1
+                # upgrade counter
+                i += 1
+
+            # Store that into Cm
+            Cm[st:se, st:se] = Cmt
+            Lambdas[st:se, st:se] = lambdast
+            st += len(self.patch)
+
+        # Put the extra values
+        if extra_params is not None:
+            for i in range(len(extra_params)):
+                Cm[st+i, st+i] = extra_params[i]
+
+        # Store Cm into self
+        self.Cm = Cm
+        self.Lambdas = Lambdas
 
         # All done
         return

@@ -1082,7 +1082,6 @@ class gpsrates(SourceInv):
             Npo = 3
         # Uknown
         else:
-            print('No Transformation asked for object {}'.format(self.name))
             return 0
             
         # All done
@@ -1279,8 +1278,14 @@ class gpsrates(SourceInv):
         base_z = 0
 
         # Normalize the baselines
-        base_x_max = np.abs(base_x).max(); base_x /= base_x_max
-        base_y_max = np.abs(base_y).max(); base_y /= base_y_max
+        base_x_max = np.abs(base_x).max()
+        base_y_max = np.abs(base_y).max()
+        meanbase = (base_x_max + base_y_max)/2.
+        base_x /= meanbase
+        base_y /= meanbase
+
+        # Store 
+        self.HelmertNormalizingFactor = meanbase
 
         # Allocate a Helmert base
         H = np.zeros((components,nc))
