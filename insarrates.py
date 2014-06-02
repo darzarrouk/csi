@@ -397,7 +397,11 @@ class insarrates(SourceInv):
         # Deal with the LOS
         self.los = np.ones((self.lon.shape[0],3))
         if heading is not None and incidence is not None and los is None:
-            self.inchd2los(incidence, heading, origin='grd')
+            if type(heading) is str:
+                ori = 'grd'
+            else:
+                ori = 'float'
+            self.inchd2los(incidence, heading, origin=ori)
         elif los is not None:
             self.los[:,0] *= los[0]
             self.los[:,1] *= los[1]
