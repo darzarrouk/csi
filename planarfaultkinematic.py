@@ -49,10 +49,12 @@ class planarfaultkinematic(planarfault):
         self.hypo_lat = None
                 
         # Fault size
-        self.f_length = None
-        self.f_width  = None
-        self.f_strike = None
-        self.f_dip    = None
+        self.f_length  = None
+        self.f_width   = None
+        self.f_nstrike = None
+        self.f_ndip    = None
+        self.f_strike  = None
+        self.f_dip     = None
         
         # Patch objects
         self.patch = None
@@ -152,18 +154,18 @@ class planarfaultkinematic(planarfault):
         patch_width   = grid_size * p_ndip
 
         # Number of patches along strike / along dip
-        f_nstrike = int(np.round(f_length/patch_length))
-        f_ndip    = int(np.round(f_width/patch_width))
+        self.f_nstrike = int(np.round(f_length/patch_length))
+        self.f_ndip    = int(np.round(f_width/patch_width))
 
         # Correct the fault size to match n_strike and n_dip
-        self.f_length = f_nstrike * patch_length
-        self.f_width  = f_ndip    * patch_width
+        self.f_length = self.f_nstrike * patch_length
+        self.f_width  = self.f_ndip    * patch_width
         if self.f_length != f_length or self.f_width != f_width:
             sys.stderr.write('!!! Fault size changed to %.2f x %.2f km'%(self.f_length,self.f_width))
 
                     
         # build patches
-        self.buildPatches(lon, lat, dep, f_strike, f_dip, self.f_length, self.f_width, f_nstrike, f_ndip)
+        self.buildPatches(lon, lat, dep, f_strike, f_dip, self.f_length, self.f_width, self.f_nstrike, self.f_ndip)
         
         # build subgrid
         self.buildSubGrid(grid_size,p_nstrike,p_ndip)
@@ -362,14 +364,8 @@ class planarfaultkinematic(planarfault):
             t   = np.arange(Nt,dtype='float64')*data.waveform_engine.delta
             hTr = 0.5 * self.tr[p]
             for g in range(len(self.grid[p])):
-                g_x = self.grid[p][g][0] - self.hypo_x
-                g_y = self.grid[p][g][1] - self.hypo_y
-                g_z = self.grid[p][g][2] - self.hypo_z
                 g_t0 = eik_solver.getT0FromFault(self,self.grid[p][g][0],self.grid[p][g][1],
                                                  self.grid[p][g][2])
-                #g_t0 = g_dist/self.vr[p]
-                #g_dist = np.sqrt(g_x*g_x + g_y*g_y + g_z*g_z)
-                #print '%8.2f %8.2f %8.2f'%(g_dist, g_t0 , g_dist/self.vr[p])
                 g_tc = g_t0 + hTr
                 g_t1 = g_t0 + 2*hTr
                 g_i  = np.where((t>=g_t0)*(t<=g_t1))

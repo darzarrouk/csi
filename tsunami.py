@@ -108,7 +108,8 @@ class tsunami(SourceInv):
         plt.figure()
         nsamp = nobs_per_trace
         nstat = len(self.d)/nobs_per_trace
-        for i in range(nstat):
+        fig = plt.figure()
+        for i in range(nstat): 
             data  = self.d[i*nsamp:nsamp*i+nsamp]
             synth = self.synth[i*nsamp:nsamp*i+nsamp]
             plt.subplot(2,nstat/2,i+1)

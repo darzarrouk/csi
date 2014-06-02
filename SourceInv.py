@@ -61,6 +61,9 @@ class SourceInv(object):
         # Set utmzone
         self.utmzone = utmzone
         self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps=ellps)
+        
+        # Set Geod
+        self.geod = pp.Geod(ellps=ellps)
 
         # All done
         return        

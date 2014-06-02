@@ -47,6 +47,9 @@ class seismic(SourceInv):
         # Data
         self.d = {}
 
+        # Covariance matrix
+        self.Cd = None
+
         # All done
         return
 
@@ -79,6 +82,28 @@ class seismic(SourceInv):
             self.y = np.append(self.y,y)
             self.lon, self.lat = self.ll2xy(self.x,self.y)            
 
+        # All done
+        return
+
+    def buildDiagCd(self,std):
+        '''
+        Build a diagonal Cd from standard deviations
+        Args:
+            std: array of standard deviations
+        '''
+
+        assert len(std) == len(self.sta_name)
+
+        # Set variance vector
+        var_vec = np.array([])
+        for i in range(len(self.sta_name)):
+            stanm = self.sta_name[i]
+            var_vec_sta = np.ones((self.d[stanm].npts,))*std[i]*std[i]
+            var_vec = np.append(var_vec,var_vec_sta)
+        
+        # Build Cd from variance vector
+        self.Cd = np.diag(var_vec)
+        
         # All done
         return
     
@@ -127,21 +152,37 @@ class seismic(SourceInv):
         # Read sac files
         self.lon  = []
         self.lat  = []
-        self.data = {}
+        self.d = {}
         for sacfile in sacfiles:
             sac = sacpy.sac()
             sac.rsac(sacfile)
             self.lon.append(sac.stlo)
             self.lat.append(sac.stla)
-            if not self.data.has_key(sac.kstnm):
-                self.data = {}
-            if not self.data[sac.kstnm].has_key(sac.kcmpnm):
-                self.data[sac.kstnm][sac.kcmpnm] = {}
-            self.data[sac.kstnm][sac.kcmpnm[-1]] = sac.copy()
+            stanm = sac.kstnm+'_'+sac.kcmpnm
+            self.sta_name.append(stanm)
+            #if not self.d.has_key(sac.kstnm):
+            #    self.d = {}
+            #if not self.d[sac.kstnm].has_key(sac.kcmpnm):
+            #    self.d[sac.kstnm][sac.kcmpnm] = {}
+            #self.d[sac.kstnm][sac.kcmpnm[-1]] = sac.copy()
+            assert not self.d.has_key(stanm), 'Multiple data for {}'.format(stanm)
+            self.d[stanm] = sac.copy()
 
         # All done
         return
-            
+
+
+    def initWave(self,waveform_engine):
+        '''
+        Initialize Green's function database engine
+        '''
+        
+        # Assign reference to waveform_engine
+        self.waveform_engine = copy.deepcopy(waveform_engine)
+
+        # All done
+        return
+
 
     def initWaveInt(self,waveform_engine):
         '''
@@ -149,7 +190,7 @@ class seismic(SourceInv):
         '''
         
         # Assign reference to waveform_engine
-        self.waveform_engine = copy.deepcopy(waveform_engine)
+        self.initWave(waveform_engine)
 
         # Assign receiver location
         self.waveform_engine.setXr(self.sta_name,self.x,self.y)
@@ -157,8 +198,9 @@ class seismic(SourceInv):
         # All done
         return
 
-    def calcSynthetics(self,dir_name,strike,dip,rake,M0,rise_time,stf_type='triangle',rfile_name=None,out_type='D',
-                       src_loc=None,cleanup=True,ofd=sys.stdout,efd=sys.stderr):
+
+    def calcSynthetics(self,dir_name,strike,dip,rake,M0,rise_time,stf_type='triangle',rfile_name=None,
+                       out_type='D',src_loc=None,cleanup=True,ofd=sys.stdout,efd=sys.stderr):
         '''
         Build Green's functions for a particular source location
         Args:
@@ -204,5 +246,6 @@ class seismic(SourceInv):
 
         # All done
         return
+        
     
 

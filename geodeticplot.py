@@ -260,7 +260,7 @@ class geodeticplot(object):
 
         # norm
         if Norm is None:
-            vmin=0
+            vmin=slip.min()
             vmax=slip.max()
         else:
             vmin=Norm[0]
@@ -323,6 +323,7 @@ class geodeticplot(object):
                 y4 = patch[3][1]
                 self.carte.plot([x1, x2, x3, x4,x1], [y1, y2, y3, y4,y1], '-k', linewidth=1)
                 self.carte.plot([(x1+x3)/2.], [(y1+y3)/2.], '.r', markersize=5)
+                
 
         # put up a colorbar
         if colorbar:
