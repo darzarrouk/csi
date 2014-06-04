@@ -39,6 +39,7 @@ from .seismic import seismic
 from .tsunami import tsunami
 from .insartimeseries import insartimeseries
 from .gpstimeseries import gpstimeseries
+from .timeseries import timeseries
 #from .gpssopactimeseries import gpstimeseries
 #from .gpsstation import gpsstation
 
