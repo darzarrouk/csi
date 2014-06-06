@@ -1720,6 +1720,8 @@ class gpsrates(SourceInv):
             z = self.vel_enu
         elif data is 'synth':
             z = self.synth
+        elif data is 'res':
+            z = self.vel_enu - self.synth
         elif data is 'strain':
             z = self.Strain
         elif data is 'transformation':

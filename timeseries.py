@@ -298,7 +298,7 @@ class timeseries:
         # Predict the time series
         if steps is not None:
             sT = True
-        self.synth = tf.predict(self,constituents='all', linear=linear, steps=sT)
+        tf.predict(self,constituents='all', linear=linear, steps=sT)
 
         # All done
         return
@@ -365,6 +365,32 @@ class timeseries:
 
         # All done
         return
+
+    def findZeroIntersect(self, data='data'):
+        '''
+        Returns all the points just before the function crosses 0.
+        Args:
+            * data      : Can be 'data', 'synth' or 'derivative'.
+        '''
+
+        # Get the good data
+        if data is 'data':
+            v = self.value
+        elif data is 'synth':
+            v = self.synth
+        elif data is 'derivative':
+            v = self.derivative
+
+        # List 
+        indexes = []
+
+        # Loop
+        for i in xrange(len(v)-1):
+            if (v[i]>0. and v[i+1]<0.) or (v[i]<0. and v[i+1]>0.):
+                indexes.append(i)
+
+        # All done
+        return indexes
 
     def plot(self, figure=1, styles=['.r'], show=True, data='data'):
         '''

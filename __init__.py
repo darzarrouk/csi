@@ -57,6 +57,9 @@ from .stressfield import stressfield
 from .geodeticplot import geodeticplot
 from .seismicplot import seismicplot
 
+## Utils
+from .tidalfit import tidalfit
+
 #from timefnutils import *
 
 #EOF

@@ -15,7 +15,7 @@ import sys
 
 class tidalfit(object):
 
-    def __init__(self, constituents='all', linear=False, steps=None):
+    def __init__(self, constituents='all', linear=False, steps=None, verbose=True):
         '''
         Initialize a tidalfit object.
         Args:
@@ -23,6 +23,12 @@ class tidalfit(object):
             * linear        : Include a linear trend (default is False).
             * steps         : List of datetime instances to add step functions in the fit.
         '''
+        
+        # print
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize a tidal fit object")
         
         # Tidal Periods in hours (source: wikipedia)
         self.tidePeriodDict = {'M2' : 12.4206012,       # Principal Lunar
@@ -58,22 +64,14 @@ class tidalfit(object):
                 constituents = self.tidePeriodDict.keys()
         self.constituents = constituents
 
-        # How many parameters?
-        nStep = 0; nLin = 0
+        # Store things
         self.steps = steps
         self.linear = linear
-        if steps is not None:
-            nStep = len(steps)
-        if linear:
-            nLin = 1
-        nTid = len(periods)
-        nParam = nStep + nLin + nTid + 1  # +1 is for the constant
-        self.nParam = nParam 
 
         # All done
         return
 
-    def doFit(self, tZero=dt.datetime(2000, 01, 01), chunks=None):
+    def doFit(self, timeseries, tZero=dt.datetime(01, 01, 01), chunks=None):
         '''
         Performs the fit on the chunks of data specified in chunks.
         Args:
@@ -90,7 +88,11 @@ class tidalfit(object):
         self.buildG(timeseries, chunks=chunks, linear=self.linear, steps=self.steps, constituents=self.constituents)
 
         # Solve
-        m, res, rank, s = np.linalg.lstsq(self.G, self.data) 
+        m, res, rank, s = np.linalg.lstsq(self.G, self.data, rcond=1e-8) 
+        self.m = m
+        self.res = res
+        self.rank = rank
+        self.s = s
 
         # Save Linear and Steps
         self.Offset = m[0]
@@ -113,7 +115,7 @@ class tidalfit(object):
         # All done
         return
 
-    def buildG(timeseries, chunks=None, linear=False, steps=None, constituents='all'):
+    def buildG(self, timeseries, chunks=None, linear=False, steps=None, constituents='all', derivative=False):
         ''' 
         Builds the G matrix we will invert.
         Args:
@@ -127,11 +129,30 @@ class tidalfit(object):
         # Get things
         time = timeseries.time
         value = timeseries.value
+        tZero = self.tZero
         
         # What periods do we want
         if type(constituents) is str:
             if constituents in ('All', 'all', 'ALL'):
                 constituents = self.tidePeriodDict.keys()
+
+        # Check
+        if derivative:
+            steps = None
+
+        # Parameters
+        nTide = 2*len(constituents)
+        nStep = 0
+        if steps is not None:
+            nStep = len(steps)
+        nLin = 0
+        if linear:
+            nLin = 1
+        if derivative:
+            add = 0
+        else:
+            add = 1
+        self.nParam = add + nTide + nStep + nLin
 
         # Get the data indexes
         if chunks is None:
@@ -141,7 +162,7 @@ class tidalfit(object):
             for chunk in chunks:
                 u1 = np.flatnonzero(time>=chunk[0])
                 u2 = np.flatnonzero(time<=chunk[1])
-                uu = np.interesect1d(u1, u2)
+                uu = np.intersect1d(u1, u2)
                 u.append(uu)
             u = np.array(u).flatten().tolist()
 
@@ -150,27 +171,35 @@ class tidalfit(object):
         self.nData = nData
 
         # Initialize G
-        G = np.zeros((self.nData, nParm))
+        G = np.zeros((self.nData, self.nParam))
 
         # Build time and data vectors
-        Tvec = np.array([(time[i]-tZero).total_seconds()/(60.*60.*24.) for i in u])  # In Days
+        time = time[u]
+        Tvec = np.array([(time[i]-tZero).total_seconds()/(60.*60.*24.) for i in range(time.shape[0])])  # In Days
         self.data = value[u]
 
         # Constant term
-        G[:,0] = 1.0
-        iP = 1
+        if not derivative:
+            G[:,0] = 1.0
+            iP = 1
+        else:
+            iP = 0
 
         # Linear?
         if linear:
-            G[:,1] = time
+            if not derivative:
+                G[:,iP] = Tvec
+            else:
+                G[:,iP] = 1.0
             iP += 1
 
         # Steps?
         if steps is not None:
+            self.steps = steps
             for step in steps:
-                sline = np.zeros((data.shape[0],))
-                u = np.flatnonzero(time>=(step-tZero).total_seconds()/(60.*60.*24.))
-                sline[u] = 1.0
+                sline = np.zeros((self.data.shape[0],))
+                p = np.flatnonzero(time>=step)
+                sline[p] = 1.0
                 G[:,iP] = sline
                 iP += 1
 
@@ -178,16 +207,125 @@ class tidalfit(object):
         periods = []
         for constituent in constituents:
             period = self.tidePeriodDict[constituent]/24.
-            G[:,iP] = np.cos(2*np.pi*Tvec/period)
-            G[:,iP+1] = np.sin(2*np.pi*Tvec/period)
+            if not derivative:
+                G[:,iP] = np.cos(2*np.pi*Tvec/period)
+                G[:,iP+1] = np.sin(2*np.pi*Tvec/period)
+            else:
+                G[:,iP] = -1.0*(2*np.pi/period)*np.sin(2*np.pi*Tvec/period)
+                G[:,iP+1] = (2*np.pi/period)*np.cos(2*np.pi*Tvec/period)
             periods.append(period)
             iP += 2
         self.periods = periods
 
         # Save G
-        self.G = G
+        if derivative:
+            self.Gderiv = G
+        else:
+            self.G = G
 
         # All done
         return
 
-    def predict(self, 
+    def predict(self, timeseries, constituents='all', linear=False, steps=True, derivative=False):
+        '''
+        Given the results of the fit, this routine predicts the time series.
+        Args:
+            * timeseries    : timeseries instance.
+            * constituents  : List of constituents (default: 'all')
+            * linear        : Include the linear trend (default: False).
+            * steps         : Include the steps (default: False).
+            * derivative    : If True, stores results in timeseries.deriv, 
+                              else, stores results in timeseries.synth
+        '''
+
+        # Build G
+        if steps:
+            steps = self.steps
+        else:
+            steps = None
+        self.buildG(timeseries, chunks=None, linear=linear, steps=steps, 
+                constituents=constituents, derivative=derivative)
+
+        # Get the model vector
+        if derivative:
+            m = np.zeros((self.Gderiv.shape[1],))
+        else:
+            m = np.zeros((self.G.shape[1],))
+
+        # Offsets
+        if not derivative:
+            m[0] = self.Offset
+            iP = 1
+        else:
+            iP = 0
+
+        # Linear
+        if linear:
+            m[iP] = self.Linear
+            iP += 1
+
+        # Steps
+        if derivative:
+            steps = None
+        if steps is not None:
+            for step in self.Steps:
+                m[iP] = step
+                iP += 1
+
+        # Constituents
+        if type(constituents) is str:
+            if constituents in ('All', 'all', 'ALL'):
+                constituents = self.tidePeriodDict.keys()
+        for constituent in constituents:
+            m[iP:iP+2] = self.Constituents[constituent]
+            iP += 2
+
+        # Predict
+        if derivative:
+            timeseries.derivative = np.dot(self.Gderiv, m)
+        else:
+            timeseries.synth = np.dot(self.G, m)
+
+        # All done
+        return
+
+    def findPeaksTidalModel(self, timeseries, maximum=True, minimum=True):
+        '''
+        Returns all the local maximums (if True) and minimums (if True) in the modeled tidal signal.
+        '''
+
+        # Assert a few things
+        assert hasattr(self, 'Constituents'), 'Need a dictionary of constituents amplitudes'
+
+        # Get the constituents
+        constituents = self.constituents
+
+        # build G and its derivative
+        self.buildG(timeseries, constituents=constituents, linear=False, steps=None, derivative=True)
+        self.buildG(timeseries, constituents=constituents, linear=False, steps=None, derivative=False)
+
+        # Predict the signal and its derivative
+        self.predict(timeseries, constituents=constituents, linear=False, steps=False, derivative=True)
+        self.predict(timeseries, constituents=constituents, linear=False, steps=False, derivative=False)
+
+        # Find the zero crossing points
+        u = np.array(timeseries.findZeroIntersect(data='derivative'))
+
+        # Get the mean 
+        mean = np.mean(timeseries.synth)
+
+        # Maximum are those above the mean (resp. Minimum, under)
+        M = np.flatnonzero(timeseries.synth[u]>mean)
+        m = np.flatnonzero(timeseries.synth[u]<mean)
+
+        # return
+        R = []
+        if maximum:
+            R.append(u[M])
+        if minimum:
+            R.append(u[m])
+
+        # All done
+        return R
+        
+
