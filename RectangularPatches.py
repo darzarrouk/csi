@@ -1915,13 +1915,14 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def ExtractAlongStrikeVariationsOnDiscretizedFault(self, depth=0.5, filename=None, discret=0.5):
+    def ExtractAlongStrikeVariationsOnDiscretizedFault(self, depth=0.5, filename=None, discret=0.5, interpolation='linear'):
         '''
         Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
         Args:
             depth       : Depth at which we extract the along strike variations of slip.
             discret     : Discretization length
             filename    : Saves to a file.
+            interpolation : Interpolation method
         '''
 
         # Import things we need
@@ -1942,7 +1943,7 @@ class RectangularPatches(Fault):
 
         # Discretize the fault
         if discret is not None:
-            self.discretize(every=discret, tol=discret/10., fracstep=discret/12.)
+            self.discretize(every=discret, tol=0.05, fracstep=0.02)
         nd = self.xi.shape[0]
 
         # Compute the cumulative distance along the fault
@@ -1976,9 +1977,9 @@ class RectangularPatches(Fault):
                 dPatches.append(dis[jm] + np.sqrt( (xcd-self.xi[jm])**2 + (ycd-self.yi[jm])**2) )
 
         # Create the interpolator
-        ssint = sciint.interp1d(dPatches, [sPatches[i][0] for i in range(len(sPatches))], kind='linear', bounds_error=False)
-        dsint = sciint.interp1d(dPatches, [sPatches[i][1] for i in range(len(sPatches))], kind='linear', bounds_error=False)
-        tsint = sciint.interp1d(dPatches, [sPatches[i][2] for i in range(len(sPatches))], kind='linear', bounds_error=False)
+        ssint = sciint.interp1d(dPatches, [sPatches[i][0] for i in range(len(sPatches))], kind=interpolation, bounds_error=False)
+        dsint = sciint.interp1d(dPatches, [sPatches[i][1] for i in range(len(sPatches))], kind=interpolation, bounds_error=False)
+        tsint = sciint.interp1d(dPatches, [sPatches[i][2] for i in range(len(sPatches))], kind=interpolation, bounds_error=False)
 
         # Interpolate
         for i in range(self.xi.shape[0]):
@@ -2027,8 +2028,7 @@ class RectangularPatches(Fault):
         Dir = np.array([np.cos(orientation*np.pi/180.), np.sin(orientation*np.pi/180.)])
 
         # initialize the origin
-        x0 = 0
-        y0 = 0
+        x0, y0 = self.getpatchgeometry(0, center=True)[:2]
         if origin is not None:
             x0, y0 = self.ll2xy(origin[0], origin[1])
 
@@ -2063,7 +2063,7 @@ class RectangularPatches(Fault):
                 lonc, latc = self.xy2ll(xc, yc)
 
                 # Computes the horizontal distance
-                vec = np.array([x0-xc, y0-yc])
+                vec = np.array([xc-x0, yc-y0])
                 sign = np.sign( np.dot(Dir,vec) )
                 dist = sign * np.sqrt( (xc-x0)**2 + (yc-y0)**2 )
 
@@ -2072,7 +2072,7 @@ class RectangularPatches(Fault):
 
                 # write output
                 if filename is not None:
-                    fout.write('{} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], area, dist))
+                    fout.write('{} {} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], area, dist))
 
                 # append
                 Var.append(o)

@@ -328,14 +328,24 @@ class gpsrates(SourceInv):
         # Create vectors
         vec1 = vec/np.sqrt(vec[0]**2 + vec[1]**2)
         vec2 = np.array([xa1-xc, ya1-yc]); vec2 /= np.sqrt(vec2[0]**2 + vec2[1]**2)
+        ang1 = np.arctan2(vec1[1], vec1[0])
+        ang2 = np.arctan2(vec2[1], vec2[0])
         # Loop on the points
         for p in range(len(PP.geoms)):
+            # Distances
             Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
             Dacros.append(Lalong.distance(PP.geoms[p]))
+            # Project velocities
             Vacros.append(np.dot(vec2,vel[p,0:2]))
             Valong.append(np.dot(vec1,vel[p,0:2]))
-            Eacros.append(np.dot(vec2,err[p,0:2]))
-            Ealong.append(np.dot(vec1,err[p,0:2]))
+            # Get errors (along the ellipse)
+            x = np.sqrt( err[p,0]*err[p,1] / (err[p,1]**2 + (err[p,0]*np.tan(ang2))**2) )
+            y = x * np.tan(ang2)
+            Eacros.append(np.sqrt(x**2 + y**2))
+            x = np.sqrt( err[p,0]*err[p,1] / (err[p,1]**2 + (err[p,0]*np.tan(ang1))**2) )
+            y = x * np.tan(ang1)
+            Ealong.append(np.sqrt(x**2 + y**2))
+            # Up direction
             Vup.append(vel[p,2])
             Eup.append(err[p,2])
             
@@ -360,6 +370,7 @@ class gpsrates(SourceInv):
         lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
         dic['EndPointsLL'] = [[lone1, late1],
                               [lone2, late2]]
+        dic['Vectors'] = [vec1, vec2]
     
         # all done
         return
@@ -1124,7 +1135,7 @@ class gpsrates(SourceInv):
         # All done
         return orb
 
-    def computeTransformation(self, fault):
+    def computeTransformation(self, fault, verbose=False):
         '''
         Computes the transformation that is stored with a particular fault.
         Stores it in transformation.
@@ -1134,7 +1145,8 @@ class gpsrates(SourceInv):
         transformation = fault.poly[self.name]
         if type(transformation) is list:
             transformation = transformation[0]
-        print('Computing transformation of type {} on data set {}'.format(transformation, self.name))
+        if verbose:
+            print('Computing transformation of type {} on data set {}'.format(transformation, self.name))
 
         # Get the estimator
         orb = self.getTransformEstimator(transformation)
@@ -1370,6 +1382,8 @@ class gpsrates(SourceInv):
             base_max = self.StrainNormalizingFactor
 
             # Print stuff
+            print('--------------------------------------------------')
+            print('--------------------------------------------------')
             print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name)) 
             print('Note: Extension is negative...')
             print('Note: ClockWise Rotation is positive...')
@@ -1379,15 +1393,18 @@ class gpsrates(SourceInv):
             
 
             # write stuff to the screen
+            iP = 0
             if translation:
-                print('  X Translation :    {} '.format(Svec[0]))
-                print('  Y Translation :    {} '.format(Svec[1]))
-            if rotation:
-                print('     Rotation   :    {}'.format(Svec[5]))
+                print('  X Translation :    {} '.format(Svec[iP]))
+                print('  Y Translation :    {} '.format(Svec[iP+1]))
+                iP += 2
             if strain:
-                print('     Strain xx  :    {} '.format(Svec[2]/base_max))
-                print('     Strain xy  :    {} '.format(Svec[3]/base_max))
-                print('     Strain yy  :    {} '.format(Svec[4]/base_max))
+                print('     Strain xx  :    {} '.format(Svec[iP]/base_max))
+                print('     Strain xy  :    {} '.format(Svec[iP+1]/base_max))
+                print('     Strain yy  :    {} '.format(Svec[iP+2]/base_max))
+                iP += 3
+            if rotation:
+                print('     Rotation   :    {}'.format(Svec[iP]))
 
         # Write 2 a file
         if write2file:
@@ -1401,17 +1418,20 @@ class gpsrates(SourceInv):
             fout = open(filename, 'w')
             fout.write('# Strain Estimated on the data set {}\n'.format(self.name))
             fout.write('# Be carefull. There might be a corrective factor to apply to be in strain units\n')
+            iP = 0
             if translation:
                 fout.write('# Translation terms:\n')
                 fout.write('# X-axis | Y-axis \n')
-                fout.write('   {}       {} \n'.format(Svec[0],Svec[1]))
-            if rotation:
-                fout.write('# Rotation term: \n')
-                fout.write(' {} \n'.format(Svec[5]))
+                fout.write('   {}       {} \n'.format(Svec[iP],Svec[iP+1]))
+                iP += 2
             if strain:
                 fout.write('# Strain Tensor: \n')
-                fout.write(' {}  {}  \n'.format(Svec[2]/base_max, Svec[3]/base_max))
-                fout.write(' {}  {}  \n'.format(Svec[3]/base_max, Svec[4]/base_max))
+                fout.write(' {}  {}  \n'.format(Svec[iP]/base_max, Svec[iP+1]/base_max))
+                fout.write(' {}  {}  \n'.format(Svec[iP+1]/base_max, Svec[iP+2]/base_max))
+                iP += 3
+            if rotation:
+                fout.write('# Rotation term: \n')
+                fout.write(' {} \n'.format(Svec[iP]))
             fout.close()
 
         # All done
