@@ -339,10 +339,10 @@ class gpsrates(SourceInv):
             Vacros.append(np.dot(vec2,vel[p,0:2]))
             Valong.append(np.dot(vec1,vel[p,0:2]))
             # Get errors (along the ellipse)
-            x = np.sqrt( err[p,0]*err[p,1] / (err[p,1]**2 + (err[p,0]*np.tan(ang2))**2) )
+            x = err[p,0]*err[p,1] * np.sqrt( 1. / (err[p,1]**2 + (err[p,0]*np.tan(ang2))**2) )
             y = x * np.tan(ang2)
             Eacros.append(np.sqrt(x**2 + y**2))
-            x = np.sqrt( err[p,0]*err[p,1] / (err[p,1]**2 + (err[p,0]*np.tan(ang1))**2) )
+            x = err[p,0]*err[p,1] * np.sqrt( 1. / (err[p,1]**2 + (err[p,0]*np.tan(ang1))**2) )
             y = x * np.tan(ang1)
             Ealong.append(np.sqrt(x**2 + y**2))
             # Up direction
