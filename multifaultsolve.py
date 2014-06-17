@@ -316,7 +316,7 @@ class multifaultsolve(object):
                             fault.polysol[dset] = fault.mpost[st:se]
                             fault.polysolindex[dset] = range(st,se)
                             st += nh
-                        if fault.poly[dset] in ('strain', 'strainnorotation'):
+                        if fault.poly[dset] is 'strain':
                             nh = fault.strain[dset]
                             se = st + nh
                             fault.polysol[dset] = fault.mpost[st:se]
@@ -328,18 +328,12 @@ class multifaultsolve(object):
         # All done
         return
 
-    def SetSolutionFromExternal(self, soln, dtype=np.float32):
+    def SetSolutionFromExternal(self, soln):
         '''
         Takes a vector where the solution of the problem is and affects it to mpost.
-        By default, the input has to be an array.
-        It can be a string with a file name.
         '''
 
-        # If it is a file, read it (binary)
-        if type(soln) is str:
-            soln = np.fromfile(soln, dtype=dtype)
-        
-        # Put it where it needs to be
+        # put it in mpost
         self.mpost = soln
 
         # All done
@@ -456,7 +450,7 @@ class multifaultsolve(object):
 
     def GeneralizedLeastSquareSoln(self, mprior=None, rcond=None):
         '''
-        Solves the generalized least-square problem using the following formula (Tarantolla, 2005, "Inverse Problem Theory", SIAM):
+        Solves the generalized least-square problem using the following formula (Tarantolla, 2005,         Inverse Problem Theory, SIAM):
 
             m_post = m_prior + (G.T * Cd-1 * G + Cm-1)-1 * G.T * Cd-1 * (d - G*m_prior)
 
@@ -535,17 +529,18 @@ class multifaultsolve(object):
             mprior          : a priori model; if None, mprior = np.zeros((Nm,))
             Mw_thresh       : upper bound on moment magnitude
             bounds          : list of tuple bounds for every parameter
-            method          : solver for constrained minimization: SLSQP or COBYLA
-                              SLSQP is recommended
+            method          : solver for constrained minimization: SLSQP, COBYLA, or nnls
+                              For general constraints, SLSQP is recommended. For non-negativity,
+                              use nnls (non-negative least squares).
         """
         assert self.ready, 'You need to assemble the GFs'
 
         # Import things
         import scipy.linalg as scilin
-        from scipy.optimize import minimize
+        from scipy.optimize import minimize, nnls
 
         # Check the provided method is valid
-        assert method == 'SLSQP' or method == 'COBYLA', 'unsupported minimizing method'
+        assert method in ['SLSQP', 'COBYLA', 'nnls'], 'unsupported minimizing method'
 
         # Print
         print ("---------------------------------")
@@ -620,13 +615,23 @@ class multifaultsolve(object):
             constraints = None
 
         # Call solver
-        print("Performing constrained minimzation")
-        res = minimize(costFunction, mprior, args=(G,d,iCd,iCm,mprior),
-                       constraints=constraints, method=method, bounds=bounds,
-                       options={'disp': True})
+        if method == 'nnls':
+            print("Performing non-negative least squares")
+            # Form augmented matrices and vectors
+            d_zero = d - np.dot(G, mprior)
+            F = np.vstack((np.dot(iCd, G), iCm))
+            b = np.hstack((np.dot(iCd, d_zero), np.zeros_like(mprior)))
+            m = nnls(F, b)[0] + mprior
+        
+        else:
+            print("Performing constrained minimzation")
+            res = minimize(costFunction, mprior, args=(G,d,iCd,iCm,mprior),
+                           constraints=constraints, method=method, bounds=bounds,
+                           options={'disp': True})
+            m = res.x
 
         # Store result
-        self.mpost = res.x
+        self.mpost = m
 
         # All done
         return
