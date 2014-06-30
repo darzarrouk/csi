@@ -28,7 +28,7 @@ class insartimeseries(SourceInv):
         '''
 
         # Base class init
-        super(self.__class__,self).__init__(name,utmzone,ellps) 
+        super(insartimeseries,self).__init__(name,utmzone,ellps) 
 
         # Initialize the data set 
         self.dtype = 'insartimeseries'
@@ -423,3 +423,4 @@ class insartimeseries(SourceInv):
             
 
 
+#EOF

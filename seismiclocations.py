@@ -117,6 +117,77 @@ class seismiclocations(SourceInv):
         # All done
         return
 
+    def read_from_Rietbrock(self, filename, header=1):
+        '''
+        Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
+        Args:
+            * filename      : Name of the input file. 
+            * header        : Size of the header.
+        '''
+
+        print ("Read from file {} into data set {}".format(filename, self.name))
+
+        # Open the file
+        fin = open(filename,'r')
+
+        # Read it all
+        A = fin.readlines()
+
+        # Initialize the business
+        self.time = []
+        self.lon = []
+        self.lat = []
+        self.depth = []
+        self.mag = []
+
+        # Loop over the A, there is a header line header
+        for i in range(header, len(A)):
+
+            # Split the string line 
+            tmp = A[i].split()
+
+            # Get the values
+            yr = np.int(tmp[1])
+            mo = np.int(tmp[2])
+            da = np.int(tmp[3])
+            hr = np.int(tmp[4])
+            mi = np.int(tmp[5])
+            sd = np.int(np.floor(np.float(tmp[6])))
+            lat = np.float(tmp[7][:-1]) + np.float(tmp[8])/60.
+            if tmp[7][-1] in ('s', 'S'):
+                lat *= -1.
+            lon = np.float(tmp[9][:-1]) + np.float(tmp[10])/60.
+            if tmp[9][-1] in ('w', 'W'):
+                lon *= -1.
+            depth = np.float(tmp[11])
+            mag = np.float(tmp[12])
+
+            # Create the time object
+            d = dt.datetime(yr, mo, da, hr, mi, sd)
+            
+            # Store things in self 
+            self.time.append(d)
+            self.lat.append(lat)
+            self.lon.append(lon)
+            self.depth.append(depth)
+            self.mag.append(mag)
+
+        # Close the file
+        fin.close()
+
+        # Make arrays
+        self.time = np.array(self.time)
+        self.lat = np.array(self.lat)
+        self.lon = np.array(self.lon)
+        self.depth = np.array(self.depth)
+        self.mag = np.array(self.mag)
+
+        # Create the utm coordinates
+        self.lonlat2xy()
+
+        # All done
+        return
+
     def read_from_SCSN(self,filename, header=65):
         '''
         Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).

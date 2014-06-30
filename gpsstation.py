@@ -350,3 +350,4 @@ class gpsstation:
 
         return retlist
 
+#EOF

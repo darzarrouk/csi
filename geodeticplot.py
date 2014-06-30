@@ -429,7 +429,9 @@ class geodeticplot(object):
             * legendscale   : Length of the scale.
             * linewidths    : Width of the arrows.
             * name          : Plot the name of the stations (True/False).
-            * data          : If both, plots data and synthetics, if 'res', plots the residuals.
+            * data          : If both, plots data and synthetics, if 'res', plots the residuals
+                              if 'strain', plots the strain only.
+                              if 'transformation', plots the transformation.
         '''
 
         if data is 'both':
@@ -467,6 +469,17 @@ class geodeticplot(object):
                 else:
                     p = self.carte.quiver(gps.lon, gps.lat, gps.synth[:,0], gps.synth[:,1], color=colorsynth, scale=scale, width=0.0025, linewidths=linewidths)
                     q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
+        elif data in ('strain', 'transformation'):
+            if data is 'strain':
+                z = gps.Strain
+            elif data is 'transformation':
+                z = gps.transformation
+            if self.ref is 'utm':
+                p = self.carte.quiver(gps.x, gps.y, z[:,0], z[:,1], color=color, scale=scale, width=0.0025, linewidths=linewidths)
+                q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
+            else:
+                p = self.carte.quiver(gps.lon, gps.lat, z[:,0], z[:,1], color=color, scale=scale, width=0.0025, linewidths=linewidths)
+                q = self.carte.quiverkey(p, 0.1, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color=colorsynth)
 
         # Plot the name of the stations if asked
         if name:
@@ -888,3 +901,4 @@ class geodeticplot(object):
         return
 
 
+#EOF

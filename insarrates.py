@@ -24,7 +24,7 @@ class insarrates(SourceInv):
         '''
 
         # Base class init
-        super(self.__class__,self).__init__(name,utmzone,ellps)
+        super(insarrates,self).__init__(name,utmzone,ellps) 
 
         # Initialize the data set
         self.dtype = 'insarrates'
@@ -397,7 +397,11 @@ class insarrates(SourceInv):
         # Deal with the LOS
         self.los = np.ones((self.lon.shape[0],3))
         if heading is not None and incidence is not None and los is None:
-            self.inchd2los(incidence, heading, origin='grd')
+            if type(heading) is str:
+                ori = 'grd'
+            else:
+                ori = 'float'
+            self.inchd2los(incidence, heading, origin=ori)
         elif los is not None:
             self.los[:,0] *= los[0]
             self.los[:,1] *= los[1]
@@ -553,46 +557,90 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def removePoly(self, fault):
+    def getPolyEstimator(self, ptype):
+        '''
+        Returns the Estimator for the polynomial form to estimate in the InSAR data.
+        Args:
+            * ptype : integer.
+                if ptype==1:
+                    constant offset to the data
+                if ptype==3:
+                    constant and linear function of x and y
+                if ptype==4:
+                    constant, linear term and cross term.
+        '''
+
+        # number of data points
+        nd = self.vel.shape[0]
+
+        # Create the Estimator
+        orb = np.zeros((nd, ptype))
+        orb[:,0] = 1.0
+
+        if ptype >= 3:
+            # Compute normalizing factors
+            if not hasattr(self, 'OrbNormalizingFactor'):
+                self.OrbNormalizingFactor = {}
+            x0 = self.x[0]
+            y0 = self.y[0]
+            normX = np.abs(self.x - x0).max()
+            normY = np.abs(self.y - y0).max()
+            # Save them for later
+            self.OrbNormalizingFactor['x'] = normX
+            self.OrbNormalizingFactor['y'] = normY
+            self.OrbNormalizingFactor['ref'] = [x0, y0]
+            # Fill in functionals
+            orb[:,1] = (self.x - x0) / normX
+            orb[:,2] = (self.y - y0) / normY
+
+        if ptype == 4:
+            orb[:,3] = orb[:,1] * orb[:,2]
+
+        # Scale everything by the data factor
+        orb *= self.factor
+
+        # All done
+        return orb
+
+    def computePoly(self, fault):
+        '''
+        Computes the orbital bias estimated in fault
+        Args:
+            * fault : Fault object that has a polysol structure.
+        '''
+
+        # Get the polynomial type
+        ptype = fault.poly[self.name]
+
+        # Get the parameters
+        params = fault.polysol[self.name]
+
+        # Get the estimator
+        Horb = self.getPolyEstimator(ptype)
+
+        # Compute the polynomial
+        self.orbit = np.dot(Horb, params)
+
+        # All done
+        return
+
+    def removePoly(self, fault, verbose=False):
         '''
         Removes a polynomial from the parameters that are in a fault.
         '''
 
-        # Get the number
-        Oo = fault.polysol[self.name].shape[0]
-        assert ( (Oo==1) or (Oo==3) or (Oo==4) ), \
-            'Number of polynomial parameters can be 1, 3 or 4.'
+        # compute the polynomial
+        self.computePoly(fault)
 
-        # Get the parameters
-        Op = fault.polysol[self.name]
-
-        # Create the transfer matrix
-        Nd = self.vel.shape[0]
-        orb = np.zeros((Nd, Oo))
+        # Get the vector
+        params = fault.polysol[self.name].tolist()
 
         # Print Something
-        print('Correcting insar rate {} from polynomial function: {}'.format(self.name, tuple(Op[i] for i in range(Oo))))
-
-        # Fill in the first columns
-        orb[:,0] = 1.0
-
-        # If more columns
-        if Oo >= 3:
-            normX = fault.OrbNormalizingFactor[self.name]['x']
-            normY = fault.OrbNormalizingFactor[self.name]['y']
-            x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
-            orb[:,1] = (self.x - x0) / normX
-            orb[:,2] = (self.y - y0) / normY
-        if Oo >= 4:
-            orb[:,3] = orb[:,1] * orb[:,2]
-        # Scale everything by the data factor
-        orb *= self.factor
-
-        # Get the correction
-        self.orb = np.dot(orb, Op)
+        if verbose:
+            print('Correcting insar rate {} from polynomial function: {}'.format(self.name, tuple(p for p in params)))
 
         # Correct
-        self.vel -= self.orb
+        self.vel -= self.orbit
 
         # All done
         return
@@ -654,30 +702,14 @@ class insarrates(SourceInv):
                 losop_synth = np.dot(Gt, St)
                 self.synth += losop_synth
 
-            if poly == 'build' or poly == 'include':
-                if (self.name in fault.polysol.keys()):
-                    # Get the orbital parameters
-                    sarorb = fault.polysol[self.name]
-                    # Get reference point and normalizing factors
-                    x0, y0 = fault.OrbNormalizingFactor[self.name]['ref']
-                    normX = fault.OrbNormalizingFactor[self.name]['x']
-                    normY = fault.OrbNormalizingFactor[self.name]['y']
-                    if sarorb is not None:
-                        polyModel = sarorb[0]
-                        if sarorb.size >= 3:
-                            polyModel += sarorb[1] * (self.x - x0) / normX
-                            polyModel += sarorb[2] * (self.y - y0) / normY
-                        if sarorb.size >= 4:
-                            polyModel += sarorb[3] * (self.x-x0)*(self.y-y0)/(normX*normY)
-
-                if poly == 'include':
-                    self.synth += polyModel
+            if poly is not None:
+                # Compute the polynomial 
+                self.computePoly(fault)
+                if poly is 'include':
+                    self.removePoly(fault)
 
         # All done
-        if poly == 'build':
-            return polyModel
-        else:
-            return
+        return
 
     def writeEDKSdata(self):
         '''
@@ -1837,3 +1869,4 @@ class insarrates(SourceInv):
 
         # All done
         return
+#EOF

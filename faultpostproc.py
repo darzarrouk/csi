@@ -685,6 +685,4 @@ class faultpostproc(object):
         # All done
         return
 
-
-
-
+#EOF

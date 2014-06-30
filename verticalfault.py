@@ -27,7 +27,7 @@ class verticalfault(RectangularPatches):
         '''
 
         # Initialize base class
-        super(self.__class__,self).__init__(name,utmzone,ellps)
+        super(verticalfault,self).__init__(name,utmzone,ellps)
 
         # All done
         return
@@ -502,7 +502,7 @@ class verticalfault(RectangularPatches):
         for data in datas:
 
             # Check something
-            if data.dtype is not 'gpsrates':
+            if data.dtype not in ('gpsrates', 'multigps'):
                 print('This has not been implemented for other data set than gpsrates')
                 return
 
@@ -660,3 +660,4 @@ class verticalfault(RectangularPatches):
         # all done
         return
 
+#EOF

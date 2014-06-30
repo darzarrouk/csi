@@ -29,7 +29,7 @@ class tsunami(SourceInv):
             * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
-        super(self.__class__,self).__init__(name,utmzone,ellps)
+        super(tsunami,self).__init__(name,utmzone,ellps)
 
         # Initialize the data set
         self.dtype = dtype
@@ -137,3 +137,4 @@ class tsunami(SourceInv):
 
         # All done
         return
+#EOF

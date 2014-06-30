@@ -29,6 +29,7 @@ from .planarfaultkinematic import planarfaultkinematic
 
 ## Data
 from .gpsrates import gpsrates
+from .multigps import multigps
 from .insarrates import insarrates
 from .imagedownsampling import imagedownsampling
 from .multifaultsolve import multifaultsolve
@@ -38,6 +39,7 @@ from .seismic import seismic
 from .tsunami import tsunami
 from .insartimeseries import insartimeseries
 from .gpstimeseries import gpstimeseries
+from .timeseries import timeseries
 #from .gpssopactimeseries import gpstimeseries
 #from .gpsstation import gpsstation
 
@@ -55,4 +57,9 @@ from .stressfield import stressfield
 from .geodeticplot import geodeticplot
 from .seismicplot import seismicplot
 
+## Utils
+from .tidalfit import tidalfit
+
 #from timefnutils import *
+
+#EOF

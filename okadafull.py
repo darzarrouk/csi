@@ -175,6 +175,7 @@ def stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30
         Stress[2,1,:] = s[:,4]  # Syz
         return Stress, flag, flag2
          
+#EOF
 
 
 

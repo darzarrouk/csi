@@ -1671,3 +1671,5 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+
+#EOF

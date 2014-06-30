@@ -1188,7 +1188,7 @@ class RectangularPatches(Fault):
         if data.dtype is 'insarrates':
             Ndt = Nd
             data.obs_per_station = 1
-        elif data.dtype is 'gpsrates':
+        elif data.dtype in ('gpsrates', 'multigps'):
             Ndt = data.lon.shape[0]*2
             data.obs_per_station = 2
             if vertical:
@@ -1220,7 +1220,7 @@ class RectangularPatches(Fault):
         if data.dtype is 'insarrates':
             self.d[data.name] = data.vel
             vertical = True                 # In InSAR, you need to use the vertical, no matter what....
-        elif data.dtype is 'gpsrates':
+        elif data.dtype in ('gpsrates', 'multigps'):
             if vertical:
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
@@ -1267,7 +1267,7 @@ class RectangularPatches(Fault):
                 op = op[:,0:2]
 
             # Organize the response
-            if data.dtype in ['gpsrates', 'cosicorrrates']:
+            if data.dtype in ['gpsrates', 'cosicorrrates', 'multigps']:
                 # If GPS type, construct a flat vector with east displacements first, then
                 # north, then vertical
                 ss = ss.T.flatten()
@@ -1299,101 +1299,6 @@ class RectangularPatches(Fault):
         if verbose:
             sys.stdout.write('\n')
             sys.stdout.flush()
-
-        # All done
-        return
-
-
-    def buildCmSlipDirs(self, sigma, lam, lam0=None, extra_params=None, lim=None):
-        '''
-        Builds a model covariance matrix using the equation described in Radiguet et al 2010.
-        Here, Sigma and Lambda are lists specifying values for the slip directions
-        Args:
-            * sigma         : Amplitude of the correlation.
-            * lam           : Characteristic length scale.
-            * lam0          : Normalizing distance (if None, lam0=min(distance between patches)).
-            * extra_params  : Add some extra values on the diagonal.
-            * lim           : Limit distance parameter (see self.distancePatchToPatch)
-        '''
-
-        # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Assembling the Cm matrix ")
-        print ("Sigma = {}".format(sigma))
-        print ("Lambda = {}".format(lam))
-
-        # Need the patch geometry
-        if self.patch is None:
-            print("You should build the patches and the Green's functions first.")
-            return
-
-        # Geth the desired slip directions
-        slipdir = self.slipdir
-
-        # Get the patch centers
-        self.centers = np.array(self.getcenters())
-
-        # Sets the lambda0 value
-        if lam0 is None:
-            xd = (np.unique(self.centers[:,0]).max() - np.unique(self.centers[:,0]).min())/(np.unique(self.centers[:,0]).size)
-            yd = (np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())/(np.unique(self.centers[:,1]).size)
-            zd = (np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())/(np.unique(self.centers[:,2]).size)
-            lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
-
-        # Creates the principal Cm matrix
-        Np = len(self.patch)*len(slipdir)
-        if extra_params is not None:
-            Np += len(extra_params)
-        Cmt = np.zeros((len(self.patch), len(self.patch)))
-        Cm = np.zeros((Np, Np))
-
-        # Build the sigma and lambda lists
-        if type(sigma) is not list:
-            s = []; l = []
-            for sl in range(len(slipdir)):
-                s.append(sigma)
-                l.append(lam)
-            sigma = s
-            lam = l
-        assert (type(sigma) is list), 'Sigma is not a list, why???'
-        if type(sigma) is list:
-            assert(len(sigma)==len(lam)), 'Sigma and lambda must have the same length'
-            assert(len(sigma)==len(slipdir)), 'Need one value of sigma and one value of lambda per slip direction'
-
-        # Loop over the slipdirections
-        st = 0
-        for sl in range(len(slipdir)):
-            # pick the right values
-            la = lam[sl]
-            C = (sigma[sl]*lam0/la)**2
-            # Loop over the patches
-            i = 0
-            for p1 in self.patch:
-                j = 0
-                for p2 in self.patch:
-                    # Compute the distance
-                    d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
-                    # Compute Cm
-                    Cmt[i,j] = C * np.exp( -1.0*d/la)
-                    Cmt[j,i] = C * np.exp( -1.0*d/la)
-                    # Upgrade counter
-                    j += 1
-                # upgrade counter
-                i += 1
-
-            # Store that into Cm
-            se = st + len(self.patch)
-            Cm[st:se, st:se] = Cmt
-            st += len(self.patch)
-
-        # Put the extra values
-        if extra_params is not None:
-            for i in range(len(extra_params)):
-                Cm[st+i, st+i] = extra_params[i]
-
-        # Store Cm into self
-        self.Cm = Cm
 
         # All done
         return
@@ -2010,13 +1915,14 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def ExtractAlongStrikeVariationsOnDiscretizedFault(self, depth=0.5, filename=None, discret=0.5):
+    def ExtractAlongStrikeVariationsOnDiscretizedFault(self, depth=0.5, filename=None, discret=0.5, interpolation='linear'):
         '''
         Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
         Args:
             depth       : Depth at which we extract the along strike variations of slip.
             discret     : Discretization length
             filename    : Saves to a file.
+            interpolation : Interpolation method
         '''
 
         # Import things we need
@@ -2037,7 +1943,7 @@ class RectangularPatches(Fault):
 
         # Discretize the fault
         if discret is not None:
-            self.discretize(every=discret, tol=discret/10., fracstep=discret/12.)
+            self.discretize(every=discret, tol=0.05, fracstep=0.02)
         nd = self.xi.shape[0]
 
         # Compute the cumulative distance along the fault
@@ -2071,9 +1977,9 @@ class RectangularPatches(Fault):
                 dPatches.append(dis[jm] + np.sqrt( (xcd-self.xi[jm])**2 + (ycd-self.yi[jm])**2) )
 
         # Create the interpolator
-        ssint = sciint.interp1d(dPatches, [sPatches[i][0] for i in range(len(sPatches))], kind='linear', bounds_error=False)
-        dsint = sciint.interp1d(dPatches, [sPatches[i][1] for i in range(len(sPatches))], kind='linear', bounds_error=False)
-        tsint = sciint.interp1d(dPatches, [sPatches[i][2] for i in range(len(sPatches))], kind='linear', bounds_error=False)
+        ssint = sciint.interp1d(dPatches, [sPatches[i][0] for i in range(len(sPatches))], kind=interpolation, bounds_error=False)
+        dsint = sciint.interp1d(dPatches, [sPatches[i][1] for i in range(len(sPatches))], kind=interpolation, bounds_error=False)
+        tsint = sciint.interp1d(dPatches, [sPatches[i][2] for i in range(len(sPatches))], kind=interpolation, bounds_error=False)
 
         # Interpolate
         for i in range(self.xi.shape[0]):
@@ -2122,8 +2028,7 @@ class RectangularPatches(Fault):
         Dir = np.array([np.cos(orientation*np.pi/180.), np.sin(orientation*np.pi/180.)])
 
         # initialize the origin
-        x0 = 0
-        y0 = 0
+        x0, y0 = self.getpatchgeometry(0, center=True)[:2]
         if origin is not None:
             x0, y0 = self.ll2xy(origin[0], origin[1])
 
@@ -2158,7 +2063,7 @@ class RectangularPatches(Fault):
                 lonc, latc = self.xy2ll(xc, yc)
 
                 # Computes the horizontal distance
-                vec = np.array([x0-xc, y0-yc])
+                vec = np.array([xc-x0, yc-y0])
                 sign = np.sign( np.dot(Dir,vec) )
                 dist = sign * np.sqrt( (xc-x0)**2 + (yc-y0)**2 )
 
@@ -2167,7 +2072,7 @@ class RectangularPatches(Fault):
 
                 # write output
                 if filename is not None:
-                    fout.write('{} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], area, dist))
+                    fout.write('{} {} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], area, dist))
 
                 # append
                 Var.append(o)
@@ -3001,12 +2906,4 @@ class RectangularPatches(Fault):
         else:
             return n1, n2, n3
 
-
-
-
-
-
-
-
-
-
+#EOF

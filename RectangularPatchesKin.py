@@ -591,3 +591,4 @@ class RectangularPatchesKin(RectangularPatches):
         # All done
         return
         
+#EOF

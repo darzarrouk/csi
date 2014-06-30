@@ -42,7 +42,7 @@ class multifaultsolve(object):
                 print("UTM zones are not equivalent, this is a problem")
                 self.ready = False
                 return
-        self.ptum = faults[0].putm
+        self.putm = faults[0].putm
 
         # check that G and d have been assembled prior to initialization
         for fault in faults:
@@ -148,7 +148,6 @@ class multifaultsolve(object):
         # All done
         return s
 
-
     def describeParams(self, faults):
         '''
         Prints to screen  which parameters are what...
@@ -160,6 +159,10 @@ class multifaultsolve(object):
         # initialize the counters
         ns = 0
         ne = 0
+        nSlip = 0
+
+        # Store that somewhere
+        self.paramDescription = {}
 
         # Loop over the faults
         for fault in faults:
@@ -186,6 +189,10 @@ class multifaultsolve(object):
                 ts = '{} - {}'.format(ns, ne)
                 ns += len(fault.patch)
 
+            # How many slip parameters
+            if ne>nSlip:
+                nSlip = ne
+
             # conditions on orbits (the rest is orbits)
             np = ne - nfs
             no = fault.Gassembled.shape[1] - np
@@ -198,6 +205,16 @@ class multifaultsolve(object):
 
             # print things
             print('{:30s}||{:17s}||{:14s}||{:13s}||{:12s}'.format(fault.name, ss, ds, ts, op))
+
+            # Store details
+            self.paramDescription[fault.name] = {}
+            self.paramDescription[fault.name]['Strike Slip'] = ss
+            self.paramDescription[fault.name]['Dip Slip'] = ds
+            self.paramDescription[fault.name]['Tensile Slip'] = ts
+            self.paramDescription[fault.name]['Extra Parameters'] = op
+
+        # Store the number of slip parameters
+        self.nSlip = nSlip
 
         # all done
         return
@@ -303,7 +320,7 @@ class multifaultsolve(object):
             fault.polysolindex = {}
             for dset in fault.datanames:
                 if dset in fault.poly.keys():
-                    if (fault.poly[dset].__class__ is not str):
+                    if (fault.poly[dset].__class__ is not str) and (fault.poly[dset].__class__ is not list):
                         if (fault.poly[dset] > 0):
                             se = st + fault.poly[dset]
                             fault.polysol[dset] = fault.mpost[st:se]
@@ -316,12 +333,18 @@ class multifaultsolve(object):
                             fault.polysol[dset] = fault.mpost[st:se]
                             fault.polysolindex[dset] = range(st,se)
                             st += nh
-                        if fault.poly[dset] is 'strain':
+                        if fault.poly[dset] in ('strain', 'strainnorotation', 'strainonly', 'strainnotranslation', 'translation', 'translationrotation'):
                             nh = fault.strain[dset]
                             se = st + nh
                             fault.polysol[dset] = fault.mpost[st:se]
                             fault.polysolindex[dset] = range(st,se)
                             st += nh
+                    elif (fault.poly[dset].__class__ is list):
+                        nh = fault.transformation[dset]
+                        se = st + nh
+                        fault.polysol[dset] = fault.mpost[st:se]
+                        fault.polysolindex[dset] = range(st,se)
+                        st += nh
                     else:
                         fault.polysol[dset] = None
 
@@ -932,3 +955,4 @@ class multifaultsolve(object):
         vout.tofile(outfile)
         return
 
+#EOF
