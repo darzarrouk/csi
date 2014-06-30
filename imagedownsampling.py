@@ -10,6 +10,7 @@ import pyproj as pp
 import matplotlib.pyplot as plt
 import scipy.spatial.distance as distance
 import matplotlib.path as path
+import matplotlib as mpl
 import copy
 import sys
 import os
@@ -360,7 +361,7 @@ class imagedownsampling(object):
             for fault in self.faults:
                 # build GFs
                 fault.buildGFs(self.newimage, vertical=False, slipdir=slipdirection, verbose=False)
-                fault.assembleGFs([self.newimage], polys=0, slipdir=slipdirection, verbose=False)
+                fault.assembleGFs([self.newimage], polys=None, slipdir=slipdirection, verbose=False)
                 # Cat GFs
                 if G is None:
                     G = fault.Gassembled
@@ -434,21 +435,21 @@ class imagedownsampling(object):
         # all done
         return
 
-    def plotDownsampled(self, figure=145, axis='equal', ref='utm', Norm=None, data2plot='north', decimorig=1):
+    def plotDownsampled(self, figure=145, ref='utm', Norm=None, data2plot='north', decimorig=1, savefig=None, show=True):
         '''
         Plots the downsampling as it is at this step.
         Args:
             * figure    : Figure ID.
-            * axis      : Axis argument from matplotlib.
             * Norm      : [colormin, colormax]
             * ref       : Can be 'utm' or 'lonlat'.
             * data2plot : used if datatype is cosicorrrates: can be north or east.
         '''
 
         # Create the figure
-        fig = plt.figure(figure)
-        full = fig.add_subplot(121)
-        down = fig.add_subplot(122)
+        fig = plt.figure(figure, figsize=(10,5))
+        full = fig.add_axes([0.05, 0.05, 0.4, 0.8])
+        down = fig.add_axes([0.55, 0.05, 0.4, 0.8])
+        colr = fig.add_axes([0.4, 0.9, 0.2, 0.03])
 
         # Set the axes
         if ref is 'utm':
@@ -515,59 +516,55 @@ class imagedownsampling(object):
             elif data2plot is 'east':
                 downdata = downsampled.east
 
-        # Plot downsampled
-        if ref is 'utm':
-            # Image
-            for i in range(len(self.blocks)):
-                # Get block
+        # Image
+        for i in range(len(self.blocks)):
+            # Get block
+            if ref is 'utm':
                 block = self.blocks[i]
-                # Get value
-                val = downdata[i]
-                # Build patch
-                x = [block[j][0] for j in range(4)]
-                y = [block[j][1] for j in range(4)]
-                verts = [zip(x, y)]
-                patch = colls.PolyCollection(verts)
-                # Set its color
-                patch.set_color(scalarMap.to_rgba(val))
-                patch.set_edgecolors('k')
-                down.add_collection(patch)
-            # Faults
-            for fault in self.faults:
+            else:
+                block = self.blocksll[i]
+            # Get value
+            val = downdata[i]
+            # Build patch
+            x = [block[j][0] for j in range(4)]
+            y = [block[j][1] for j in range(4)]
+            verts = [zip(x, y)]
+            patch = colls.PolyCollection(verts)
+            # Set its color
+            patch.set_color(scalarMap.to_rgba(val))
+            patch.set_edgecolors('k')
+            down.add_collection(patch)
+        
+        # Faults
+        for fault in self.faults:
+            if ref is 'utm':
                 down.plot(fault.xf, fault.yf, '-k')
-        else:
-            # Image
-            for i in range(len(self.blocks)):
-                # Get block
-                block = self.blockll[i]
-                # Get value
-                val = downdata[i]
-                # Build patch
-                x = [blockll[j][0] for j in range(4)]
-                y = [blockll[j][1] for j in range(4)] 
-                verts = [zip(x, y)] 
-                patch = colls.PolyCollection(verts)
-                # Set its color  
-                patch.set_color(scalarMap.to_rgba(val))
-                patch.set_edgecolors('k')    
-                down.add_collection(patch)
-            # Faults
-            for fault in faults:
+            else:
                 down.plot(fault.lon, fault.lat, '-k')
+        
+        # Color bar
+        cb = mpl.colorbar.ColorbarBase(colr, cmap=cmap, norm=cNorm ,orientation='horizontal')
 
         # Axes
-        down.axis(axis)
-        full.axis(axis)
-
         if ref is 'utm':
             full.set_xlim([self.xmin, self.xmax])
+            full.set_ylim([self.ymin, self.ymax])
             down.set_xlim([self.xmin, self.xmax])
+            down.set_ylim([self.ymin, self.ymax])
         else:
             full.set_xlim([self.lonmin, self.lonmax])
+            full.set_ylim([self.latmin, self.latmax])
             down.set_xlim([self.lonmin, self.lonmax])
+            down.set_ylim([self.latmin, self.latmax])
+
+        # Savefig
+        if savefig is not None:
+            plt.savefig(savefig)
 
         # All done
-        plt.show()
+        if show:
+            plt.show()
+
         return
         
     def writeDownsampled2File(self, prefix, rsp=False):
