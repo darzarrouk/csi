@@ -1376,8 +1376,8 @@ class insarrates(SourceInv):
 
         # open a figure
         fig = plt.figure()
-        carte = fig.add_subplot(121)
-        prof = fig.add_subplot(122)
+        carte = fig.add_subplot(232)
+        prof = fig.add_subplot(212)
 
         # Norm
         if norm is not None:
