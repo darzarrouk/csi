@@ -48,6 +48,8 @@ class imagedownsampling(object):
 
         # Check if the faults are in the same utm zone
         self.faults = []
+        if type(faults) is not list:
+            faults = [faults]
         for fault in faults:
             assert (fault.utmzone==self.utmzone), 'Fault {} not in utm zone #{}'.format(fault.name, self.utmzone)
             self.faults.append(fault)
