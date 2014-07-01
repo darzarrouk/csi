@@ -68,7 +68,7 @@ class geodeticplot(object):
             self.carte.axis(mapaxis)
 
         # Change the axis of the 3d projection
-        if self.faille_flag:
+        if self.faille_flag and (triDaxis is not None):
             self.faille.axis(triDaxis)
 
         # Show
