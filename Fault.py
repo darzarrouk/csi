@@ -88,19 +88,50 @@ class Fault(SourceInv):
 
         return copy.deepcopy(self)
 
-    def initializeslip(self, n=None):
+    def initializeslip(self, n=None, values=None):
         '''
         Re-initializes the fault slip array to zero values.
         Args:
             * n     : Number of slip values. If None, it'll take the number of patches.
+            * values: Can be depth, strike, dip, length, area or a numpy array
         '''
 
+        # Shape
         if n is None:
            self.N_slip = len(self.patch)
         else:
             self.N_slip = n
 
         self.slip = np.zeros((self.N_slip,3))
+        
+        # Values
+        if values is not None:
+            # string type
+            if type(values) is str:
+                if values is 'depth':
+                    values = np.array([self.getpatchgeometry(p, center=True)[2] for p in self.patch])
+                elif values is 'strike':
+                    values = np.array([self.getpatchgeometry(p, center=True)[5] for p in self.patch])
+                elif values is 'dip':
+                    values = np.array([self.getpatchgeometry(p, center=True)[6] for p in self.patch])
+                elif values is 'length':
+                    values = np.array([self.getpatchgeometry(p, center=True)[4] for p in self.patch])
+                elif values is 'width':
+                    values = np.array([self.getpatchgeometry(p, center=True)[3] for p in self.patch])
+                elif values is 'area':
+                    self.computeArea()
+                    values = self.area
+                self.slip[:,0] = values
+            # Numpy array 
+            if type(values) is np.ndarray:
+                try:
+                    self.slip[:,:] = values
+                except:
+                    try:
+                        self.slip[:,0] = values
+                    except:
+                        print('Wrong size for the slip array provided')
+                        return
 
         # All done
         return
