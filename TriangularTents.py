@@ -820,12 +820,7 @@ class TriangularTents(TriangularPatches):
         '''
 
         # Filename
-        if len(self.name.split())>1:
-            fltname = self.name.split()[0]
-            for s in self.name.split()[1:]:
-                fltname = fltname+'_'+s
-        else:
-            fltname = self.name
+        fltname = self.name.replace(' ','_')
         filename = 'edks_{}'.format(fltname)
         TrianglePropFile = filename+'.TriangleProp'
         PointCoordFile   = filename+'.PointCoord'

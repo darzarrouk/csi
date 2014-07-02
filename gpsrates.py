@@ -1687,12 +1687,7 @@ class gpsrates(SourceInv):
         y = self.y
 
         # Open the file
-        if len(self.name.split())>1:
-            datname = self.name.split()[0]
-            for s in self.name.split()[1:]:
-                datname = datname+'_'+s
-        else:
-            datname = self.name
+        datname = self.name.replace(' ','_')
         filename = 'edks_{}.idEN'.format(datname)
         fout = open(filename, 'w')
 
