@@ -683,12 +683,12 @@ class multifaultsolve(object):
         # All done
         return
 
-    def writeMpost2BinaryFile(self, outfile):
+    def writeMpost2BinaryFile(self, outfile, dtype='d'):
         '''
         Writes the solution to a binary file.
         '''
 
-        self.mpost.tofile(outfile)
+        self.mpost.astype(dtype).tofile(outfile)
 
         # all done
         return
