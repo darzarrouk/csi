@@ -190,7 +190,7 @@ class Fault(SourceInv):
         '''
 
         # do it
-        self.lon, self.lat = self.ll2xy(self.xf, self.yf)
+        self.lon, self.lat = self.xy2ll(self.xf, self.yf)
 
         # All done
         return
