@@ -686,6 +686,91 @@ class gpsrates(SourceInv):
         # All done
         return
 
+    def read_from_ICM(self, velfile, factor=1., header=1):
+        '''
+        Reading velocities from an ICM (F. Ortega's format) file:
+        Args:
+            * velfile   : File containing the velocities.
+            * factor    : multiplication factor for velocities
+        '''
+
+        print ("Read data from file {} into data set {}".format(velfile, self.name))
+
+        # Keep the file
+        self.velfile = velfile
+
+        # open the file
+        fvel = open(self.velfile, 'r')
+
+        # read it 
+        Vel = fvel.readlines()
+
+        # Initialize things
+        self.lon = []           # Longitude list
+        self.lat = []           # Latitude list
+        self.vel_enu = []       # ENU velocities list
+        self.err_enu = []       # ENU errors list
+        self.station = []       # Name of the stations
+
+        # Loop over lines
+        for i in range(header,len(Vel)):
+            
+            # Get the line
+            A = Vel[i].split()
+
+            # If no NaN in the line
+            if 'nan' not in A:
+
+                # Get the direction array
+                direction = np.array([np.int(A[3]), np.int(A[4]), np.int(A[5])])
+
+                # Which direction are we looking at?
+                d = np.flatnonzero(direction==1.)
+                
+                if A[9] not in self.station:    # If we do not know that station yet
+                    
+                    # Store the name
+                    self.station.append(A[9])
+
+                    # Store the lon lat
+                    self.lon.append(np.float(A[10]))
+                    self.lat.append(np.float(A[11]))
+
+                    # Create a velocity array
+                    vel = [0.,0.,0.]
+                    err = [0.,0.,0.]
+
+                    # Put velocities and errors there
+                    vel[d] = np.float(A[1])
+                    err[d] = np.float(A[2])
+
+                    # Append velocities and errors
+                    self.vel_enu.append(vel)
+                    self.err_enu.append(err)
+
+                else:                           # If we know that station
+
+                    # Get the station index
+                    i = [u for u in range(len(self.station)) if self.station[u] in (A[9])][0]
+
+                    # store the velocity
+                    self.vel_enu[i][d] = np.float(A[1])
+                    self.err_enu[i][d] = np.float(A[2])
+
+        # Make np array with that
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+        self.vel_enu = np.array(self.vel_enu)*factor
+        self.err_enu = np.array(self.err_enu)*factor
+        self.station = np.array(self.station)
+        self.factor = factor
+
+        # Pass to xy 
+        self.lonlat2xy()
+
+        # All done
+        return
+
     def read_from_unavco(self, velfile, factor=1., minerr=1., header=37):
         '''
         Reading velocities from a unavco file

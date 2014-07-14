@@ -531,6 +531,59 @@ class velocitymodel(object):
         # All done
         return
 
+    def readVpVsRhoFromAsciiVertAve(self, infile, header=0, depthfact=1.):
+        '''
+        Reads vertical profiles of Vp, Vs and Density from an ascii file.
+        Format:
+        DEPTH  DENSITY  DENSITYSTD  VS  VSSTD  VP  VPSTD
+        Args:
+            * infile    : name of the input file
+            * header    : Length of the header (default=0)
+            * depthfact : Multiply depth 
+        '''
+
+        # Open the file
+        fin = open(infile, 'r')
+
+        # Read lines
+        All = fin.readlines()
+        All = All[header:]
+
+        # Close file
+        fin.close()
+
+        # Create lists
+        depths = []
+        vp = []
+        vpstd = []
+        vs = []
+        vsstd = []
+        rho = []
+        rhostd = []
+
+        # iterate and fill those in 
+        for line in All:
+            a = line.split()
+            depths.append(np.float(a[0])*depthfact)
+            rho.append(np.float(a[1]))
+            rhostd.append(np.float(a[2]))
+            vs.append(np.float(a[3]))
+            vsstd.append(np.float(a[4]))
+            vp.append(np.float(a[5]))
+            vpstd.append(np.float(a[6]))
+    
+        # Save those
+        self.DVert = np.array(depths)
+        self.VpVert = np.array(vp)
+        self.StdVpVert = np.array(vpstd)
+        self.VsVert = np.array(vs)
+        self.StdVsVert = np.array(vsstd)
+        self.RhoVert = np.array(rho)
+        self.StdRhoVert = np.array(rhostd)
+
+        # All done
+        return
+
     def WriteEDKSModelFile(self, filename):
         '''
         Writes an input file for computing Kernels with EDKS.
