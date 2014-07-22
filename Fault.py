@@ -537,7 +537,6 @@ class Fault(SourceInv):
                 if np.isnan(data.vel_enu[:,2]).any():
                     raise ValueError('Vertical can only be true if all stations have vertical components')
                 data.obs_per_station += 1
-
         elif data.dtype is 'cosicorrrates':
             data.obs_per_station = 2
             if vertical:
@@ -660,6 +659,17 @@ class Fault(SourceInv):
         # All done
         return
 
+    def rotateGFs(self, alpha):
+        '''
+        For all the datasets which have Green's functions computed, this routine rotates the 
+        Green's functions so that dipslip becomes parallel to the direction alpha and 
+        strikeslip becomes perpendicular to the direction alpha.
+        Usefull for the subduction zone problem where inverting for coupling is easy along the convergence azimuth.
+        Args:
+            * alpha         : New azimuth of the dipslip component
+        '''
+
+        # Get the datasets that have green's functions
 
     def assembled(self, datas):
         '''

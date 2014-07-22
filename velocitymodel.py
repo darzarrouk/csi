@@ -457,7 +457,7 @@ class velocitymodel(object):
 
         return scilin.norm(d1 - dpred1 + d2 - dpred2)
 
-    def setAverageVerticalModel(self, Vp, Vs, Rho, D):
+    def setAverageVerticalModel(self, Vp, Vs, Rho, D, shear=None):
         '''
         Inputs an average velocity model in 1D.
         Args:
@@ -471,6 +471,10 @@ class velocitymodel(object):
         self.SimVpVert = np.array(Vp)
         self.SimVsVert = np.array(Vs)
         self.SimRhoVert = np.array(Rho)
+        if shear is not None:
+            self.SimShearVert = np.array(shear)
+        else:
+            self.SimShearVert = None
 
         # All done
         return
@@ -531,11 +535,11 @@ class velocitymodel(object):
         # All done
         return
 
-    def readVpVsRhoFromAsciiVertAve(self, infile, header=0, depthfact=1.):
+    def readVpVsRhoFromAsciiVertAve(self, infile, header=0, depthfact=1., allfact=1., readshear=False):
         '''
         Reads vertical profiles of Vp, Vs and Density from an ascii file.
         Format:
-        DEPTH  DENSITY  DENSITYSTD  VS  VSSTD  VP  VPSTD
+        DEPTH  DENSITY  DENSITYSTD  VS  VSSTD  VP  VPSTD (ShearMod ShearModStd)
         Args:
             * infile    : name of the input file
             * header    : Length of the header (default=0)
@@ -560,6 +564,9 @@ class velocitymodel(object):
         vsstd = []
         rho = []
         rhostd = []
+        if readshear:
+            shear = []
+            shearstd = []
 
         # iterate and fill those in 
         for line in All:
@@ -571,15 +578,20 @@ class velocitymodel(object):
             vsstd.append(np.float(a[4]))
             vp.append(np.float(a[5]))
             vpstd.append(np.float(a[6]))
+            if readshear:
+                shear.append(np.float(a[7]))
+                shearstd.append(np.float(a[8]))
     
         # Save those
         self.DVert = np.array(depths)
-        self.VpVert = np.array(vp)
-        self.StdVpVert = np.array(vpstd)
-        self.VsVert = np.array(vs)
-        self.StdVsVert = np.array(vsstd)
-        self.RhoVert = np.array(rho)
-        self.StdRhoVert = np.array(rhostd)
+        self.VpVert = np.array(vp)*allfact
+        self.StdVpVert = np.array(vpstd)*allfact
+        self.VsVert = np.array(vs)*allfact
+        self.StdVsVert = np.array(vsstd)*allfact
+        self.RhoVert = np.array(rho)*allfact
+        self.StdRhoVert = np.array(rhostd)*allfact
+        self.ShearVert = np.array(shear)
+        self.StdShearVert = np.array(shearstd)
 
         # All done
         return
@@ -659,6 +671,13 @@ class velocitymodel(object):
             d.append(self.RhoVert)
             s.append(self.StdRhoVert)
             sim.append(self.SimRhoVert)
+
+        if self.ShearVert is not None:
+            Np += 1
+            title.append('Shear Modulus (Pa)')
+            d.append(self.ShearVert)
+            s.append(self.StdShearVert)
+            sim.append(self.SimShearVert)
 
         # open figure
         fig = plt.figure(figure)

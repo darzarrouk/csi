@@ -540,7 +540,8 @@ class multifaultsolve(object):
         return
 
     def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=10., bounds=None,
-                                   method='SLSQP', rcond=None):
+                                   method='SLSQP', rcond=None, 
+                                   iterations=100):
         """
         Solves the least squares problem:
 
@@ -555,6 +556,7 @@ class multifaultsolve(object):
             method          : solver for constrained minimization: SLSQP, COBYLA, or nnls
                               For general constraints, SLSQP is recommended. For non-negativity,
                               use nnls (non-negative least squares).
+            iterations      : Modifies the maximum number of iterations for the solver (default=100).
         """
         assert self.ready, 'You need to assemble the GFs'
 
@@ -650,7 +652,7 @@ class multifaultsolve(object):
             print("Performing constrained minimzation")
             res = minimize(costFunction, mprior, args=(G,d,iCd,iCm,mprior),
                            constraints=constraints, method=method, bounds=bounds,
-                           options={'disp': True})
+                           options={'disp': True, 'maxiter': iterations})
             m = res.x
 
         # Store result
