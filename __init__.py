@@ -31,7 +31,6 @@ from .planarfaultkinematic import planarfaultkinematic
 from .gpsrates import gpsrates
 from .multigps import multigps
 from .insarrates import insarrates
-from .imagedownsampling import imagedownsampling
 from .multifaultsolve import multifaultsolve
 from .cosicorrrates import cosicorrrates
 from .creepmeters import creepmeters
@@ -45,6 +44,10 @@ from .timeseries import timeseries
 
 ## Green's functions
 from . import okadafull
+
+## Pre-Proc
+from .imagedownsampling import imagedownsampling
+from .imagecovariance import *
 
 ## Metadata
 from .seismiclocations import seismiclocations
