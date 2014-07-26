@@ -8,6 +8,7 @@ Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
+import copy
 import sys
 
 # Personals
@@ -367,14 +368,22 @@ class insarrates(SourceInv):
         fin = netcdf.netcdf_file(filename)
 
         # Get the values
-        self.vel = (fin.variables['z'][:,:].flatten() + step)*factor
-        self.err = np.ones((self.vel.shape)) * factor
+        if len(fin.variables['z'].shape)==1:
+            self.vel = (fin.variables['z'][:] + step) * factor
+        else:
+            self.vel = (fin.variables['z'][:,:].flatten() + step)*factor
+        self.err = np.zeros((self.vel.shape)) * factor
         self.err[np.where(np.isnan(self.vel))] = np.nan
         self.vel[np.where(np.isnan(self.err))] = np.nan
 
         # Deal with lon/lat
-        Lon = fin.variables['x'][:]
-        Lat = fin.variables['y'][:]
+        if 'x' in fin.variables.keys():
+            Lon = fin.variables['x'][:]
+            Lat = fin.variables['y'][:]
+        else:
+            Nlon, Nlat = fin.variables['dimension'][:]
+            Lon = np.linspace(fin.variables['x_range'][0], fin.variables['x_range'][1], Nlon)
+            Lat = np.linspace(fin.variables['y_range'][1], fin.variables['y_range'][0], Nlat)
         self.lonarr = Lon.copy()
         self.latarr = Lat.copy()
         Lon, Lat = np.meshgrid(Lon,Lat)
@@ -908,43 +917,56 @@ class insarrates(SourceInv):
 
         return
 
-    def runingAverageProfile(self, name, window, method='mean'):
+    def smoothProfile(self, name, window, method='mean'):
         '''
-        Computes a mooving average on the profile with name.
+        Computes smoothed  profile.
         '''
 
         # Get profile
         dis = self.profiles[name]['Distance']
         vel = self.profiles[name]['LOS Velocity']
 
-        outvel = np.zeros(vel.shape)
-        outerr = np.zeros(vel.shape)
+        # Create the bins
+        bins = np.arange(dis.min(), dis.max(), window)
+        indexes = np.digitize(dis, bins)
+        
+        # Create Lists
+        outvel = []
+        outerr = []
+        outdis = []
 
         # Run a runing average on it
-        for i in range(dis.shape[0]):
+        for i in range(len(bins)-1):
 
-            # Where am i?
-            d = dis[i]
+            # Find the guys inside this bin
+            uu = np.flatnonzero(indexes==i)
 
-            # Get the indexes of the concerned pixels
-            jj = np.flatnonzero((dis>=d-window/2.) & (dis<=d+window/2.))
+            # If there is points in this bin
+            if len(uu)>0:
+                
+                # Get the mean
+                if method in ('mean'):
+                    m = vel[uu].mean()
+                elif method in ('median'):
+                    m = np.median(vel[uu])
 
-            # Get the mean
-            if method in ('mean'):
-                m = vel[jj].mean()
-            elif method in ('median'):
-                m = np.median(vel[jj])
+                # Get the mean distance
+                d = dis[uu].mean()
 
-            # Get the error
-            e = vel[jj].std()
+                # Get the error
+                e = vel[uu].std()
 
-            # Set it
-            outvel[i] = m
-            outerr[i] = e
+                # Set it
+                outvel.append(m)
+                outerr.append(e)
+                outdis.append(d)
 
-        # Replace
-        self.profiles[name]['LOS Velocity'] = outvel
-        self.profiles[name]['LOS Error'] = outerr
+        # Copy the old profile and modify it
+        newName = 'Smoothed {}'.format(name)
+        self.profiles[newName] = copy.deepcopy(self.profiles[name])
+        self.profiles[newName]['LOS Velocity'] = np.array(outvel)
+        self.profiles[newName]['LOS Error'] = np.array(outerr)
+        self.profiles[newName]['Distance'] = np.array(outdis)
 
         # All done
         return
