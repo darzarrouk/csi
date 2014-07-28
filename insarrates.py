@@ -1863,7 +1863,7 @@ class insarrates(SourceInv):
         # all done
         return off
 
-    def checkLOS(self, figure=1, factor=100.):
+    def checkLOS(self, figure=1, factor=100., decim=1):
         '''
         Plots the LOS vectors in a 3D plot.
         Args:
@@ -1881,7 +1881,7 @@ class insarrates(SourceInv):
         ax = fig.add_subplot(111, projection='3d')
 
         # Loop over the LOS
-        for i in range(self.vel.shape[0]):
+        for i in range(0,self.vel.shape[0],decim):
             x = [self.x[i], self.x[i]+self.los[i,0]*factor]
             y = [self.y[i], self.y[i]+self.los[i,1]*factor]
             z = [0, self.los[i,2]*factor]
