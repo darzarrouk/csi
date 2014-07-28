@@ -229,9 +229,12 @@ class insarrates(SourceInv):
         self.factor = factor
 
         # Compute the LOS
-        self.inchd2los(incidence, heading, origin='binary')
-        self.los = self.los[::downsample,:]
-        self.los = self.los[iFinite,:]
+        if type(incidence) in (float, np.float, np.float32):
+            self.inchd2los(incidence, heading, origin='binaryfloat')
+        else:
+            self.inchd2los(incidence, heading, origin='binary')
+            self.los = self.los[::downsample,:]
+            self.los = self.los[iFinite,:]
 
         # compute x, y
         self.x, self.y = self.ll2xy(self.lon, self.lat)
@@ -1867,6 +1870,9 @@ class insarrates(SourceInv):
             * figure:   Figure number.
             * factor:   Increases the size of the vectors.
         '''
+
+        # Display
+        print('Checks the LOS orientation')       
 
         # Create a figure
         fig = plt.figure(figure)
