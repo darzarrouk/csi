@@ -357,6 +357,8 @@ class imagecovariance(object):
 
         # Plot the data?
         if plotData:
+            plt.figure(figure+1)
+            plt.clf()
             self.image.plot(show=False, figure=figure+1)
             if savefig:
                 figname = 'Data_{}.png'.format(self.name.replace(' ','_'))
@@ -364,6 +366,7 @@ class imagecovariance(object):
 
         # Create a figure
         fig = plt.figure(figure)
+        plt.clf()
 
         # How many data sets
         nData = len(self.datasets)
