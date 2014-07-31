@@ -46,7 +46,7 @@ class imagecovariance(object):
         if verbose:
             print ("---------------------------------")
             print ("---------------------------------")
-            print ("Initialize InSAR downsampling tools {}".format(name))
+            print ("Initialize InSAR covariance tools {}".format(name))
 
         # Save it
         self.verbose = verbose
@@ -140,7 +140,9 @@ class imagecovariance(object):
         '''
         Computes the empirical Semivariogram as a function of distance.
         Args:
-            * frac      : Size of the fraction of the dataset to take.
+            * frac      : Size of the fraction of the dataset to take (0 to 1)
+                          frac can be an integer, then it is going to be the number of 
+                          pixels used to compute the covariance
             * distmax   : Truncate the covariance function.
             * every     : Binning of the covariance function.
         '''
@@ -167,7 +169,12 @@ class imagecovariance(object):
             randomized = np.random.permutation(regular)
 
             # Take the first frac of it
-            Nsamp = np.int(np.floor(frac*x.size))
+            if type(frac) is int:
+                Nsamp = frac
+                if Nsamp>d.shape[0]:
+                    Nsamp = d.shape[0]
+            else:
+                Nsamp = np.int(np.floor(frac*x.size))
             x = randomized[:Nsamp,0]
             y = randomized[:Nsamp,1]
             d = randomized[:Nsamp,2]
@@ -340,15 +347,20 @@ class imagecovariance(object):
         # All done
         return
 
-    def plot(self, data='covariance'):
+    def plot(self, data='covariance', plotData=False, figure=1):
         '''
         Plots the covariance function.
         Args:
-            * data  : Can be covariance or semivariogram or all.
+            * data    : Can be covariance or semivariogram or all.
+            * plotData: Also plots the image
         '''
 
+        # Plot the data?
+        if plotData:
+            self.image.plot(show=False, figure=figure+1)
+
         # Create a figure
-        fig = plt.figure()
+        fig = plt.figure(figure)
 
         # How many data sets
         nData = len(self.datasets)

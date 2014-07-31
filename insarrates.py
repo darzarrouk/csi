@@ -1600,7 +1600,7 @@ class insarrates(SourceInv):
 
         # All done
 
-    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='data'):
+    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='data', show=True):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -1701,7 +1701,8 @@ class insarrates(SourceInv):
         plt.axis(axis)
 
         # Show
-        plt.show()
+        if show:
+            plt.show()
 
         # All done
         return
