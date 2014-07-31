@@ -239,7 +239,7 @@ class geodeticplot(object):
         '''
         Args:
             * fault         : Fault class from verticalfault.
-            * slip          : Can be 'strikeslip', 'dipslip', 'opening' or 'total'
+            * slip          : Can be 'strikeslip', 'dipslip', 'opening', 'total' or 'coupling'
             * Norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
             * plot_on_2d    : if True, adds the patches on the map.
@@ -254,6 +254,8 @@ class geodeticplot(object):
             slip = fault.slip[:,2]
         elif slip in ('total'):
             slip = np.sqrt(fault.slip[:,0]**2 + fault.slip[:,1]**2 + fault.slip[:,2]**2)
+        elif slip in ('coupling'):
+            slip = fault.coupling
         else:
             print ("Unknown slip direction")
             return

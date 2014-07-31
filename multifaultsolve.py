@@ -154,7 +154,7 @@ class multifaultsolve(object):
         '''
 
         # Prepare the table
-        print('          Fault Name          ||   Strike Slip   ||   Dip Slip   ||   Tensile   ||   Orbits   ')
+        print('          Fault Name          ||   Strike Slip   ||   Dip Slip   ||   Tensile   ||   Coupling   ||  Orbits   ')
 
         # initialize the counters
         ns = 0
@@ -174,6 +174,7 @@ class multifaultsolve(object):
             ss = 'None'
             ds = 'None'
             ts = 'None'
+            cp = 'None'
 
             # Conditions on slip
             if 's' in fault.slipdir:
@@ -187,6 +188,10 @@ class multifaultsolve(object):
             if 't' in fault.slipdir:
                 ne += len(fault.patch)
                 ts = '{} - {}'.format(ns, ne)
+                ns += len(fault.patch)
+            if 'c' in fault.slipdir:
+                ne += len(fault.patch)
+                cp = '{} - {}'.format(ns, ne)
                 ns += len(fault.patch)
 
             # How many slip parameters
@@ -204,13 +209,14 @@ class multifaultsolve(object):
                 op = 'None'
 
             # print things
-            print('{:30s}||{:17s}||{:14s}||{:13s}||{:12s}'.format(fault.name, ss, ds, ts, op))
+            print('{:30s}||{:17s}||{:14s}||{:13s}||{:13s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
 
             # Store details
             self.paramDescription[fault.name] = {}
             self.paramDescription[fault.name]['Strike Slip'] = ss
             self.paramDescription[fault.name]['Dip Slip'] = ds
             self.paramDescription[fault.name]['Tensile Slip'] = ts
+            self.paramDescription[fault.name]['Coupling'] = cp
             self.paramDescription[fault.name]['Extra Parameters'] = op
 
         # Store the number of slip parameters
@@ -313,6 +319,10 @@ class multifaultsolve(object):
             if 'u' in fault.slipdir:
                 se = st + fault.slip.shape[0]
                 fault.slip[:,2] = fault.mpost[st:se]
+                st += fault.slip.shape[0]
+            if 'c' in fault.slipdir:
+                se = st + fault.slip.shape[0]
+                fault.coupling = fault.mpost[st:se]
                 st += fault.slip.shape[0]
 
             # Get the polynomial/orbital/helmert values if they exist

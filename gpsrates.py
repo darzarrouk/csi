@@ -232,12 +232,15 @@ class gpsrates(SourceInv):
         # the profiles are in a dictionary
         if not hasattr(self, 'profiles'):
             self.profiles = {}
+        self.profiles[name] = {}
 
         # What data do we want
         if data is 'data':
             values = self.vel_enu
+            self.profiles[name]['data type'] = 'data'
         elif data is 'synth':
             values = self.synth
+            self.profiles[name]['data type'] = 'synth'
 
         # Azimuth into radians
         alpha = azimuth*np.pi/180.
@@ -308,7 +311,7 @@ class gpsrates(SourceInv):
         # 4. Get these GPS
         xg = self.x[Bol]
         yg = self.y[Bol]
-        vel = self.vel_enu[Bol,:]
+        vel = values[Bol,:]
         err = self.err_enu[Bol,:]
         names = self.station[Bol]
 
@@ -350,7 +353,6 @@ class gpsrates(SourceInv):
             Eup.append(err[p,2])
             
         # Store it in the profile list
-        self.profiles[name] = {}
         dic = self.profiles[name] 
         dic['Center'] = [loncenter, latcenter]
         dic['Length'] = length
@@ -441,7 +443,13 @@ class gpsrates(SourceInv):
         prof = fig.add_subplot(122)
 
         # plot the GPS stations on the map
-        p = carte.quiver(self.x, self.y, self.vel_enu[:,0], self.vel_enu[:,1], width=0.0025, color='k')
+        if self.profiles[name]['data type'] is 'data':
+            east = self.vel_enu[:,0]
+            north = self.vel_enu[:,1]
+        elif self.profiles[name]['data type'] is 'synth':
+            east = self.synth[:,0]
+            north = self.synth[:,1]
+        p = carte.quiver(self.x, self.y, east, north, width=0.0025, color='k')
         carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color='k')
 
         # plot the box on the map
@@ -1676,6 +1684,10 @@ class gpsrates(SourceInv):
             * include_poly  : if a polynomial function has been estimated, include it.
         '''
 
+        # Check list
+        if type(faults) is not list:
+            faults = [faults]
+
         # Number of data
         Nd = self.x.shape[0]
 
@@ -1741,6 +1753,20 @@ class gpsrates(SourceInv):
                 if vertical:
                     if op_synth.size > 2*Nd and east and north:
                         self.synth[:,2] += op_synth[N:N+Nd]
+            if ('c' in direction) and ('coupling' in G.keys()):
+                Gc = G['coupling']
+                Sc = fault.coupling
+                dc_synth = np.dot(Gc,Sc)
+                N = 0
+                if east:
+                    self.synth[:,0] += dc_synth[0:Nd]
+                    N += Nd
+                if north:
+                    self.synth[:,1] += dc_synth[N:N+Nd]
+                    N += Nd
+                if vertical:
+                    if dc_synth.size > 2*Nd and east and north:
+                        self.synth[:,2] += dc_synth[N:N+Nd]
 
             if poly == 'build' or poly == 'include':
                 if (self.name in fault.poly.keys()):

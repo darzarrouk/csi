@@ -686,6 +686,10 @@ class insarrates(SourceInv):
             * vertical      : always True - used here for consistency among data types
         '''
 
+        # Check list
+        if type(faults) is not list:
+            faults = [faults]
+
         # Number of data
         Nd = self.vel.shape[0]
 
@@ -713,6 +717,11 @@ class insarrates(SourceInv):
                 St = fault.slip[:,2]
                 losop_synth = np.dot(Gt, St)
                 self.synth += losop_synth
+            if ('c' in direction) and ('coupling' in G.keys()):
+                Gc = G['coupling']
+                Sc = fault.slip[:,0]
+                losdc_synth = np.dot(Gc,Sc)
+                self.synth += losdc_synth
 
             if poly is not None:
                 # Compute the polynomial 
