@@ -791,6 +791,14 @@ class cosicorrrates(SourceInv):
                 self.north_synth += st_synth[Nd:2*Nd]
                 if vertical:
                     self.up_synth += st_synth[2*Nd:]
+            if ('c' in direction) and ('coupling' in G.keys()):
+                Gc = G['coupling']
+                Sc = fault.slip[:,0]
+                dc_synth = np.dot(Gc, Sc)
+                self.east_synth += dc_synth[:Nd]
+                self.north_synth += dc_synth[Nd:2*Nd]
+                if vertical:
+                    self.up_synth += dc_synth[2*Nd:]
 
             if poly is not None:
                 self.computePoly(fault)

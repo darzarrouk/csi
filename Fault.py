@@ -121,6 +121,8 @@ class Fault(SourceInv):
                 elif values is 'area':
                     self.computeArea()
                     values = self.area
+                elif values is 'index':
+                    values = np.array([np.float(self.getindex(p)) for p in self.patch])
                 self.slip[:,0] = values
             # Numpy array 
             if type(values) is np.ndarray:
@@ -286,8 +288,12 @@ class Fault(SourceInv):
 
         # Find the index of the patch
         for i in range(len(self.patch)):
-            if (self.patch[i] == p).all():
-                iout = i
+            try:
+                if (self.patch[i] == p).all():
+                    iout = i
+            except:
+                if self.patch[i]==p:
+                    iout = i
 
         # All done
         return iout
@@ -659,17 +665,67 @@ class Fault(SourceInv):
         # All done
         return
 
-    def rotateGFs(self, alpha):
+    def computeCouplingGFs(self, data, convergence):
         '''
-        For all the datasets which have Green's functions computed, this routine rotates the 
-        Green's functions so that dipslip becomes parallel to the direction alpha and 
-        strikeslip becomes perpendicular to the direction alpha.
-        Usefull for the subduction zone problem where inverting for coupling is easy along the convergence azimuth.
-        Args:
-            * alpha         : New azimuth of the dipslip component
-        '''
+            For the data set data, computes the Green's Function for coupling, using the formula
+        described in Francisco Ortega's PhD, pages 106 to 108.
 
-        # Get the datasets that have green's functions
+                    !!!! YOU NEED TO COMPUTE THE GREEN'S FUNCTIONS BEFORE !!!!
+
+            The corresponding GFs are stored in the GFs dictionary, under the name of the data
+        set and are named 'coupling'. When inverting for coupling, we suggest building these 
+        functions and assembling with slipdir='c'.
+        
+        Args:
+            * data          : Name of the data set.
+            * convergence   : Convergence vector, or list/array of convergence vector with
+                                shape = (Number of fault patches, 2). 
+        '''
+        
+        # Get the name of the data
+        data = data.name
+
+        # Assert Green's functions have been computed 
+        assert data in self.G.keys(), 'Need to compute regular GFs first...'
+        assert 'dipslip' in self.G[data].keys(), 'Need to compute GFs for unitary dip slip first...'
+        assert 'strikeslip' in self.G[data].keys(), 'Need to compute GFs for unitary strike slip first...'
+
+        # Get the convergence vector
+        if len(convergence)==2:
+            Conv = np.ones((len(self.patch), 2))
+            Conv[:,0] *= convergence[0]
+            Conv[:,1] *= convergence[1]
+            self.convergence = Conv
+        elif len(convergence)==len(self.patch):
+            if type(convergence) is list:
+                self.convergence = np.array(convergence)
+        else:
+            print('Convergence vector is of wrong format...')
+            sys.exit()
+
+        # Get the fault strike
+        strike = np.array([self.getpatchgeometry(p)[5] for p in self.patch])
+
+        # Get the green's functions
+        Gss = self.G[data]['strikeslip']
+        Gds = self.G[data]['dipslip']
+
+        # Project the convergence along strike and dip
+        Sbr = self.convergence[:,0]*np.sin(strike)+self.convergence[:,1]*np.cos(strike)
+        Dbr = self.convergence[:,0]*np.cos(strike)-self.convergence[:,1]*np.sin(strike)
+
+        # Multiply and sum
+        Gc = -1.0*(np.multiply(-1.0*Gss, Sbr) + np.multiply(Gds, Dbr))
+        # Precision: (the -1.0* is because we use a different convention from that of Francisco)
+
+        # Store those new GFs
+        self.G[data]['coupling'] = Gc
+
+        # Initialize a coupling vector
+        self.coupling = np.zeros((len(self.patch),))
+
+        # All done
+        return
 
     def assembled(self, datas):
         '''
@@ -720,16 +776,29 @@ class Fault(SourceInv):
         This routine spits out the General G and the corresponding data vector d.
         Args:
             * datas         : data sets to use as inputs (from gpsrates and insarrates).
-            * polys         : 0 -> nothing additional is estimated
+            
+            * polys         : None -> nothing additional is estimated
+
+                        For all datasets:
                               1 -> estimate a constant offset
                               3 -> estimate z = ax + by + c
                               4 -> estimate z = axy + bx + cy + d
-                              'full' -> For GPS, estimates a rotation, translation and scaling
-                              with respect to the center of the network (Helmert transform).
-                              'strain' -> For GPS, estimate the full strain tensor (Rotation
-                              + Translation + Internal strain)
-                              'strainnorotation' -> For GPS, estimate the strain tensor, no rotation).
-            * slipdir       : directions of slip to include. can be any combination of s,d,t.
+             
+                        For GPS only:
+                              'full'                -> Estimates a rotation, translation and scaling
+                                                       with respect to the center of the network (Helmert transform).
+                              'strain'              -> Estimates the full strain tensor (Rotation + Translation + Internal strain)
+                              'strainnorotation'    -> Estimates the strain tensor + translation
+                              'strainonly'          -> Estimates the strain tensor
+                              'strainnotranslation' -> Estimates the strain tensor + rotation
+                              'translation'         -> Estimates the translation
+                              'translationrotation  -> Estimates the translation + rotation
+            
+            * slipdir       : directions of slip to include. can be any combination of s,d,t or c
+                              s: strike slip
+                              d: dip slip
+                              t: tensile
+                              c: coupling
         '''
 
         # print
@@ -779,7 +848,7 @@ class Fault(SourceInv):
                 if type(transformation) is str:
                     if transformation in ('full'):
                         self.helmert[data.name] = tmpNpo
-                    elif transformation in ('strain', 'strainonly', 'strainnorotation', 'strainnotranslation'):
+                    elif transformation in ('strain', 'strainonly', 'strainnorotation', 'strainnotranslation', 'translation', 'translationrotation'):
                         self.strain[data.name] = tmpNpo
                 else:
                     self.transformation[data.name] = tmpNpo
@@ -800,6 +869,8 @@ class Fault(SourceInv):
             sliplist.append('dipslip')
         if 't' in slipdir:
             sliplist.append('tensile')
+        if 'c' in slipdir:
+            sliplist.append('coupling')
 
         # Allocate G and d
         G = np.zeros((Nd, Np))

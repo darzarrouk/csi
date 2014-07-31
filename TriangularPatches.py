@@ -1803,6 +1803,12 @@ class TriangularPatches(Fault):
             plotval = self.totalslip
         elif value_to_plot=='index':
             plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
+        elif value_to_plot=='dipslip':
+            plotval = self.slip[:,1]
+        elif value_to_plot=='strikeslip':
+            plotval = self.slip[:,0]
+        else:
+            print('Unknow keyword for value_to_plot')
 
         # Plot the patches
         if self.patch is not None:
