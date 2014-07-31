@@ -260,9 +260,17 @@ class imagecovariance(object):
 
             # Fit that 
             if function is 'exp':
-                pars, cova = sp.curve_fit(exp_fn, distance, semivar)
+                try:
+                    pars, cova = sp.curve_fit(exp_fn, distance, semivar)
+                except:
+                    print('No solution found for data sets {} of {}'.format(dname, self.name)) 
+                    pars = [np.nan, np.nan, np.nan]
             elif function is 'gauss':
-                pars, cova = sp.curve_fit(gauss_fn, distance, semivar)
+                try:
+                    pars, cova = sp.curve_fit(gauss_fn, distance, semivar)
+                except:
+                    print('No solution found for data sets {} of {}'.format(dname, self.name)) 
+                    pars = [np.nan, np.nan, np.nan]
             else:
                 print('Unknown function type..., must be exp or gauss')
                 sys.exit()
