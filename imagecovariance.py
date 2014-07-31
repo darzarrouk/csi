@@ -347,7 +347,7 @@ class imagecovariance(object):
         # All done
         return
 
-    def plot(self, data='covariance', plotData=False, figure=1):
+    def plot(self, data='covariance', plotData=False, figure=1, savefig=False):
         '''
         Plots the covariance function.
         Args:
@@ -358,6 +358,9 @@ class imagecovariance(object):
         # Plot the data?
         if plotData:
             self.image.plot(show=False, figure=figure+1)
+            if savefig:
+                figname = 'Data_{}.png'.format(self.name.replace(' ','_'))
+                plt.savefig(figname)
 
         # Create a figure
         fig = plt.figure(figure)
@@ -418,6 +421,11 @@ class imagecovariance(object):
 
             # Increase 
             ii += 1
+
+        # Save?
+        if savefig:
+            figname = '{}.png'.format(self.name.replace(' ','_'))
+            plt.savefig(figname)
 
         # Show me
         plt.show()
