@@ -180,17 +180,18 @@ class imagecovariance(object):
             d = randomized[:Nsamp,2]
 
             # Remove a ramp
-            G = np.zeros((Nsamp,3))
+            G = np.zeros((Nsamp,4))
+            G[:,3] = x*y
             G[:,0] = x
             G[:,1] = y
             G[:,2] = 1.
             pars = np.dot(np.dot(np.linalg.inv(np.dot(G.T,G)),G.T),d) 
-            a = pars[0]; b = pars[1]; c = pars[2] 
-            d = d - (a*x + b*y + c)
+            a = pars[0]; b = pars[1]; c = pars[2]; w = pars[3]
+            d = d - (a*x + b*y + c + w*x*y)
             if self.verbose:
-                print('Estimated Orbital Plane: {}x + {}y + {}'.format(a,b,c))  
+                print('Estimated Orbital Plane: {}xy + {}x + {}y + {}'.format(w,a,b,c))  
             # Save it
-            data['Ramp'] = [a, b, c]       
+            data['Ramp'] = [a, b, c, w]       
 
             # Build all the permutations
             ii, jj = np.meshgrid(range(Nsamp), range(Nsamp))
@@ -367,7 +368,7 @@ class imagecovariance(object):
         if plotData:
             plt.figure(figure+1)
             plt.clf()
-            self.image.plot(show=False, figure=figure+1)
+            self.image.plot(show=False, figure=figure+1, ref='lonlat')
             if savefig:
                 figname = 'Data_{}.png'.format(self.name.replace(' ','_'))
                 plt.savefig(figname)
