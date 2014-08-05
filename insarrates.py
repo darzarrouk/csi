@@ -383,6 +383,9 @@ class insarrates(SourceInv):
         if 'x' in fin.variables.keys():
             Lon = fin.variables['x'][:]
             Lat = fin.variables['y'][:]
+        elif 'lon' in fin.variables.keys():
+            Lon = fin.variables['lon'][:]
+            Lat = fin.variables['lat'][:]
         else:
             Nlon, Nlat = fin.variables['dimension'][:]
             Lon = np.linspace(fin.variables['x_range'][0], fin.variables['x_range'][1], Nlon)
