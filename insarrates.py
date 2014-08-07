@@ -722,7 +722,7 @@ class insarrates(SourceInv):
                 self.synth += losop_synth
             if ('c' in direction) and ('coupling' in G.keys()):
                 Gc = G['coupling']
-                Sc = fault.slip[:,0]
+                Sc = fault.coupling
                 losdc_synth = np.dot(Gc,Sc)
                 self.synth += losdc_synth
 

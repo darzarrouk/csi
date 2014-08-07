@@ -665,7 +665,7 @@ class Fault(SourceInv):
         # All done
         return
 
-    def computeCouplingGFs(self, data, convergence):
+    def computeCouplingGFs(self, data, convergence, initializeCoupling=True):
         '''
             For the data set data, computes the Green's Function for coupling, using the formula
         described in Francisco Ortega's PhD, pages 106 to 108.
@@ -722,7 +722,8 @@ class Fault(SourceInv):
         self.G[data]['coupling'] = Gc
 
         # Initialize a coupling vector
-        self.coupling = np.zeros((len(self.patch),))
+        if initializeCoupling:
+            self.coupling = np.zeros((len(self.patch),))
 
         # All done
         return
