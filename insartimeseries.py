@@ -255,7 +255,7 @@ class insartimeseries(SourceInv):
         # All done 
         return
 
-    def writeProfiles2Files(self, profileprefix, outprefix, fault=None, verbose=False):
+    def writeProfiles2Files(self, profileprefix, outprefix, fault=None, verbose=False, smoothed=False):
         '''
         Write all the profiles to a file.
         '''
@@ -268,6 +268,10 @@ class insartimeseries(SourceInv):
 
             # make a name
             pname = '{} {}'.format(profileprefix, date.isoformat())
+
+            # If smoothed
+            if smoothed:
+                pname = 'Smoothed {}'.format(pname)
 
             # Print
             if verbose:
