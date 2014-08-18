@@ -291,7 +291,7 @@ class insartimeseries(SourceInv):
         # All done
         return
 
-    def writeProfiles2OneFile(self, profileprefix, filename, verbose=False):
+    def writeProfiles2OneFile(self, profileprefix, filename, verbose=False, smoothed=False):
         '''
         Write the profiles to one file
         '''
@@ -308,6 +308,10 @@ class insartimeseries(SourceInv):
 
             # make a name
             pname = '{} {}'.format(profileprefix, date.isoformat())  
+
+            # Smoothed?
+            if smoothed:
+                pname = 'Smoothed {}'.format(pname)
 
             # Print
             if verbose:
