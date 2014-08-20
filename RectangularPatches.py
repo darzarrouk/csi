@@ -173,96 +173,6 @@ class RectangularPatches(Fault):
             return pointwise(xs) #array(map(pointwise, array(xs)))
         return ufunclike
 
-    def discretize(self, every=2, tol=0.01, fracstep=0.2, xaxis='x', cum_error=True): 
-        '''
-        Refine the surface fault trace prior to divide it into patches. (Fault cannot be north-south)
-        Args:
-            * every         : Spacing between each point.
-            * tol           : Tolerance in the spacing.
-            * fracstep      : fractional step in x for the discretization optimization
-            * xaxis         : x axis for the discretization ('x'= use x as the x axis, 'y'= use y as the x axis)
-            * cum_error     : if True, account for cumulated error to define the x axis bound for the last patch
-        '''
-
-        # Check if the fault is in UTM coordinates
-        if self.xf is None:
-            self.trace2xy()
-
-        if xaxis=='x':
-            xf = self.xf
-            yf = self.yf
-        else:
-            yf = self.xf
-            xf = self.yf            
-
-        # Import the interpolation routines
-        import scipy.interpolate as scint   
-
-        # Build the interpolation
-        od = np.argsort(xf)
-        f_inter = scint.interp1d(xf[od], yf[od], bounds_error=False)
-    
-        # Initialize the list of equally spaced points
-        xi = [xf[od][0]]                               # Interpolated x fault
-        yi = [yf[od][0]]                               # Interpolated y fault
-        xlast = xf[od][-1]                             # Last point
-        ylast = yf[od][-1]
-
-        # First guess for the next point
-        xt = xi[-1] + every * fracstep 
-        yt = f_inter(xt)
-        # Check if first guess is in the domain
-        if xt>xlast-tol:
-            xt = xlast
-            xi.append(xt)
-            yi.append(f_inter(xt))
-        # While the last point is not the last wanted point
-        total_error = 0.
-        mod_error   = 0.
-        while (xi[-1] < xlast):
-            # I compute the distance between me and the last accepted point
-            d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
-            # Check if I am in the tolerated range
-            if np.abs(d-every)<tol:
-                xi.append(xt)
-                yi.append(yt)
-            else:
-                # While I am to far away from my goal and I did not pass the last x
-                while ((np.abs(d-every)>tol) and (xt<xlast)):
-                    # I add the distance*frac that I need to go
-                    xt += (every-d)*fracstep                    
-                    # If I passed the last point (accounting for error in previous steps) 
-                    if (np.round(xt,decimals=2)>=np.round(xlast-mod_error-tol,decimals=2)):   
-                        xt = xlast                            
-                    elif (xt<xi[-1]):  # If I passed the previous point
-                        xt = xi[-1] + every
-                    # I compute the corresponding yt
-                    yt = f_inter(xt)
-                    # I compute the corresponding distance
-                    d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )                    
-                # When I stepped out of that loop, append
-                if cum_error:
-                    total_error += every - d
-                    mod_error    = np.abs(total_error)%(0.5*every)
-                xi.append(xt)
-                yi.append(yt)
-            # Next guess for the loop
-            xt = xi[-1] + every * fracstep
-
-        # Store the result in self
-        if xaxis=='x': 
-            self.xi = np.array(xi)
-            self.yi = np.array(yi)
-        else:
-            self.yi = np.array(xi)
-            self.xi = np.array(yi)
-
-        # Compute the lon/lat
-        self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
-
-        # All done
-        return
-    
     def surfacePatches2Trace(self):
         '''
         Takes the surface patches and set the fault trace with that
@@ -1724,34 +1634,6 @@ class RectangularPatches(Fault):
 
         # All done
         return 
-
-    def cumdistance(self, discretized=False):
-        '''
-        Computes the distance between the first point of the fault and every other 
-        point, when you walk along the fault.
-        Args:   
-            * discretized           : if True, use the discretized fault trace 
-                                      (default False)
-        '''
-
-        # Get the x and y positions
-        if discretized:
-            x = self.xi
-            y = self.yi
-        else:
-            x = self.xf
-            y = self.yf
-
-        # initialize
-        dis = np.zeros((x.shape[0]))
-
-        # Loop 
-        for i in range(1,x.shape[0]):
-            d = np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
-            dis[i] = dis[i-1] + d
-
-        # all done 
-        return dis
 
     def AverageAlongStrikeOffsets(self, name, insars, filename, discretized=True, smooth=None):
         '''

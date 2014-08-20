@@ -59,21 +59,6 @@ class TriangularPatches(Fault):
         # All done
         return
 
-
-    def discretize(self, every=2, tol=0.01, fracstep=0.2, xaxis='x', cum_error=True):
-        '''
-        Refine the surface fault trace prior to divide it into patches. (Fault cannot be north-south)
-        Args:
-            * every         : Spacing between each point.
-            * tol           : Tolerance in the spacing.
-            * fracstep      : fractional step in x for the discretization optimization
-            * xaxis         : x axis for the discretization ('x'= use x as the x axis, 'y'= use y as the x axis)
-            * cum_error     : if True, account for cumulated error to define the x axis bound for the last patch
-        '''
-
-        raise NotImplementedError('fault should be pre-discretized')
-
-
     def computeArea(self):
         '''
         Computes the area of all triangles.

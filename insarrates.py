@@ -8,6 +8,8 @@ Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
+import matplotlib.path as path
+import scipy.spatial.distance as scidis
 import copy
 import sys
 
@@ -884,6 +886,55 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def getprofileAlongCurve(self, name, lon, lat, width, widthDir):
+        '''
+        Project the SAR velocities onto a profile.
+        Works on the lat/lon coordinates system.
+        Args:
+            * name              : Name of the profile.
+            * lon               : Longitude of the Line around which we do the profile
+            * lat               : Latitude of the Line around which we do the profile
+            * width             : Width of the zone around the line.
+            * widthDir          : Direction to of the width.
+        '''
+
+        # the profiles are in a dictionary
+        if not hasattr(self, 'profiles'):
+            self.profiles = {}
+
+        # lonlat2xy
+        xl = []
+        yl = []
+        for i in range(len(lon)):
+            x, y = self.ll2xy(lon[i], lat[i])
+            xl.append(x)
+            yl.append(y)
+
+        # Get the profile
+        Dalong, vel, err, Dacros, boxll, xc, yc, xe1, ye1, xe2, ye2, length = self.curve2prof(xl, yl, width, widthDir)
+
+        # get lon lat center
+        loncenter, latcenter = self.xy2ll(xc, yc)
+
+        # Store it in the profile list
+        self.profiles[name] = {}
+        dic = self.profiles[name]
+        dic['Center'] = [loncenter, latcenter]
+        dic['Length'] = length
+        dic['Width'] = width
+        dic['Box'] = np.array(boxll)
+        dic['LOS Velocity'] = vel
+        dic['LOS Error'] = err
+        dic['Distance'] = np.array(Dalong)
+        dic['Normal Distance'] = np.array(Dacros)
+        dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
+        lone1, late1 = self.putm(xe1*1000., ye1*1000., inverse=True)
+        lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
+        dic['EndPointsLL'] = [[lone1, late1],
+                              [lone2, late2]]
+
+        # All done
+        return
     def referenceProfile(self, name, xmin, xmax):
         '''
         Removes the mean value of points between xmin and xmax.
@@ -1171,6 +1222,121 @@ class insarrates(SourceInv):
         # All done
         return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2
 
+    def curve2prof(self, xl, yl, width, widthDir):
+        '''
+        Routine returning the profile along a curve.
+        Args:
+            * xl                : List of the x coordinates of the line.
+            * yl                : List of the y coordinates of the line.
+            * width             : Width of the zone around the line.
+            * widthDir          : Direction to of the width.
+        '''
+
+        # If not list
+        if type(xl) is not list:
+            xl = xl.tolist()
+            yl = yl.tolist()
+
+        # Get the widthDir into radians
+        alpha = widthDir*np.pi/180.
+
+        # Get the endpoints
+        xe1 = xl[0]
+        ye1 = yl[0]
+        xe2 = xl[-1]
+        ye2 = yl[-1]
+
+        # Convert the endpoints
+        elon1, elat1 = self.xy2ll(xe1, ye1)
+        elon2, elat2 = self.xy2ll(xe2, ye2)
+
+        # Translate the line into the withDir direction on both sides
+        transx = np.sin(alpha)*width/2.
+        transy = np.cos(alpha)*width/2.
+
+        # Make a box with that
+        box = []
+        pts = zip(xl, yl)
+        for x, y in pts:
+            box.append([x+transx, y+transy])
+        box.append([xe2, ye2])
+        pts.reverse()
+        for x, y in pts:
+            box.append([x-transx, y-transy])
+        box.append([xe1, ye1])
+
+        # Convert the box into lon lat to save it for further purpose
+        boxll = []
+        for b in box:
+            boxll.append(self.xy2ll(b[0], b[1]))
+
+        # vector perpendicular to the curve
+        vec = np.array([xe1-box[-2][0], ye1-box[-2][1]])
+
+        # Get the InSAR points inside this box
+        SARXY = np.vstack((self.x, self.y)).T
+        rect = path.Path(box, closed=False)
+        Bol = rect.contains_points(SARXY)
+        xg = self.x[Bol]
+        yg = self.y[Bol]
+        vel = self.vel[Bol]
+        if self.err is not None:
+            err = self.err[Bol]
+        else:
+            err = None
+
+        # Compute the cumulative distance along the line
+        dis = np.zeros((len(xl),))
+        for i in range(1, len(xl)):
+            d = np.sqrt((xl[i] - xl[i-1])**2 + (yl[i] - yl[i-1])**2)
+            dis[i] = dis[i-1] + d
+
+        # Sign of the position across
+        sarxy = np.vstack((np.array(xg-xe1), np.array(yg-ye1))).T
+        sign = np.sign(np.dot(sarxy, vec))
+
+        # Get their position along and across the line
+        Dalong = []
+        Dacross = []
+        for x, y, s in zip(xg.tolist(), yg.tolist(), sign.tolist()):
+            d = scidis.cdist([[x, y]], [[xli, yli] for xli, yli in zip(xl, yl)])[0]
+            imin1 = d.argmin()
+            dmin1 = d[imin1]
+            d[imin1] = 99999999.
+            imin2 = d.argmin()
+            dmin2 = d[imin2]
+            # Put it along the fault
+            dtot = dmin1+dmin2
+            xcd = (xl[imin1]*dmin1 + xl[imin2]*dmin2)/dtot
+            ycd = (yl[imin1]*dmin1 + yl[imin2]*dmin2)/dtot
+            # Distance
+            if dmin1<dmin2:
+                jm = imin1
+            else:
+                jm = imin2
+            # Append
+            Dalong.append(dis[jm] + np.sqrt( (xcd-xl[jm])**2 + (ycd-yl[jm])**2) )
+            Dacross.append(s*np.sqrt( (xcd-x)**2 + (ycd-y)**2 )) 
+
+        # Remove NaNs
+        jj = np.flatnonzero(np.isfinite(vel)).tolist()
+        vel = vel[jj]
+        Dalong = np.array(Dalong)[jj]
+        Dacross = np.array(Dacross)[jj]
+        if err is not None:
+            err = err[jj]
+
+        # Length
+        length = dis[-1]
+
+        # Center
+        uu = np.argmin(np.abs(dis-length/2.))
+        xc = xl[uu]
+        yc = yl[uu]
+
+        # All done
+        return Dalong, vel, err, Dacross, boxll, xc, yc, xe1, ye1, xe2, ye2, length
+
     def getAlongStrikeOffset(self, name, fault, interpolation=None, width=1.0,
             length=10.0, faultwidth=1.0, tolerance=0.2, azimuthpad=2.0):
 
@@ -1439,8 +1605,8 @@ class insarrates(SourceInv):
 
         # plot the box on the map
         b = self.profiles[name]['Box']
-        bb = np.zeros((5, 2))
-        for i in range(4):
+        bb = np.zeros((len(b)+1, 2))
+        for i in range(len(b)):
             if ref is 'utm':
                 x, y = self.ll2xy(b[i,0], b[i,1])
             elif ref is 'lonlat':
@@ -1448,9 +1614,8 @@ class insarrates(SourceInv):
                 y = b[i,1]
             bb[i,0] = x
             bb[i,1] = y
-        bb[4,0] = bb[0,0]
-        bb[4,1] = bb[0,1]
-        carte.plot(bb[:,0], bb[:,1], '.k')
+        bb[-1,0] = bb[0,0]
+        bb[-1,1] = bb[0,1]
         carte.plot(bb[:,0], bb[:,1], '-k')
 
         # plot the selected stations on the map
@@ -1524,7 +1689,10 @@ class insarrates(SourceInv):
         # Get the intersection
         if Lp.crosses(Lf):
             Pi = Lp.intersection(Lf)
-            p = Pi.coords[0]
+            if type(Pi) is geom.point.Point:
+                p = Pi.coords[0]
+            else:
+                return None
         else:
             return None
 
@@ -1905,4 +2073,5 @@ class insarrates(SourceInv):
 
         # All done
         return
+
 #EOF
