@@ -530,7 +530,7 @@ class imagedownsampling(object):
             # Build patch
             x = [block[j][0] for j in range(4)]
             y = [block[j][1] for j in range(4)]
-            verts = [zip(x, y)]
+            verts = [list(zip(x, y))]
             patch = colls.PolyCollection(verts)
             # Set its color
             patch.set_color(scalarMap.to_rgba(val))
@@ -593,7 +593,7 @@ class imagedownsampling(object):
             frsp.write('********************************************************\n')
 
         # Loop over the samples
-        for i in xrange(len(self.newimage.x)):
+        for i in range(len(self.newimage.x)):
 
             # Write in txt
             wgt = self.newimage.wgt[i]

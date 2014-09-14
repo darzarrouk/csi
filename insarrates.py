@@ -369,14 +369,20 @@ class insarrates(SourceInv):
         self.los = []
 
         # Open the input file
-        import scipy.io.netcdf as netcdf
-        fin = netcdf.netcdf_file(filename)
+        #import scipy.io.netcdf as netcdf
+        #fin = netcdf.netcdf_file(filename)
+        try:
+            from netCDF4 import Dataset
+            fin = Dataset(filename, 'r', format='NETCDF4')
+        except ImportError:
+            import scipy.io.netcdf as netcdf
+            fin = netcdf.netcdf_file(filename)
 
         # Get the values
         if len(fin.variables['z'].shape)==1:
-            self.vel = (fin.variables['z'][:] + step) * factor
+            self.vel = (np.array(fin.variables['z'][:]) + step) * factor
         else:
-            self.vel = (fin.variables['z'][:,:].flatten() + step)*factor
+            self.vel = (np.array(fin.variables['z'][:,:]).flatten() + step)*factor
         self.err = np.zeros((self.vel.shape)) * factor
         self.err[np.where(np.isnan(self.vel))] = np.nan
         self.vel[np.where(np.isnan(self.err))] = np.nan

@@ -71,7 +71,7 @@ class tidalfit(object):
         # All done
         return
 
-    def doFit(self, timeseries, tZero=dt.datetime(01, 01, 01), chunks=None):
+    def doFit(self, timeseries, tZero=dt.datetime(2001, 1, 1), chunks=None):
         '''
         Performs the fit on the chunks of data specified in chunks.
         Args:

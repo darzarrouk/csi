@@ -279,7 +279,7 @@ class timeseries:
         # All Done
         return
     
-    def fitTidalConstituent(self, steps=None, linear=False, tZero=dt.datetime(2000, 01, 01), chunks=None):
+    def fitTidalConstituent(self, steps=None, linear=False, tZero=dt.datetime(2000, 1, 1), chunks=None):
         '''
         Fits tidal constituents on the time series.
         Args:

@@ -316,7 +316,7 @@ class multifaultsolve(object):
                 se = st + fault.slip.shape[0]
                 fault.slip[:,1] = fault.mpost[st:se]
                 st += fault.slip.shape[0]
-            if 'u' in fault.slipdir:
+            if 't' in fault.slipdir:
                 se = st + fault.slip.shape[0]
                 fault.slip[:,2] = fault.mpost[st:se]
                 st += fault.slip.shape[0]
