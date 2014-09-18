@@ -430,7 +430,7 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def readPatchesFromFile(self, filename, Cm=None, readpatchindex=True, inputCoordinates='lonlat'):
+    def readPatchesFromFile(self, filename, Cm=None, readpatchindex=True, inputCoordinates='lonlat', donotreadslip=False):
         '''
         Read the patches from a GMT formatted file.
         Args:   
@@ -442,8 +442,9 @@ class RectangularPatches(Fault):
         self.patchll = []
         if readpatchindex:
             self.index_parameter = []
-        self.slip = []
         self.Cm   = []
+        if not donotreadslip:
+            self.slip = []
 
         # open the files
         fin = open(filename, 'r') 
@@ -468,11 +469,12 @@ class RectangularPatches(Fault):
             if readpatchindex:
                 self.index_parameter.append([np.int(A[i].split()[3]),np.int(A[i].split()[4]),np.int(A[i].split()[5])])
             # Get the slip value
-            if len(A[i].split())>7:
-                slip = np.array([np.float(A[i].split()[7]), np.float(A[i].split()[8]), np.float(A[i].split()[9])])
-            else:
-                slip = np.array([0.0, 0.0, 0.0])
-            self.slip.append(slip)
+            if not donotreadslip:
+                if len(A[i].split())>7:
+                    slip = np.array([np.float(A[i].split()[7]), np.float(A[i].split()[8]), np.float(A[i].split()[9])])
+                else:
+                    slip = np.array([0.0, 0.0, 0.0])
+                self.slip.append(slip)
             # get the values
             if inputCoordinates in ('lonlat'):
                 lon1, lat1, z1 = A[i+1].split()
@@ -538,7 +540,8 @@ class RectangularPatches(Fault):
         self.z_patches = np.linspace(0,D,5)
 
         # Translate slip to np.array
-        self.slip = np.array(self.slip)        
+        if not donotreadslip:
+            self.slip = np.array(self.slip)        
         if readpatchindex:
             self.index_parameter = np.array(self.index_parameter)
 
