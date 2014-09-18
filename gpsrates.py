@@ -49,7 +49,7 @@ class gpsrates(SourceInv):
         # All done
         return
 
-    def setStat(self,sta_name,x,y,loc_format='LL'):
+    def setStat(self,sta_name,x,y,loc_format='LL', initVel=False):
         '''
         Set station names and locations attributes
         Args:
@@ -81,6 +81,15 @@ class gpsrates(SourceInv):
             self.x = np.append(self.x,x)
             self.y = np.append(self.y,y)
             self.lon, self.lat = self.ll2xy(self.x,self.y)            
+        
+        # Initialize the vel_enu array
+        if initVel:
+            self.vel_enu = np.zeros((len(sta_name), 3))
+            self.err_enu = np.zeros((len(sta_name), 3))
+
+        # convert to arrays
+        if type(self.station) is list:
+            self.station = np.array(self.station)
 
         # All done
         return
