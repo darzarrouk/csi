@@ -235,7 +235,7 @@ class geodeticplot(object):
         return
 
     def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True,
-            plot_on_2d=False, revmap=False, linewidth=1.0, transparency=0.0):
+            plot_on_2d=False, revmap=False, linewidth=1.0, transparency=0.0, factor=1.0):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -243,22 +243,24 @@ class geodeticplot(object):
             * Norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
             * plot_on_2d    : if True, adds the patches on the map.
+            * factor        : scale factor for fault slip values
         '''
 
         # Get slip
         if slip in ('strikeslip'):
-            slip = fault.slip[:,0]
+            slip = fault.slip[:,0].copy()
         elif slip in ('dipslip'):
-            slip = fault.slip[:,1]
+            slip = fault.slip[:,1].copy()
         elif slip in ('opening'):
-            slip = fault.slip[:,2]
+            slip = fault.slip[:,2].copy()
         elif slip in ('total'):
             slip = np.sqrt(fault.slip[:,0]**2 + fault.slip[:,1]**2 + fault.slip[:,2]**2)
         elif slip in ('coupling'):
-            slip = fault.coupling
+            slip = fault.coupling.copy()
         else:
             print ("Unknown slip direction")
             return
+        slip *= factor
 
         # norm
         if Norm is None:
@@ -330,7 +332,7 @@ class geodeticplot(object):
         # put up a colorbar
         if colorbar:
             scalarMap.set_array(slip)
-            self.fig1.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
+            self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
 
         # All done
         return Xs,Ys
@@ -572,14 +574,14 @@ class geodeticplot(object):
             * insar     : insar object from insarrates.
             * norm      : List of lower and upper bound of the colorbar.
             * colorbar  : activates the plotting of the colorbar.
-            * data      : plots either the 'data' or the 'synth'.
+            * data      : plots either the 'data', 'synth', or 'res'
         '''
 
-        if data is 'data':
+        if data == 'data':
             d = insar.vel
-        elif data is 'synth':
+        elif data == 'synth':
             d = insar.synth
-        elif data is 'res':
+        elif data == 'res':
             d = insar.vel-insar.synth
 
         # Prepare the color limits

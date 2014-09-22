@@ -1098,7 +1098,7 @@ class RectangularPatches(Fault):
 
         # Get the number of data
         Nd = data.lon.shape[0]
-        if data.dtype is 'insarrates':
+        if data.dtype == 'insarrates':
             Ndt = Nd
             data.obs_per_station = 1
         elif data.dtype in ('gpsrates', 'multigps'):
@@ -1107,7 +1107,7 @@ class RectangularPatches(Fault):
             if vertical:
                 data.obs_per_station = 3
                 Ndt += data.lon.shape[0]
-        elif data.dtype is 'cosicorrrates':
+        elif data.dtype == 'cosicorrrates':
             Ndt = 2 * Nd
             data.obs_per_station = 2
             if vertical:
@@ -1130,7 +1130,7 @@ class RectangularPatches(Fault):
             G['tensile'] = np.zeros((Ndt, Np))
 
         # Initializes the data vector and the data covariance
-        if data.dtype is 'insarrates':
+        if data.dtype == 'insarrates':
             self.d[data.name] = data.vel
             vertical = True                 # In InSAR, you need to use the vertical, no matter what....
         elif data.dtype in ('gpsrates', 'multigps'):
@@ -1138,7 +1138,7 @@ class RectangularPatches(Fault):
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
                 self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
-        elif data.dtype is 'cosicorrrates':
+        elif data.dtype == 'cosicorrrates':
             self.d[data.name] = np.hstack((data.east.flatten(), data.north.flatten()))
             if vertical:
                 self.d[data.name] = np.hstack((self.d[data.name], np.zeros((Nd,))))
@@ -1187,7 +1187,7 @@ class RectangularPatches(Fault):
                 ds = ds.T.flatten()
                 op = op.T.flatten()
 
-            elif data.dtype is 'insarrates':
+            elif data.dtype == 'insarrates':
                 # If InSAR, do the dot product with the los
                 ss_los = []
                 ds_los = []

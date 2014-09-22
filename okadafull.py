@@ -1,5 +1,5 @@
 '''
-A groupd of routines that allows to interact with the okada4py routine.
+A group of routines that allows to interact with the okada4py routine.
 
 Written by R. Jolivet, Feb 2014.
 '''
@@ -10,6 +10,8 @@ import sys
 
 # Personals
 import okada4py as ok92
+
+# NOTE: In this convention, ss(+) means left-lateral, and ss(-) means right-lateral
 
 #--------------------------------------------------
 # Check inputs
