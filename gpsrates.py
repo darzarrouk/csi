@@ -1155,6 +1155,84 @@ class gpsrates(SourceInv):
         # All done
         return
     
+    def setGFsInFault(self, fault, G, vertical=True):
+        '''
+        From a dictionary of Green's functions, sets these correctly into the fault 
+        object fault for future computation.
+        Args:
+            * fault     : Instance of Fault
+            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
+                          These can be a matrix or None.
+            * vertical  : Do we set the vertical GFs? default is True
+        '''
+
+        # Initialize the variables
+        GssE = None; GdsE = None; GtsE = None
+        GssN = None; GdsN = None; GtsN = None
+        GssU = None; GdsU = None; GtsU = None
+
+        # Check components
+        east  = False
+        north = False
+        if not np.isnan(self.vel_enu[:,0]).any():
+            east = True
+        if not np.isnan(self.vel_enu[:,1]).any():
+            north = True
+        if vertical and np.isnan(self.vel_enu[:,2]).any():
+            raise ValueError('vertical can only be true if all stations have vertical components')
+
+        # Get the 3 components
+        try:
+            Gss = G['strikeslip']
+        except:
+            Gss = None
+        try:
+            Gds = G['dipslip']
+        except: 
+            Gds = None
+        try:
+            Gts = G['tensile']
+        except:
+            Gts = None
+
+        # Get the values
+        if Gss is not None:
+            N = 0
+            if east:
+                GssE = Gss[range(0,self.vel_enu.shape[0]),:]
+                N += self.vel_enu.shape[0]
+            if north:
+                GssN = Gss[range(N,N+self.vel_enu.shape[0]),:]
+                N += self.vel_enu.shape[0]
+            if vertical:
+                GssU = Gss[range(N,N+self.vel_enu.shape[0]),:]
+        if Gds is not None:
+            N = 0
+            if east:
+                GdsE = Gds[range(0,self.vel_enu.shape[0]),:]
+                N += self.vel_enu.shape[0]
+            if north:
+                GdsN = Gds[range(N,N+self.vel_enu.shape[0]),:]
+                N += self.vel_enu.shape[0]
+            if vertical:
+                GdsU = Gds[range(N,N+self.vel_enu.shape[0]),:]
+        if Gts is not None:
+            if east:
+                GtsE = Gts[range(0,self.vel_enu.shape[0]),:]
+                N += self.vel_enu.shape[0]
+            if north:
+                GtsN = Gts[range(N,N+self.vel_enu.shape[0]),:]
+                N += self.vel_enu.shape[0]
+            if vertical:
+                GtsU = Gts[range(N,N+self.vel_enu.shape[0]),:]
+
+        # set the GFs
+        fault.setGFs(self, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU],
+                    tensile=[GtsE, GtsN, GtsU], vertical=vertical)
+
+        # All done
+        return
+
     def getNumberOfTransformParameters(self, transformation):
         '''
         Returns the number of transform parameters for the given transformation.

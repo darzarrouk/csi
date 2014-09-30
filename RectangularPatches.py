@@ -1,7 +1,13 @@
 '''
 A parent class that deals with rectangular patches fault
 
-Written by R. Jolivet, Z. Duputel and Bryan Riel November 2013
+Started by R. Jolivet, November 2013
+
+Main contributors:
+R. Jolivet, CalTech, USA
+Z. Duputel, Univ. de Strasbourg, France,
+B. Riel, CalTech, USA
+F. Ortega-Culaciati, Univ. de Santiago, Chile
 '''
 
 # Externals
@@ -152,6 +158,48 @@ class RectangularPatches(Fault):
         # All done
         return
 
+    def splitPatch(self, patch, equivpatch=False):
+        '''
+        Splits a patch in 4 patches and returns 4 new patches.
+        Args:
+            * patch         : item of the list of patch
+            * equivpatch    : if False, takes the patch, not its rectangular equivalent.     
+        '''
+
+        # Gets the 4 corners
+        c1, c2, c3, c4 = patch
+        c1 = c1.tolist()
+        c2 = c2.tolist()
+        c3 = c3.tolist()
+        c4 = c4.tolist()
+
+        # Compute the center
+        xc, yc, zc = self.getpatchgeometry(patch, center=True)[:3]
+        center = [xc, yc, zc]
+
+        # Compute middle of segments
+        c12 = [c1[0] + (c2[0]-c1[0])/2.,
+               c1[1] + (c2[1]-c1[1])/2.,
+               c1[2] + (c2[2]-c1[2])/2.]
+        c23 = [c2[0] + (c3[0]-c2[0])/2.,
+               c2[1] + (c3[1]-c2[1])/2.,
+               c2[2] + (c3[2]-c2[2])/2.]
+        c34 = [c3[0] + (c4[0]-c3[0])/2.,
+               c3[1] + (c4[1]-c3[1])/2.,
+               c3[2] + (c4[2]-c3[2])/2.]
+        c41 = [c4[0] + (c1[0]-c4[0])/2.,
+               c4[1] + (c1[1]-c4[1])/2.,
+               c4[2] + (c1[2]-c4[2])/2.]
+
+        # make patches
+        p1 = np.array([c1, c12, center, c41])
+        p2 = np.array([c12, c2, c23, center])
+        p3 = np.array([center, c23, c3, c34])
+        p4 = np.array([c41, center, c34, c4])
+
+        # All done
+        return p1, p2, p3, p4
+
     def extrap1d(self,interpolator):
         '''
         Linear extrapolation routine. Found on StackOverflow by sastanin.
@@ -215,19 +263,30 @@ class RectangularPatches(Fault):
 
         # Loop
         for p in self.equivpatch:
-
-            # get points
-            p1 = p[0]
-            p2 = p[1]
-            p3 = p[2]
-
-            # computes distances
-            d1 = np.sqrt( (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2 + (p1[2]-p2[2])**2 )
-            d2 = np.sqrt( (p3[0]-p2[0])**2 + (p3[1]-p2[1])**2 + (p3[2]-p2[2])**2 )
-            self.area.append(d1*d2)
+            self.area.append(self.patchArea(p))
 
         # all done
         return
+
+    def patchArea(self, p):
+        ''' 
+        Computes the area of one patch.
+        Args:
+            * p      : One item of self.patch
+        '''
+
+        # get points
+        p1 = p[0]
+        p2 = p[1]
+        p3 = p[2]
+
+        # computes distances
+        d1 = np.sqrt( (p1[0]-p2[0])**2 + (p1[1]-p2[1])**2 + (p1[2]-p2[2])**2 )
+        d2 = np.sqrt( (p3[0]-p2[0])**2 + (p3[1]-p2[1])**2 + (p3[2]-p2[2])**2 )
+        area = d1*d2
+
+        # All done
+        return area
 
     def patchesUtm2LonLat(self):
         '''
@@ -969,13 +1028,15 @@ class RectangularPatches(Fault):
             for i in range(len(self.patch)):
                 if (self.patch[i]==patch).all():
                     u = i
+        if u is not None:
+            patch = self.equivpatch[u]
 
         # Get the four corners of the rectangle
-        p1, p2, p3, p4 = self.equivpatch[u]
+        p1, p2, p3, p4 = patch
 
         # Get the UL corner of the patch
         if center:
-            x1, x2, x3 = self.getcenter(self.equivpatch[u])
+            x1, x2, x3 = self.getcenter(patch)
         else:
             x1 = p2[0]
             x2 = p2[1]
@@ -1082,140 +1143,6 @@ class RectangularPatches(Fault):
         # All done
         return ss_dis, ds_dis, ts_dis
 
-    def buildGFs(self, data, vertical=True, slipdir='sd', verbose=True):
-        '''
-        Builds the Green's function matrix based on the discretized fault.
-        Args:
-            * data      : data object from gpsrates or insarrates.
-            * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
-            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
-
-        The Green's function matrix is stored in a dictionary. Each entry of the dictionary is named after the corresponding dataset. Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
-        '''
-
-        if verbose:
-            print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
-
-        # Get the number of data
-        Nd = data.lon.shape[0]
-        if data.dtype is 'insarrates':
-            Ndt = Nd
-            data.obs_per_station = 1
-        elif data.dtype in ('gpsrates', 'multigps'):
-            Ndt = data.lon.shape[0]*2
-            data.obs_per_station = 2
-            if vertical:
-                data.obs_per_station = 3
-                Ndt += data.lon.shape[0]
-        elif data.dtype is 'cosicorrrates':
-            Ndt = 2 * Nd
-            data.obs_per_station = 2
-            if vertical:
-                Ndt += Nd
-                data.obs_per_station += 1
-
-        # Get the number of parameters
-        Np = len(self.patch)
-        Npt = len(self.patch)*len(slipdir)
-
-        # Initializes a space in the dictionary to store the green's function
-        if data.name not in self.G.keys():
-            self.G[data.name] = {}
-        G = self.G[data.name]
-        if 's' in slipdir:
-            G['strikeslip'] = np.zeros((Ndt, Np))
-        if 'd' in slipdir:
-            G['dipslip'] = np.zeros((Ndt, Np))
-        if 't' in slipdir:
-            G['tensile'] = np.zeros((Ndt, Np))
-
-        # Initializes the data vector and the data covariance
-        if data.dtype is 'insarrates':
-            self.d[data.name] = data.vel
-            vertical = True                 # In InSAR, you need to use the vertical, no matter what....
-        elif data.dtype in ('gpsrates', 'multigps'):
-            if vertical:
-                self.d[data.name] = data.vel_enu.T.flatten()
-            else:
-                self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
-        elif data.dtype is 'cosicorrrates':
-            self.d[data.name] = np.hstack((data.east.flatten(), data.north.flatten()))
-            if vertical:
-                self.d[data.name] = np.hstack((self.d[data.name], np.zeros((Nd,))))
-            assert self.d[data.name].shape[0] == Ndt, 'd vector and numObs do not match'
-
-        # Initialize the slip vector
-        SLP = []
-        if 's' in slipdir:              # If strike slip is aksed
-            SLP.append(1.0)
-        else:                           # Else
-            SLP.append(0.0)
-        if 'd' in slipdir:              # If dip slip is asked
-            SLP.append(1.0) 
-        else:                           # Else
-            SLP.append(0.0)
-        if 't' in slipdir:              # If tensile is asked
-            SLP.append(1.0)
-        else:                           # Else
-            SLP.append(0.0)
-
-        # import something
-        import sys
-
-        # Loop over each patch
-        for p in range(len(self.patch)):
-            if verbose:
-                sys.stdout.write('\r Patch: {} / {} '.format(p+1,len(self.patch)))
-                sys.stdout.flush()
-            
-            # get the surface displacement corresponding to unit slip
-            # ss,ds,op will all have shape (Nd,3) for 3 components
-            ss, ds, op = self.slip2dis(data, p, slip=SLP)
-
-            # Do we keep the verticals
-            if not vertical:
-                # Just get horizontal components
-                ss = ss[:,0:2]
-                ds = ds[:,0:2]
-                op = op[:,0:2]
-
-            # Organize the response
-            if data.dtype in ['gpsrates', 'cosicorrrates', 'multigps']:
-                # If GPS type, construct a flat vector with east displacements first, then
-                # north, then vertical
-                ss = ss.T.flatten()
-                ds = ds.T.flatten()
-                op = op.T.flatten()
-
-            elif data.dtype is 'insarrates':
-                # If InSAR, do the dot product with the los
-                ss_los = []
-                ds_los = []
-                op_los = []
-                for i in range(Nd):
-                    ss_los.append(np.dot(data.los[i,:], ss[i,:]))
-                    ds_los.append(np.dot(data.los[i,:], ds[i,:]))
-                    op_los.append(np.dot(data.los[i,:], op[i,:]))
-                ss = ss_los
-                ds = ds_los
-                op = op_los
-
-            # Store these guys in the corresponding G slot
-            if 's' in slipdir:
-                G['strikeslip'][:,p] = ss
-            if 'd' in slipdir:
-                G['dipslip'][:,p] = ds
-            if 't' in slipdir:
-                G['tensile'][:,p] = op
-
-        # Clean the screen 
-        if verbose:
-            sys.stdout.write('\n')
-            sys.stdout.flush()
-
-        # All done
-        return
-
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
         '''
         Measures the distance between two patches.
@@ -1244,144 +1171,6 @@ class RectangularPatches(Fault):
 
         # All done
         return dis
-
-    def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False, w_file=True):
-        '''
-        Write the subParam file needed for the interpolation of the green's function in EDKS.
-        Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source, 
-        then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
-        If amax is specified, the minimum size is fixed.
-        Args:
-            * data          : Data object from gpsrates or insarrates.
-            * edksfilename  : Name of the file containing the kernels.
-            * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle.
-            * plot          : Activates plotting.
-            * w_file        : if False, will not write the subParam fil (default=True)
-        Returns:
-            * filename         : Name of the subParams file created (only if w_file==True)
-            * RectanglePropFile: Name of the rectangles properties file
-            * ReceiverFile     : Name of the receiver file
-            * method_par       : Dictionary including useful EDKS parameters
-        '''
-
-        # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
-
-        # Write the geometry to the EDKS file
-        self.writeEDKSgeometry()
-
-        # Write the data to the EDKS file
-        data.writeEDKSdata()
-
-        # Create the variables
-        if len(self.name.split())>1:
-            fltname = self.name.split()[0]
-            for s in self.name.split()[1:]:
-                fltname = fltname+'_'+s
-        else:
-            fltname = self.name
-        RectanglePropFile = 'edks_{}.END'.format(fltname)
-        if len(data.name.split())>1:
-            datname = data.name.split()[0]
-            for s in data.name.split()[1:]:
-                datname = datname+'_'+s
-        else:
-            datname = data.name
-        ReceiverFile = 'edks_{}.idEN'.format(datname)
-
-        if data.dtype is 'insarrates':
-            useRecvDir = True # True for InSAR, uses LOS information
-        else:
-            useRecvDir = False # False for GPS, uses ENU displacements
-        EDKSunits = 1000.0
-        EDKSfilename = '{}'.format(edksfilename)
-        prefix = 'edks_{}_{}'.format(fltname, datname)
-        plotGeometry = '{}'.format(plot)
-
-        # Build usefull outputs
-        parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
-        parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
-        method_par = dict(zip(parNames, parValues))
-
-        # Open the EDKSsubParams.py file        
-        if w_file:
-            filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
-            fout = open(filename, 'w')
-
-            # Write in it
-            fout.write("# File with the rectangles properties\n")
-            fout.write("RectanglesPropFile = '{}'\n".format(RectanglePropFile))
-            fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
-            fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
-            fout.write("# read receiver direction (# not yet implemented)\n")
-            fout.write("useRecvDir = {} # True for InSAR, uses LOS information\n".format(useRecvDir))
-            fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
-            if amax is None:
-                fout.write("Amax = None # None computes Amax automatically. \n")
-            else:
-                fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
-                
-            fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
-            fout.write("EDKSfilename = '{}'\n".format(edksfilename))
-            fout.write("prefix = '{}'\n".format(prefix))
-            fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
-            
-            # Close the file
-            fout.close()
-
-            # All done
-            return filename, RectanglePropFile, ReceiverFile, method_par
-        else:
-            return RectanglePropFile, ReceiverFile, method_par
-
-    def writeEDKSgeometry(self, ref=None):
-        '''
-        This routine spits out 2 files:
-        filename.lonlatdepth: Lon center | Lat Center | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
-        filename.END: Easting (km) | Northing (km) | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
-
-        These files are to be used with /home/geomod/dev/edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
-
-        Args:
-            * ref           : Lon and Lat of the reference point. If None, the patches positions is in the UTM coordinates.
-        '''
-
-        # Filename
-        fltname = self.name.replace(' ','_')
-        filename = 'edks_{}'.format(fltname)
-
-        # Open the output file
-        flld = open(filename+'.lonlatdepth','w')
-        flld.write('#lon lat Dep[km] strike dip length(km) width(km) ID\n')
-        fend = open(filename+'.END','w')
-        fend.write('#Easting[km] Northing[km] Dep[km] strike dip length(km) width(km) ID\n')
-
-        # Reference
-        if ref is not None:
-            refx, refy = self.putm(ref[0], ref[1])
-            refx /= 1000.
-            refy /= 1000.
-
-        # Loop over the patches
-        for p in range(len(self.patch)):
-            x, y, z, width, length, strike, dip = self.getpatchgeometry(p, center=True)
-            strike = strike*180./np.pi
-            dip = dip*180./np.pi
-            lon, lat = self.xy2ll(x,y)
-            if ref is not None:
-                x -= refx
-                y -= refy
-            flld.write('{} {} {} {} {} {} {} {:5d} \n'.format(lon,lat,z,strike,dip,length,width,p))
-            fend.write('{} {} {} {} {} {} {} {:5d} \n'.format(x,y,z,strike,dip,length,width,p))
-
-        # Close the files
-        flld.close()
-        fend.close()
-
-        # All done
-        return
 
     def read3DsquareGrid(self, filename):
         '''
@@ -2785,5 +2574,145 @@ class RectangularPatches(Fault):
             return n1.reshape((3,1)), n2.reshape((3,1)), n3.reshape((3,1))
         else:
             return n1, n2, n3
+
+# Things that should become obsolete soon
+
+    def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False, w_file=True):
+        '''
+        Write the subParam file needed for the interpolation of the green's function in EDKS.
+        Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source, 
+        then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
+        If amax is specified, the minimum size is fixed.
+        Args:
+            * data          : Data object from gpsrates or insarrates.
+            * edksfilename  : Name of the file containing the kernels.
+            * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle.
+            * plot          : Activates plotting.
+            * w_file        : if False, will not write the subParam fil (default=True)
+        Returns:
+            * filename         : Name of the subParams file created (only if w_file==True)
+            * RectanglePropFile: Name of the rectangles properties file
+            * ReceiverFile     : Name of the receiver file
+            * method_par       : Dictionary including useful EDKS parameters
+        '''
+
+        # print
+        print ("---------------------------------")
+        print ("---------------------------------")
+        print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
+
+        # Write the geometry to the EDKS file
+        self.writeEDKSgeometry()
+
+        # Write the data to the EDKS file
+        data.writeEDKSdata()
+
+        # Create the variables
+        if len(self.name.split())>1:
+            fltname = self.name.split()[0]
+            for s in self.name.split()[1:]:
+                fltname = fltname+'_'+s
+        else:
+            fltname = self.name
+        RectanglePropFile = 'edks_{}.END'.format(fltname)
+        if len(data.name.split())>1:
+            datname = data.name.split()[0]
+            for s in data.name.split()[1:]:
+                datname = datname+'_'+s
+        else:
+            datname = data.name
+        ReceiverFile = 'edks_{}.idEN'.format(datname)
+
+        if data.dtype is 'insarrates':
+            useRecvDir = True # True for InSAR, uses LOS information
+        else:
+            useRecvDir = False # False for GPS, uses ENU displacements
+        EDKSunits = 1000.0
+        EDKSfilename = '{}'.format(edksfilename)
+        prefix = 'edks_{}_{}'.format(fltname, datname)
+        plotGeometry = '{}'.format(plot)
+
+        # Build usefull outputs
+        parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
+        parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
+        method_par = dict(zip(parNames, parValues))
+
+        # Open the EDKSsubParams.py file        
+        if w_file:
+            filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
+            fout = open(filename, 'w')
+
+            # Write in it
+            fout.write("# File with the rectangles properties\n")
+            fout.write("RectanglesPropFile = '{}'\n".format(RectanglePropFile))
+            fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
+            fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
+            fout.write("# read receiver direction (# not yet implemented)\n")
+            fout.write("useRecvDir = {} # True for InSAR, uses LOS information\n".format(useRecvDir))
+            fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
+            if amax is None:
+                fout.write("Amax = None # None computes Amax automatically. \n")
+            else:
+                fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
+                
+            fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
+            fout.write("EDKSfilename = '{}'\n".format(edksfilename))
+            fout.write("prefix = '{}'\n".format(prefix))
+            fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
+            
+            # Close the file
+            fout.close()
+
+            # All done
+            return filename, RectanglePropFile, ReceiverFile, method_par
+        else:
+            return RectanglePropFile, ReceiverFile, method_par
+
+    def writeEDKSgeometry(self, ref=None):
+        '''
+        This routine spits out 2 files:
+        filename.lonlatdepth: Lon center | Lat Center | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
+        filename.END: Easting (km) | Northing (km) | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
+
+        These files are to be used with /home/geomod/dev/edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
+
+        Args:
+            * ref           : Lon and Lat of the reference point. If None, the patches positions is in the UTM coordinates.
+        '''
+
+        # Filename
+        fltname = self.name.replace(' ','_')
+        filename = 'edks_{}'.format(fltname)
+
+        # Open the output file
+        flld = open(filename+'.lonlatdepth','w')
+        flld.write('#lon lat Dep[km] strike dip length(km) width(km) ID\n')
+        fend = open(filename+'.END','w')
+        fend.write('#Easting[km] Northing[km] Dep[km] strike dip length(km) width(km) ID\n')
+
+        # Reference
+        if ref is not None:
+            refx, refy = self.putm(ref[0], ref[1])
+            refx /= 1000.
+            refy /= 1000.
+
+        # Loop over the patches
+        for p in range(len(self.patch)):
+            x, y, z, width, length, strike, dip = self.getpatchgeometry(p, center=True)
+            strike = strike*180./np.pi
+            dip = dip*180./np.pi
+            lon, lat = self.xy2ll(x,y)
+            if ref is not None:
+                x -= refx
+                y -= refy
+            flld.write('{} {} {} {} {} {} {} {:5d} \n'.format(lon,lat,z,strike,dip,length,width,p))
+            fend.write('{} {} {} {} {} {} {} {:5d} \n'.format(x,y,z,strike,dip,length,width,p))
+
+        # Close the files
+        flld.close()
+        fend.close()
+
+        # All done
+        return
 
 #EOF
