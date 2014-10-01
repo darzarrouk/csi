@@ -106,9 +106,12 @@ class TriangularPatches(Fault):
 
         # Get corners
         p1, p2, p3 = patch
-        p1 = p1.tolist()
-        p2 = p2.tolist()
-        p3 = p3.tolist()
+        if type(p1) is not list:
+            p1 = p1.tolist()
+        if type(p2) is not list:
+            p2 = p2.tolist()
+        if type(p3) is not list:
+            p3 = p3.tolist()
 
         # Compute mid-points
         p12 = [p1[0] + (p2[0]-p1[0])/2., 
@@ -116,7 +119,7 @@ class TriangularPatches(Fault):
                p1[2] + (p2[2]-p1[2])/2.]
         p23 = [p2[0] + (p3[0]-p2[0])/2.,
                p2[1] + (p3[1]-p2[1])/2.,
-               p2[2] + (p3[2]-p3[2])/2.]
+               p2[2] + (p3[2]-p2[2])/2.]
         p31 = [p3[0] + (p1[0]-p3[0])/2.,
                p3[1] + (p1[1]-p3[1])/2.,
                p3[2] + (p1[2]-p3[2])/2.]
@@ -258,59 +261,6 @@ class TriangularPatches(Fault):
 
         # All done
         return
-
-
-    def setTrace(self,delta_depth=0.):
-        '''
-        Set Trace from patches (assuming positive depth)
-        Arg:
-            * delta_depth: The trace is made of all patch vertices at a depth smaller
-                           than fault_top+trace_delta_depth
-        '''
-        self.xf = []
-        self.yf = []
-        minz = np.round(self.top+delta_depth,1)
-        for p,pl in zip(self.patch,self.patchll):
-            for v,vl in zip(p,pl):
-                if np.round(v[2],1)>=minz:
-                    continue
-                self.xf.append(v[0])
-                self.yf.append(v[1])
-        self.xf = np.array(self.xf)
-        self.yf = np.array(self.yf)
-        i = np.argsort(self.yf)
-        self.xf = self.xf[i]
-        self.yf = self.yf[i]
-
-        # All done
-        return
-
-
-    # def setTrace(self,delta_depth=0.):
-    #     '''
-    #     Set Trace from patches (assuming positive depth)
-    #     Arg:
-    #         * delta_depth: The trace is made of all patch vertices at a depth smaller
-    #                        than fault_top+trace_delta_depth
-    #     '''
-    #     self.xf = []
-    #     self.yf = []
-    #     minz = np.round(self.top+delta_depth,1)
-    #     for p,pl in zip(self.patch,self.patchll):
-    #         for v,vl in zip(p,pl):
-    #             if np.round(v[2],1)>=minz:
-    #                 continue
-    #             self.xf.append(v[0])
-    #             self.yf.append(v[1])
-    #     self.xf = np.array(self.xf)
-    #     self.yf = np.array(self.yf)
-    #     i = np.argsort(self.yf)
-    #     self.xf = self.xf[i]
-    #     self.yf = self.yf[i]
-
-    #     # All done
-    #     return
-
 
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
         '''
@@ -675,12 +625,14 @@ class TriangularPatches(Fault):
             for i in range(len(self.patch)):
                 if (self.patch[i]==patch):
                     u = i
+        if u is not None:
+            patch = self.patch[u]
 
         # Get the center of the patch
-        x1, x2, x3 = self.getcenter(u)
+        x1, x2, x3 = self.getcenter(patch)
 
         # Get the vertices of the patch
-        verts = copy.deepcopy(self.patch[u])
+        verts = copy.deepcopy(patch)
         p1, p2, p3 = [np.array([lst[1],lst[0],lst[2]]) for lst in verts]
 
         # Get a dummy width and height

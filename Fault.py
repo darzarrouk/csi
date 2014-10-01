@@ -717,8 +717,10 @@ class Fault(SourceInv):
         the executables should be in the environment variable EDKS_BIN.
         A few variables need to be set in self before:
         self.kernelsEDKS    : Filename of the EDKS kernels.
+            One of the Three:
         self.sourceSpacing  : Spacing between the sources in each patch.
         self.sourceNumber   : Number of sources per patches.
+        self.sourceArea     : Maximum Area of the sources.
         Args:
             * data      : data object from gpsrates or insarrates.
             * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
@@ -751,12 +753,14 @@ class Fault(SourceInv):
             print('Kernels used: {}'.format(stratKernels))
         
         # Check if we can find mention of the spacing between points
-        if not hasattr(self, 'sourceSpacing') and not hasattr(self, 'sourceNumber'):
+        if not hasattr(self, 'sourceSpacing') and not hasattr(self, 'sourceNumber')\
+                and not hasattr(self, 'sourceArea'):
             print('---------------------------------')
             print('---------------------------------')
             print(' WARNING WARNING WARNING WARNING ')
             print('  Cannot find sourceSpacing nor  ')
-            print('   sourceNumber for stratified   ')
+            print('   sourceNumber nor sourceArea   ')
+            print('         for stratified          ')
             print('   Greens function computation   ')
             print('           computation           ')
             print('          Dying here...          ')
@@ -816,9 +820,10 @@ class Fault(SourceInv):
         Ncomp = 3
         if not vertical:
             Ncomp = 2
-            # Just get horizontal components
-            Gss = Gss[:2,:,:]
-            Gds = Gds[:2,:,:]
+            if 'd' in slipdir:
+                Gds = Gds[:2,:,:]
+            if 's' in slipdir:
+                Gss = Gss[:2,:,:]
         
         # Numbers
         Ndata = Ncomp*xr.shape[0]
@@ -827,20 +832,26 @@ class Fault(SourceInv):
         # Check format
         if data.dtype in ['gpsrates', 'cosicorrrates', 'multigps']:
             # Flat arrays with e, then n, then u (optional)
-            Gss = Gss.reshape((Ndata, Npatch))
-            Gds = Gds.reshape((Ndata, Npatch))
+            if 's' in slipdir:
+                Gss = Gss.reshape((Ndata, Npatch))
+            if 'd' in slipdir:
+                Gds = Gds.reshape((Ndata, Npatch))
         elif data.dtype is 'insarrates':
-            self.Gss = Gss
-            self.Gds = Gds
             # If InSAR, do the dot product with the los
-            Gss_los = []
-            Gds_los = []
+            if 's' in slipdir:
+                Gss_los = []
+            if 'd' in slipdir:
+                Gds_los = []
             for i in range(xr.shape[0]):
                 for j in range(Npatch):
-                    Gss_los.append(np.dot(data.los[i,:], Gss[:,i,j]))
-                    Gds_los.append(np.dot(data.los[i,:], Gds[:,i,j]))
-            Gss = np.array(Gss_los).reshape((xr.shape[0], Npatch))
-            Gds = np.array(Gds_los).reshape((xr.shape[0], Npatch))
+                    if 's' in slipdir:
+                        Gss_los.append(np.dot(data.los[i,:], Gss[:,i,j]))
+                    if 'd' in slipdir:
+                        Gds_los.append(np.dot(data.los[i,:], Gds[:,i,j]))
+            if 's' in slipdir:
+                Gss = np.array(Gss_los).reshape((xr.shape[0], Npatch))
+            if 'd' in slipdir:
+                Gds = np.array(Gds_los).reshape((xr.shape[0], Npatch))
 
         # Create the dictionary
         G = {'strikeslip':[], 'dipslip':[], 'tensile':[]}
