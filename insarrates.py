@@ -580,6 +580,39 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def setGFsInFault(self, fault, G, vertical=True):
+        '''
+        From a dictionary of Green's functions, sets these correctly into the fault 
+        object fault for future computation.
+        Args:
+            * fault     : Instance of Fault
+            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
+                          These can be a matrix or None.
+            * vertical  : Set here for consistency with other data objects, but will 
+                          always be set to True, whatever you do.
+        '''
+
+        # Get the values
+        try: 
+            GssLOS = G['strikeslip']
+        except:
+            GssLOS = None
+        try:
+            GdsLOS = G['dipslip']
+        except:
+            GdsLOS = None
+        try: 
+            GtsLOS = G['tensile']
+        except:
+            GtsLOS = None
+
+        # set the GFs
+        fault.setGFs(self, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS],
+                    vertical=True)
+
+        # All done
+        return
+
     def getPolyEstimator(self, ptype):
         '''
         Returns the Estimator for the polynomial form to estimate in the InSAR data.

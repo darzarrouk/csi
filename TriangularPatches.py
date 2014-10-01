@@ -69,22 +69,69 @@ class TriangularPatches(Fault):
 
         # Loop over patches
         for patch in self.patch:
-
-            # Get vertices of patch
-            p1, p2, p3 = patch[:3]
-
-            # Compute side lengths
-            a = np.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2 + (p2[2] - p1[2])**2)
-            b = np.sqrt((p3[0] - p2[0])**2 + (p3[1] - p2[1])**2 + (p3[2] - p2[2])**2)
-            c = np.sqrt((p1[0] - p3[0])**2 + (p1[1] - p3[1])**2 + (p1[2] - p3[2])**2)
-
-            # Compute area using numerically stable Heron's formula
-            c,b,a = np.sort([a, b, c])
-            self.area.append(0.25 * np.sqrt((a + (b + c)) * (c - (a - b))
-                           * (c + (a - b)) * (a + (b - c))))
+            self.area.append(self.patchArea(patch))
 
         # all done
         return
+
+    def patchArea(self, patch):
+        '''
+        Returns the area of one patch.
+        Args:   
+            * patch : one item of the patch list.
+        '''
+
+        # Get vertices of patch
+        p1, p2, p3 = patch[:3]
+
+        # Compute side lengths
+        a = np.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2 + (p2[2] - p1[2])**2)
+        b = np.sqrt((p3[0] - p2[0])**2 + (p3[1] - p2[1])**2 + (p3[2] - p2[2])**2)
+        c = np.sqrt((p1[0] - p3[0])**2 + (p1[1] - p3[1])**2 + (p1[2] - p3[2])**2)
+
+        # Compute area using numerically stable Heron's formula
+        c,b,a = np.sort([a, b, c])
+        area = 0.25 * np.sqrt((a + (b + c)) * (c - (a - b))
+                       * (c + (a - b)) * (a + (b - c)))
+
+        # All Done
+        return area
+
+    def splitPatch(self, patch):
+        '''
+        Splits a patch into 4 patches, based on the mid-point of each side.
+        Args:
+            * patch : item of the patch list.
+        '''
+
+        # Get corners
+        p1, p2, p3 = patch
+        if type(p1) is not list:
+            p1 = p1.tolist()
+        if type(p2) is not list:
+            p2 = p2.tolist()
+        if type(p3) is not list:
+            p3 = p3.tolist()
+
+        # Compute mid-points
+        p12 = [p1[0] + (p2[0]-p1[0])/2., 
+               p1[1] + (p2[1]-p1[1])/2.,
+               p1[2] + (p2[2]-p1[2])/2.]
+        p23 = [p2[0] + (p3[0]-p2[0])/2.,
+               p2[1] + (p3[1]-p2[1])/2.,
+               p2[2] + (p3[2]-p2[2])/2.]
+        p31 = [p3[0] + (p1[0]-p3[0])/2.,
+               p3[1] + (p1[1]-p3[1])/2.,
+               p3[2] + (p1[2]-p3[2])/2.]
+
+        # make 4 triangles
+        t1 = [p1, p12, p31]
+        t2 = [p12, p2, p23]
+        t3 = [p31, p23, p3]
+        t4 = [p31, p12, p23]
+
+        # All done
+        return t1, t2, t3, t4
 
     def selectPatches(self,minlon,maxlon,minlat,maxlat,mindep,maxdep):
 
@@ -214,59 +261,6 @@ class TriangularPatches(Fault):
 
         # All done
         return
-
-
-    def setTrace(self,delta_depth=0.):
-        '''
-        Set Trace from patches (assuming positive depth)
-        Arg:
-            * delta_depth: The trace is made of all patch vertices at a depth smaller
-                           than fault_top+trace_delta_depth
-        '''
-        self.xf = []
-        self.yf = []
-        minz = np.round(self.top+delta_depth,1)
-        for p,pl in zip(self.patch,self.patchll):
-            for v,vl in zip(p,pl):
-                if np.round(v[2],1)>=minz:
-                    continue
-                self.xf.append(v[0])
-                self.yf.append(v[1])
-        self.xf = np.array(self.xf)
-        self.yf = np.array(self.yf)
-        i = np.argsort(self.yf)
-        self.xf = self.xf[i]
-        self.yf = self.yf[i]
-
-        # All done
-        return
-
-
-    # def setTrace(self,delta_depth=0.):
-    #     '''
-    #     Set Trace from patches (assuming positive depth)
-    #     Arg:
-    #         * delta_depth: The trace is made of all patch vertices at a depth smaller
-    #                        than fault_top+trace_delta_depth
-    #     '''
-    #     self.xf = []
-    #     self.yf = []
-    #     minz = np.round(self.top+delta_depth,1)
-    #     for p,pl in zip(self.patch,self.patchll):
-    #         for v,vl in zip(p,pl):
-    #             if np.round(v[2],1)>=minz:
-    #                 continue
-    #             self.xf.append(v[0])
-    #             self.yf.append(v[1])
-    #     self.xf = np.array(self.xf)
-    #     self.yf = np.array(self.yf)
-    #     i = np.argsort(self.yf)
-    #     self.xf = self.xf[i]
-    #     self.yf = self.yf[i]
-
-    #     # All done
-    #     return
-
 
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
         '''
@@ -631,12 +625,14 @@ class TriangularPatches(Fault):
             for i in range(len(self.patch)):
                 if (self.patch[i]==patch):
                     u = i
+        if u is not None:
+            patch = self.patch[u]
 
         # Get the center of the patch
-        x1, x2, x3 = self.getcenter(u)
+        x1, x2, x3 = self.getcenter(patch)
 
         # Get the vertices of the patch
-        verts = copy.deepcopy(self.patch[u])
+        verts = copy.deepcopy(patch)
         p1, p2, p3 = [np.array([lst[1],lst[0],lst[2]]) for lst in verts]
 
         # Get a dummy width and height
@@ -663,8 +659,6 @@ class TriangularPatches(Fault):
             return x1, x2, x3, width, length, strike, dip, normal
         else:
             return x1, x2, x3, width, length, strike, dip
-
-
 
     def distanceVertexToVertex(self, vertex1, vertex2, lim=None):
         '''
@@ -694,8 +688,6 @@ class TriangularPatches(Fault):
 
         # All done
         return dis
-
-
 
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
         '''
@@ -773,146 +765,6 @@ class TriangularPatches(Fault):
 
         # All done
         return ss_dis, ds_dis, op_dis
-
-
-    def buildGFs(self, data, vertical=True, slipdir='sd', verbose=True):
-        '''
-        Builds the Green's function matrix based on the discretized fault.
-        Args:
-            * data      : data object from gpsrates or insarrates.
-            * vertical  : if True, will produce green's functions for the vertical
-                          displacements in a gps object.
-            * slipdir   : direction of the slip along the patches. can be any combination
-                          of s (strikeslip), d (dipslip) and t (tensile).
-
-        The Green's function matrix is stored in a dictionary. Each entry of the
-        dictionary is named after the corresponding dataset. Each of these entry is a
-        dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
-        '''
-
-        if verbose:
-            print("Building Green's functions for the data set {} of type {}".format(
-                    data.name, data.dtype))
-
-        # Get the number of data
-        Nd = data.lon.shape[0]
-        if data.dtype is 'insarrates':
-            Ndt = Nd
-            data.obs_per_station = 1
-        elif data.dtype is 'gpsrates':
-            Ndt = data.lon.shape[0]*2
-            data.obs_per_station = 2
-            if vertical:
-                data.obs_per_station = 3
-                Ndt += data.lon.shape[0]
-        elif data.dtype is 'cosicorrrates':
-            Ndt = 2 * Nd
-            data.obs_per_station = 2
-            if vertical:
-                Ndt += Nd
-                data.obs_per_station += 1
-
-        # Get the number of parameters
-        Np = len(self.patch)
-        Npt = len(self.patch)*len(slipdir)
-
-        # Initializes a space in the dictionary to store the green's function
-        if data.name not in self.G.keys():
-            self.G[data.name] = {}
-        G = self.G[data.name]
-        if 's' in slipdir:
-            G['strikeslip'] = np.zeros((Ndt, Np))
-        if 'd' in slipdir:
-            G['dipslip'] = np.zeros((Ndt, Np))
-        if 't' in slipdir:
-            G['tensile'] = np.zeros((Ndt, Np))
-
-        # Initializes the data vector and the data covariance
-        if data.dtype is 'insarrates':
-            self.d[data.name] = data.vel
-            vertical = True # In InSAR, you need to use the vertical, no matter what....
-        elif data.dtype is 'gpsrates':
-            if vertical:
-                self.d[data.name] = data.vel_enu.T.flatten()
-            else:
-                self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
-        elif data.dtype is 'cosicorrrates':
-            self.d[data.name] = np.hstack((data.east.flatten(), data.north.flatten()))
-            if vertical:
-                self.d[data.name] = np.hstack((self.d[data.name], np.zeros((Nd,))))
-            assert self.d[data.name].shape[0] == Ndt, 'd vector and numObs do not match'
-
-        # Initialize the slip vector
-        SLP = []
-        if 's' in slipdir:              # If strike slip is asked
-            SLP.append(1.0)
-        else:                           # Else
-            SLP.append(0.0)
-        if 'd' in slipdir:              # If dip slip is asked
-            SLP.append(1.0)
-        else:                           # Else
-            SLP.append(0.0)
-        if 't' in slipdir:              # If tensile is asked
-            SLP.append(1.0)
-        else:                           # Else
-            SLP.append(0.0)
-
-        # import something
-        import sys
-
-        # Loop over each patch
-        for p in range(len(self.patch)):
-            if verbose:
-                sys.stdout.write('\r Patch: {} / {} '.format(p+1,len(self.patch)))
-                sys.stdout.flush()
-
-            # get the surface displacement corresponding to unit slip
-            # ss,ds,op will all have shape (Nd,3) for 3 components
-            ss, ds, op = self.slip2dis(data, p, slip=SLP)
-
-            # Do we keep the verticals
-            if not vertical:
-                # Just get horizontal components
-                ss = ss[:,0:2]
-                ds = ds[:,0:2]
-                op = op[:,0:2]
-
-            # Organize the response
-            if data.dtype in ['gpsrates', 'cosicorrrates']:
-                # If GPS type, construct a flat vector with east displacements first, then
-                # north, then vertical
-                ss = ss.T.flatten()
-                ds = ds.T.flatten()
-                op = op.T.flatten()
-
-            elif data.dtype is 'insarrates':
-                # If InSAR, do the dot product with the los
-                ss_los = []
-                ds_los = []
-                op_los = []
-                for i in range(Nd):
-                    ss_los.append(np.dot(data.los[i,:], ss[i,:]))
-                    ds_los.append(np.dot(data.los[i,:], ds[i,:]))
-                    op_los.append(np.dot(data.los[i,:], op[i,:]))
-                ss = ss_los
-                ds = ds_los
-                op = op_los
-
-            # Store these guys in the corresponding G slot
-            if 's' in slipdir:
-                G['strikeslip'][:,p] = ss
-            if 'd' in slipdir:
-                G['dipslip'][:,p] = ds
-            if 't' in slipdir:
-                G['tensile'][:,p] = op
-
-        # Clean the screen
-        if verbose:
-            sys.stdout.write('\n')
-            sys.stdout.flush()
-
-        # All done
-        return
 
     def buildAdjacencyMap(self, verbose=True):
         """

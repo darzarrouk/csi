@@ -18,7 +18,7 @@ import os
 
 # Personals
 from .SourceInv import SourceInv
-
+from .EDKS import sum_layered_sub, dropSourcesInPatches
 
 class Fault(SourceInv):
 
@@ -563,7 +563,312 @@ class Fault(SourceInv):
 
         # All done
         return
+    
+    def buildGFs(self, data, vertical=True, slipdir='sd', method='homogeneous', verbose=True):
+        '''
+        Builds the Green's function matrix based on the discretized fault.
+        Args:
+            * data      : data object from gpsrates or insarrates.
+            * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
+            * method    : Can be okada (Okada, 1982) (rectangular patches only)
+                                 meade (Meade 2007) (triangular patches only)
+                                 edks (Zhao & Rivera, 2002) 
+                                 homogeneous (Okada for rectangles, Meade for triangles)
+        The Green's function matrix is stored in a dictionary. 
+        Each entry of the dictionary is named after the corresponding dataset. 
+        Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
+        '''
 
+        if verbose:
+            print('---------------------------------')
+            print('---------------------------------')
+            print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
+
+        # Check something
+        if method in ('homogeneous', 'Homogeneous'):
+            if self.patchType is 'rectangle':
+                method = 'Okada'
+            elif self.patchType is 'triangle':
+                method = 'Meade'
+        
+        # Print
+        if verbose:
+            print('Greens functions computation method: {}'.format(method))
+
+        # Compute the Green's functions
+        if method in ('okada', 'Okada', 'OKADA', 'ok92', 'meade', 'Meade', 'MEADE'):
+            G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose)
+        elif method in ('edks', 'EDKS'):
+            G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose)
+
+        # Separate the Green's functions for each type of data set
+        data.setGFsInFault(self, G, vertical=vertical)
+
+        # All done
+        return
+
+    def homogeneousGFs(self, data, vertical=True, slipdir='sd', verbose=True):
+        '''
+        Builds the Green's functions for a homogeneous half-space.
+        If your patches are rectangular, Okada's formulation is used (Okada, 1982)
+        If your patches are triangular, Meade's formulation is used (Meade, 2007)
+        Args:
+            * data      : data object from gpsrates or insarrates.
+            * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
+        '''
+
+        # Initialize the slip vector
+        SLP = []
+        if 's' in slipdir:              # If strike slip is aksed
+            SLP.append(1.0)
+        else:                           # Else
+            SLP.append(0.0)
+        if 'd' in slipdir:              # If dip slip is asked
+            SLP.append(1.0) 
+        else:                           # Else
+            SLP.append(0.0)
+        if 't' in slipdir:              # If tensile is asked
+            SLP.append(1.0)
+        else:                           # Else
+            SLP.append(0.0)
+
+        # Create the dictionary
+        G = {'strikeslip':[], 'dipslip':[], 'tensile':[]}
+
+        # Loop over each patch
+        for p in range(len(self.patch)):
+            if verbose:
+                sys.stdout.write('\r Patch: {} / {} '.format(p+1,len(self.patch)))
+                sys.stdout.flush()
+            
+            # get the surface displacement corresponding to unit slip
+            # ss,ds,op will all have shape (Nd,3) for 3 components
+            ss, ds, op = self.slip2dis(data, p, slip=SLP)
+            Nd = ss.shape[0]
+
+            # Do we keep the verticals
+            if not vertical:
+                # Just get horizontal components
+                ss = ss[:,0:2]
+                ds = ds[:,0:2]
+                op = op[:,0:2]
+
+            # Organize the response
+            if data.dtype in ['gpsrates', 'cosicorrrates', 'multigps']:
+                # If GPS type, construct a flat vector with east displacements first, then
+                # north, then vertical
+                ss = ss.T.flatten()
+                ds = ds.T.flatten()
+                op = op.T.flatten()
+
+            elif data.dtype is 'insarrates':
+                # If InSAR, do the dot product with the los
+                ss_los = []
+                ds_los = []
+                op_los = []
+                for i in range(Nd):
+                    ss_los.append(np.dot(data.los[i,:], ss[i,:]))
+                    ds_los.append(np.dot(data.los[i,:], ds[i,:]))
+                    op_los.append(np.dot(data.los[i,:], op[i,:]))
+                ss = np.array(ss_los)
+                ds = np.array(ds_los)
+                op = np.array(op_los)
+
+            # Store these guys in the corresponding G slot
+            if 's' in slipdir:
+                G['strikeslip'].append(ss)
+            if 'd' in slipdir:
+                G['dipslip'].append(ds)
+            if 't' in slipdir:
+                G['tensile'].append(op)
+
+        # Easily get the number of data
+        Nd = ss.shape[0]
+        Np = len(self.patch)
+
+        # Reshape the Green's functions
+        if 's' in slipdir:
+            G['strikeslip'] = np.array(G['strikeslip']).reshape((Np, Nd)).T
+        else:
+            G['strikeslip'] = None
+        if 'd' in slipdir:
+            G['dipslip'] = np.array(G['dipslip']).reshape((Np, Nd)).T
+        else:
+            G['dipslip'] = None
+        if 't' in slipdir:
+            G['tensile'] = np.array(G['tensile']).reshape((Np, Nd)).T
+        else:
+            G['tensile'] = None
+
+        # Clean the screen 
+        if verbose:
+            sys.stdout.write('\n')
+            sys.stdout.flush()
+
+        # All done
+        return G
+
+    def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True):
+        '''
+        Builds the Green's functions based on the solution by Zhao & Rivera 2002.
+        The Corresponding functions are in the EDKS code that needs to be installed and 
+        the executables should be in the environment variable EDKS_BIN.
+        A few variables need to be set in self before:
+        self.kernelsEDKS    : Filename of the EDKS kernels.
+            One of the Three:
+        self.sourceSpacing  : Spacing between the sources in each patch.
+        self.sourceNumber   : Number of sources per patches.
+        self.sourceArea     : Maximum Area of the sources.
+        Args:
+            * data      : data object from gpsrates or insarrates.
+            * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip). No tensile option....
+        '''
+
+        # Data type check
+        if data.dtype is 'insarrates':
+            vertical = True
+
+        # Check if we can find kernels
+        if not hasattr(self, 'kernelsEDKS'):
+            print('---------------------------------')
+            print('---------------------------------')
+            print(' WARNING WARNING WARNING WARNING ')
+            print('   Kernels for computation of')
+            print('stratified Greens functions not ')
+            print('    set in {}.kernelsEDKS'.format(self.name))
+            print('   Looking for default kernels')
+            print('---------------------------------')
+            print('---------------------------------')
+            self.kernelsEDKS = 'kernels.edks'
+            print('No Kernels provided, trying with kernels.edks')
+        stratKernels = self.kernelsEDKS
+        if not os.path.isfile(stratKernels):
+            print('Kernels for EDKS not found...')
+            print('I give up...')
+            sys.exit(1)
+        else:
+            print('Kernels used: {}'.format(stratKernels))
+        
+        # Check if we can find mention of the spacing between points
+        if not hasattr(self, 'sourceSpacing') and not hasattr(self, 'sourceNumber')\
+                and not hasattr(self, 'sourceArea'):
+            print('---------------------------------')
+            print('---------------------------------')
+            print(' WARNING WARNING WARNING WARNING ')
+            print('  Cannot find sourceSpacing nor  ')
+            print('   sourceNumber nor sourceArea   ')
+            print('         for stratified          ')
+            print('   Greens function computation   ')
+            print('           computation           ')
+            print('          Dying here...          ')
+            print('              Arg...             ')
+            sys.exit(1)
+        
+        # Receivers to meters
+        xr = data.x * 1000.
+        yr = data.y * 1000.
+
+        # Prefix for the files
+        prefix = '{}_{}'.format(self.name.replace(' ','-'), data.name.replace(' ','-'))
+
+        # Fill the patches with point sources
+        if verbose:
+            print('Subdividing patches into point sources')
+        Ids, xs, ys, zs, strike, dip, Areas = dropSourcesInPatches(self)
+
+        # All these guys need to be in meters
+        xs *= 1000.
+        ys *= 1000.
+        zs *= 1000.
+        Areas *= 1e6
+
+        # Strike and dip in degrees
+        strike = strike*180./np.pi
+        dip = dip*180./np.pi
+
+        # Keep track?
+        if hasattr(self, 'keepTrackOfSources'):
+            if self.keepTrackOfSources:
+                self.edksSources = [Ids, xs, ys, zs, Areas, strike, dip]
+
+        # Informations
+        if verbose:
+            print('{} sources for {} patches and {} data points'.format(len(Ids), len(self.patch), len(xr)))
+        
+        # Run EDKS
+        if 's' in slipdir:
+            if verbose:
+                print('Running Strike Slip component for data set {}'.format(data.name))
+            Gss = sum_layered_sub(Ids, xs, ys, zs, \
+                                  strike, dip, np.zeros(dip.shape), np.ones(dip.shape), \
+                                  Areas,\
+                                  xr, yr, stratKernels, prefix)
+            Gss = np.array(Gss)
+        if 'd' in slipdir:
+            if verbose:
+                print('Running Dip Slip component for data set {}'.format(data.name))
+            Gds = sum_layered_sub(Ids, xs, ys, zs, \
+                                  strike,dip, np.ones(dip.shape)*90., np.ones(dip.shape),\
+                                  Areas,\
+                                  xr, yr, stratKernels, prefix)
+            Gds = np.array(Gds)
+        
+        # Verticals?
+        Ncomp = 3
+        if not vertical:
+            Ncomp = 2
+            if 'd' in slipdir:
+                Gds = Gds[:2,:,:]
+            if 's' in slipdir:
+                Gss = Gss[:2,:,:]
+        
+        # Numbers
+        Ndata = Ncomp*xr.shape[0]
+        Npatch = len(self.patch)
+
+        # Check format
+        if data.dtype in ['gpsrates', 'cosicorrrates', 'multigps']:
+            # Flat arrays with e, then n, then u (optional)
+            if 's' in slipdir:
+                Gss = Gss.reshape((Ndata, Npatch))
+            if 'd' in slipdir:
+                Gds = Gds.reshape((Ndata, Npatch))
+        elif data.dtype is 'insarrates':
+            # If InSAR, do the dot product with the los
+            if 's' in slipdir:
+                Gss_los = []
+            if 'd' in slipdir:
+                Gds_los = []
+            for i in range(xr.shape[0]):
+                for j in range(Npatch):
+                    if 's' in slipdir:
+                        Gss_los.append(np.dot(data.los[i,:], Gss[:,i,j]))
+                    if 'd' in slipdir:
+                        Gds_los.append(np.dot(data.los[i,:], Gds[:,i,j]))
+            if 's' in slipdir:
+                Gss = np.array(Gss_los).reshape((xr.shape[0], Npatch))
+            if 'd' in slipdir:
+                Gds = np.array(Gds_los).reshape((xr.shape[0], Npatch))
+
+        # Create the dictionary
+        G = {'strikeslip':[], 'dipslip':[], 'tensile':[]}
+
+        # Reshape the Green's functions
+        if 's' in slipdir:
+            G['strikeslip'] = Gss
+        else:
+            G['strikeslip'] = None
+        if 'd' in slipdir:
+            G['dipslip'] = Gds
+        else:
+            G['dipslip'] = None
+        G['tensile']= None
+
+        # All done
+        return G
 
     def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None,
                        vertical=False, dtype='d'):
@@ -603,84 +908,14 @@ class Fault(SourceInv):
             Gts = np.fromfile(tensile, dtype=dtype)
             ndl = int(Gts.shape[0]/self.N_slip)
             Gts = Gts.reshape((ndl, self.N_slip))
+        
+        # Create the big dictionary
+        G = {'strikeslip': Gss,
+             'dipslip': Gds,
+             'tensile': Gts}
 
-        # Get the data type
-        datatype = data.dtype
-
-        # Cut the Matrices following what data do we have and set the GFs
-        if datatype in ('gpsrates', 'multigps'):
-
-            # Initialize
-            GssE = None; GdsE = None; GtsE = None
-            GssN = None; GdsN = None; GtsN = None
-            GssU = None; GdsU = None; GtsU = None
-
-            # Check components
-            east  = False
-            north = False
-            if not np.isnan(data.vel_enu[:,0]).any():
-                east = True
-            if not np.isnan(data.vel_enu[:,1]).any():
-                north = True
-            if vertical and np.isnan(data.vel_enu[:,2]).any():
-                raise ValueError('vertical can only be true if all stations have vertical components')
-
-            # Get the values
-            if strikeslip is not None:
-                N = 0
-                if east:
-                    GssE = Gss[range(0,data.vel_enu.shape[0]),:]
-                    N += data.vel_enu.shape[0]
-                if north:
-                    GssN = Gss[range(N,N+data.vel_enu.shape[0]),:]
-                    N += data.vel_enu.shape[0]
-                if vertical:
-                    GssU = Gss[range(N,N+data.vel_enu.shape[0]),:]
-            if dipslip is not None:
-                N = 0
-                if east:
-                    GdsE = Gds[range(0,data.vel_enu.shape[0]),:]
-                    N += data.vel_enu.shape[0]
-                if north:
-                    GdsN = Gds[range(N,N+data.vel_enu.shape[0]),:]
-                    N += data.vel_enu.shape[0]
-                if vertical:
-                    GdsU = Gds[range(N,N+data.vel_enu.shape[0]),:]
-            if tensile is not None:
-                if east:
-                    GtsE = Gts[range(0,data.vel_enu.shape[0]),:]
-                    N += data.vel_enu.shape[0]
-                if north:
-                    GtsN = Gts[range(N,N+data.vel_enu.shape[0]),:]
-                    N += data.vel_enu.shape[0]
-                if vertical:
-                    GtsU = Gts[range(N,N+data.vel_enu.shape[0]),:]
-
-            # set the GFs
-            self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU],
-                        tensile=[GtsE, GtsN, GtsU], vertical=vertical)
-
-        elif datatype is 'insarrates':
-
-            # Initialize
-            GssLOS = None; GdsLOS = None; GtsLOS = None
-
-            # Get the values
-            if strikeslip is not None:
-                GssLOS = Gss
-            if dipslip is not None:
-                GdsLOS = Gds
-            if tensile is not None:
-                GtsLOS = Gts
-
-            # set the GFs
-            self.setGFs(data, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS],
-                        vertical=True)
-
-        elif datatype is 'cosicorrrates':
-            # Don't need to do anything special here. The GF arrays we read in are
-            # already in the right shape.
-            self.setGFs(data, strikeslip=[Gss], dipslip=[Gds], tensile=[Gts], vertical=vertical)
+        # The dataset sets the Green's functions itself
+        data.setGFsInFault(self, G, vertical=vertical)
 
         # all done
         return

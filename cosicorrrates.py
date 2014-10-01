@@ -492,8 +492,6 @@ class cosicorrrates(SourceInv):
 
         # All done
         return
-
-
     
     def read_with_reader(self, readerFunc, filePrefix, factor=1.0, cov=False):
         '''
@@ -525,7 +523,6 @@ class cosicorrrates(SourceInv):
 
         # All done
         return
-
 
     def select_pixels(self, minlon, maxlon, minlat, maxlat):
         ''' 
@@ -570,6 +567,37 @@ class cosicorrrates(SourceInv):
             Cdt = self.Cd[indCd,:]
             self.Cd = Cdt[:,indCd]
         
+        # All done
+        return
+
+    def setGFsInFault(self, fault, G, vertical=True):
+        '''
+        From a dictionary of Green's functions, sets these correctly into the fault 
+        object fault for future computation.
+        Args:
+            * fault     : Instance of Fault
+            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
+                          These can be a matrix or None.
+            * vertical  : Do we use vertical predictions? Default is True
+        '''
+        
+        # Get values
+        try:
+            Gss = G['strikeslip']
+        except:
+            Gss = None
+        try:
+            Gds = G['dipslip']
+        except:
+            Gds = None
+        try:
+            Gts = G['tensile']
+        except:
+            Gts = None
+
+        # Set these values
+        fault.setGFs(self, strikeslip=[Gss], dipslip=[Gds], tensile=[Gts], vertical=vertical)
+
         # All done
         return
 
