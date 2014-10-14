@@ -2084,11 +2084,11 @@ class gpsrates(SourceInv):
                 
             # Compute the Green's functions
             if elasticstructure in ('okada'):
-                fault.buildGFs(self, verbose=verbose)
+                fault.buildGFs(self, verbose=verbose, method='okada')
             else:
-                subpfile, RectanglesPropFile, ReceiverFile, Method = fault.writeEDKSsubParams(self, elasticstructure)
-                GeSS, GeDS, GnSS, GnDS, GuSS, GuDS, = calcGreenFunctions_EDKS_subRectangles(RectanglesPropFile, ReceiverFile, Method, False)
-                fault.setGFs(self, strikeslip = [GeSS, GnSS, GuSS], dipslip = [GeDS, GnDS, GuDS])
+                fault.kernelsEDKS = elasticstructure
+                fault.sourceSpacing = 0.1
+                fault.buildGFs(self, verbose=verbose, method='edks')
 
             # Compute the synthetics
             self.buildsynth([fault])
