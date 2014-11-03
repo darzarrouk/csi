@@ -15,8 +15,6 @@ import sys
 # Personals
 from .SourceInv import SourceInv
 from .gpstimeseries import gpstimeseries
-if (sys.version_info[0]==2) and ('EDKS_HOME' in os.environ.keys()):
-    from calcGreenFunctions_EDKS_subRectangles import *
 
 class gpsrates(SourceInv):
 
