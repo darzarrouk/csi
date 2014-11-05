@@ -29,7 +29,7 @@ class tsunami(SourceInv):
             * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
-        super(tsunami,self).__init__(name,utmzone,ellps)
+        super(self.__class__,self).__init__(name,utmzone,ellps)
 
         # Initialize the data set
         self.dtype = dtype
@@ -105,10 +105,9 @@ class tsunami(SourceInv):
         '''
         Plot tsunami traces
         '''
-        plt.figure()
+        fig = plt.figure(figsize=(13,10))
         nsamp = nobs_per_trace
         nstat = len(self.d)/nobs_per_trace
-        fig = plt.figure()
         for i in range(nstat): 
             data  = self.d[i*nsamp:nsamp*i+nsamp]
             synth = self.synth[i*nsamp:nsamp*i+nsamp]
