@@ -1,7 +1,7 @@
 '''
 A class the allows to compute various things using a fault object.
 
-Written by R. Jolivet, April 2013.
+Written by R. Jolivet, Z. Duputel and B. Riel, April 2013
 '''
 
 import numpy as np
@@ -18,7 +18,7 @@ class faultpostproc(object):
         Args:
             * name          : Name of the InSAR dataset.
             * fault         : Fault object
-            * Mu            : Shear modulus. Default is 24e9 GPa, because it is the PREM value for the upper 15km.
+            * Mu            : Shear modulus. Default is 24e9 GPa, because it is the PREM value for the upper 15km. Can be a scalar or a list/array of len=len(fault.patch)
             * utmzone       : UTM zone. Default is 10 (Western US).
             * samplesh5     : file name of h5 file containing samples
         '''
@@ -27,7 +27,6 @@ class faultpostproc(object):
         self.name = name
         self.fault = copy.deepcopy(fault) # we don't want to modify fault slip
         self.utmzone = utmzone
-        self.Mu = Mu
         self.patchDepths = None
 
         # Determine number of patches along-strike and along-dip
@@ -35,7 +34,15 @@ class faultpostproc(object):
         if self.fault.numz is not None:
             self.numDepthPatches = self.fault.numz
             self.numStrikePatches = self.numPatches / self.numDepthPatches
-
+            
+        # Assign Mu to each patch
+        if len(np.array(Mu).flatten())==1:
+            self.Mu = Mu * np.ones((self.numPatches,))
+        else:
+            assert len(Mu)==self.numPatches, 'length of Mu must be 1 or numPatch'
+            self.Mu = np.array(Mu)
+            
+        # Display
         print ("---------------------------------")
         print ("---------------------------------")
         print ("Initialize Post Processing object {} on fault {}".format(self.name, fault.name))
@@ -187,14 +194,14 @@ class faultpostproc(object):
 
         # Compute the moment density
         if u.ndim == 2:
-            mt = self.Mu * (np.dot(u, n.T) + np.dot(n, u.T))
+            mt = self.Mu[p] * (np.dot(u, n.T) + np.dot(n, u.T)) 
         elif u.ndim == 3:
             # Careful about tiling - result is already transposed
             nT = np.tile(n, (1,1,u.shape[2]))
             n = np.transpose(nT, (1,0,2))
             uT = np.transpose(u, (1,0,2))
             # Tricky 3D multiplication
-            mt = self.Mu * ((u[:,:,None]*nT).sum(axis=1) + (n[:,:,None]*uT).sum(axis=1))
+            mt = self.Mu[p] * ((u[:,:,None]*nT).sum(axis=1) + (n[:,:,None]*uT).sum(axis=1))
 
         # Multiply by the area
         mt *= self.fault.area[p]*1000000.
@@ -426,7 +433,7 @@ class faultpostproc(object):
             strikeslip, dipslip, tensile = self.fault.slip[p,:,...]
 
             # Add to moment
-            Mo += self.Mu * S * np.sqrt(strikeslip**2 + dipslip**2)
+            Mo += self.Mu[p] * S * np.sqrt(strikeslip**2 + dipslip**2)
 
         # Compute magnitude
         Mw = 2./3.*(np.log10(Mo) - 9.1)
@@ -518,9 +525,9 @@ class faultpostproc(object):
             # Sum the total moment for the depth bin
             M = 0.0
             for patchIndex in ind:
-                M += self.computePatchMoment(int(patchIndex))
+                M += self.computePatchMoment(int(patchIndex)) / self.Mu[p]
             # Convert to scalar potency
-            potency = np.sqrt(0.5 * np.sum(M**2, axis=(0,1))) / self.Mu
+            potency = np.sqrt(0.5 * np.sum(M**2, axis=(0,1)))
             logPotency = np.log10(potency)
             meanLogPotency.append(np.log10(np.mean(potency)))
 
@@ -685,4 +692,6 @@ class faultpostproc(object):
         # All done
         return
 
-#EOF
+
+
+
