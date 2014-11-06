@@ -2715,4 +2715,53 @@ class RectangularPatches(Fault):
         # All done
         return
 
+    def computeAdjacencyMat(self, verbose=False):
+        """
+        Computes the adjacency matrix for the fault geometry provided by ndip x nstrike. Values of 0
+        indicate no adjacency while values of 1 indicate patches share an edge.
+        """
+        if verbose:
+            print('Computing adjacency matrix for fault %s' % self.name)
+
+        npatch = len(self.patch)
+        nstrike = npatch // self.numz
+        Jmat = np.zeros((npatch,npatch), dtype=int)
+        # Set diagonal k = 1
+        template = np.ones((nstrike,), dtype=int)
+        template[-1] = 0
+        repvec = np.tile(template, (1,self.numz)).flatten()[:-1]
+        Jmat[range(0,npatch-1),range(1,npatch)] = repvec
+        # Set diagonal k = nstrike
+        nd = np.diag(Jmat, k=nstrike).size
+        Jmat[range(0,npatch-nstrike),range(nstrike,npatch)] = np.ones((nd,), dtype=int)
+        # Return symmetric part to fill lower triangular part
+        self.adjacencyMat = Jmat + Jmat.T
+
+        return
+
+    def buildLaplacian(Jmat, dx=None, pcenters=None):
+        """
+        Build normalized Laplacian smoothing array.
+        """
+        if not hasattr(self, 'adjacencyMat'):
+            assert False, 'Must run computeAdjacencyMat first'
+        npatch = Jmat.shape[0]
+        assert Jmat.shape[1] == npatch, 'adjacency matrix is not square'
+
+        #if dx is None:
+        #    assert pcenters is not None
+        #if pcenters is None:
+        #    assert dx is not None
+
+        # Build Laplacian by looping over each patch
+        D = np.zeros((npatch, npatch))
+        for p in range(npatch):
+            adjacents = Jmat[p,:].nonzero()[0]
+            nadj = len(adjacents)
+            for ind in adjacents:
+                D[p,ind] = 1.0
+            D[p,p] = -4.0
+
+        return D
+
 #EOF
