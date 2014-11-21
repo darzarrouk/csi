@@ -420,7 +420,9 @@ class cosicorrrates(SourceInv):
         '''
         Reads velocity map from a grd file.
         Args:
-            * filename  : Name of the input file
+            * filename  : Name of the input file 
+                    As we are reading two files, the files are:
+                    filename_east.grd and filename_north.grd
             * factor    : scale by a factor
             * step      : add a value.
         '''
