@@ -416,7 +416,7 @@ class cosicorrrates(SourceInv):
         # All done
         return OutCosi
         
-    def read_from_grd(self, filename, factor=1.0, step=0.0, cov=False, flip=False):
+    def read_from_grd(self, filename, factor=1.0, step=0.0, cov=False, flip=False, keepnans=False):
         '''
         Reads velocity map from a grd file.
         Args:
@@ -474,13 +474,14 @@ class cosicorrrates(SourceInv):
         self.lat = Lat.reshape((w*l,)).flatten()
 
         # Keep the non-nan pixels only
-        u = np.flatnonzero(np.isfinite(self.east))
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.east = self.east[u]
-        self.north = self.north[u]
-        self.err_east = self.err_east[u]
-        self.err_north = self.err_north[u]
+        if not keepnans:
+            u = np.flatnonzero(np.isfinite(self.east))
+            self.lon = self.lon[u]
+            self.lat = self.lat[u]
+            self.east = self.east[u]
+            self.north = self.north[u]
+            self.err_east = self.err_east[u]
+            self.err_north = self.err_north[u]
 
         # Convert to utm
         self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
@@ -869,7 +870,7 @@ class cosicorrrates(SourceInv):
 
     def reject_pixel(self, u):
         '''
-        Reject one pixel.
+        Reject pixels.
         Args:
             * u         : Index of the pixel to reject.
         '''
@@ -884,11 +885,14 @@ class cosicorrrates(SourceInv):
         self.err_north = np.delete(self.err_north, u)
 
         if self.Cd is not None:
-            self.Cd = np.delete(self.Cd, u, axis=0)
-            self.Cd = np.delete(self.Cd, u, axis=1)
             nd = self.east.shape[0]
-            self.Cd = np.delete(self.Cd, u+nd, axis=0)
-            self.Cd = np.delete(self.Cd, u+nd, axis=1)
+            Cd1 = np.delete(self.Cd[:nd, :nd], u, axis=0)
+            Cd1 = np.delete(Cd1, u, axis=1)
+            Cd2 = np.delete(self.Cd[nd:,nd:], u, axis=0)
+            Cd2 = np.delete(Cd2, u, axis=1)
+            Cd = np.vstack( (np.hstack((Cd1, np.zeros((nd,nd)))), 
+                np.hstack((np.zeros((nd,nd)),Cd2))) )
+            self.Cd = Cd
 
         if self.corner is not None:
             self.corner = np.delete(self.corner, u, axis=0)
@@ -908,6 +912,8 @@ class cosicorrrates(SourceInv):
         Rejects the pixels that are dis km close to the fault.
         Args:
             * dis       : Threshold distance.
+                          If the distance is negative, rejects the pixels that are
+                          more than -1.0*distance away from the fault.
             * faults    : list of fault objects.
         '''
 
@@ -938,11 +944,13 @@ class cosicorrrates(SourceInv):
         d = np.array(d)
 
         # Find the close ones
-        u = np.where(d<=dis)[0].tolist()
+        if dis>0.:
+            u = np.where(d<=dis)[0]
+        else:
+            u = np.where(d>=(-1.0*dis))[0]
             
-        while len(u)>0:
-            ind = u.pop()
-            self.reject_pixel(ind)
+        # Delete 
+        self.reject_pixel(u)
 
         # All done
         return
@@ -1149,20 +1157,28 @@ class cosicorrrates(SourceInv):
         carteNord = fig.add_subplot(222)
         prof = fig.add_subplot(212)
 
+        # Get colors limits
+        vminE = np.nanmin(self.east)
+        vmaxE = np.nanmax(self.east)
+        vminN = np.nanmin(self.north)
+        vmaxN = np.nanmax(self.north)
+
         # Prepare a color map for insar
         import matplotlib.colors as colors
         import matplotlib.cm as cmx
         cmap = plt.get_cmap('jet')
-        cNormE = colors.Normalize(vmin=self.east.min(), vmax=self.east.max())
+        cNormE = colors.Normalize(vmin=vminE, vmax=vmaxE)
         scalarMapE = cmx.ScalarMappable(norm=cNormE, cmap=cmap)
-        cNormN = colors.Normalize(vmin=self.north.min(), vmax=self.north.max())
+        cNormN = colors.Normalize(vmin=vminN, vmax=vmaxN)
         scalarMapN = cmx.ScalarMappable(norm=cNormN, cmap=cmap)
 
         # plot the InSAR Points on the Map
-        carteEst.scatter(self.x, self.y, s=10, c=self.east, cmap=cmap, vmin=self.east.min(), vmax=self.east.max(), linewidths=0.0)
+        carteEst.scatter(self.x, self.y, s=10, c=self.east, cmap=cmap, vmin=vminE, 
+                vmax=vmaxE, linewidths=0.0)
         scalarMapE.set_array(self.east)
         plt.colorbar(scalarMapE, orientation='horizontal', shrink=0.5)
-        carteNord.scatter(self.x, self.y, s=10, c=self.north, cmap=cmap, vmin=self.north.min(), vmax=self.north.max(), linewidth=0.0)
+        carteNord.scatter(self.x, self.y, s=10, c=self.north, cmap=cmap, vmin=vminN,
+                vmax=vmaxN, linewidth=0.0)
         scalarMapN.set_array(self.north) 
         plt.colorbar(scalarMapN,  orientation='horizontal', shrink=0.)
 
@@ -1392,8 +1408,8 @@ class cosicorrrates(SourceInv):
 
         # Norm 
         if norm is None:
-            vmin = z.min()
-            vmax = z.max()
+            vmin = np.nanmin(z)
+            vmax = np.nanmax(z)
         else:
             vmin = norm[0]
             vmax = norm[1]
@@ -1432,12 +1448,14 @@ class cosicorrrates(SourceInv):
         # Plot the insar
         if not decim:
             if ref is 'utm':
-                ax.scatter(self.x, self.y, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
+                ax.scatter(self.x, self.y, s=10, c=z, cmap=cmap, vmin=vmin, 
+                        vmax=vmax, linewidths=0.)
             else:
-                ax.scatter(self.lon, self.lat, s=10, c=z, cmap=cmap, vmin=z.min(), vmax=z.max(), linewidths=0.)
+                ax.scatter(self.lon, self.lat, s=10, c=z, cmap=cmap, vmin=vmin, 
+                        vmax=vmax, linewidths=0.)
 
         # Colorbar
-        scalarMap.set_array(z)
+        scalarMap.set_array(z[np.isfinite(z)])
         plt.colorbar(scalarMap)
 
         # Axis

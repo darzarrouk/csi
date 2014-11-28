@@ -369,8 +369,6 @@ class insarrates(SourceInv):
         self.los = []
 
         # Open the input file
-        #import scipy.io.netcdf as netcdf
-        #fin = netcdf.netcdf_file(filename)
         try:
             from netCDF4 import Dataset
             fin = Dataset(filename, 'r', format='NETCDF4')
@@ -426,6 +424,34 @@ class insarrates(SourceInv):
                 ori = 'float'
             self.inchd2los(incidence, heading, origin=ori)
         elif los is not None:
+            # If strings, they are meant to be grd files
+            if type(los[0]) is str:
+                if los[0][-4:] not in ('.grd'):
+                    print('LOS input files do not seem to be grds as the displacement file')
+                    print('There might be some issues...')
+                    print('      Input files: {}, {} and {}'.format(los[0], los[1], los[2]))
+                try:
+                    from netCDF4 import Dataset
+                    finx = Dataset(los[0], 'r', format='NETCDF4')
+                    finy = Dataset(los[1], 'r', format='NETCDF4')
+                    finz = Dataset(los[2], 'r', format='NETCDF4')
+                except ImportError:
+                    import sicpy.io.netcdf as netcdf
+                    finx = netcdf.netcdf_file(los[0])
+                    finy = netcdf.netcdf_file(los[1])
+                    finz = netcdf.netcdf_file(los[2])
+                losx = finx.variables['z'][:,:].flatten()
+                losy = finy.variables['z'][:,:].flatten()
+                losz = finz.variables['z'][:,:].flatten()
+                # Remove NaNs?
+                if not keepnans:
+                    losx = losx[u]
+                    losy = losy[u]
+                    losz = losz[u]
+                # Do as if binary
+                los = [losx, losy, losz]
+
+            # Store these guys
             self.los[:,0] *= los[0]
             self.los[:,1] *= los[1]
             self.los[:,2] *= los[2]
@@ -809,7 +835,7 @@ class insarrates(SourceInv):
 
     def reject_pixel(self, u):
         '''
-        Reject one pixel.
+        Reject pixels.
         Args:
             * u         : Index of the pixel to reject.
         '''

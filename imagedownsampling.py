@@ -356,30 +356,8 @@ class imagedownsampling(object):
                 sys.stdout.write('\r Iteration {} testing {} data samples '.format(it, len(self.blocks)))
                 sys.stdout.flush()
 
-            # Create the Greens function 
-            G = None
-
-            # Compute the greens functions for each fault and cat these together
-            for fault in self.faults:
-                # build GFs
-                fault.buildGFs(self.newimage, vertical=False, slipdir=slipdirection, verbose=False)
-                fault.assembleGFs([self.newimage], polys=None, slipdir=slipdirection, verbose=False)
-                # Cat GFs
-                if G is None:
-                    G = fault.Gassembled
-                else:
-                    G = np.hstack((G, fault.Gassembled))
-
-            # Compute the data resolution matrix
-            Npar = G.shape[1]
-            Ndat = G.shape[0]/2 # vertical is False
-            Ginv = np.dot(np.linalg.inv(np.dot(G.T,G)+ damping*np.eye(Npar)),G.T)
-            Rd = np.dot(G, Ginv)
-            self.Rd = np.diag(Rd).copy()
-
-            # If we are dealing with cosicorr data, the diagonal is twice as long as the umber of blocks
-            if self.datatype is 'cosicorrrates':
-                self.Rd = np.sqrt( self.Rd[:Ndat]**2 + self.Rd[-Ndat:]**2 )
+            # Compute resolution
+            self.computeResolution(slipdirection, damping)
 
             # Blocks that have a minimum size, don't check these
             Bsize = self._is_minimum_size(self.blocks)
@@ -394,6 +372,42 @@ class imagedownsampling(object):
 
         # All done
         return
+
+    def computeResolution(self, slipdirection, damping):
+        '''
+        Computes the resolution matrix in the data space.
+        Args:
+            * slipdirection: Directions to include when computing the resolution operator.
+            * damping       : Damping coefficient (damping is made through an identity matrix).   
+        '''
+
+        # Create the Greens function 
+        G = None
+
+        # Compute the greens functions for each fault and cat these together
+        for fault in self.faults:
+            # build GFs
+            fault.buildGFs(self.newimage, vertical=False, slipdir=slipdirection, verbose=False)
+            fault.assembleGFs([self.newimage], polys=None, slipdir=slipdirection, verbose=False)
+            # Cat GFs
+            if G is None:
+                G = fault.Gassembled
+            else:
+                G = np.hstack((G, fault.Gassembled))
+
+        # Compute the data resolution matrix
+        Npar = G.shape[1]
+        Ndat = G.shape[0]/2 # vertical is False
+        Ginv = np.dot(np.linalg.inv(np.dot(G.T,G)+ damping*np.eye(Npar)),G.T)
+        Rd = np.dot(G, Ginv)
+        self.Rd = np.diag(Rd).copy()
+
+        # If we are dealing with cosicorr data, the diagonal is twice as long as the umber of blocks
+        if self.datatype is 'cosicorrrates':
+            self.Rd = np.sqrt( self.Rd[:Ndat]**2 + self.Rd[-Ndat:]**2 )
+
+        # All done
+        return 
 
     def getblockarea(self, block):
         '''
