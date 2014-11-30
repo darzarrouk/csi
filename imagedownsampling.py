@@ -57,12 +57,12 @@ class imagedownsampling(object):
         # Save the image
         self.image = image
 
-        # Incidence and heading need to be defined
+        # Incidence and heading need to be defined if already defined
         if self.datatype is 'insarrates':
-            assert hasattr(self.image, 'heading'), 'No Heading precised for image object'
-            assert hasattr(self.image, 'incidence'), 'No Incidence precised for image object'
-            self.incidence = self.image.incidence
-            self.heading = self.image.heading
+            if hasattr(self.image, 'heading'):
+                self.heading = self.image.heading
+            if hasattr(self.image, 'incidence'):
+                self.incidence = self.image.incidence
 
         # Create the initial box
         xmin = np.floor(image.x.min())
@@ -299,7 +299,7 @@ class imagedownsampling(object):
         # all done
         return b1, b2, b3, b4
 
-    def ResolutionBasedIterations(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum', decimorig=10):
+    def ResolutionBasedIterations(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum', decimorig=10, vertical=False):
         '''
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
         Args:
@@ -312,6 +312,16 @@ class imagedownsampling(object):
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Downsampling Iterations")
+
+        # Check if vertical is set properly
+        if not vertical:
+            print("----------------------------------")
+            print("----------------------------------")
+            print(" Watch Out!!!!")
+            print(" We have set vertical to True, because ")
+            print(" LOS is always very sensitive to vertical")
+            print(" displacements...")
+            vertical = True
 
         # Creates the variable that is supposed to stop the loop
         # Check = [False]*len(self.blocks)
@@ -357,7 +367,7 @@ class imagedownsampling(object):
                 sys.stdout.flush()
 
             # Compute resolution
-            self.computeResolution(slipdirection, damping)
+            self.computeResolution(slipdirection, damping, vertical=vertical)
 
             # Blocks that have a minimum size, don't check these
             Bsize = self._is_minimum_size(self.blocks)
@@ -373,7 +383,7 @@ class imagedownsampling(object):
         # All done
         return
 
-    def computeResolution(self, slipdirection, damping):
+    def computeResolution(self, slipdirection, damping, vertical=False):
         '''
         Computes the resolution matrix in the data space.
         Args:
@@ -387,7 +397,7 @@ class imagedownsampling(object):
         # Compute the greens functions for each fault and cat these together
         for fault in self.faults:
             # build GFs
-            fault.buildGFs(self.newimage, vertical=False, slipdir=slipdirection, verbose=False)
+            fault.buildGFs(self.newimage, vertical=vertical, slipdir=slipdirection, verbose=False)
             fault.assembleGFs([self.newimage], polys=None, slipdir=slipdirection, verbose=False)
             # Cat GFs
             if G is None:
