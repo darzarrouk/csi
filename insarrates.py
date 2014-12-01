@@ -871,9 +871,6 @@ class insarrates(SourceInv):
             * faults    : list of fault objects.
         '''
 
-        # Import shapely
-        import shapely.geometry as geom
-
         # Variables to trim are  self.corner,
         # self.xycorner, self.Cd, (self.synth)
 
@@ -881,21 +878,21 @@ class insarrates(SourceInv):
         if faults.__class__ is not list:
             faults = [faults]
 
-        # Build a line object with the fault
-        mll = []
-        for f in faults:
-            xf = f.xf
-            yf = f.yf
-            mll.append(np.vstack((xf,yf)).T.tolist())
-        Ml = geom.MultiLineString(mll)
+        # Build a line object with the faults
+        fl = []
+        for flt in faults:
+            f = [[x, y] for x,y in np.vstack((flt.xf, flt.yf)).T.tolist()]
+            fl = fl + f
 
-        # Build the distance map
-        d = []
-        for i in range(len(self.x)):
-            p = [self.x[i], self.y[i]]
-            PP = geom.Point(p)
-            d.append(Ml.distance(PP))
-        d = np.array(d)
+        # Get all the positions
+        pp = [[x, y] for x,y in zip(self.x, self.y)]
+
+        # Get distances
+        D = scidis.cdist(pp, fl)
+
+        # Get minimums
+        d = np.min(D, axis=1)
+        del D
 
         # Find the close ones
         u = np.where(d<=dis)[0].tolist()
@@ -2132,6 +2129,10 @@ class insarrates(SourceInv):
             y = [self.y[i], self.y[i]+self.los[i,1]*factor]
             z = [0, self.los[i,2]*factor]
             ax.plot3D(x, y, z, '-k')
+
+        ax.set_xlabel('Easting')
+        ax.set_ylabel('Northing')
+        ax.set_zlabel('Up')
 
         # Show it
         plt.show()

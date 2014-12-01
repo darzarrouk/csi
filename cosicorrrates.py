@@ -917,9 +917,6 @@ class cosicorrrates(SourceInv):
             * faults    : list of fault objects.
         '''
 
-        # Import Shapely
-        import shapely.geometry as geom
-        
         # Variables to trim are  self.corner,
         # self.xycorner, self.Cd, (self.synth)
 
@@ -927,21 +924,21 @@ class cosicorrrates(SourceInv):
         if faults.__class__ is not list:
             faults = [faults]
 
-        # Build a line object with the fault
-        mll = []
-        for f in faults:
-            xf = f.xf
-            yf = f.yf
-            mll.append(np.vstack((xf,yf)).T.tolist())
-        Ml = geom.MultiLineString(mll)
+        # Build a line object with the faults
+        fl = []
+        for flt in faults:
+            f = [[x, y] for x,y in np.vstack((flt.xf, flt.yf)).T.tolist()]
+            fl = fl + f
 
-        # Build the distance map
-        d = []
-        for i in range(len(self.x)):
-            p = [self.x[i], self.y[i]]
-            PP = geom.Point(p)
-            d.append(Ml.distance(PP))
-        d = np.array(d)
+        # Get all the positions
+        pp = [[x, y] for x,y in zip(self.x, self.y)]
+
+        # Get distances
+        D = scidis.cdist(pp, fl)
+
+        # Get minimums
+        d = np.min(D, axis=1)
+        del D
 
         # Find the close ones
         if dis>0.:

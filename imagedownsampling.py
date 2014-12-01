@@ -599,7 +599,11 @@ class imagedownsampling(object):
         The file will be called prefix.txt.
         If rsp is True, then it writes a file called prefix.rsp 
         containing the boxes of the downsampling.
+        If prefix has white spaces, those are replaced by "_".
         '''
+
+        # Replace spaces
+        prefix = prefix.replace(" ", "_")
 
         # Open files
         ftxt = open(prefix+'.txt', 'w')
