@@ -9,6 +9,7 @@ import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
 from scipy.linalg import block_diag
+import scipy.spatial.distance as scidis
 
 # Personals
 from .SourceInv import SourceInv
@@ -950,7 +951,7 @@ class cosicorrrates(SourceInv):
         self.reject_pixel(u)
 
         # All done
-        return
+        return u
 
     def getprofile(self, name, loncenter, latcenter, length, azimuth, width):
         '''

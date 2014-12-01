@@ -314,7 +314,7 @@ class imagedownsampling(object):
             print ("Downsampling Iterations")
 
         # Check if vertical is set properly
-        if not vertical:
+        if not vertical and self.datatype is 'insarrates': 
             print("----------------------------------")
             print("----------------------------------")
             print(" Watch Out!!!!")
@@ -374,7 +374,8 @@ class imagedownsampling(object):
             self.Rd[np.where(Bsize)] = 0.0
 
             if self.verbose and verboseLevel is not 'minimum':
-                sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(self.Rd.min(), self.Rd.max(), self.Rd.mean(), self.Rd.std()))
+                sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(self.Rd.min(), 
+                    self.Rd.max(), self.Rd.mean(), self.Rd.std()))
                 sys.stdout.flush()
     
         if self.verbose:
@@ -407,7 +408,8 @@ class imagedownsampling(object):
 
         # Compute the data resolution matrix
         Npar = G.shape[1]
-        Ndat = G.shape[0]/2 # vertical is False
+        if self.datatype is 'cosicorrrates':
+            Ndat = G.shape[0]/2 
         Ginv = np.dot(np.linalg.inv(np.dot(G.T,G)+ damping*np.eye(Npar)),G.T)
         Rd = np.dot(G, Ginv)
         self.Rd = np.diag(Rd).copy()
@@ -593,6 +595,30 @@ class imagedownsampling(object):
 
         return
         
+    def reject_pixels_fault(self, distance, fault):
+        '''
+        Removes pixels that are too close to the fault in the downsampled image.
+        Args:
+            * distance      : Distance between pixels and fault (scalar)
+            * fault         : fault object
+        '''
+
+        # Get image
+        image = self.newimage
+
+        # Clean it
+        u = image.reject_pixels_fault(distance, fault)
+
+        # Clean blocks
+        j = 0
+        for i in u.tolist():
+            self.blocks.pop(i-j)
+            self.blocksll.pop(i-j)
+            j += 1
+
+        # All done
+        return
+
     def writeDownsampled2File(self, prefix, rsp=False):
         '''
         Writes the downsampled image data to a file.

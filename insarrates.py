@@ -589,7 +589,7 @@ class insarrates(SourceInv):
         self.x = self.x[u]
         self.y = self.y[u]
         self.vel = self.vel[u]
-        if self.err != None:
+        if self.err is not None:
             self.err = self.err[u]
         self.los = self.los[u]
         if self.synth is not None:
@@ -844,7 +844,7 @@ class insarrates(SourceInv):
         self.lat = np.delete(self.lat, u)
         self.x = np.delete(self.x, u)
         self.y = np.delete(self.y, u)
-        if self.err != None:
+        if self.err is not None:
             self.err = np.delete(self.err, u)
         self.los = np.delete(self.los, u, axis=0)
         self.vel = np.delete(self.vel, u)
@@ -895,14 +895,16 @@ class insarrates(SourceInv):
         del D
 
         # Find the close ones
-        u = np.where(d<=dis)[0].tolist()
+        if dis>0.:
+            u = np.where(d<=dis)[0]
+        else:
+            u = np.where(d>=(-1.0*dis))[0]
 
-        while len(u)>0:
-            ind = u.pop()
-            self.reject_pixel(ind)
+        # Reject
+        self.reject_pixel(u)
 
         # All done
-        return
+        return u
 
     def getprofile(self, name, loncenter, latcenter, length, azimuth, width):
         '''
