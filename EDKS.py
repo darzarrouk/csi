@@ -319,8 +319,8 @@ def sum_layered_sub(IDs, xs, ys, zs, strike, dip, rake, slip, A, \
     file.close()
 
     # remove IO files.
-    #cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
-    #os.system(cmd)  
+    cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
+    os.system(cmd)  
 
     # return the computed displacements for each sources
     return [ux, uy, uz]
