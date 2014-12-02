@@ -596,6 +596,23 @@ class Fault(SourceInv):
         if verbose:
             print('Greens functions computation method: {}'.format(method))
 
+
+        # Data type check
+        if data.dtype is 'insarrates':
+            if not vertical:
+                print('---------------------------------')
+                print('---------------------------------')
+                print(' WARNING WARNING WARNING WARNING ')
+                print('  You specified vertical=False   ')
+                print(' As this is quite dangerous, we  ')
+                print(' switched it directly to True... ')
+                print(' SAR data are very sensitive to  ')
+                print('     vertical displacements.     ')
+                print(' WARNING WARNING WARNING WARNING ')
+                print('---------------------------------')
+                print('---------------------------------')
+                vertical = True
+
         # Compute the Green's functions
         if method in ('okada', 'Okada', 'OKADA', 'ok92', 'meade', 'Meade', 'MEADE'):
             G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose)
@@ -727,10 +744,6 @@ class Fault(SourceInv):
             * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip). No tensile option....
         '''
 
-        # Data type check
-        if data.dtype is 'insarrates':
-            vertical = True
-
         # Check if we can find kernels
         if not hasattr(self, 'kernelsEDKS'):
             print('---------------------------------')
@@ -775,9 +788,20 @@ class Fault(SourceInv):
         prefix = '{}_{}'.format(self.name.replace(' ','-'), data.name.replace(' ','-'))
 
         # Fill the patches with point sources
-        if verbose:
-            print('Subdividing patches into point sources')
-        Ids, xs, ys, zs, strike, dip, Areas = dropSourcesInPatches(self)
+        if hasattr(self, 'keepTrackOfSources'):  
+            if self.keepTrackOfSources and hasattr(self, 'edksSources'):
+                if verbose:
+                    print('Get sources from saved sources')
+                Ids, xs, ys, zs, strike, dip, Areas = self.edksSources
+            else:
+                if verbose:
+                    print('Subdividing patches into point sources')
+                Ids, xs, ys, zs, strike, dip, Areas = dropSourcesInPatches(self, verbose=verbose)
+        else:
+            if verbose:
+                print('Subdividing patches into point sources')
+            Ids, xs, ys, zs, strike, dip, Areas = dropSourcesInPatches(self, verbose=verbose)
+
 
         # All these guys need to be in meters
         xs *= 1000.
@@ -1257,7 +1281,7 @@ class Fault(SourceInv):
                 else:
                     self.transformation[data.name] = tmpNpo
             elif transformation is not None:
-                Npo += transformation*data.obs_per_station
+                Npo += transformation
         Np = Nps + Npo
 
         # Get the number of data

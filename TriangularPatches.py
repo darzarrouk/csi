@@ -608,13 +608,14 @@ class TriangularPatches(Fault):
         # All done
         return
 
-    def getpatchgeometry(self, patch, center=False, retNormal=False):
+    def getpatchgeometry(self, patch, center=False, retNormal=False, checkindex=True):
         '''
         Returns the patch geometry as needed for triangleDisp.
         Args:
             * patch         : index of the wanted patch or patch;
             * center        : if true, returns the coordinates of the center of the patch.
                               if False, returns the first corner
+            * checkindex    : Checks the index of the patch
         '''
 
         # Get the patch
@@ -622,9 +623,10 @@ class TriangularPatches(Fault):
         if patch.__class__ is int:
             u = patch
         else:
-            for i in range(len(self.patch)):
-                if (self.patch[i]==patch):
-                    u = i
+            if checkindex:
+                for i in range(len(self.patch)):
+                    if (self.patch[i]==patch):
+                        u = i
         if u is not None:
             patch = self.patch[u]
 

@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize as sp
 import sys
+import copy
 
 # Personals
 from .insarrates import insarrates
@@ -67,20 +68,20 @@ class imagecovariance(object):
         # Iterate and save the datasets to consider
         self.datasets = {}
         if self.datatype is 'insarrates':
-            dname = 'InSAR {}'.format(self.name)
+            dname = '{}'.format(self.name)
             self.datasets[dname] = {'x': self.image.x,
                                     'y': self.image.y,
                                     'lon': self.image.lon,
                                     'lat': self.image.lat,
                                     'data': self.image.vel}
         elif self.datatype is 'cosicorrrates':
-            dname = 'CosiCorr {} East'.format(self.name)
+            dname = '{} East'.format(self.name)
             self.datasets[dname] = {'x': self.image.x,
                                     'y': self.image.y,
                                     'lon': self.image.lon,
                                     'lat': self.image.lat,
                                     'data': self.image.east}
-            dname = 'CosiCorr {} North'.format(self.name)
+            dname = '{} North'.format(self.name)
             self.datasets[dname] = {'x': self.image.x,
                                     'y': self.image.y,
                                     'lon': self.image.lon,
@@ -136,7 +137,67 @@ class imagecovariance(object):
         # All done
         return
 
-    def empiricalSemivariograms(self, frac=0.4, every=1., distmax=50.):
+    def maskIn(self, box):
+        '''
+        Select Boxes on which to compute the covariance.
+        Args:
+        * box: List of min and max lon and lat coordinates.
+               Can be a list of lists to specify multiple regions.
+               ex: [[ -120, -119, 34, 35], [-122, -121.7, 34.2, 34.3]]
+        '''
+
+        # Check how many zones do we have to keep
+        self.selectedZones = []
+        if type(box[0]) in (int, float):
+            self.selectedZones.append(box)
+        else:
+            for b in box:
+                self.selectedZones.append(b)
+
+        # Iterate over the data sets
+        for dname in self.datasets:
+            if self.verbose:
+                print('Dealing with data set {}'.format(dname))
+            # Create a new data set
+            self.datasets['New One'] = {'x': np.empty(0), 
+                                        'y': np.empty(0),
+                                        'lon': np.empty(0), 
+                                        'lat': np.empty(0), 
+                                        'data': np.empty(0)}
+            # Iterate over the boxes
+            for box in self.selectedZones:
+                if self.verbose:
+                    print('     Zone of Interest: {} <= Lon <= {} || {} <= Lat <= {}'.format(box[0], 
+                        box[1], box[2], box[3]))
+                # Get lon lat
+                lon = self.datasets[dname]['lon']
+                lat = self.datasets[dname]['lat']
+                # Find out the points
+                ii = np.flatnonzero(np.logical_and(lon>=box[0], lon<=box[1]))
+                jj = np.flatnonzero(np.logical_and(lat>=box[2], lat<=box[3]))
+                # intersection
+                uu = np.intersect1d(ii,jj)
+                # Take them in
+                x = self.datasets[dname]['x'][uu]
+                y = self.datasets[dname]['y'][uu]
+                lon = self.datasets[dname]['lon'][uu]
+                lat = self.datasets[dname]['lat'][uu]
+                data = self.datasets[dname]['data'][uu]
+                # Put them in the new data set
+                self.datasets['New One']['x'] = np.hstack((self.datasets['New One']['x'], x))
+                self.datasets['New One']['y'] = np.hstack((self.datasets['New One']['y'], y))
+                self.datasets['New One']['lon'] = np.hstack((self.datasets['New One']['lon'], lon))
+                self.datasets['New One']['lat'] = np.hstack((self.datasets['New One']['lat'], lat))
+                self.datasets['New One']['data'] = np.hstack((self.datasets['New One']['data'], data))
+
+            # Replace the data set by the New One
+            self.datasets[dname] = copy.deepcopy(self.datasets['New One'])
+            del self.datasets['New One']
+
+        # All done
+        return
+
+    def empiricalSemivariograms(self, frac=0.4, every=1., distmax=50., rampEst=True):
         '''
         Computes the empirical Semivariogram as a function of distance.
         Args:
@@ -162,6 +223,16 @@ class imagecovariance(object):
             y = data['y']
             d = data['data']
 
+            # How many samples do we use
+            if type(frac) is int:
+                Nsamp = frac
+                if Nsamp>d.shape[0]:
+                    Nsamp = d.shape[0]
+            else:
+                Nsamp = np.int(np.floor(frac*x.size))
+            if self.verbose: 
+                print('Selecting {} random samples to estimate the covariance function'.format(Nsamp))
+
             # Create a vector
             regular = np.vstack((x.squeeze(),y.squeeze(),d.squeeze())).T
             
@@ -169,29 +240,24 @@ class imagecovariance(object):
             randomized = np.random.permutation(regular)
 
             # Take the first frac of it
-            if type(frac) is int:
-                Nsamp = frac
-                if Nsamp>d.shape[0]:
-                    Nsamp = d.shape[0]
-            else:
-                Nsamp = np.int(np.floor(frac*x.size))
             x = randomized[:Nsamp,0]
             y = randomized[:Nsamp,1]
             d = randomized[:Nsamp,2]
 
             # Remove a ramp
-            G = np.zeros((Nsamp,4))
-            G[:,3] = x*y
-            G[:,0] = x
-            G[:,1] = y
-            G[:,2] = 1.
-            pars = np.dot(np.dot(np.linalg.inv(np.dot(G.T,G)),G.T),d) 
-            a = pars[0]; b = pars[1]; c = pars[2]; w = pars[3]
-            d = d - (a*x + b*y + c + w*x*y)
-            if self.verbose:
-                print('Estimated Orbital Plane: {}xy + {}x + {}y + {}'.format(w,a,b,c))  
-            # Save it
-            data['Ramp'] = [a, b, c, w]       
+            if rampEst:
+                G = np.zeros((Nsamp,4))
+                G[:,3] = x*y
+                G[:,0] = x
+                G[:,1] = y
+                G[:,2] = 1.
+                pars = np.dot(np.dot(np.linalg.inv(np.dot(G.T,G)),G.T),d) 
+                a = pars[0]; b = pars[1]; c = pars[2]; w = pars[3]
+                d = d - (a*x + b*y + c + w*x*y)
+                if self.verbose:
+                    print('Estimated Orbital Plane: {}xy + {}x + {}y + {}'.format(w,a,b,c))  
+                # Save it
+                data['Ramp'] = [a, b, c, w]       
 
             # Build all the permutations
             ii, jj = np.meshgrid(range(Nsamp), range(Nsamp))
@@ -229,7 +295,7 @@ class imagecovariance(object):
         # All done
         return
 
-    def computeCovariance(self, function='exp', frac=0.4, every=1., distmax=50.):
+    def computeCovariance(self, function='exp', frac=0.4, every=1., distmax=50., rampEst=True):
         '''
         Computes the covariance functions.
         Args:
@@ -237,12 +303,13 @@ class imagecovariance(object):
             * frac      : Size of the fraction of the dataset to take.
             * distmax   : Truncate the covariance function.
             * every     : Binning of the covariance function.
+            * rampEst   : estimate a ramp (default True).
         '''
 
         # Compute the semivariograms
         if self.verbose:
             print('Computing semivariograms')
-        self.empiricalSemivariograms(frac=frac, every=every, distmax=distmax)
+        self.empiricalSemivariograms(frac=frac, every=every, distmax=distmax, rampEst=rampEst)
 
         # Fit the semivariograms
         if self.verbose:
@@ -292,6 +359,7 @@ class imagecovariance(object):
 
             # Print
             if self.verbose:
+                print('Dataset {}:'.format(dname))
                 print('     Sill   :  {}'.format(sill))
                 print('     Sigma  :  {}'.format(sigm))
                 print('     Lambda :  {}'.format(lamb))
@@ -301,6 +369,65 @@ class imagecovariance(object):
 
         # All done
         return
+
+    def buildCovarianceMatrix(self, image, dname, write2file=None):
+        '''
+        Uses the fitted covariance parameters to build a covariance matrix for the dataset
+        image of type insarrates or cosicorrrates.
+        Args:
+            * image     : dataset of type cosicorrrates or insarrates.
+            * dname     : Name of the dataset used to estimate the parameters.
+                          if image is cosicorrates, the datasets used are "dname East" and "dname North".
+            * write2file: Write to a binary file (np.float32).
+        '''
+
+        # Get the data position
+        x = image.x
+        y = image.y
+
+        # Case 1: InSAR
+        if image.dtype is 'insarrates':
+
+            # Get the Parameters
+            assert 'Sigma' in self.datasets[dname].keys(), 'Need to estimate the covariance function first: {}'.format(dname)
+            sigma = self.datasets[dname]['Sigma']
+            lamb = self.datasets[dname]['Lambda']
+            function = self.datasets[dname]['function']
+
+            # Build the covariance
+            Cd = self._buildcov(sigma, lamb, function, x, y)
+
+        # Case 2: Cosicorr
+        elif image.dtype is 'cosicorrrates':
+            
+            # Create the two names
+            dnameEast = dname+' East'
+            dnameNorth = dname+' North'
+
+            # Get the parameters and Build CdEast
+            assert 'Sigma' in self.datasets[dnameEast].keys(), 'Need to estimate the covariance function first: {}'.format(dnameEast)
+            sigmaEast = self.datasets[dnameEast]['Sigma']
+            lambEast = self.datasets[dnameEast]['Lambda']
+            funcEast = self.datasets[dnameEast]['function']
+            CdEast = self._buildcov(sigmaEast, lambEast, funcEast, x, y)
+
+            # Get the parameters and Build CdNorth
+            assert 'Sigma' in self.datasets[dnameNorth].keys(), 'Need to estimate the covariance function first: {}'.format(dnameNorth)
+            sigmaNorth = self.datasets[dnameNorth]['Sigma']
+            lambNorth = self.datasets[dnameNorth]['Lambda']
+            funcNorth = self.datasets[dnameNorth]['function']
+            CdNorth = self._buildcov(sigmaNorth, lambNorth, funcNorth, x, y)
+
+            # Cat matrices
+            nd = x.shape[0]
+            Cd = np.vstack( (np.hstack((CdEast, np.zeros((nd,nd)))), np.hstack((np.zeros((nd,nd)), CdNorth))) )
+
+        # Write 2 a file?
+        if write2file is not None:
+            Cd.astype(np.float32).tofile(write2file)
+
+        # All done
+        return Cd
 
     def write2file(self):
         '''
@@ -450,5 +577,29 @@ class imagecovariance(object):
 
         # All done
         return
+
+    def _buildcov(self, sigma, lamb, func, x, y):
+        '''
+        Returns a matrix of the covariance.
+        Args:
+            * sigma : Arg #1 of function func
+            * lamb  : Arg #2 of function func
+            * func  : Function of distance ('exp' or 'gauss')
+            * x     : position of data along x-axis
+            * y     : position of data along y-axis
+        '''
+
+        # Make a distance map matrix
+        X1, X2 = np.meshgrid(x,x)
+        Y1, Y2 = np.meshgrid(y,y)
+        XX = X2-X1
+        YY = Y2-Y1
+        D = np.sqrt( XX**2 + YY**2)
+
+        # Compute covariance
+        Cd = covariance(D, sigma, lamb, covfn=func)
+
+        # All done
+        return Cd
 
 #EOF

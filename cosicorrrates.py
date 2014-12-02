@@ -641,12 +641,12 @@ class cosicorrrates(SourceInv):
         self.OrbNormalizingFactor['y'] = normY
 
         # Pre-compute position-dependent functional forms
-        f1 = data.factor * np.ones((nd,))
-        f2 = data.factor * (self.x - x0) / normX
-        f3 = data.factor * (self.y - y0) / normY
-        f4 = data.factor * (self.x - x0) * (self.y - y0) / (normX*normY)
-        f5 = data.factor * (self.x - x0)**2 / normX**2
-        f6 = data.factor * (self.y - y0)**2 / normY**2
+        f1 = self.factor * np.ones((nd,))
+        f2 = self.factor * (self.x - x0) / normX
+        f3 = self.factor * (self.y - y0) / normY
+        f4 = self.factor * (self.x - x0) * (self.y - y0) / (normX*normY)
+        f5 = self.factor * (self.x - x0)**2 / normX**2
+        f6 = self.factor * (self.y - y0)**2 / normY**2
         polyFuncs = [f1, f2, f3, f4, f5, f6]
 
         # Fill in orb matrix given an order
@@ -1349,7 +1349,7 @@ class cosicorrrates(SourceInv):
 
         # All done  
 
-    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='total'):
+    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='total', show=True):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -1460,7 +1460,8 @@ class cosicorrrates(SourceInv):
         plt.axis(axis)
 
         # Show
-        plt.show()
+        if show:
+            plt.show()
 
         # All done
         return

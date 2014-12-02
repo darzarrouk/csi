@@ -8,6 +8,7 @@ Modified by R. Jolivet in 2014.
 # Externals
 import os
 import struct 
+import sys
 import numpy as np
 
 def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
@@ -324,7 +325,7 @@ def sum_layered_sub(IDs, xs, ys, zs, strike, dip, rake, slip, A, \
     # return the computed displacements for each sources
     return [ux, uy, uz]
 
-def dropSourcesInPatches(fault):
+def dropSourcesInPatches(fault, verbose=False):
     '''
     From a fault object, returns sources to be given to sum_layered_sub.
     The number of sources is determined by the spacing provided in fault.
@@ -361,6 +362,11 @@ def dropSourcesInPatches(fault):
 
     # Loop over the patches
     for i in range(len(fault.patch)):
+
+        # print
+        if verbose:
+            sys.stdout.write('\r Patch {} / {} '.format(i, len(fault.patch)))
+            sys.stdout.flush()
 
         # get patch 
         patch = fault.patch[i]
@@ -403,13 +409,19 @@ def dropSourcesInPatches(fault):
         # When all done get their centers
         geometry = [fault.getpatchgeometry(p, center=True)[:3] for p in splittedPatches]
         x, y, z = zip(*geometry)
-        strike = np.ones((len(x),))*fault.getpatchgeometry(patch)[5]
+        strike, dip = fault.getpatchgeometry(patch)[5:7] 
+        strike = np.ones((len(x),))*strike
         strike = strike.tolist()
-        dip = np.ones((len(x),))*fault.getpatchgeometry(patch)[6]
+        dip = np.ones((len(x),))*dip
         dip = dip.tolist()
         areas = [fault.patchArea(p) for p in splittedPatches]
         ids = np.ones((len(x),))*(i+1)
         ids = ids.astype(np.int).tolist()
+
+        # if verbose
+        if verbose:
+            sys.stdout.write('  ==> {} sources'.format(len(ids)))
+            sys.stdout.flush()
 
         # Add to existing lists
         Ids += ids
@@ -419,6 +431,11 @@ def dropSourcesInPatches(fault):
         Strike += strike
         Dip += dip
         Area += areas
+
+    # print
+    if verbose:
+        sys.stdout.write('\n')
+        sys.stdout.flush()
 
     # Make arrays
     Ids = np.array(Ids)

@@ -158,12 +158,11 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def splitPatch(self, patch, equivpatch=False):
+    def splitPatch(self, patch):
         '''
         Splits a patch in 4 patches and returns 4 new patches.
         Args:
             * patch         : item of the list of patch
-            * equivpatch    : if False, takes the patch, not its rectangular equivalent.     
         '''
 
         # Gets the 4 corners
@@ -174,7 +173,7 @@ class RectangularPatches(Fault):
         c4 = c4.tolist()
 
         # Compute the center
-        xc, yc, zc = self.getpatchgeometry(patch, center=True)[:3]
+        xc, yc, zc = self.getcenter(patch)
         center = [xc, yc, zc]
 
         # Compute middle of segments
@@ -1007,13 +1006,14 @@ class RectangularPatches(Fault):
         # All done
         return r_p
 
-    def getpatchgeometry(self, patch, center=False):
+    def getpatchgeometry(self, patch, center=False, checkindex=True):
         '''
         Returns the patch geometry as needed for okada92.
         Args:
             * patch         : index of the wanted patch or patch;
             * center        : if true, returns the coordinates of the center of the patch. 
                               if False, returns the UL corner.
+            * checkindex    : Checks the index of the patch
 
         When we build the fault, the patches are not exactly rectangular. Therefore, 
         this routine will return the rectangle that matches with the two shallowest 
@@ -1025,9 +1025,10 @@ class RectangularPatches(Fault):
         if patch.__class__ is int:
             u = patch
         else:
-            for i in range(len(self.patch)):
-                if (self.patch[i]==patch).all():
-                    u = i
+            if checkindex:
+                for i in range(len(self.patch)):
+                    if (self.patch[i]==patch).all():
+                        u = i
         if u is not None:
             patch = self.equivpatch[u]
 
@@ -2723,35 +2724,49 @@ class RectangularPatches(Fault):
         if verbose:
             print('Computing adjacency matrix for fault %s' % self.name)
 
+        # Get numbers
         npatch = len(self.patch)
-        nstrike = npatch // self.numz
+        if self.numz is None:
+            print('We try a wild guess for the number of patches along dip')
+            width = np.mean([self.getpatchgeometry(p, center=True)[3] for p in self.patch])
+            depths = [ [p[j][2] for j in range(4)] for p in self.patch]
+            depthRange = np.max(depths)-np.min(depths)
+            self.numz = np.rint(depthRange/width)
+
+        # Get number of Patches along strike
+        nstrike = np.int(npatch // self.numz)
+
+        # Create the matrix
         Jmat = np.zeros((npatch,npatch), dtype=int)
+
         # Set diagonal k = 1
         template = np.ones((nstrike,), dtype=int)
         template[-1] = 0
         repvec = np.tile(template, (1,self.numz)).flatten()[:-1]
         Jmat[range(0,npatch-1),range(1,npatch)] = repvec
+        
         # Set diagonal k = nstrike
         nd = np.diag(Jmat, k=nstrike).size
         Jmat[range(0,npatch-nstrike),range(nstrike,npatch)] = np.ones((nd,), dtype=int)
+        
         # Return symmetric part to fill lower triangular part
         self.adjacencyMat = Jmat + Jmat.T
 
+        # All done
         return
 
-    def buildLaplacian(Jmat, dx=None, pcenters=None):
+    def buildLaplacian(self, verbose=False):
         """
         Build normalized Laplacian smoothing array.
+        This routine is not designed for unevenly paved faults.
+        It does not account for the variations in size of the patches.
         """
-        if not hasattr(self, 'adjacencyMat'):
-            assert False, 'Must run computeAdjacencyMat first'
+
+        # Adjacency Matrix
+        self.computeAdjacencyMat(verbose=verbose)
+        Jmat = self.adjacencyMat
         npatch = Jmat.shape[0]
         assert Jmat.shape[1] == npatch, 'adjacency matrix is not square'
-
-        #if dx is None:
-        #    assert pcenters is not None
-        #if pcenters is None:
-        #    assert dx is not None
 
         # Build Laplacian by looping over each patch
         D = np.zeros((npatch, npatch))

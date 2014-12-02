@@ -363,7 +363,7 @@ class imagedownsampling(object):
             # Iteration #
             it += 1
             if self.verbose: 
-                sys.stdout.write('\r Iteration {} testing {} data samples '.format(it, len(self.blocks)))
+                sys.stdout.write('\r Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
                 sys.stdout.flush()
 
             # Compute resolution
@@ -391,6 +391,16 @@ class imagedownsampling(object):
             * slipdirection: Directions to include when computing the resolution operator.
             * damping       : Damping coefficient (damping is made through an identity matrix).   
         '''
+
+        # Check if vertical is set properly
+        if not vertical and self.datatype is 'insarrates': 
+            print("----------------------------------")
+            print("----------------------------------")
+            print(" Watch Out!!!!")
+            print(" We have set vertical to True, because ")
+            print(" LOS is always very sensitive to vertical")
+            print(" displacements...")
+            vertical = True
 
         # Create the Greens function 
         G = None
