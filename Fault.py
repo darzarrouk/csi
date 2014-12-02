@@ -1431,6 +1431,60 @@ class Fault(SourceInv):
         # all done
         return
 
+    def buildCmLaplacian(self, lam, extra_params=None):
+        '''
+        Implements the Laplacian smoothing with sensitivity.
+        Description can be found in F. Ortega-Culaciati's PhD thesis.
+        Args:
+            * lam               : Damping factor
+            * extra_params      : what sigma to allow to ramp parameters.
+        '''
+
+        # Get the number of patches
+        nPatch = len(self.patch)
+        nExtra = len(extra_params)
+
+        # How many parameters
+        Np = self.N_slip * len(self.slipdir)
+        if extra_params is not None:
+            Np += nExtra
+
+        # Create the matrix
+        Cm = np.zeros((Np, Np))
+
+        # Build the laplacian
+        D = self.buildLaplacian(verbose=True)
+
+        # Loop over directions:
+        for i in range(len(self.slipdir)):
+
+            # Compute sensitivity matrix (see Loveless & Meade, 2011)
+            ist = nPatch*i
+            ied = ist+nPatch
+            G = self.Gassembled[:,ist:ied]
+            S = np.diag(np.diag(np.dot(G.T, G)))
+            iS = np.linalg.inv(S)
+
+            # Weight Laplacian by sensitivity (see F. Ortega-Culaciati PhD Thesis)
+            Wd = np.dot(np.sqrt(iS), D)
+            DtD = np.dot(Wd.T, Wd)
+
+            # Cm
+            localCm = lam*np.linalg.inv(DtD)
+
+            # Put it into Cm
+            Cm[ist:ied, ist:ied] = localCm
+
+        # Add extra params
+        CmRamp = np.diag(extra_params)
+        Cm[-nExtra:, -nExtra:] = CmRamp
+
+        # Set inside the fault
+        self.Cm = Cm
+
+        # All done
+        return
+
     def buildCm(self, sigma, lam, lam0=None, extra_params=None, lim=None, verbose=True):
         '''
         Builds a model covariance matrix using the equation described in Radiguet et al 2010.

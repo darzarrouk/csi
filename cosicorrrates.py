@@ -1309,20 +1309,22 @@ class cosicorrrates(SourceInv):
         Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
         '''
 
-        raise NotImplementedError('do it later')
-        return
-
-        # Get the number of points                                                                               
-        N = self.vel.shape[0]
+        # Get the number of points  
+        N = self.east.shape[0]
         
-        # Varianceof the data                                                                                        
-        dmean = self.vel.mean()
-        dataVariance = ( 1./N * sum((self.vel-dmean)**2) )
+        # Varianceof the data 
+        emean = self.east.mean()
+        nmean = self.north.mean()
+        eVariance = ( 1./N * sum((self.east-emean)**2) )
+        nVariance = ( 1./N * sum((self.north-nmean)**2) )
+        dataVariance = eVariance + nVariance
 
         # Synthetics
-        if self.synth is not None:
-            rmean = (self.vel - self.synth).mean()
-            synthVariance = ( 1./N *sum( (self.vel - self.synth - rmean)**2 ) )
+        if self.east_synth is not None:
+            emean = (self.east - self.east_synth).mean()
+            synthEastVariance = ( 1./N *sum( (self.east - self.east_synth - emean)**2 ) )
+            synthNorthVariance = ( 1./N *sum( (self.north - self.north_synth - nmean)**2 ) )
+            synthVariance = synthEastVariance + synthNorthVariance
             return dataVariance, synthVariance
         else:
             return dataVariance, 0.

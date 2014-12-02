@@ -58,7 +58,7 @@ class geodeticplot(object):
             self.fig2 = fig2
         self.ref  = ref
 
-    def show(self, mapaxis='equal', triDaxis='auto', Faille=True, Carte=True):
+    def show(self, mapaxis='equal', triDaxis='auto', Faille=True, Carte=True, showFig=['fault', 'map']):
         '''
         Show to screen
         '''
@@ -70,6 +70,14 @@ class geodeticplot(object):
         # Change the axis of the 3d projection
         if self.faille_flag and (triDaxis is not None):
             self.faille.axis(triDaxis)
+
+        # Delete figures
+        if 'map' not in showFig:
+            print('Not showing Map')
+            plt.close(self.fig2)
+        if 'fault' not in showFig:
+            print('Not showing Fault')
+            plt.close(self.fig1)
 
         # Show
         plt.show()
