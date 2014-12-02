@@ -787,36 +787,31 @@ class Fault(SourceInv):
         # Prefix for the files
         prefix = '{}_{}'.format(self.name.replace(' ','-'), data.name.replace(' ','-'))
 
-        # Fill the patches with point sources
-        if hasattr(self, 'keepTrackOfSources'):  
-            if self.keepTrackOfSources and hasattr(self, 'edksSources'):
-                if verbose:
-                    print('Get sources from saved sources')
-                Ids, xs, ys, zs, strike, dip, Areas = self.edksSources
-            else:
-                if verbose:
-                    print('Subdividing patches into point sources')
-                Ids, xs, ys, zs, strike, dip, Areas = dropSourcesInPatches(self, verbose=verbose)
+        # Check something
+        if not hasattr(self, 'keepTrackOfSources'):  
+            self.keepTrackOfSources = False
+
+        # If we have already done that step
+        if self.keepTrackOfSources and hasattr(self, 'edksSources'):
+            if verbose:
+                print('Get sources from saved sources')
+            Ids, xs, ys, zs, strike, dip, Areas = self.edksSources
+        # Else, drop sources in the patches
         else:
             if verbose:
                 print('Subdividing patches into point sources')
             Ids, xs, ys, zs, strike, dip, Areas = dropSourcesInPatches(self, verbose=verbose)
-
-
-        # All these guys need to be in meters
-        xs *= 1000.
-        ys *= 1000.
-        zs *= 1000.
-        Areas *= 1e6
-
-        # Strike and dip in degrees
-        strike = strike*180./np.pi
-        dip = dip*180./np.pi
-
-        # Keep track?
-        if hasattr(self, 'keepTrackOfSources'):
+            # All these guys need to be in meters
+            xs *= 1000.
+            ys *= 1000.
+            zs *= 1000.
+            Areas *= 1e6
+            # Strike and dip in degrees
+            strike = strike*180./np.pi
+            dip = dip*180./np.pi
+            # Keep track?
             if self.keepTrackOfSources:
-                self.edksSources = [Ids, xs, ys, zs, Areas, strike, dip]
+                self.edksSources = [Ids, xs, ys, zs, strike, dip, Areas]
 
         # Informations
         if verbose:
@@ -1436,9 +1431,13 @@ class Fault(SourceInv):
         Implements the Laplacian smoothing with sensitivity.
         Description can be found in F. Ortega-Culaciati's PhD thesis.
         Args:
-            * lam               : Damping factor
+            * lam               : Damping factor (list of size of slipdirections)
             * extra_params      : what sigma to allow to ramp parameters.
         '''
+
+        # lambda
+        if type(lam) is float:
+            lam = [lam for i in len(self.slipdir)]
 
         # Get the number of patches
         nPatch = len(self.patch)
@@ -1470,7 +1469,7 @@ class Fault(SourceInv):
             DtD = np.dot(Wd.T, Wd)
 
             # Cm
-            localCm = lam*np.linalg.inv(DtD)
+            localCm = lam[i]*np.linalg.inv(DtD)
 
             # Put it into Cm
             Cm[ist:ied, ist:ied] = localCm
