@@ -853,6 +853,8 @@ class RectangularPatches(Fault):
             # Scale these
             if scale.__class__ is float:
                 sca = scale
+            elif scale.__class__ is int:
+                sca = scale*1.0
             elif scale.__class__ is str:
                 if scale in ('total'):
                     sca = np.sqrt(slip[0]**2 + slip[1]**2 + slip[2]**2)*factor
