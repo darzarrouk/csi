@@ -12,6 +12,8 @@ import matplotlib.dates as mpdates
 import sys
 import h5py
 import datetime as dt
+import scipy.interpolate as sciint
+import copy
 
 # Personals
 from .SourceInv import SourceInv
@@ -52,7 +54,7 @@ class insartimeseries(SourceInv):
         # All done
         return
 
-    def readFromGIAnT(self, h5file, zfile=None, lonfile=None, latfile=None, incidence=None, heading=None, field='recons', keepnan=False):
+    def readFromGIAnT(self, h5file, zfile=None, lonfile=None, latfile=None, incidence=None, heading=None, field='recons', keepnan=False, mask=None):
         '''
         Read the output from a tipycal GIAnT h5 output file.
         Args:
@@ -63,6 +65,10 @@ class insartimeseries(SourceInv):
             * incidence     : Incidence angle (degree)
             * heading       : Heading angle (degree)
             * field         : Name of the field in the h5 file.
+            * mask          : Adds a common mask to the data.
+                                mask is an array the same size as the data with nans and 1
+                                It can also be a tuple with a key word in 
+                                the h5file, a value and 'above' or 'under'
         '''
 
         # open the h5file
@@ -76,6 +82,21 @@ class insartimeseries(SourceInv):
         nDates = data.shape[0]
         nLines = data.shape[1]
         nCols  = data.shape[2]
+
+        # Deal with the mask instructions
+        if mask is not None:
+            if type(mask) is tuple:
+                key = mask[0]
+                value = mask[1]
+                instruction = mask[2]
+                mask = np.ones((nLines, nCols))
+                if instruction in ('above'):
+                    mask[np.where(h5in[key][:]>value)] = np.nan
+                elif instruction in ('under'):
+                    mask[np.where(h5in[key][:]<value)] = np.nan
+                else:
+                    print('Unknow instruction type for Masking...')
+                    sys.exit(1)
 
         # Read Lon Lat
         if lonfile is not None:
@@ -103,6 +124,10 @@ class insartimeseries(SourceInv):
             # Get things
             date = self.dates[i]
             dat = data[i,:,:]
+
+            # Mask?
+            if mask is not None:
+                dat *= mask
 
             # Create an insar object
             sar = insarrates(date.isoformat(), utmzone=self.utmzone, verbose=False)
@@ -134,6 +159,32 @@ class insartimeseries(SourceInv):
             self.timeseries.append(sar)
 
         # all done
+        return
+    
+    def removeDate(self, date):
+        '''
+        Remove one date from the time series.
+        Args:
+            * date      : tuple of (year, month, day) or (year, month, day ,hour, min,s)
+        '''
+
+        # Make date
+        if len(date)==3:
+            date = dt.date(date[0], date[1], date[2])
+        elif len(date)==6:
+            date = dt.datetime(date[0], date[1], date[2], date[3], date[4], date[5])
+        else:
+            print('Unknow date format...')
+            sys.exit(1)
+
+        # Find the date
+        i = np.flatnonzero(np.array(self.dates)==date)[0]
+
+        # Remove it
+        del self.timeseries[i]
+        del self.dates[i]
+
+        # All done
         return
 
     def getProfiles(self, prefix, loncenter, latcenter, length, azimuth, width, verbose=False):
@@ -187,13 +238,75 @@ class insartimeseries(SourceInv):
                 sys.stdout.flush()
 
             # Smooth the profile
-            sar.smoothProfile(pname, window, method=method)
+            try:
+                sar.smoothProfile(pname, window, method=method)
+            except:
+                # Copy the old profile and modify it
+                newName = 'Smoothed {}'.format(sar.name)
+                sar.profiles[newName] = copy.deepcopy(sar.profiles[sar.name])
+                sar.profiles[newName]['LOS Velocity'][:] = np.nan
+                sar.profiles[newName]['LOS Error'][:] = np.nan
+                sar.profiles[newName]['Distance'][:] = np.nan
 
         # verbose
         if verbose:
             print('')
 
         # ALl done
+        return
+
+    def referenceProfiles2Date(self, prefix, date):
+        '''
+        Removes the profile at date 'date' to all the profiles in the time series.
+        Args:
+            * prefix        : Name of the profiles
+            * date          : Tuple of 3 or 6 numbers for the date
+                 date = (year(int), month(int), day(int))
+              or date = (year(int), month(int), day(int), hour(int), min(int), s(float))
+        '''
+
+        # Get the date
+        if len(date)==3:
+            date = dt.date(date[0], date[1], date[2])
+        elif len(date)==6:
+            date = dt.datetime(date[0], date[1], date[2],
+                               date[3], date[4], date[5])
+        else:
+            print('Date should be tuple of length 3 or 6')
+            sys.exit(1)
+
+        # Get the profile
+        i = np.flatnonzero(np.array(self.dates)==date)[0]
+        pname = '{} {}'.format(prefix, date)
+        refProfile = self.timeseries[i].profiles[pname]
+
+        # Create a linear interpolator
+        x = refProfile['Distance']
+        y = refProfile['LOS Velocity']
+        intProf = sciint.interp1d(x, y, kind='linear', bounds_error=False)
+
+        # Iterate on the profiles
+        for date, sar in zip(self.dates, self.timeseries):
+
+            # Get profile
+            pname = '{} {}'.format(prefix, date)
+            profile = sar.profiles[pname]
+
+            # Copy profile
+            newProfile = copy.deepcopy(profile)
+            newName = 'Referenced {}'.format(pname)
+            sar.profiles[newName] = newProfile
+
+            # Get x-position
+            x = sar.profiles[newName]['Distance']
+
+            # Interpolate
+            y = intProf(x)
+
+            # Difference
+            sar.profiles[newName]['LOS Velocity'] -= y
+
+        # All done
         return
 
     def referenceProfiles(self, prefix, xmin, xmax, verbose=False):
@@ -374,7 +487,7 @@ class insartimeseries(SourceInv):
         # All done
         return
 
-    def plotProfiles(self, prefix, figure=124, show=True, norm=None, xlim=None, zlim=None):
+    def plotProfiles(self, prefix, figure=124, show=True, norm=None, xlim=None, zlim=None, marker='.', color='k'):
         '''
         Plots the profiles in 3D plot.
         '''
@@ -417,7 +530,8 @@ class insartimeseries(SourceInv):
             nDate = [date.toordinal() for i in range(len(distance))]
                 
             # Plot that
-            ax.plot3D(nDate, distance, values, marker='.', color='k', linewidth=0.0 )
+            ax.plot3D(nDate, distance, values, 
+                      marker=marker, color=color, linewidth=0.0 )
 
         # norm
         if norm is not None:
