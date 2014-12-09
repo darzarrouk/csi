@@ -178,11 +178,14 @@ class insartimeseries(SourceInv):
             sys.exit(1)
 
         # Find the date
-        i = np.flatnonzero(np.array(self.dates)==date)[0]
+        i = np.flatnonzero(np.array(self.dates)==date)
 
         # Remove it
-        del self.timeseries[i]
-        del self.dates[i]
+        if len(i)>0:
+            del self.timeseries[i[0]]
+            del self.dates[i[0]]
+        else:
+            print('No date to remove')
 
         # All done
         return
