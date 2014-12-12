@@ -178,7 +178,7 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14, dtype=np.float32, remove_nan=True, downsample=1):
+    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14, dtype=np.float32, remove_nan=True, downsample=1, remove_zeros=True):
         '''
         Read from binary file or from array.
         '''
@@ -211,6 +211,10 @@ class insarrates(SourceInv):
                 err = np.fromfile(err, dtype=dtype)[::downsample]
             err = err * factor
             assert vel.shape==err.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)
+
+        # If zeros
+        if remove_zeros:
+            vel[vel==0.] = np.nan
 
         # Check NaNs
         if remove_nan:
