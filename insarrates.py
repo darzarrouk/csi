@@ -51,6 +51,52 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def read_from_ascii_simple(self, filename, factor=1.0, step=0.0, header=0):
+        '''
+        Read the InSAR data from an ascii file with 3 cols.
+        Args:
+            * filename      : Name of the input file. 
+            Lon | Lat | los measurement 
+            * factor        : Factor to multiply the LOS velocity.
+            * step          : Add a value to the velocity.
+            * header        : Size of the header.
+        '''
+
+        # Open the file
+        fin = open(filename, 'r')
+
+        # Read it all
+        Lines = fin.readlines()
+        fin.close()
+
+        # Initialize the business
+        self.vel = []
+        self.lon = []
+        self.lat = []
+
+        # Loop over yje lines
+        for i in range(len(Lines)):
+            # Get values
+            line = Lines[i].split()
+            # Fill in the values
+            self.lon.append(np.float(line[0]))
+            self.lat.append(np.float(line[1]))
+            self.vel.append(np.float(line[2]))
+
+        # Make arrays
+        self.vel = (np.array(self.vel)+step)*factor
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+
+        # Compute lon lat to utm
+        self.x, self.y = self.ll2xy(self.lon,self.lat)
+
+        # store the factor
+        self.factor = factor
+
+        # All done
+        return
+
     def read_from_ascii(self, filename, factor=1.0, step=0.0, header=0):
         '''
         Read the InSAR data from an ascii file.

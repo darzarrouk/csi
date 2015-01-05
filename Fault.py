@@ -18,7 +18,8 @@ import os
 
 # Personals
 from .SourceInv import SourceInv
-from .EDKS import sum_layered_sub, dropSourcesInPatches
+from .EDKS import sum_layered_sub
+from .EDKS import dropSourcesInPatches as Patches2Sources
 
 class Fault(SourceInv):
 
@@ -578,8 +579,18 @@ class Fault(SourceInv):
         The Green's function matrix is stored in a dictionary. 
         Each entry of the dictionary is named after the corresponding dataset. 
         Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
+
+        **********************
+        TODO: Implement the homogeneous case for the Node-based triangular GFs
+        **********************
         '''
 
+        # Chech something
+        if self.patchType is 'triangletent':
+            assert method is 'edks', 'Homogeneous case based on Meade, 2007, 
+                                      not implemented yet'
+
+        # Print
         if verbose:
             print('---------------------------------')
             print('---------------------------------')
@@ -591,11 +602,12 @@ class Fault(SourceInv):
                 method = 'Okada'
             elif self.patchType is 'triangle':
                 method = 'Meade'
+            elif self.patchType is 'triangletent':
+                method = 'Meade'
         
         # Print
         if verbose:
             print('Greens functions computation method: {}'.format(method))
-
 
         # Data type check
         if data.dtype is 'insarrates':
@@ -795,12 +807,12 @@ class Fault(SourceInv):
         if self.keepTrackOfSources and hasattr(self, 'edksSources'):
             if verbose:
                 print('Get sources from saved sources')
-            Ids, xs, ys, zs, strike, dip, Areas = self.edksSources
+            Ids, xs, ys, zs, strike, dip, Areas = self.edksSources[:7]
         # Else, drop sources in the patches
         else:
             if verbose:
                 print('Subdividing patches into point sources')
-            Ids, xs, ys, zs, strike, dip, Areas = dropSourcesInPatches(self, verbose=verbose)
+            Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(self, verbose=verbose)
             # All these guys need to be in meters
             xs *= 1000.
             ys *= 1000.
@@ -813,6 +825,18 @@ class Fault(SourceInv):
             if self.keepTrackOfSources:
                 self.edksSources = [Ids, xs, ys, zs, strike, dip, Areas]
 
+        # Get the slip vector
+        if self.patchType in ('triangle', 'rectangle'):
+            slip = np.ones(dip.shape)
+        if self.patchType is 'triangletent':
+            # If saved, good
+            if self.keepTrackOfSources and hasattr(self, 'edksSources'):
+                slip = self.edksSources[7]
+            # Else, we have to re-organize the Ids from facet to nodes
+            else:
+                self.Facet2Nodes()
+                Ids, xs, ys, zs, strike, dip, Areas, slip = self.edksSources
+
         # Informations
         if verbose:
             print('{} sources for {} patches and {} data points'.format(len(Ids), len(self.patch), len(xr)))
@@ -822,7 +846,7 @@ class Fault(SourceInv):
             if verbose:
                 print('Running Strike Slip component for data set {}'.format(data.name))
             Gss = sum_layered_sub(Ids, xs, ys, zs, \
-                                  strike, dip, np.zeros(dip.shape), np.ones(dip.shape), \
+                                  strike, dip, np.zeros(dip.shape), slip, \
                                   Areas,\
                                   xr, yr, stratKernels, prefix)
             Gss = np.array(Gss)
@@ -830,7 +854,7 @@ class Fault(SourceInv):
             if verbose:
                 print('Running Dip Slip component for data set {}'.format(data.name))
             Gds = sum_layered_sub(Ids, xs, ys, zs, \
-                                  strike,dip, np.ones(dip.shape)*90., np.ones(dip.shape),\
+                                  strike,dip, np.ones(dip.shape)*90., slip, \
                                   Areas,\
                                   xr, yr, stratKernels, prefix)
             Gds = np.array(Gds)
