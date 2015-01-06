@@ -476,7 +476,8 @@ class RectangularPatches(Fault):
             self.initializeslip()
 
         # Depth things
-        depth = np.unique([[p[2] for p in patch] for patch in self.patch])
+        depth = [[p[2] for p in patch] for patch in self.patch]
+        depth = np.unique(np.array(depth).flatten())
         self.z_patches = depth.tolist()
         self.top = np.min(depth)
         self.depth = np.max(depth)
