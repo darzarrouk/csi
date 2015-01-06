@@ -57,6 +57,9 @@ class geodeticplot(object):
             self.carte  = carte
             self.fig2 = fig2
         self.ref  = ref
+        
+        # All done
+        return
 
     def show(self, mapaxis='equal', triDaxis='auto', showFig=['fault', 'map']):
         '''

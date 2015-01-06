@@ -448,7 +448,7 @@ class RectangularPatches(Fault):
         # All done
         return patch, patchll
 
-    def geometry2patch(self, Lon, Lat, Depth, Strike, Dip, Length, Width):
+    def geometry2patch(self, Lon, Lat, Depth, Strike, Dip, Length, Width, initializeSlip=True):
         '''
         Builds the list of patches from lists of lon, lat, depth...
         Args:
@@ -471,6 +471,16 @@ class RectangularPatches(Fault):
             self.patch.append(patch)
             self.patchll.append(patchll)
         
+        # Initialize Slip
+        if initializeSlip:
+            self.initializeslip()
+
+        # Depth things
+        depth = np.unique([[p[2] for p in patch] for patch in self.patch])
+        self.z_patches = depth.tolist()
+        self.top = np.min(depth)
+        self.depth = np.max(depth)
+
         # All done
         return
 

@@ -51,7 +51,7 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def read_from_ascii_simple(self, filename, factor=1.0, step=0.0, header=0):
+    def read_from_ascii_simple(self, filename, factor=1.0, step=0.0, header=0, los=None):
         '''
         Read the InSAR data from an ascii file with 3 cols.
         Args:
@@ -71,6 +71,7 @@ class insarrates(SourceInv):
 
         # Initialize the business
         self.vel = []
+        self.err = []
         self.lon = []
         self.lat = []
 
@@ -82,9 +83,11 @@ class insarrates(SourceInv):
             self.lon.append(np.float(line[0]))
             self.lat.append(np.float(line[1]))
             self.vel.append(np.float(line[2]))
+            self.err.append(np.float(line[3]))
 
         # Make arrays
         self.vel = (np.array(self.vel)+step)*factor
+        self.err = np.array(self.err)*factor
         self.lon = np.array(self.lon)
         self.lat = np.array(self.lat)
 
@@ -93,6 +96,17 @@ class insarrates(SourceInv):
 
         # store the factor
         self.factor = factor
+
+        # LOS
+        if los is not None:
+            self.los = []
+            fin = open(los, 'r')
+            Lines = fin.readlines()
+            fin.close()
+            for line in Lines:
+                line = line.split()
+                self.los.append([float(line[0]), float(line[1]), float(line[2])])
+        self.los = np.array(self.los)
 
         # All done
         return

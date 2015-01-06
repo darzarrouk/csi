@@ -209,6 +209,13 @@ class Fault(SourceInv):
         '''
         self.xf = []
         self.yf = []
+
+        # Set top
+        if self.top is None:
+            depth = np.unique([[p[2] for p in patch] for patch in self.patch])
+            self.top = np.min(depth)
+            self.depth = np.max(depth)
+
         minz = np.round(self.top+delta_depth,1)
         for p in self.patch:
             for v in p:
@@ -221,6 +228,9 @@ class Fault(SourceInv):
         i = np.argsort(self.yf)
         self.xf = self.xf[i]
         self.yf = self.yf[i]
+
+        # Set lon lat
+        self.trace2ll()
 
         # All done
         return
