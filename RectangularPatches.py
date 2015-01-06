@@ -376,6 +376,103 @@ class RectangularPatches(Fault):
         # All done
         return
 
+    def lonlat2patch(self, lon, lat, depth, strike, dip, length, width):
+        '''
+        From a list of arguments, returns a patch and a patchll.
+        Args:
+            * lon       : Longitude of the center of the patch
+            * lat       : Latitude of the center of the patch
+            * depth     : Depth of the center of the fault (km)
+            * strike    : Strike of the fault (degree)
+            * dip       : Dip of the fault (degree)
+            * length    : Length of the fault (km)
+            * width     : Width of the fault (km)
+        '''
+
+        # Create lists
+        patch = []
+        patchll = []
+
+        # Convert angles
+        dip *= np.pi/180.
+        strike *= np.pi/180.
+
+        # Convert Lon Lat to X Y
+        xc, yc = self.ll2xy(lon,lat)
+        zc = -1.0*depth
+
+        # Calculate the center of the upper segment
+        xcu = xc - width/2.*np.cos(dip)*np.cos(strike)
+        ycu = yc + width/2.*np.cos(dip)*np.sin(strike)
+        zcu = zc + width/2.*np.sin(dip)
+
+        # Calculate the center of the lower segment
+        xcd = xc + width/2.*np.cos(dip)*np.cos(strike)
+        ycd = yc - width/2.*np.cos(dip)*np.sin(strike)
+        zcd = zc - width/2.*np.sin(dip)
+        
+        # Calculate the 2 upper corners
+        x1 = xcu - length/2.*np.sin(strike)
+        y1 = ycu - length/2.*np.cos(strike)
+        z1 = zcu
+        p1 = [x1, y1, -1.0*z1]
+        lon1, lat1 = self.xy2ll(x1, y1)
+        pll1 = [lon1, lat1, -1.0*z1]
+
+        x2 = xcu + length/2.*np.sin(strike)
+        y2 = ycu + length/2.*np.cos(strike)
+        z2 = zcu
+        p2 = [x2, y2, -1.0*z2]
+        lon2, lat2 = self.xy2ll(x2, y2)
+        pll2 = [lon2, lat2, -1.0*z2]
+
+        # Calculate the 2 lower corner
+        x3 = xcd + length/2.*np.sin(strike)
+        y3 = ycd + length/2.*np.cos(strike)
+        z3 = zcd
+        p3 = [x3, y3, -1.0*z3]
+        lon3, lat3 = self.xy2ll(x3, y3)
+        pll3 = [lon3, lat3, -1.0*z3]
+
+        x4 = xcd - length/2.*np.sin(strike)
+        y4 = ycd - length/2.*np.cos(strike)
+        z4 = zcd
+        p4 = [x4, y4, -1.0*z4]
+        lon4, lat4 = self.xy2ll(x4, y4)
+        pll4 = [lon4, lat4, -1.0*z4]
+
+        # Set up patch
+        patch = [p1, p2, p3, p4]
+        patchll = [pll1, pll2, pll3, pll4]
+
+        # All done
+        return patch, patchll
+
+    def geometry2patch(self, Lon, Lat, Depth, Strike, Dip, Length, Width):
+        '''
+        Builds the list of patches from lists of lon, lat, depth...
+        Args:
+            * Lon       : List of longitudes
+            * Lat       : List of Latitudes
+            * Depth     : List of depths
+            * Strike    : List of strike angles (degree)
+            * Dip       : List of dip angles (degree)
+            * Length    : List of length (km)
+            * Width     : List of width (km)
+        '''
+
+        # Create the patch lists
+        self.patch = []
+        self.patchll = []
+
+        # Iterate
+        for lon, lat, depth, strike, dip, length, width in zip(Lon, Lat, Depth, Strike, Dip, Length, Width):
+            patch, patchll = self.lonlat2patch(lon, lat, depth, strike, dip, length, width)
+            self.patch.append(patch)
+            self.patchll.append(patchll)
+        
+        # All done
+        return
 
     def importPatches(self, filename, origin=[45.0, 45.0]):
         '''
@@ -848,7 +945,7 @@ class RectangularPatches(Fault):
             else:
                 x = (np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake))
                 y = (np.cos(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake))
-                z = np.sin(dip)*np.sin(rake)
+                z = -1.0*np.sin(dip)*np.sin(rake)
         
             # Scale these
             if scale.__class__ is float:

@@ -58,7 +58,7 @@ class geodeticplot(object):
             self.fig2 = fig2
         self.ref  = ref
 
-    def show(self, mapaxis='equal', triDaxis='auto', Faille=True, Carte=True, showFig=['fault', 'map']):
+    def show(self, mapaxis='equal', triDaxis='auto', showFig=['fault', 'map']):
         '''
         Show to screen
         '''
@@ -85,21 +85,33 @@ class geodeticplot(object):
         # All done
         return
 
-    def savefig(self, prefix, mapaxis='equal', dpi=None, bbox_inches=None):
+    def savefig(self, prefix, mapaxis='equal', ftype='pdf', dpi=None, bbox_inches=None, triDaxis='auto', saveFig=['fault', 'map']):
         '''
         Save to file.
+        ftype can be: 'eps', 'pdf', 'png'
         '''
 
         # Change axis of the map
-        self.carte.axis(mapaxis)
+        if self.carte_flag:
+            self.carte.axis(mapaxis)
+
+        # Change the axis of the 3d proj
+        if self.faille_flag and (triDaxis is not None):
+            self.faille.axis(triDaxis)
 
         # Save
-        if dpi is None:
-            self.fig1.savefig('%s_fig1.pdf' % (prefix))
-            self.fig2.savefig('%s_fig2.pdf' % (prefix))
+        if (ftype is 'png') and (dpi is not None) and (bbox_inches is not None):
+            if 'fault' in saveFig:
+                self.fig1.savefig('%s_fault.png' % (prefix), 
+                        dpi=dpi, bbox_inches=bbox_inches)
+            if 'map' in saveFig:
+                self.fig2.savefig('%s_map.png' % (prefix), 
+                        dpi=dpi, bbox_inches=bbox_inches)
         else:
-            self.fig1.savefig('%s_fig1.png' % (prefix), dpi=dpi, bbox_inches=bbox_inches)
-            self.fig2.savefig('%s_fig2.png' % (prefix), dpi=dpi, bbox_inches=bbox_inches)
+            if 'fault' in saveFig:
+                self.fig1.savefig('{}_fault.{}'.format(prefix, ftype))
+            if 'map' in saveFig:
+                self.fig2.savefig('{}_map.{}'.format(prefix, ftype))
 
         # All done
         return
