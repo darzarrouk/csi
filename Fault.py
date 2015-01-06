@@ -521,7 +521,7 @@ class Fault(SourceInv):
         return
 
 
-    def saveGFs(self, dtype='d', outputDir='.', suffix={'strikeslip':'SS','dipslip':'DS','tensile':'TS'}):
+    def saveGFs(self, dtype='d', outputDir='.', suffix={'strikeslip':'SS','dipslip':'DS','tensile':'TS', 'coupling', 'Coupling'}):
         '''
         Saves the Green's functions in different files
         Args:
@@ -865,7 +865,7 @@ class Fault(SourceInv):
             if verbose:
                 print('Running Dip Slip component for data set {}'.format(data.name))
             Gds = sum_layered_sub(Ids, xs, ys, zs, \
-                                  strike,dip, np.ones(dip.shape)*90., slip, \
+                                  strike, dip, np.ones(dip.shape)*90., slip, \
                                   Areas,\
                                   xr, yr, stratKernels, prefix)
             Gds = np.array(Gds)
