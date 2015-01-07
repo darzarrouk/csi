@@ -598,9 +598,13 @@ class cosicorrrates(SourceInv):
             Gts = G['tensile']
         except:
             Gts = None
+        try: 
+            Gcp = G['coupling']
+        except:
+            Gcp = None
 
         # Set these values
-        fault.setGFs(self, strikeslip=[Gss], dipslip=[Gds], tensile=[Gts], vertical=vertical)
+        fault.setGFs(self, strikeslip=[Gss], dipslip=[Gds], tensile=[Gts], coupling=[Gcp], vertical=vertical)
 
         # All done
         return

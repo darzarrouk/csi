@@ -30,6 +30,7 @@ class multifaultsolve(object):
 
         # Ready to compute?
         self.ready = False
+        self.figurePath = './'
 
         # Store things into self
         self.name = name
@@ -671,6 +672,123 @@ class multifaultsolve(object):
 
         # Store result
         self.mpost = m
+
+        # All done
+        return
+
+    def simpleMetropolis(self, priors, initialSample, nSample, nBurn, plotSampler=False,
+                            writeSamples=False):
+        '''
+        Uses a Metropolis algorithme to sample the posterior distribution of the model 
+        following Bayes's rule. This is exactly what is done in AlTar, but using an 
+        open-source library called pymc. This routine is made for simple problems with 
+        few parameters (i.e. More than 30 params needs a very fast computer).
+        
+        Args:
+            * priors        : List of priors. Each prior is specified by a list.
+                     Example: priors = [ ['Name of parameter', 'Uniform', min, max]
+                                         ['Name of parameter', 'Gaussian', center, sigma] ]
+            * initialSample : List of initialSample.
+            * nSample       : Length of the Metropolis chain.
+            * nBurn         : Number of samples burned.
+            * plotSampler   : Plot some usefull stuffs from the sampler (default: False).
+            * writeSamples  : Write the samples to a binary file.
+
+        The result is stored in self.samples
+        The variable mpost is the mean of the final sample set.
+        '''
+
+        # Print
+        print ("---------------------------------")
+        print ("---------------------------------")
+        print ("Running a Metropolis algorythm to")
+        print ("sample the posterior PDFs of the ")
+        print ("  model: P(m|d) = C P(m) P(d|m)  ")
+
+        # Import 
+        import pymc
+
+        # Get the matrixes and vectors
+        assert hasattr(self, 'G'), 'Need an assembled G matrix...'
+        G = self.G
+        assert hasattr(self, 'd'), 'Need an assembled data vector...'
+        dobs = self.d
+        assert hasattr(self, 'Cd'), 'Need an assembled data covariance matrix...'
+        Cd = self.Cd
+
+        # Assert
+        assert len(priors)==G.shape[1], 'Not enough informations to estimate prior information...'
+        assert len(priors)==len(initialSample), 'There must be as many \
+                                        initialSamples ({}) as priors ({})...'.format(len(initialSample),len(priors))
+        if type(initialSample) is not list:
+            try:
+                initialSample = initialSample.tolist()
+            except:
+                print('Please provide a list of initialSample')
+                sys.exit(1)
+
+        # Build the prior PDFs
+        Priors = []
+        for prior, init in zip(priors, initialSample):
+            name = prior[0]
+            function = prior[1]
+            params = prior[2:]
+            if function is 'Gaussian':
+                center = params[0]
+                tau = params[1]
+                p = pymc.Gaussian(name, center, tau, value=init)
+            elif function is 'Uniform':
+                boundMin = params[0]
+                boundMax = params[1]
+                p = pymc.Uniform(name, boundMin, boundMax, value=init)
+            else:
+                print('This prior type has not been implemented yet...')
+                print('Although... You can do it :-)')
+                sys.exit(1)
+            Priors.append(p)
+
+        # Build the forward model
+        @pymc.deterministic(plot=False)
+        def forward(theta=Priors):
+            return np.dot(G, theta)
+
+        # Build the observation
+        d = pymc.MvNormalCov('Data', mu=forward, C=Cd, value=dobs, observed=True)
+
+        # Create a sampler
+        sampler = pymc.MCMC(locals())
+
+        # Make sure we use Metropolis
+        for p in Priors:
+            sampler.use_step_method(pymc.Metropolis, p)
+
+        # Sample
+        sampler.sample(iter=nSample, burn=nBurn)
+
+        # Recover data
+        mpost = []
+        samples = []
+        for prior in priors:
+            name = prior[0]
+            sample = sampler.trace(name)[:]
+            mpost.append(np.mean(sample))
+            samples.append(sample)
+
+        # Save things
+        self.sampler = sampler
+        self.priors = Priors
+        self.likelihood = d
+        self.samples = np.array(samples)
+        self.mpost = np.array(mpost)
+
+        # Write Samples?
+        if writeSamples:
+            filename = '{}_samples.dat'.format(self.name.replace(' ','_'))
+            self.samples.tofile(filename)
+            
+        # Plot
+        if plotSampler:
+            pymc.Matplot.plot(sampler, path=self.figurePath)
 
         # All done
         return

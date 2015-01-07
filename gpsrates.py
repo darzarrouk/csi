@@ -1165,9 +1165,9 @@ class gpsrates(SourceInv):
         '''
 
         # Initialize the variables
-        GssE = None; GdsE = None; GtsE = None
-        GssN = None; GdsN = None; GtsN = None
-        GssU = None; GdsU = None; GtsU = None
+        GssE = None; GdsE = None; GtsE = None; GcpE = None
+        GssN = None; GdsN = None; GtsN = None; GcpN = None
+        GssU = None; GdsU = None; GtsU = None; GcpU = None
 
         # Check components
         east  = False
@@ -1192,6 +1192,10 @@ class gpsrates(SourceInv):
             Gts = G['tensile']
         except:
             Gts = None
+        try: 
+            Gcp = G['coupling']
+        except:
+            Gcp = None
 
         # Get the values
         if Gss is not None:
@@ -1215,6 +1219,7 @@ class gpsrates(SourceInv):
             if vertical:
                 GdsU = Gds[range(N,N+self.vel_enu.shape[0]),:]
         if Gts is not None:
+            N = 0
             if east:
                 GtsE = Gts[range(0,self.vel_enu.shape[0]),:]
                 N += self.vel_enu.shape[0]
@@ -1223,10 +1228,20 @@ class gpsrates(SourceInv):
                 N += self.vel_enu.shape[0]
             if vertical:
                 GtsU = Gts[range(N,N+self.vel_enu.shape[0]),:]
+        if Gcp is not None:
+            N = 0
+            if east:
+                GcpE = Gcp[range(0,self.vel_enu.shape[0]),:]
+                N += self.vel_enu.shape[0]
+            if north:
+                GcpN = Gcp[range(N,N+self.vel_enu.shape[0]),:]
+                N += self.vel_enu.shape[0]
+            if vertical:
+                GcpU = Gcp[range(N,N+self.vel_enu.shape[0]),:]
 
         # set the GFs
         fault.setGFs(self, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU],
-                    tensile=[GtsE, GtsN, GtsU], vertical=vertical)
+                    tensile=[GtsE, GtsN, GtsU], coupling=[GcpE, GcpN, GcpU], vertical=vertical)
 
         # All done
         return

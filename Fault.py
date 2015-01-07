@@ -924,7 +924,7 @@ class Fault(SourceInv):
         # All done
         return G
 
-    def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None,
+    def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None, coupling=None,
                        vertical=False, dtype='d'):
         '''
         Sets the Green's functions from binary files. Be carefull, these have to be in the
@@ -935,6 +935,7 @@ class Fault(SourceInv):
             * strikeslip    : File containing the Green's functions for strikeslip displacements.
             * dipslip       : File containing the Green's functions for dipslip displacements.
             * tensile       : File containing the Green's functions for tensile displacements.
+            * coupling      : File containing the Green's functions for coupling.
             * vertical      : Deal with the UP component (gps: default is false,
                               insar: it will be true anyway).
             * dtype         : Type of binary data.
@@ -949,7 +950,7 @@ class Fault(SourceInv):
             self.N_slip = len(self.patch)
 
         # Read the files and reshape the GFs
-        Gss = None; Gds = None; Gts = None
+        Gss = None; Gds = None; Gts = None; Gcp = None
         if strikeslip is not None:
             Gss = np.fromfile(strikeslip, dtype=dtype)
             ndl = int(Gss.shape[0]/self.N_slip)
@@ -962,11 +963,16 @@ class Fault(SourceInv):
             Gts = np.fromfile(tensile, dtype=dtype)
             ndl = int(Gts.shape[0]/self.N_slip)
             Gts = Gts.reshape((ndl, self.N_slip))
+        if coupling is not None:
+            Gcp = np.fromfile(coupling, dtype=dtype)
+            ndl = int(Gcp.shape[0]/self.N_slip)
+            Gcp = Gcp.reshape((ndl, self.N_slip))
         
         # Create the big dictionary
         G = {'strikeslip': Gss,
              'dipslip': Gds,
-             'tensile': Gts}
+             'tensile': Gts, 
+             'coupling': Gcp}
 
         # The dataset sets the Green's functions itself
         data.setGFsInFault(self, G, vertical=vertical)
@@ -975,7 +981,7 @@ class Fault(SourceInv):
         return
 
     def setGFs(self, data, strikeslip=[None, None, None], dipslip=[None, None, None],
-               tensile=[None, None, None], vertical=False, synthetic=False):
+               tensile=[None, None, None], coupling=[None, None, None], vertical=False, synthetic=False):
         '''
         Stores the input Green's functions matrices into the fault structure.
         Args:
@@ -983,6 +989,7 @@ class Fault(SourceInv):
             * strikeslip    : List of matrices of the Strikeslip Green's functions, ordered E, N, U
             * dipslip       : List of matrices of the dipslip Green's functions, ordered E, N, U
             * tensile       : List of matrices of the tensile Green's functions, ordered E, N, U
+            * coupling      : List of matrices of the coupling Green's function, ordered E, N, U
             If you provide InSAR GFs, these need to be projected onto the LOS direction already.
         '''
 
@@ -1119,6 +1126,34 @@ class Fault(SourceInv):
             if Green_ts is not None:
                 G['dipslip'] = Green_ts
 
+        # Coupling
+        if len(coupling) == 3:               # GPS case
+
+            E_cp = coupling[0]
+            N_cp = coupling[1]
+            U_cp = coupling[2]
+            cp = []
+            nd = 0
+            if (E_cp is not None) and (N_cp is not None):
+                d = E_cp.shape[0]
+                m = E_cp.shape[1]
+                cp.append(E_cp)
+                cp.append(N_cp)
+                nd += 2
+            if (U_cp is not None):
+                d = U_cp.shape[0]
+                m = U_cp.shape[1]
+                cp.append(U_cp)
+                nd += 1
+            if nd > 0:
+                cp = np.array(cp)
+                cp = ts.reshape((nd*d, m))
+                G['coupling'] = cp
+
+        elif len(coupling) == 1:             # InSAR/Tsunami Case
+            Green_cp = coupling[0]
+            if Green_cp is not None:
+                G['coupling'] = Green_cp
         # All done
         return
 
@@ -1476,7 +1511,10 @@ class Fault(SourceInv):
 
         # Get the number of patches
         nPatch = len(self.patch)
-        nExtra = len(extra_params)
+        if extra_params is not None:
+            nExtra = len(extra_params)
+        else:
+            nExtra = 0
 
         # How many parameters
         Np = self.N_slip * len(self.slipdir)
@@ -1510,8 +1548,9 @@ class Fault(SourceInv):
             Cm[ist:ied, ist:ied] = localCm
 
         # Add extra params
-        CmRamp = np.diag(extra_params)
-        Cm[-nExtra:, -nExtra:] = CmRamp
+        if nExtra>0:
+            CmRamp = np.diag(extra_params)
+            Cm[-nExtra:, -nExtra:] = CmRamp
 
         # Set inside the fault
         self.Cm = Cm

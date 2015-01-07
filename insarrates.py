@@ -568,6 +568,24 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def buildDiagCd(self):
+        '''
+        Builds a full Covariance matrix from the uncertainties.
+        The Matrix is just a diagonal matrix.
+        '''
+
+        # Assert
+        assert self.err is not None, 'Need some uncertainties on the LOS displacements...'
+
+        # Get some size
+        nd = self.vel.shape[0]
+
+        # Fill Cd
+        self.Cd = np.diag(self.err)
+
+        # All done
+        return
+
     def buildCd(self, sigma, lam, function='exp'):
         '''
         Builds the full Covariance matrix from values of sigma and lambda.
@@ -695,10 +713,14 @@ class insarrates(SourceInv):
             GtsLOS = G['tensile']
         except:
             GtsLOS = None
+        try:
+            GcpLOS = G['coupling']
+        except:
+            GcpLOS = None
 
         # set the GFs
         fault.setGFs(self, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS],
-                    vertical=True)
+                    coupling=[GcpLOS], vertical=True)
 
         # All done
         return
