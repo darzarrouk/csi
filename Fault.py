@@ -1535,6 +1535,7 @@ class Fault(SourceInv):
             ied = ist+nPatch
             G = self.Gassembled[:,ist:ied]
             S = np.diag(np.diag(np.dot(G.T, G)))
+            self.sensitivity = S
             iS = np.linalg.inv(S)
 
             # Weight Laplacian by sensitivity (see F. Ortega-Culaciati PhD Thesis)

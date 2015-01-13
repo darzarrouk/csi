@@ -367,6 +367,10 @@ class multifaultsolve(object):
         Takes a vector where the solution of the problem is and affects it to mpost.
         '''
 
+        # Check if array
+        if type(soln) is list:
+            soln = np.array(soln)
+
         # put it in mpost
         self.mpost = soln
 
@@ -767,24 +771,27 @@ class multifaultsolve(object):
 
         # Recover data
         mpost = []
-        samples = []
+        samples = {}
         for prior in priors:
             name = prior[0]
-            sample = sampler.trace(name)[:]
-            mpost.append(np.mean(sample))
-            samples.append(sample)
+            samples[name] = sampler.trace(name)[:]
+            mpost.append(np.mean(samples[name]))
 
         # Save things
         self.sampler = sampler
         self.priors = Priors
         self.likelihood = d
-        self.samples = np.array(samples)
         self.mpost = np.array(mpost)
 
         # Write Samples?
         if writeSamples:
-            filename = '{}_samples.dat'.format(self.name.replace(' ','_'))
-            self.samples.tofile(filename)
+            import h5py
+            filename = '{}_samples.h5'.format(self.name.replace(' ','_'))
+            fout = h5py.File(filename, 'w')
+            for name in samples.keys():
+                fout.create_dataset(name, data=samples[name])
+            fout.close()
+            #self.samples.tofile(filename)
             
         # Plot
         if plotSampler:
