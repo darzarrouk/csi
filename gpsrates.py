@@ -126,6 +126,7 @@ class gpsrates(SourceInv):
 
         # Initialize the vel_enu array
         self.vel_enu = np.zeros((len(sta_name), 3))
+        self.err_enu = np.zeros((len(sta_name), 3))
 
         # All done
         return    
