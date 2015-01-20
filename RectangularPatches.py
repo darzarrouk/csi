@@ -199,6 +199,61 @@ class RectangularPatches(Fault):
         # All done
         return p1, p2, p3, p4
 
+    def mergePatches(self, p1, p2):
+        '''
+        Merges 2 patches that have common corners.
+        Args:
+            * p1    : index of the patch #1.
+            * p2    : index of the patch #2.
+        '''
+
+        print('Merging patches {} and {} into patch {}'.format(p1,p2,p1))
+
+        # Get the patches
+        patch1 = self.patch[p1]
+        patch2 = self.patch[p2]
+        patch1ll = self.patchll[p1]
+        patch2ll = self.patchll[p2]
+
+        # Create the newpatches
+        newpatch = [[],[],[],[]] #np.zeros((4,3))
+        newpatchll = [[],[],[],[]] #np.zeros((4,3))
+
+        # determine which corners are in common, needs at least two
+        if ((list(patch1[0])==list(patch2[3])) and (list(patch1[1])==list(patch2[2]))):     # patch2 is above patch1
+            newpatch[0] = patch2[0]; newpatchll[0] = patch2ll[0] 
+            newpatch[3] = patch1[3]; newpatchll[3] = patch1ll[3]
+            newpatch[2] = patch1[2]; newpatchll[2] = patch1ll[2]
+            newpatch[1] = patch2[1]; newpatchll[1] = patch2ll[1]
+        elif ((list(patch1[1])==list(patch2[0])) and (list(patch1[2])==list(patch2[3]))):   # patch2 is on the right of patch1
+            newpatch[0] = patch1[0]; newpatchll[0] = patch1ll[0]
+            newpatch[3] = patch1[3]; newpatchll[3] = patch1ll[3]
+            newpatch[2] = patch2[2]; newpatchll[2] = patch2ll[2]
+            newpatch[1] = patch2[1]; newpatchll[1] = patch2ll[1]
+        elif ((list(patch1[3])==list(patch2[0])) and (list(patch1[2])==list(patch2[1]))):   # patch2 is under patch1
+            newpatch[0] = patch1[0]; newpatchll[0] = patch1ll[0]
+            newpatch[3] = patch2[3]; newpatchll[3] = patch2ll[3]
+            newpatch[2] = patch2[2]; newpatchll[2] = patch2ll[2]
+            newpatch[1] = patch1[1]; newpatchll[1] = patch1ll[1]
+        elif ((list(patch1[0])==list(patch2[1])) and (list(patch1[3])==list(patch2[2]))):   # patch2 is on the left of patch1
+            newpatch[0] = patch2[0]; newpatchll[0] = patch2ll[0]
+            newpatch[3] = patch2[3]; newpatchll[3] = patch2ll[3]
+            newpatch[2] = patch1[2]; newpatchll[2] = patch1ll[2]
+            newpatch[1] = patch1[1]; newpatchll[1] = patch1ll[1]
+        else:
+            print('Patches do not have common corners...')
+            return
+
+        # Replace the patch 1 by the new patch
+        self.patch[p1] = newpatch
+        self.patchll[p1] = newpatchll
+
+        # Delete the patch 2
+        self.deletepatch(p2)
+
+        # All done
+        return
+
     def extrap1d(self,interpolator):
         '''
         Linear extrapolation routine. Found on StackOverflow by sastanin.
