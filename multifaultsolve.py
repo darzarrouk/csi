@@ -681,7 +681,7 @@ class multifaultsolve(object):
         return
 
     def simpleMetropolis(self, priors, initialSample, nSample, nBurn, plotSampler=False,
-                            writeSamples=False):
+                            writeSamples=False, dryRun=False):
         '''
         Uses a Metropolis algorithme to sample the posterior distribution of the model 
         following Bayes's rule. This is exactly what is done in AlTar, but using an 
@@ -697,6 +697,8 @@ class multifaultsolve(object):
             * nBurn         : Number of samples burned.
             * plotSampler   : Plot some usefull stuffs from the sampler (default: False).
             * writeSamples  : Write the samples to a binary file.
+            * dryRun        : If True, builds the sampler, saves it, but does not run.
+                              This can be used for debugging.
 
         The result is stored in self.samples
         The variable mpost is the mean of the final sample set.
@@ -760,11 +762,20 @@ class multifaultsolve(object):
         d = pymc.MvNormalCov('Data', mu=forward, C=Cd, value=dobs, observed=True)
 
         # Create a sampler
-        sampler = pymc.MCMC(locals())
+        sampler = pymc.MCMC(Priors+[d])
 
         # Make sure we use Metropolis
         for p in Priors:
             sampler.use_step_method(pymc.Metropolis, p)
+
+        # if dryRun:
+        if dryRun:
+            self.sampler = sampler
+            self.priors = Priors
+            self.likelihood = d
+            print('A dry run has been asked. Nothing has been done')
+            print('Sampler object is saved in the solver object')
+            return
 
         # Sample
         sampler.sample(iter=nSample, burn=nBurn)

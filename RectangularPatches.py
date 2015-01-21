@@ -158,6 +158,85 @@ class RectangularPatches(Fault):
         # All done
         return
 
+    def splitPatchesHoriz(self, nPatches):
+        '''
+        Splits all the patches in nPatches Horizontally.
+        Args:
+            * nPatches      : Number of new patches per patch.
+        '''
+
+        # Create a list of new patches
+        newPatches = []
+        newPatchesLL = []
+
+        # Iterate over the patches
+        for patch in self.patch:
+
+            # Get the 4 corners
+            c1, c2, c3, c4 = patch
+            if type(c1) is not list:
+                c1 = c1.tolist()
+                c2 = c2.tolist()
+                c3 = c3.tolist()
+                c4 = c4.tolist()
+
+            # Compute the new lengths
+            xlength = (c2[0] - c1[0])/float(nPatches)
+            ylength = (c2[1] - c1[1])/float(nPatches)
+
+            # Iterate
+            for i in range(nPatches):
+
+                # Corners
+                x1 = c1[0] + i*xlength
+                y1 = c1[1] + i*ylength
+                z1 = c1[2]
+                lon1, lat1 = self.xy2ll(x1, y1)
+
+                x2 = c1[0] + (i+1)*xlength
+                y2 = c1[1] + (i+1)*ylength
+                z2 = c1[2]
+                lon2, lat2 = self.xy2ll(x2, y2)
+
+                x3 = c4[0] + (i+1)*xlength
+                y3 = c4[1] + (i+1)*ylength
+                z3 = c3[2]
+                lon3, lat3 = self.xy2ll(x3, y3)
+
+                x4 = c4[0] + i*xlength
+                y4 = c4[1] + i*ylength
+                z4 = c3[2]
+                lon4, lat4 = self.xy2ll(x4, y4)
+
+                # Patch
+                patch = [ [x1, y1, z1],
+                          [x2, y2, z2],
+                          [x3, y3, z3],
+                          [x4, y4, z4] ]
+
+                # Patch ll
+                patchll = [ [lon1, lat1, z1], 
+                            [lon2, lat2, z2],
+                            [lon3, lat3, z3],
+                            [lon4, lat4, z4] ]
+
+                # Store
+                newPatches.append(patch)
+                newPatchesLL.append(patchll)
+
+        # Store
+        self.patch = newPatches
+        self.patchll = newPatchesLL
+
+        # Compute the equivalent patches
+        self.computeEquivRectangle()
+
+        # Initialize slip 
+        self.initializeslip()
+
+        # All done
+        return
+
     def splitPatch(self, patch):
         '''
         Splits a patch in 4 patches and returns 4 new patches.
@@ -167,10 +246,11 @@ class RectangularPatches(Fault):
 
         # Gets the 4 corners
         c1, c2, c3, c4 = patch
-        c1 = c1.tolist()
-        c2 = c2.tolist()
-        c3 = c3.tolist()
-        c4 = c4.tolist()
+        if type(c1) is not list:
+            c1 = c1.tolist()
+            c2 = c2.tolist()
+            c3 = c3.tolist()
+            c4 = c4.tolist()
 
         # Compute the center
         xc, yc, zc = self.getcenter(patch)
@@ -1195,7 +1275,10 @@ class RectangularPatches(Fault):
                     if (self.patch[i]==patch).all():
                         u = i
         if u is not None:
-            patch = self.equivpatch[u]
+            if hasattr(self, 'equivpatch'):
+                patch = self.equivpatch[u]
+            else:
+                patch = self.patch[u]
 
         # Get the four corners of the rectangle
         p1, p2, p3, p4 = patch
