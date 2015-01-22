@@ -406,6 +406,11 @@ def dropSourcesInPatches(fault, verbose=False):
             if len(tobeSplitted)==0:
                 keepGoing = False
 
+            # Do we have a limit
+            if hasattr(fault, 'maximumSources'):
+                if len(splittedPatches)>=fault.maximumSources:
+                    keepGoing = False
+
         # When all done get their centers
         geometry = [fault.getpatchgeometry(p, center=True)[:3] for p in splittedPatches]
         x, y, z = zip(*geometry)

@@ -1785,7 +1785,7 @@ class RectangularPatches(Fault):
         patchll = self.patchll[ipatch]
 
         # Find the southernmost points
-        y = np.array([patch[i][1] for i in range(4)])
+        y = np.array([patch[0][1], patch[1][1]])
         imin = y.argmin()
         
         # Take the points we need to move
@@ -1812,9 +1812,21 @@ class RectangularPatches(Fault):
         patch[ism][0] = patch[isf][0] - dx
         patch[ism][1] = patch[isf][1] - dy
 
+        # Find the southernmost points
+        y = np.array([patch[2][1], patch[3][1]])
+        imin = y.argmin()
+        
+        # Take the points we need to move
+        if fixedside is 'south':
+            fpts = np.flatnonzero(y==y[imin])
+            mpts = np.flatnonzero(y!=y[imin])
+        elif fixedside is 'north':
+            fpts = np.flatnonzero(y!=y[imin])
+            mpts = np.flatnonzero(y==y[imin])
+
         # Deal with the deep points
-        idf = fpts[d[fpts].argmax()]      # Index of the deep fixed point
-        idm = mpts[d[mpts].argmax()]      # Index of the deep moving point
+        idf = fpts[d[fpts].argmax()]+2      # Index of the deep fixed point
+        idm = mpts[d[mpts].argmax()]+2      # Index of the deep moving point
         x1 = patch[idf][0]; y1 = patch[idf][1]
         x2 = patch[idm][0]; y2 = patch[idm][1]
         DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
