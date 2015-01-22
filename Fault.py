@@ -1496,13 +1496,14 @@ class Fault(SourceInv):
         # all done
         return
 
-    def buildCmLaplacian(self, lam, extra_params=None):
+    def buildCmLaplacian(self, lam, extra_params=None, sensitivity=True):
         '''
-        Implements the Laplacian smoothing with sensitivity.
+        Implements the Laplacian smoothing with sensitivity (optional)
         Description can be found in F. Ortega-Culaciati's PhD thesis.
         Args:
             * lam               : Damping factor (list of size of slipdirections)
             * extra_params      : what sigma to allow to ramp parameters.
+            * sensitivity       : Weights the Laplacian by Sensitivity (default True)
         '''
 
         # lambda
@@ -1530,20 +1531,24 @@ class Fault(SourceInv):
         # Loop over directions:
         for i in range(len(self.slipdir)):
 
-            # Compute sensitivity matrix (see Loveless & Meade, 2011)
+            # Start/Stop
             ist = nPatch*i
             ied = ist+nPatch
-            G = self.Gassembled[:,ist:ied]
-            S = np.diag(np.diag(np.dot(G.T, G)))
-            self.sensitivity = S
-            iS = np.linalg.inv(S)
 
-            # Weight Laplacian by sensitivity (see F. Ortega-Culaciati PhD Thesis)
-            Wd = np.dot(np.sqrt(iS), D)
-            DtD = np.dot(Wd.T, Wd)
+            if sensitivity:
+
+                # Compute sensitivity matrix (see Loveless & Meade, 2011)
+                G = self.Gassembled[:,ist:ied]
+                S = np.diag(np.dot(G.T, G))
+                self.sensitivity = S
+
+                # Weight Laplacian by sensitivity (see F. Ortega-Culaciati PhD Thesis)
+                iS = np.sqrt(1./S)
+                D = D*iS[:,np.newaxis]
 
             # Cm
-            localCm = lam[i]*np.linalg.inv(DtD)
+            DtD = np.dot(D.T, D)
+            localCm = 1./lam[i]*np.linalg.inv(DtD)
 
             # Put it into Cm
             Cm[ist:ied, ist:ied] = localCm

@@ -745,7 +745,7 @@ class RectangularPatches(Fault):
             self.index_parameter = []
         self.Cm   = []
         if not donotreadslip:
-            self.slip = []
+            Slip = []
 
         # open the files
         fin = open(filename, 'r') 
@@ -775,7 +775,7 @@ class RectangularPatches(Fault):
                     slip = np.array([np.float(A[i].split()[7]), np.float(A[i].split()[8]), np.float(A[i].split()[9])])
                 else:
                     slip = np.array([0.0, 0.0, 0.0])
-                self.slip.append(slip)
+                Slip.append(slip)
             # get the values
             if inputCoordinates in ('lonlat'):
                 lon1, lat1, z1 = A[i+1].split()
@@ -842,7 +842,9 @@ class RectangularPatches(Fault):
 
         # Translate slip to np.array
         if not donotreadslip:
-            self.slip = np.array(self.slip)        
+            self.initializeslip(np.array(Slip))
+        else:
+            self.initializeslip()
         if readpatchindex:
             self.index_parameter = np.array(self.index_parameter)
 

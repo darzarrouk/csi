@@ -260,6 +260,8 @@ class imagecovariance(object):
                 data['Ramp'] = [a, b, c, w]       
 
             # Build all the permutations
+            if self.verbose:
+                print('Build the permutations')
             ii, jj = np.meshgrid(range(Nsamp), range(Nsamp))
             ii = ii.flatten()
             jj = jj.flatten()
@@ -276,6 +278,8 @@ class imagecovariance(object):
             dv = (d[ii] - d[jj])**2
 
             # Digitize
+            if self.verbose:
+                print('Digitize the histogram')
             bins = np.arange(0., distmax, every)
             inds = np.digitize(dis, bins)
 
