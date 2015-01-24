@@ -884,6 +884,8 @@ class insarrates(SourceInv):
                 self.computePoly(fault)
                 if poly is 'include':
                     self.removePoly(fault)
+                else:
+                    self.synth += self.orbit
 
         # All done
         return
@@ -1013,7 +1015,7 @@ class insarrates(SourceInv):
         xc, yc = self.ll2xy(loncenter, latcenter)
 
         # Get the profile
-        Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2 = self.coord2prof(
+        Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth = self.coord2prof(
                 xc, yc, length, azimuth, width)
 
         # Store it in the profile list
@@ -1024,6 +1026,7 @@ class insarrates(SourceInv):
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
         dic['LOS Velocity'] = vel
+        dic['LOS Synthetics'] = synth
         dic['LOS Error'] = err
         dic['Distance'] = np.array(Dalong)
         dic['Normal Distance'] = np.array(Dacros)
@@ -1306,6 +1309,10 @@ class insarrates(SourceInv):
         xg = self.x[Bol]
         yg = self.y[Bol]
         vel = self.vel[Bol]
+        if self.synth is not None:
+            synth = self.synth[Bol]
+        else:
+            synth = None
         if self.err is not None:
             err = self.err[Bol]
         else:
@@ -1346,6 +1353,8 @@ class insarrates(SourceInv):
         Dacros = Dacros[jj]
         if err is not None:
             err = err[jj]
+        if synth is not None:
+            synth = synth[jj]
 
         if plot:
             plt.figure(1234)
@@ -1370,7 +1379,7 @@ class insarrates(SourceInv):
             plt.show()
 
         # All done
-        return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2
+        return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth
 
     def curve2prof(self, xl, yl, width, widthDir):
         '''
@@ -1714,12 +1723,16 @@ class insarrates(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm'):
+    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False):
         '''
         Plot profile.
         Args:
             * name      : Name of the profile.
             * legendscale: Length of the legend arrow.
+            * fault     : Fault object
+            * norm      : Colorscale limits
+            * ref       : utm or lonlat
+            * synth     : Plot synthetics (True/False).
         '''
 
         # open a figure
@@ -1776,6 +1789,9 @@ class insarrates(SourceInv):
         y = self.profiles[name]['LOS Velocity']
         ey = self.profiles[name]['LOS Error']
         p = prof.errorbar(x, y, yerr=ey, label='los velocity', marker='.', linestyle='')
+        if synth:
+            sy = self.profiles[name]['LOS Synthetics']
+            s = prof.plot(x, sy, '-r', label='synthetics')
 
         # If a fault is here, plot it
         if fault is not None:

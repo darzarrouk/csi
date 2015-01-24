@@ -860,7 +860,7 @@ class RectangularPatches(Fault):
         Writes the patch corners in a file that can be used in psxyz.
         Args:
             * filename      : Name of the file.
-            * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total.
+            * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total, coupling.
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
         '''
@@ -904,6 +904,8 @@ class RectangularPatches(Fault):
                     slp = self.ShearStrike
                 elif add_slip is 'dipsheartraction':
                     slp = self.ShearDip
+                elif add_slip is 'coupling':
+                    slp = self.coupling[p]
                 # Make string
                 string = '-Z{}'.format(slp)
 
@@ -1269,7 +1271,7 @@ class RectangularPatches(Fault):
 
         # Get the patch
         u = None
-        if patch.__class__ is int:
+        if patch.__class__ in (int, np.int, np.int64, np.int32):
             u = patch
         else:
             if checkindex:
@@ -1572,12 +1574,12 @@ class RectangularPatches(Fault):
         # All done
         return center
 
-    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None, lonlat=None,
+    def surfacesimulation(self, box=None, disk=None, err=None, lonlat=None,
                           slipVec=None):
         ''' 
         Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
         Args:
-            * box       : Can be a list of [minlon, maxlon, minlat, maxlat].
+            * box       : Can be a list of [minlon, maxlon, minlat, maxlat, n].
             * disk      : list of [xcenter, ycenter, radius, n]
             * lonlat    : Arrays of lat and lon. [lon, lat]
         '''
@@ -1589,14 +1591,16 @@ class RectangularPatches(Fault):
         # Create a lon lat grid
         if lonlat is None:
             if (box is None) and (disk is None) :
-                lon = np.linspace(self.lon.min(), self.lon.max(), 100)
-                lat = np.linspace(self.lat.min(), self.lat.max(), 100)
+                n = box[-1]
+                lon = np.linspace(self.lon.min(), self.lon.max(), n)
+                lat = np.linspace(self.lat.min(), self.lat.max(), n)
                 lon, lat = np.meshgrid(lon,lat)
                 lon = lon.flatten()
                 lat = lat.flatten()
             elif (box is not None):
-                lon = np.linspace(box[0], box[1], 100)
-                lat = np.linspace(box[2], box[3], 100)
+                n = box[-1]
+                lon = np.linspace(box[0], box[1], n)
+                lat = np.linspace(box[2], box[3], n)
                 lon, lat = np.meshgrid(lon,lat)
                 lon = lon.flatten()
                 lat = lat.flatten()
@@ -1641,6 +1645,7 @@ class RectangularPatches(Fault):
         self.sim.station = np.array(self.sim.station)
 
         # Create an error array
+        self.sim.err_enu = np.zeros(self.sim.vel_enu.shape)
         if err is not None:
             self.sim.err_enu = []
             for i in range(len(self.sim.x)):
