@@ -290,7 +290,7 @@ class imagecovariance(object):
                 uu = np.flatnonzero(inds==i)
                 if len(uu)>0:
                     distance.append(bins[i] + (bins[i+1] - bins[i])/2.)
-                    semivariogram.append(np.mean(dv[uu]))
+                    semivariogram.append(0.5*np.mean(dv[uu]))
 
             # Store these guys
             data['Distance'] = np.array(distance)
