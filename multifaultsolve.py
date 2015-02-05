@@ -814,6 +814,8 @@ class multifaultsolve(object):
         # Assert
         assert hasattr(self, 'samples'), 'Needs to have samples to wite them...'
 
+        samples = self.samples
+
         import h5py
         filename = '{}_samples.h5'.format(self.name.replace(' ','_'))
         fout = h5py.File(filename, 'w')
