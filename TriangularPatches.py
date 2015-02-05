@@ -608,6 +608,20 @@ class TriangularPatches(Fault):
         # All done
         return
 
+    def replacePatch(self, patch, iPatch):
+        '''
+        Replaces one patch by the given geometry.
+        Args:
+            * patch     : Patch geometry.
+            * iPatch    : index of the patch to replace.
+        '''
+
+        # Replace
+        self.patch[iPatch] = patch
+
+        # All done
+        return
+
     def getpatchgeometry(self, patch, center=False, retNormal=False, checkindex=True):
         '''
         Returns the patch geometry as needed for triangleDisp.

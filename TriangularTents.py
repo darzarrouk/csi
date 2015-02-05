@@ -722,7 +722,6 @@ class TriangularTents(TriangularPatches):
         # All done
         return fltname,TrianglePropFile,PointCoordFile
 
-
     def getEllipse(self, tent, ellipseCenter=None, Npoints=10, factor=1.0):
         '''
         Compute the ellipse error given Cm for a given tent
@@ -844,7 +843,6 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-
     def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False):
         '''
         Computes the segment indicating the slip direction.
@@ -920,118 +918,6 @@ class TriangularTents(TriangularPatches):
 
         # Computes the total slip
         self.totalslip = np.sqrt(self.slip[:,0]**2 + self.slip[:,1]**2 + self.slip[:,2]**2)
-
-        # All done
-        return
-
-
-
-    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None, lonlat=None,
-                          slipVec=None):
-        '''
-        Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
-        Args:
-            * box       : Can be a list of [minlon, maxlon, minlat, maxlat].
-            * disk      : list of [xcenter, ycenter, radius, n]
-            * lonlat    : Arrays of lat and lon. [lon, lat]
-        '''
-
-        # Check size
-        if self.N_slip!=None and self.N_slip!=len(self.patch):
-            raise NotImplementedError('Only works for len(slip)==len(patch)')
-
-        # create a fake gps object
-        from .gpsrates import gpsrates
-        self.sim = gpsrates('simulation', utmzone=self.utmzone)
-
-        # Create a lon lat grid
-        if lonlat is None:
-            if (box is None) and (disk is None) :
-                lon = np.linspace(self.lon.min(), self.lon.max(), 100)
-                lat = np.linspace(self.lat.min(), self.lat.max(), 100)
-                lon, lat = np.meshgrid(lon,lat)
-                lon = lon.flatten()
-                lat = lat.flatten()
-            elif (box is not None):
-                lon = np.linspace(box[0], box[1], 100)
-                lat = np.linspace(box[2], box[3], 100)
-                lon, lat = np.meshgrid(lon,lat)
-                lon = lon.flatten()
-                lat = lat.flatten()
-            elif (disk is not None):
-                lon = []; lat = []
-                xd, yd = self.ll2xy(disk[0], disk[1])
-                xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
-                ampx = (xmax-xmin)
-                ampy = (ymax-ymin)
-                n = 0
-                while n<disk[3]:
-                    x, y = np.random.rand(2)
-                    x *= ampx; x -= ampx/2.; x += xd
-                    y *= ampy; y -= ampy/2.; y += yd
-                    if ((x-xd)**2 + (y-yd)**2) <= (disk[2]**2):
-                        lo, la = self.xy2ll(x,y)
-                        lon.append(lo); lat.append(la)
-                        n += 1
-                lon = np.array(lon); lat = np.array(lat)
-        else:
-            lon = np.array(lonlat[0])
-            lat = np.array(lonlat[1])
-
-        # Clean it
-        if (lon.max()>360.) or (lon.min()<-180.0) or (lat.max()>90.) or (lat.min()<-90):
-            self.sim.x = lon
-            self.sim.y = lat
-        else:
-            self.sim.lon = lon
-            self.sim.lat = lat
-            # put these in x y utm coordinates
-            self.sim.ll2xy()
-
-        # Initialize the vel_enu array
-        self.sim.vel_enu = np.zeros((lon.size, 3))
-
-        # Create the station name array
-        self.sim.station = []
-        for i in range(len(self.sim.x)):
-            name = '{:04d}'.format(i)
-            self.sim.station.append(name)
-        self.sim.station = np.array(self.sim.station)
-
-        # Create an error array
-        if err is not None:
-            self.sim.err_enu = []
-            for i in range(len(self.sim.x)):
-                x,y,z = np.random.rand(3)
-                x *= err
-                y *= err
-                z *= err
-                self.sim.err_enu.append([x,y,z])
-            self.sim.err_enu = np.array(self.sim.err_enu)
-
-        # import stuff
-        import sys
-
-        # Load the slip values if provided
-        if slipVec is not None:
-            nPatches = len(self.patch)
-            print(nPatches, slipVec.shape)
-            assert slipVec.shape == (nPatches,3), 'mismatch in shape for input slip vector'
-            self.slip = slipVec
-
-        # Loop over the patches
-        for p in range(len(self.patch)):
-            sys.stdout.write('\r Patch {} / {} '.format(p+1,len(self.patch)))
-            sys.stdout.flush()
-            # Get the surface displacement due to the slip on this patch
-            ss, ds, op = self.slip2dis(self.sim, p)
-            # Sum these to get the synthetics
-            self.sim.vel_enu += ss
-            self.sim.vel_enu += ds
-            self.sim.vel_enu += op
-
-        sys.stdout.write('\n')
-        sys.stdout.flush()
 
         # All done
         return
@@ -1152,71 +1038,6 @@ class TriangularTents(TriangularPatches):
 
         # Close the file
         fout.close()
-
-        # All done
-        return
-
-    def horizshrink1patch(self, ipatch, fixedside='south', finallength=25.):
-        '''
-        Takes an existing patch and shrinks its size in the horizontal direction.
-        Args:
-            * ipatch        : Index of the patch of concern.
-            * fixedside     : One side has to be fixed, takes the southernmost if 'south',
-                                                        takes the northernmost if 'north'
-            * finallength   : Length of the final patch.
-        '''
-
-        # Get the patch
-        patch = self.patch[ipatch]
-        patchll = self.patchll[ipatch]
-
-        # Find the southernmost points
-        y = np.array([patch[i][1] for i in range(4)])
-        imin = y.argmin()
-
-        # Take the points we need to move
-        if fixedside is 'south':
-            fpts = np.flatnonzero(y==y[imin])
-            mpts = np.flatnonzero(y!=y[imin])
-        elif fixedside is 'north':
-            fpts = np.flatnonzero(y!=y[imin])
-            mpts = np.flatnonzero(y==y[imin])
-
-        # Find which depths match
-        d = np.array([patch[i][2] for i in range(4)])
-
-        # Deal with the shallow points
-        isf = fpts[d[fpts].argmin()]      # Index of the shallow fixed point
-        ism = mpts[d[mpts].argmin()]      # Index of the shallow moving point
-        x1 = patch[isf][0]; y1 = patch[isf][1]
-        x2 = patch[ism][0]; y2 = patch[ism][1]
-        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
-        Dy = y1 - y2                            # Y-Distance between the original points
-        Dx = x1 - x2                            # X-Distance between the original points
-        dy = finallength*Dy/DL                  # Y-Distance between the new points
-        dx = finallength*Dx/DL                  # X-Distance between the new points
-        patch[ism][0] = patch[isf][0] - dx
-        patch[ism][1] = patch[isf][1] - dy
-
-        # Deal with the deep points
-        idf = fpts[d[fpts].argmax()]      # Index of the deep fixed point
-        idm = mpts[d[mpts].argmax()]      # Index of the deep moving point
-        x1 = patch[idf][0]; y1 = patch[idf][1]
-        x2 = patch[idm][0]; y2 = patch[idm][1]
-        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
-        Dy = y1 - y2                            # Y-Distance between the original points
-        Dx = x1 - x2                            # X-Distance between the original points
-        dy = finallength*Dy/DL                  # Y-Distance between the new points
-        dx = finallength*Dx/DL                  # X-Distance between the new points
-        patch[idm][0] = patch[idf][0] - dx
-        patch[idm][1] = patch[idf][1] - dy
-
-        # Rectify the lon lat patch
-        for i in range(4):
-            x, y = patch[i][0], patch[i][1]
-            lon, lat = self.xy2ll(x, y)
-            patchll[i][0] = lon
-            patchll[i][1] = lat
 
         # All done
         return

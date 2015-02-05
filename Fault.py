@@ -1871,6 +1871,53 @@ class Fault(SourceInv):
         # All done
         return
 
+    def sumPatches(self, iPatches, finalPatch):
+        '''
+        Takes a list of patches, sums the green's functions,
+        and modifies the list self.patch.
+        
+        Args:
+            * patches       : List of the patches to sum (indexes).
+            * finalPatch    : Geometry of the final patch.
+        '''
+
+        # Needs to have Greens functions  
+        assert len(self.G.keys())>0, 'Need some Greens functions, otherwise this function is pointless'
+
+        # Loop over the data sets
+        for data in self.G:
+
+            # Get it
+            G = self.G[data]
+
+            # Loop over the Green's functions
+            for comp in G:
+
+                # Get the matrix
+                gf = G[comp]
+
+                # Sum the columns
+                col = np.sum(gf[:,iPatches], axis=1)
+
+                # New matrix
+                gf = np.delete(gf, iPatches[1:], axis=1)
+                gf[:,iPatches[0]] = col
+
+                # Set it 
+                G[comp] = gf
+        
+        # Replace the first of the patches by the new patch
+        self.replacePatch(finalPatch, iPatches[0])
+
+        # Delete the other patches
+        self.deletepatches(iPatches[1:])
+
+        # Check 
+        self.N_slip = len(self.patch)
+
+        # All done
+        return
+
     def estimateSeismicityRate(self, earthquake, extra_div=1.0, epsilon=0.00001):
         '''
         Counts the number of earthquakes per patches and divides by the area of the patches.
