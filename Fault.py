@@ -1912,6 +1912,10 @@ class Fault(SourceInv):
         # Delete the other patches
         self.deletepatches(iPatches[1:])
 
+        # Equivalent Patches
+        if self.patchType is 'rectangle':
+            self.computeEquivRectangle()
+
         # Check 
         self.N_slip = len(self.patch)
 

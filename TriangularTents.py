@@ -488,7 +488,81 @@ class TriangularTents(TriangularPatches):
         '''
         Transfers the edksSources list into the node based setup.
         '''
+    
+        # Get the faces and Nodes
+        Faces = self.gocad_faces
+        Vertices = self.gocad_vertices
 
+        # Get the surrounding triangles
+        Nodes = {}
+
+        # Loop for that 
+        for nId in self.tentid:
+            Nodes[nId] = {'nTriangles': 0, 'idTriangles': []}
+            for idFace in range(self.gocad_faces.shape[0]):
+                ns = self.gocad_faces[idFace,:].tolist()
+                if nId in ns:
+                    Nodes[nId]['nTriangles'] += 1
+                    Nodes[nId]['idTriangles'].append(idFace)
+
+        # Save the nodes
+        self.Nodes = Nodes
+
+        # Create the new edksSources
+        Ids = []
+        xs = []; ys = []; zs = []
+        strike = []; dip = []
+        areas = []; slip = []
+
+        # Iterate on the nodes to derive the weights
+        for mainNode in Nodes:
+            # Loop over each of these triangles
+            for tId in Nodes[mainNode]['idTriangles']:
+                # Find the sources in edksSources
+                iS = np.flatnonzero(self.edksSources[0]==(tId))
+                # Get the sources
+                nIs = len(iS)
+                Is = np.array([self.edksSources[1][iS], self.edksSources[2][iS], self.edksSources[3][iS]])
+                # Get the three nodes
+                tNodes = Faces[tId]
+                # Affect the master node and the two outward nodes
+                nodeOne, nodeTwo = tNodes[np.where(tNodes!=mainNode)]
+                # Calculate the three vectors of the sides of the triangle
+                v4 = np.cross(Vertices[nodeOne] - Vertices[mainNode], Vertices[nodeTwo] - Vertices[mainNode])
+                v3 = Vertices[nodeTwo] - Vertices[nodeOne]
+                # Calculate the height of the triangle
+                C = Vertices[nodeOne][2] - Vertices[mainNode][2]
+                h = np.ones((3,))
+                h[2] = C
+                h[1] = C * (v4[2]*v3[0] - v3[2]*v4[0]) / (v3[1]*v4[0] - v3[0]*v4[1])
+                h[0] = C * (v4[2]*v3[1] - v3[2]*v4[1]) / (v3[0]*v4[1] - v4[0]*v3[1])
+                # Normalize it
+                h = h/np.sqrt(np.sum(h**2))
+                # Compute the vectors between the mainNode and each subPoint
+                Vi = Is - Vertices[mainNode][:,np.newaxis]
+                # Compute the scalar product (which is the distance we want)
+                d = np.dot(Vi.T, h[:,None])
+                # Compute the distance max
+                Dmax = np.dot(Vertices[nodeOne] - Vertices[mainNode], h) 
+                # Compute the weights
+                Wi = 1. - d/Dmax
+                # Save each source
+                Ids += (np.ones((nIs,))*mainNode).tolist()
+                xs += self.edksSources[1][iS].tolist()
+                ys += self.edksSources[2][iS].tolist()
+                zs += self.edksSources[3][iS].tolist()
+                strike += self.edksSources[4][iS].tolist()
+                dip += self.edksSources[5][iS].tolist()
+                areas += self.edksSources[6][iS].tolist()
+                slip += Wi.tolist()
+
+        # Set the new edksSources
+        self.edksFacetSources = copy.deepcopy(self.edksSources)
+        self.edksSources = [np.array(Ids), np.array(xs), np.array(ys), np.array(zs), 
+                np.array(strike), np.array(dip), np.array(areas), np.array(slip)]
+
+        # All done
+        return
 
     def buildAdjacencyMapVT(self, verbose=True):
         """

@@ -365,7 +365,7 @@ def dropSourcesInPatches(fault, verbose=False):
 
         # print
         if verbose:
-            sys.stdout.write('\r Patch {} / {} '.format(i, len(fault.patch)))
+            sys.stdout.write('\r Patch {:4d} / {:4d} '.format(i, len(fault.patch)))
             sys.stdout.flush()
 
         # get patch 
@@ -420,12 +420,12 @@ def dropSourcesInPatches(fault, verbose=False):
         dip = np.ones((len(x),))*dip
         dip = dip.tolist()
         areas = [fault.patchArea(p) for p in splittedPatches]
-        ids = np.ones((len(x),))*(i+1)
+        ids = np.ones((len(x),))*(i)
         ids = ids.astype(np.int).tolist()
 
         # if verbose
         if verbose:
-            sys.stdout.write('  ==> {} sources'.format(len(ids)))
+            sys.stdout.write('  ==> {:4d} sources'.format(len(ids)))
             sys.stdout.flush()
 
         # Add to existing lists
