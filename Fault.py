@@ -812,7 +812,10 @@ class Fault(SourceInv):
 
         # Check something
         if not hasattr(self, 'keepTrackOfSources'):  
-            self.keepTrackOfSources = False
+            if self.patchType is 'triangletent':
+                self.keepTrackOfSources = True
+            else:
+                self.keepTrackOfSources = False
 
         # If we have already done that step
         if self.keepTrackOfSources and hasattr(self, 'edksSources'):
@@ -841,7 +844,7 @@ class Fault(SourceInv):
             slip = np.ones(dip.shape)
         if self.patchType is 'triangletent':
             # If saved, good
-            if self.keepTrackOfSources and hasattr(self, 'edksSources'):
+            if self.keepTrackOfSources and hasattr(self, 'edksSources') and (len(self.edksSources)>7):
                 slip = self.edksSources[7]
             # Else, we have to re-organize the Ids from facet to nodes
             else:
