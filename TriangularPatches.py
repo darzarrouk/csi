@@ -202,9 +202,9 @@ class TriangularPatches(Fault):
             vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
         vz = vertices[:,2]*factor_depth
         self.factor_depth = factor_depth
-        self.gocad_vertices = np.column_stack((vx, vy, vz))
-        self.gocad_vertices_ll = vertices
-        self.gocad_faces = faces
+        self.Vertices = np.column_stack((vx, vy, vz))
+        self.Vertices_ll = vertices
+        self.Faces = faces
         print('min/max depth: {} km/ {} km'.format(vz.min(),vz.max()))
         print('min/max lat: {} deg/ {} deg'.format(vertices[:,1].min(),vertices[:,1].max()))
         print('min/max lon: {} deg/ {} deg'.format(vertices[:,0].min(),vertices[:,0].max()))
@@ -248,14 +248,14 @@ class TriangularPatches(Fault):
 
         fid = open(filename, 'w')
         if utm:
-            vertices = self.gocad_vertices*1.0e3
+            vertices = self.Vertices*1.0e3
         else:
-            vertices = self.gocad_vertices_ll
+            vertices = self.Vertices_ll
         for i in range(vertices.shape[0]):
             v = vertices[i]
             fid.write('VRTX {} {} {} {}\n'.format(i+1,v[0],v[1],v[2]))
-        for i in range(self.gocad_faces.shape[0]):
-            vid = self.gocad_faces[i,:]+1
+        for i in range(self.Faces.shape[0]):
+            vid = self.Faces[i,:]+1
             fid.write('TRGL {} {} {}\n'.format(vid[0],vid[1],vid[2]))
         fid.close()
 
@@ -794,7 +794,7 @@ class TriangularPatches(Fault):
         self.adjacencyMap = []
 
         # Cache the vertices and faces arrays
-        vertices, faces = self.gocad_vertices, self.gocad_faces
+        vertices, faces = self.Vertices, self.Faces
 
         # First find adjacent triangles for all triangles
         npatch = len(self.patch)
@@ -841,7 +841,7 @@ class TriangularPatches(Fault):
         centers = self.getcenters()
 
         # Cache the vertices and faces arrays
-        vertices, faces = self.gocad_vertices, self.gocad_faces
+        vertices, faces = self.Vertices, self.Faces
 
         # Allocate array for Laplace operator
         npatch = len(self.patch)
@@ -1001,16 +1001,16 @@ class TriangularPatches(Fault):
                 xc -= refx
                 yc -= refy
             verts = copy.deepcopy(self.patch[p])
-            v1, v2, v3 = self.gocad_faces[p,:]
+            v1, v2, v3 = self.Faces[p,:]
             TriP_tuple = (p,lonc,latc,xc,yc,zc,strike,dip,self.area[p],v1,v2,v3)
             TriP.write(TriP_format%TriP_tuple)
 
         PoC_format =  '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f\n'
-        for v in range(self.gocad_vertices.shape[0]):
-            xv,yv,zv = self.gocad_vertices[v,:]
-            lonv,latv,zv2 = self.gocad_vertices_ll[v,:]
+        for v in range(self.Vertices.shape[0]):
+            xv,yv,zv = self.Vertices[v,:]
+            lonv,latv,zv2 = self.Vertices_ll[v,:]
             assert zv == zv2*self.factor_depth, \
-                'inconsistent depth in gocad_vertices and gocad_vertices_ll'
+                'inconsistent depth in Vertices and Vertices_ll'
             if ref is not None:
                 xv -= refx
                 yv -= refy
@@ -1749,9 +1749,9 @@ class TriangularPatches(Fault):
             valueSign = -1.0
 
         # Plot the wireframe
-        x, y, z = self.gocad_vertices[:,0], self.gocad_vertices[:,1], self.gocad_vertices[:,2]
+        x, y, z = self.Vertices[:,0], self.Vertices[:,1], self.Vertices[:,2]
         z *= negFactor
-        mesh = mlab.triangular_mesh(x, y, z, self.gocad_faces, representation='wireframe',
+        mesh = mlab.triangular_mesh(x, y, z, self.Faces, representation='wireframe',
                                     opacity=0.6, color=(0.0,0.0,0.0))
 
         # Compute the scalar value to color the patches

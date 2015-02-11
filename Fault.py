@@ -1623,9 +1623,9 @@ class Fault(SourceInv):
         if self.N_slip == len(self.patch):
             flag_patch = True
             vertices = None
-        elif self.patchType == 'triangle' and self.N_slip == len(self.gocad_vertices):
+        elif self.patchType == 'triangle' and self.N_slip == len(self.Vertices):
             flag_patch = False
-            vertices = self.gocad_vertices
+            vertices = self.Vertices
         else:
             raise NotImplementedError('Error: Inconsistent number of slip values')
 

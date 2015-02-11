@@ -880,8 +880,8 @@ class seismiclocations(SourceInv):
         dis = []
 
         # Create the list of vertices
-        if fault.patchType in ('triangle'):
-            vertices = fault.gocad_vertices
+        if fault.patchType in ('triangle', 'triangletent'):
+            vertices = fault.Vertices
         elif fault.patchType in ('rectangle'):
             vertices = []
             for p in fault.patch:

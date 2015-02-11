@@ -498,9 +498,9 @@ class TriangularTents(TriangularPatches):
         else:
             vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
         vz = vertices[:,2]*factor_depth
-        self.gocad_vertices = np.column_stack((vx, vy, vz))
-        self.gocad_vertices_ll = vertices
-        self.gocad_faces = faces
+        self.Vertices = np.column_stack((vx, vy, vz))
+        self.Vertices_ll = vertices
+        self.Faces = faces
         print('min/max depth: {} km/ {} km'.format(vz.min(),vz.max()))
         print('min/max lat: {} deg/ {} deg'.format(vertices[:,1].min(),vertices[:,1].max()))
         print('min/max lon: {} deg/ {} deg'.format(vertices[:,0].min(),vertices[:,0].max()))
@@ -557,8 +557,8 @@ class TriangularTents(TriangularPatches):
         '''
     
         # Get the faces and Nodes
-        Faces = self.gocad_faces
-        Vertices = self.gocad_vertices
+        Faces = self.Faces
+        Vertices = self.Vertices
 
         # Get the surrounding triangles
         Nodes = {}
@@ -566,8 +566,8 @@ class TriangularTents(TriangularPatches):
         # Loop for that 
         for nId in self.tentid:
             Nodes[nId] = {'nTriangles': 0, 'idTriangles': []}
-            for idFace in range(self.gocad_faces.shape[0]):
-                ns = self.gocad_faces[idFace,:].tolist()
+            for idFace in range(self.Faces.shape[0]):
+                ns = self.Faces[idFace,:].tolist()
                 if nId in ns:
                     Nodes[nId]['nTriangles'] += 1
                     Nodes[nId]['idTriangles'].append(idFace)
@@ -658,7 +658,7 @@ class TriangularTents(TriangularPatches):
         self.adjacencyMapVT = []
 
         # Cache the vertices and faces arrays
-        vertices, faces = self.gocad_vertices, self.gocad_faces
+        vertices, faces = self.Vertices, self.Faces
 
         # First find adjacent triangles for all triangles
         numvert = len(vertices)
@@ -698,7 +698,7 @@ class TriangularTents(TriangularPatches):
         centers = self.getcenters()
 
         # Cache the vertices and faces arrays
-        vertices, faces = self.gocad_vertices, self.gocad_faces
+        vertices, faces = self.Vertices, self.Faces
 
         # Allocate array for Laplace operator
         npatch = len(self.patch)
