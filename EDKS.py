@@ -337,12 +337,12 @@ def dropSourcesInPatches(fault, verbose=False):
     Ids, Xs, Ys, Zs, Strike, Dip, Area = [], [], [], [], [], [], []
 
     # Check
-    if not hasattr(fault, 'sourceSpacing') and not hasattr(fault, 'sourceNumber') and not hasattr(fault, 'sourceArea'):
-        print('Need to provide area, spacing or number of sources...')
+    if (not hasattr(fault, 'sourceSpacing')) and (not hasattr(fault, 'sourceNumber')) and (not hasattr(fault, 'sourceArea')):
+        print('EDKS: Need to provide area, spacing or number of sources...')
         sys.exit(1)
     if hasattr(fault, 'sourceSpacing') and hasattr(fault, 'sourceNumber') and hasattr(fault, 'sourceArea'):
-        print('Please delete sourceSpacing, sourceNumber or sourceArea...')
-        print('I do not judge... You decide...')
+        print('EDKS: Please delete sourceSpacing, sourceNumber or sourceArea...')
+        print('EDKS: I do not judge... You decide...')
         sys.exit(1)
 
     # Spacing

@@ -172,12 +172,12 @@ class seismic(SourceInv):
         # Compute residual autocorrelation for each station
         n = 0
         R = P - D # Residual vector
-        print R.shape
+        print(R.shape)
         Cd = np.zeros((len(D),len(D)))
         for dkey in self.sta_name:
             print('Cd for %s'%dkey)
             npts = self.d[dkey].npts
-            print npts
+            print(npts)
             res  = R[n:n+npts]
             obs  = self.d[dkey].depvar
             cor = signal.correlate(res,res)
@@ -189,7 +189,7 @@ class seismic(SourceInv):
                     dk = k1-k2
                     C[k1,k2] = cor[npts+dk-1]*std*std
             Cd[n:n+npts,n:n+npts] = C.copy()
-            print len(obs),len(P[n:n+npts])
+            print(len(obs),len(P[n:n+npts]))
             #plt.figure()
             #plt.plot(obs)
             #plt.plot(P[n:n+npts])

@@ -18,7 +18,7 @@ import os
 
 # Personals
 from .TriangularPatches import TriangularPatches
-
+from .geodeticplot import geodeticplot as geoplot
 
 class TriangularTents(TriangularPatches):
 
@@ -75,9 +75,7 @@ class TriangularTents(TriangularPatches):
         if tent.__class__ is int:
             u = tent
         else:
-            for i in range(len(self.tent)):
-                if (self.tent[i]==tent).all():
-                    u = i
+            u = self.getindex(tent)
 
         x, y, z = self.tent[u]
         strike, dip = 0, 0
@@ -591,43 +589,9 @@ class TriangularTents(TriangularPatches):
                 tNodes = Faces[tId]
                 # Affect the master node and the two outward nodes
                 nodeOne, nodeTwo = tNodes[np.where(tNodes!=mainNode)]
-                # Calculate the three vectors of the sides of the triangle
-                v1 = Vertices[nodeOne] - Vertices[mainNode]
-                v2 = Vertices[nodeTwo] - Vertices[mainNode]
-                # Barycentric coordinates: Less lines. Implemented nicely.
-                Area = 0.5 * np.sqrt(np.sum(np.cross(v1, v2)**2))
-                Is = np.array([self.edksSources[1][iS], self.edksSources[2][iS], self.edksSources[3][iS]])
-                S1 = Vertices[nodeOne][:,np.newaxis] - Is
-                S2 = Vertices[nodeTwo][:,np.newaxis] - Is
-                Areas = 0.5 * np.sqrt(np.sum(np.cross(S1, S2, axis=0)**2, axis=0))
-                Wi = Areas/Area
-
-                # Vectorial Method: More Lines, same results.
-                ## Calculate the height of the triangle
-                #v3 = Vertices[nodeTwo] - Vertices[nodeOne]
-                #if np.dot(v1, v3)==0:
-                #    h = v1
-                #elif np.dot(v2, v3)==0:
-                #    h = v2
-                #else:
-                #    v4 = np.cross(v1, v2)
-                #    C = Vertices[nodeOne][2] - Vertices[mainNode][2]
-                #    h = np.ones((3,))
-                #    h[2] = C
-                #    h[1] = C * (v4[2]*v3[0] - v3[2]*v4[0]) / (v3[1]*v4[0] - v3[0]*v4[1])
-                #    h[0] = C * (v4[2]*v3[1] - v3[2]*v4[1]) / (v3[0]*v4[1] - v4[0]*v3[1])
-                ## Normalize it
-                #h = h/np.sqrt(np.sum(h**2))
-                ## Compute the vectors between the mainNode and each subPoint
-                #Is = np.array([self.edksSources[1][iS], self.edksSources[2][iS], self.edksSources[3][iS]])
-                #Vi = Is - Vertices[mainNode][:,np.newaxis]
-                ## Compute the scalar product (which is the distance we want)
-                #d = np.dot(Vi.T, h[:,None])
-                ## Compute the distance max
-                #Dmax = np.dot(Vertices[nodeOne] - Vertices[mainNode], h) 
-                ## Compute the weights
-                #Wi = 1. - d/Dmax
-                
+                # Get weights
+                Wi = self._getWeights(Vertices[mainNode], Vertices[nodeOne], Vertices[nodeTwo], 
+                           self.edksSources[1][iS], self.edksSources[2][iS], self.edksSources[3][iS])
                 # Save each source
                 Ids += (np.ones((len(iS),))*mainNode).tolist()
                 xs += self.edksSources[1][iS].tolist()
@@ -968,7 +932,7 @@ class TriangularTents(TriangularPatches):
         return dis
 
     def plot(self, ref='utm', figure=134, add=False, maxdepth=None, axis='equal',
-             value_to_plot='total', neg_depth=False):
+             slip='total', neg_depth=False):
         '''
         Plot the available elements of the fault.
 
@@ -976,114 +940,74 @@ class TriangularTents(TriangularPatches):
             * ref           : Referential for the plot ('utm' or 'lonlat').
             * figure        : Number of the figure.
         '''
+        
+        # Create a geodetic plot
+        fig = geoplot(figure=figure, ref=ref)
 
-        # Import necessary things
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-        fig = plt.figure(figure)
-        ax = fig.add_subplot(111, projection='3d')
+        # Trace
+        if hasattr(self, 'lon') or hasattr(self, 'xf'):
+            fig.faulttrace(self)
 
-        # Set the axes
-        if ref is 'utm':
-            ax.set_xlabel('Easting (km)')
-            ax.set_ylabel('Northing (km)')
-        else:
-            ax.set_xlabel('Longitude')
-            ax.set_ylabel('Latitude')
-        ax.set_zlabel('Depth (km)')
+        # 3D geometry
+        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=None, colorbar=True, plot_on_2d=False, npoints=40)
 
-        # Sign factor for negative depths
-        if neg_depth:
-            negFactor = 1.0
-        else:
-            negFactor = -1.0
-
-        # Plot the surface trace
-        if ref is 'utm':
-            if self.xf is None:
-                self.trace2xy()
-            ax.plot(self.xf, self.yf, '-b')
-        else:
-            ax.plot(self.lon, self.lat,'-b')
-
-        if add and (ref is 'utm'):
-            for fault in self.addfaultsxy:
-                ax.plot(fault[:,0], fault[:,1], '-k')
-        elif add and (ref is not 'utm'):
-            for fault in self.addfaults:
-                ax.plot(fault[:,0], fault[:,1], '-k')
-
-        # Plot the discretized trace
-        if self.xi is not None:
-            if ref is 'utm':
-                ax.plot(self.xi, self.yi, '.r')
-            else:
-                if self.loni is None:
-                    self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
-                ax.plot(loni, lati, '.r')
-
-        # Compute the total slip
-        if value_to_plot=='total':
-            self.computetotalslip()
-            plotval = self.totalslip
-        elif value_to_plot=='index':
-            plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
-
-        # Plot the patches
-        if self.patch is not None:
-
-            # import stuff
-            import mpl_toolkits.mplot3d.art3d as art3d
-            import matplotlib.colors as colors
-            import matplotlib.cm as cmx
-
-            # set z axis
-            ax.set_zlim3d([negFactor * (self.depth - negFactor * 5), 0])
-            zticks = []
-            zticklabels = []
-            for z in self.z_patches:
-                zticks.append(negFactor * z)
-                zticklabels.append(z)
-            ax.set_zticks(zticks)
-            ax.set_zticklabels(zticklabels)
-
-            # set color business
-            cmap = plt.get_cmap('jet')
-            cNorm  = colors.Normalize(vmin=0, vmax=plotval.max())
-            scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
-
-            for p in range(len(self.patch)):
-                ncorners = len(self.patch[0])
-                x = []
-                y = []
-                z = []
-                for i in range(ncorners):
-                    if ref is 'utm':
-                        x.append(self.patch[p][i][0])
-                        y.append(self.patch[p][i][1])
-                        z.append(negFactor * self.patch[p][i][2])
-                    else:
-                        x.append(self.patchll[p][i][0])
-                        y.append(self.patchll[p][i][1])
-                        z.append(negFactor * self.patchll[p][i][2])
-                verts = [zip(x, y, z)]
-                rect = art3d.Poly3DCollection(verts)
-                rect.set_color(scalarMap.to_rgba(plotval[p]))
-                rect.set_edgecolors('k')
-                ax.add_collection3d(rect)
-
-            # put up a colorbar
-            scalarMap.set_array(plotval)
-            plt.colorbar(scalarMap)
-
-        # Depth
-        if maxdepth is not None:
-            ax.set_zlim3d([neg_factor * maxdepth, 0])
-
-        # show
-        plt.show()
+        # Show
+        fig.show(showFig=['fault'])
 
         # All done
-        return
+        return x, y, z, slip
+
+    def _getWeights(self, mainNode, nodeOne, nodeTwo, x, y, z):
+        '''
+        For a triangle given by the coordinates of its summits, compute the weight of
+        the points given by x, y, and z positions (these guys need to be inside the triangle).
+        Args:
+            * mainNode  : [x,y,z] of the main Node
+            * nodeOne   : [x,y,z] of the first Node
+            * nodeTwo   : [x,y,z] of the second Node
+            * x         : X position of all the subpoints
+            * y         : Y position of all the subpoints
+            * z         : Z position of all the subpoints
+        '''
+
+        # Calculate the three vectors of the sides of the triangle
+        v1 = nodeOne - mainNode
+        v2 = nodeTwo - mainNode
+
+        # Barycentric coordinates: Less lines. Implemented nicely.
+        Area = 0.5 * np.sqrt(np.sum(np.cross(v1, v2)**2))
+        Is = np.array([x,y,z])
+        S1 = nodeOne[:,np.newaxis] - Is
+        S2 = nodeTwo[:,np.newaxis] - Is
+        Areas = 0.5 * np.sqrt(np.sum(np.cross(S1, S2, axis=0)**2, axis=0))
+        Wi = Areas/Area
+
+        # Vectorial Method: More Lines, same results.
+        ## Calculate the height of the triangle
+        #v3 = Vertices[nodeTwo] - Vertices[nodeOne]
+        #if np.dot(v1, v3)==0:
+        #    h = v1
+        #elif np.dot(v2, v3)==0:
+        #    h = v2
+        #else:
+        #    v4 = np.cross(v1, v2)
+        #    C = Vertices[nodeOne][2] - Vertices[mainNode][2]
+        #    h = np.ones((3,))
+        #    h[2] = C
+        #    h[1] = C * (v4[2]*v3[0] - v3[2]*v4[0]) / (v3[1]*v4[0] - v3[0]*v4[1])
+        #    h[0] = C * (v4[2]*v3[1] - v3[2]*v4[1]) / (v3[0]*v4[1] - v4[0]*v3[1])
+        ## Normalize it
+        #h = h/np.sqrt(np.sum(h**2))
+        ## Compute the vectors between the mainNode and each subPoint
+        #Is = np.array([self.edksSources[1][iS], self.edksSources[2][iS], self.edksSources[3][iS]])
+        #Vi = Is - Vertices[mainNode][:,np.newaxis]
+        ## Compute the scalar product (which is the distance we want)
+        #d = np.dot(Vi.T, h[:,None])
+        ## Compute the distance max
+        #Dmax = np.dot(Vertices[nodeOne] - Vertices[mainNode], h) 
+        ## Compute the weights
+        #Wi = 1. - d/Dmax
+
+        return Wi
 
 #EOF
