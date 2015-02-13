@@ -1,5 +1,5 @@
 '''
-A class that deals with InSAR data, after decimation using VarRes.
+A class that deals with COSI-Corr data, after decimation using VarRes.
 
 Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 '''
@@ -297,7 +297,7 @@ class cosicorrrates(SourceInv):
 
     def read_from_envi(self, filename, component='EW', remove_nan=True):
         '''
-        Reads velocity map from a grd file.
+        Reads displacement map from an ENVI file.
         Args:
             * filename  : Name of the input file
             * component : 'EW' or 'NS'
@@ -336,14 +336,18 @@ class cosicorrrates(SourceInv):
         # Data        
         if component=='EW':
             self.east = np.fromfile(filename,dtype='float32')
+            print('read length',len(self.east))
             if remove_nan:
                 u = np.flatnonzero(np.isfinite(self.east))
                 self.east = self.east[u]
+            self.err_east=np.zeros(self.east.shape)  # set to zero error for now
+            print('after mask',len(self.east))
         elif component=='NS':
             self.north = np.fromfile(filename,dtype='float32')
             if remove_nan:
-                u = np.flatnonzero(np.isfinite(self.east))
+                u = np.flatnonzero(np.isfinite(self.north))
                 self.north = self.north[u]
+            self.err_north=np.zeros(self.north.shape)  # set to zero error for now
         if remove_nan:
             self.lon = self.lon[u]; self.lat = self.lat[u]
             self.x   = self.x[u]  ; self.y   = self.y[u]
@@ -353,6 +357,9 @@ class cosicorrrates(SourceInv):
             assert len(self.north) == len(self.east), 'inconsistent data size'
             assert len(self.lon)==len(self.lat),   'inconsistent lat/lon size'
             assert len(self.lon)==len(self.north), 'inconsistent lon/data size'            
+        
+        self.factor = 1.0
+        self.obs_per_station = 2
 
         # All done
         return
@@ -759,7 +766,7 @@ class cosicorrrates(SourceInv):
         
 
 
-    def removeSynth(self, faults, direction='sd', include_poly=False):
+    def removeSynth(self, faults, direction='sd', poly=None, vertical=False):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
         Args:
@@ -768,15 +775,16 @@ class cosicorrrates(SourceInv):
             * include_poly  : if a polynomial function has been estimated, include it.
         '''
 
-        raise NotImplementedError('do it later')
-        return
+ #       raise NotImplementedError('do it later')
+ #       return
 
         # Build synthetics
-        self.buildsynth(faults, direction=direction, include_poly=include_poly)
+        self.buildsynth(faults, direction=direction, poly=poly)
 
         # Correct
-        self.vel -= self.synth
-
+        self.east -= self.east_synth
+	self.north -= self.north_synth
+	
         # All done
         return
 
