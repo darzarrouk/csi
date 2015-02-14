@@ -380,7 +380,7 @@ class imagecovariance(object):
         image of type insarrates or cosicorrrates.
         Args:
             * image     : dataset of type cosicorrrates or insarrates.
-            * dname     : Name of the dataset used to estimate the parameters.
+            * dname     : Name of the covariance estimator.
                           if image is cosicorrates, the datasets used are "dname East" and "dname North".
             * write2file: Write to a binary file (np.float32).
         '''
