@@ -11,6 +11,7 @@ import matplotlib.colors as colors
 import matplotlib.cm as cmx
 import matplotlib.collections as colls
 import numpy as np
+import scipy.interpolate as sciint
 
 class geodeticplot(object):
 
@@ -76,10 +77,8 @@ class geodeticplot(object):
 
         # Delete figures
         if 'map' not in showFig:
-            print('Not showing Map')
             plt.close(self.fig2)
         if 'fault' not in showFig:
-            print('Not showing Fault')
             plt.close(self.fig1)
 
         # Show
@@ -340,18 +339,13 @@ class geodeticplot(object):
         # If 2d.
         if plot_on_2d:
             for patch in fault.patch:
-                x1 = patch[0][0]
-                y1 = patch[0][1]
-                x2 = patch[1][0]
-                y2 = patch[1][1]
-                x3 = patch[2][0]
-                y3 = patch[2][1]
-                x4 = patch[3][0]
-                y4 = patch[3][1]
-                self.carte.plot([x1, x2, x3, x4,x1], [y1, y2, y3, y4,y1], '-k', linewidth=1)
-                self.carte.plot([(x1+x3)/2.], [(y1+y3)/2.], '.r', markersize=5)
+                x = [patch[i][0] for i in range(len(patch))]
+                y = [patch[i][1] for i in range(len(patch))]
+                x.append(x[0]); y.append(y[0])
+                self.carte.plot(x, y, '-k', linewidth=1)
+                xc, yc = fault.getpatchgeometry(patch, center=True)[:2]
+                self.carte.plot([xc], [yc], '.r', markersize=5)
                 
-
         # put up a colorbar
         if colorbar:
             scalarMap.set_array(slip)
@@ -359,6 +353,158 @@ class geodeticplot(object):
 
         # All done
         return Xs,Ys
+
+    def faultTents(self, fault, slip='strikeslip', Norm=None, colorbar=True, method='surface',
+            plot_on_2d=False, revmap=False, factor=1.0, npoints=50, xystrides=[100, 100]):
+        '''
+        Args:
+            * fault         : Fault class from verticalfault.
+            
+            * slip          : Can be 'strikeslip', 'dipslip', 'opening', 'total' or 'coupling'
+            
+            * Norm          : Limits for the colorbar.
+
+            * method        : Can be 'scatter' --> Plots all the sub points as a colored dot.
+                                     'surface' --> Interpolates a 3D surface (can be ugly)
+            
+            * colorbar      : if True, plots a colorbar.
+            
+            * plot_on_2d    : if True, adds the patches on the map.
+            
+            * revmap        : Reverse the default colormap
+            
+            * factor        : Scale factor for fault slip values
+            
+            * npoints       : Number of subpoints per patch. This number is only indicative of the 
+                              actual number of points that is picked out by the dropSourcesInPatch
+                              function of EDKS.py. It only matters to make the interpolation finer.
+                              Default value is generally alright.
+            
+            * xystrides     : If method is 'surface', then xystrides is going to be the number of 
+                              points along x and along y used to interpolate the surface in 3D and 
+                              its color.
+        '''
+
+        # Get slip
+        if slip in ('strikeslip'):
+            slip = fault.slip[:,0].copy()
+        elif slip in ('dipslip'):
+            slip = fault.slip[:,1].copy()
+        elif slip in ('opening'):
+            slip = fault.slip[:,2].copy()
+        elif slip in ('total'):
+            slip = np.sqrt(fault.slip[:,0]**2 + fault.slip[:,1]**2 + fault.slip[:,2]**2)
+        elif slip in ('coupling'):
+            slip = fault.coupling.copy()
+        else:
+            print ("Unknown slip direction")
+            return
+        slip *= factor
+
+        # norm
+        if Norm is None:
+            vmin=slip.min()
+            vmax=slip.max()
+        else:
+            vmin=Norm[0]
+            vmax=Norm[1]
+
+        # set z axis
+        self.setzaxis(fault.depth+5., zticklabels=fault.z_patches)
+
+        # set color business
+        if revmap:
+            cmap = plt.get_cmap('jet_r')
+        else:
+            cmap = plt.get_cmap('jet')
+        cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+
+        # Get the variables we need
+        if self.ref is 'utm':
+            vertices = fault.Vertices.tolist()
+            patches = fault.patch
+        else:
+            vertices = fault.Vertices_ll.tolist()
+            patches = fault.patchll
+        faces = fault.Faces
+
+        # Plot the triangles
+        for face in faces:
+            verts = [vertices[f] for f in face]
+            x = [v[0] for v in verts]
+            y = [v[1] for v in verts]
+            z = [-1.0*v[2] for v in verts]
+            x.append(x[0]); y.append(y[0]); z.append(z[0])
+            self.faille.plot3D(x, y, z, '-', color='gray', linewidth=1)
+            if plot_on_2d:
+                self.carte.plot(x, y, '-', color='gray', linewidth=1)
+
+        # Plot the color for slip
+        # 1. Get the subpoints for each triangle
+        from .EDKS import dropSourcesInPatches as Patches2Sources
+        fault.sourceNumber = npoints
+        Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(fault, verbose=False)
+        fault.plotSources = [Ids, xs, ys, zs, strike, dip, Areas]
+
+        # Get them
+        Ids = fault.plotSources[0]
+        X = fault.plotSources[1]
+        Y = fault.plotSources[2]
+        Z = fault.plotSources[3]
+        Slip = np.zeros(X.shape)
+
+        # 2. Compute the slip value at each subpoint
+        for iPatch in range(len(fault.patch)):
+            nodeOne, nodeTwo, nodeThree = fault.Faces[iPatch]
+            slipOne = slip[nodeOne]
+            slipTwo = slip[nodeTwo]
+            slipThree = slip[nodeThree]
+            vertOne = np.array(vertices[nodeOne])
+            vertTwo = np.array(vertices[nodeTwo])
+            vertThree = np.array(vertices[nodeThree])
+            ids = np.flatnonzero(Ids==iPatch)
+            w1 = fault._getWeights(vertOne, vertTwo, vertThree, X[ids], Y[ids], Z[ids])
+            w2 = fault._getWeights(vertTwo, vertOne, vertThree, X[ids], Y[ids], Z[ids])
+            w3 = fault._getWeights(vertThree, vertTwo, vertOne, X[ids], Y[ids], Z[ids])
+            weightedSlip = w1*slipOne + w2*slipTwo + w3*slipThree
+            Slip[ids] = weightedSlip
+        
+        # Check Method:
+        if method is 'surface':
+
+            # Do some interpolation
+            intpZ = sciint.LinearNDInterpolator(np.vstack((X, Y)).T, Z, fill_value=np.nan) 
+            intpC = sciint.LinearNDInterpolator(np.vstack((X, Y)).T, Slip, fill_value=np.nan)
+            x = np.linspace(np.nanmin(X), np.nanmax(X), xystrides[0])
+            y = np.linspace(np.nanmin(Y), np.nanmax(Y), xystrides[1])
+            x,y = np.meshgrid(x,y)
+            z = intpZ(np.vstack((x.flatten(), y.flatten())).T).reshape(x.shape)
+            slip = intpC(np.vstack((x.flatten(), y.flatten())).T).reshape(x.shape)
+
+            # Do the surface plot
+            cols = np.empty(x.shape, dtype=tuple)
+            for i in range(x.shape[0]):
+                for j in range(x.shape[1]):
+                    cols[i,j] = scalarMap.to_rgba(slip[i,j])
+
+            self.faille.plot_surface(x, y, -1.0*z, facecolors=cols, rstride=1, cstride=1, antialiased=True, linewidth=0)
+
+            # Color Bar
+            if colorbar:
+                scalarMap.set_array(slip)
+                self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
+
+        elif method is 'scatter':
+            # Do the scatter plot
+            cb = self.faille.scatter(X, Y, zs=-1.0*Z, c=Slip, cmap=scalarMap, linewidth=0)
+
+            # put up a colorbar
+            if colorbar:
+                self.fphbar = self.fig1.colorbar(cb, shrink=0.6, orientation='horizontal')
+
+        # All done
+        return X, Y, Z, Slip
 
     def setzaxis(self, depth, zticklabels=None):
         '''

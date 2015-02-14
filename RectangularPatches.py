@@ -1216,6 +1216,40 @@ class RectangularPatches(Fault):
         # All done
         return
 
+    def replacePatch(self, patch, iPatch):
+        '''
+        Replaces one patch by the given geometry.
+        Args:
+            * patch     : Patch geometry.
+            * iPatch    : index of the patch to replace.
+        '''
+
+        # Replace
+        self.patch[iPatch] = patch
+
+        # Build the ll patch
+        lon1, lat1 = self.xy2ll(patch[0][0], patch[0][1])
+        z1 = patch[0][2]
+        lon2, lat2 = self.xy2ll(patch[1][0], patch[1][1])
+        z2 = patch[1][2]
+        lon3, lat3 = self.xy2ll(patch[2][0], patch[2][1])
+        z3 = patch[2][2]
+        lon4, lat4 = self.xy2ll(patch[3][0], patch[3][1])
+        z4 = patch[3][2]
+
+        # append the ll patch
+        patchll = [ [lon1, lat1, z1],
+                    [lon2, lat2, z2],
+                    [lon3, lat3, z3],
+                    [lon4, lat4, z4] ]
+
+        # Replace
+        self.patchll[iPatch] = patch
+
+        # All done
+        return
+
+
     def addPatchesFromOtherFault(self, fault, indexes=None):
         '''
         Adds the patches of one fault to another.

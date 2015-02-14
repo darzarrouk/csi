@@ -789,6 +789,7 @@ class multifaultsolve(object):
             mpost.append(np.mean(samples[name]))
 
         # Save things
+        self.samples = samples
         self.sampler = sampler
         self.priors = Priors
         self.likelihood = d
@@ -796,13 +797,7 @@ class multifaultsolve(object):
 
         # Write Samples?
         if writeSamples:
-            import h5py
-            filename = '{}_samples.h5'.format(self.name.replace(' ','_'))
-            fout = h5py.File(filename, 'w')
-            for name in samples.keys():
-                fout.create_dataset(name, data=samples[name])
-            fout.close()
-            #self.samples.tofile(filename)
+            self.writeSamples2hdf5()
             
         # Plot
         if plotSampler:
@@ -810,6 +805,27 @@ class multifaultsolve(object):
 
         # All done
         return
+
+    def writeSamples2hdf5(self):
+        '''
+        Writes the result of sampling to and HDF5 file.
+        '''
+
+        # Assert
+        assert hasattr(self, 'samples'), 'Needs to have samples to wite them...'
+
+        samples = self.samples
+
+        import h5py
+        filename = '{}_samples.h5'.format(self.name.replace(' ','_'))
+        fout = h5py.File(filename, 'w')
+        for name in samples.keys():
+            fout.create_dataset(name, data=samples[name])
+        fout.close()
+        
+        # All done
+        return
+
 
     def writeMpost2File(self, outfile):
         '''

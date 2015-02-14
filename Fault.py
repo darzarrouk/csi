@@ -812,7 +812,10 @@ class Fault(SourceInv):
 
         # Check something
         if not hasattr(self, 'keepTrackOfSources'):  
-            self.keepTrackOfSources = False
+            if self.patchType is 'triangletent':
+                self.keepTrackOfSources = True
+            else:
+                self.keepTrackOfSources = False
 
         # If we have already done that step
         if self.keepTrackOfSources and hasattr(self, 'edksSources'):
@@ -841,7 +844,7 @@ class Fault(SourceInv):
             slip = np.ones(dip.shape)
         if self.patchType is 'triangletent':
             # If saved, good
-            if self.keepTrackOfSources and hasattr(self, 'edksSources'):
+            if self.keepTrackOfSources and hasattr(self, 'edksSources') and (len(self.edksSources)>7):
                 slip = self.edksSources[7]
             # Else, we have to re-organize the Ids from facet to nodes
             else:
@@ -1620,9 +1623,9 @@ class Fault(SourceInv):
         if self.N_slip == len(self.patch):
             flag_patch = True
             vertices = None
-        elif self.patchType == 'triangle' and self.N_slip == len(self.gocad_vertices):
+        elif self.patchType == 'triangle' and self.N_slip == len(self.Vertices):
             flag_patch = False
-            vertices = self.gocad_vertices
+            vertices = self.Vertices
         else:
             raise NotImplementedError('Error: Inconsistent number of slip values')
 
@@ -1867,6 +1870,57 @@ class Fault(SourceInv):
         # Store Cm into self
         self.Cm = Cm
         self.Lambdas = Lambdas
+
+        # All done
+        return
+
+    def sumPatches(self, iPatches, finalPatch):
+        '''
+        Takes a list of patches, sums the green's functions,
+        and modifies the list self.patch.
+        
+        Args:
+            * patches       : List of the patches to sum (indexes).
+            * finalPatch    : Geometry of the final patch.
+        '''
+
+        # Needs to have Greens functions  
+        assert len(self.G.keys())>0, 'Need some Greens functions, otherwise this function is pointless'
+
+        # Loop over the data sets
+        for data in self.G:
+
+            # Get it
+            G = self.G[data]
+
+            # Loop over the Green's functions
+            for comp in G:
+
+                # Get the matrix
+                gf = G[comp]
+
+                # Sum the columns
+                col = np.sum(gf[:,iPatches], axis=1)
+
+                # New matrix
+                gf = np.delete(gf, iPatches[1:], axis=1)
+                gf[:,iPatches[0]] = col
+
+                # Set it 
+                G[comp] = gf
+        
+        # Replace the first of the patches by the new patch
+        self.replacePatch(finalPatch, iPatches[0])
+
+        # Delete the other patches
+        self.deletepatches(iPatches[1:])
+
+        # Equivalent Patches
+        if self.patchType is 'rectangle':
+            self.computeEquivRectangle()
+
+        # Check 
+        self.N_slip = len(self.patch)
 
         # All done
         return

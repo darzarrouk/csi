@@ -18,7 +18,7 @@ import os
 
 # Personals
 from .TriangularPatches import TriangularPatches
-
+from .geodeticplot import geodeticplot as geoplot
 
 class TriangularTents(TriangularPatches):
 
@@ -75,9 +75,7 @@ class TriangularTents(TriangularPatches):
         if tent.__class__ is int:
             u = tent
         else:
-            for i in range(len(self.tent)):
-                if (self.tent[i]==tent).all():
-                    u = i
+            u = self.getindex(tent)
 
         x, y, z = self.tent[u]
         strike, dip = 0, 0
@@ -93,7 +91,6 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return x, y, z, strike, dip
-
 
     def deleteTent(self, tent):
         '''
@@ -358,6 +355,71 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
+    def initializeslip(self, n=None, values=None):
+        '''
+        Re-initializes the fault slip array to zero values.
+        This function over-writes the function in the parent class Fault.
+        Args:
+            * n     : Number of slip values. If None, it'll take the number of patches.
+            * values: Can be depth, strike, dip, length, area or a numpy array
+        '''
+
+        # Shape
+        if n is None:
+           self.N_slip = len(self.tent)
+        else:
+            self.N_slip = n
+
+        self.slip = np.zeros((self.N_slip,3))
+        
+        # Values
+        if values is not None:
+            # string type
+            if type(values) is str:
+                if values is 'depth':
+                    values = np.array([self.getTentInfo(t)[2] for t in self.tent])
+                elif values is 'strike':
+                    values = np.array([self.getTentInfo(t)[5] for t in self.tent])
+                elif values is 'dip':
+                    values = np.array([self.getTentInfo(t)[6] for t in self.tent])
+                elif values is 'index':
+                    values = np.array([np.float(self.getindex(p)) for t in self.tent])
+                self.slip[:,0] = values
+            # Numpy array 
+            if type(values) is np.ndarray:
+                try:
+                    self.slip[:,:] = values
+                except:
+                    try:
+                        self.slip[:,0] = values
+                    except:
+                        print('Wrong size for the slip array provided')
+                        return
+
+        # All done
+        return
+
+    def getindex(self, tent):
+        '''
+        Returns the index of a tent.
+        This function over-writes that from the parent class Fault.
+        '''
+
+        # Output index
+        iout = None
+
+        # Find it
+        for t in range(len(self.tent)):
+            try:
+                if (self.tent[t] == tent).all():
+                    iout = t
+            except:
+                if (self.tent[t]==tent):
+                    iout = t
+        
+        # All done
+        return iout
+                    
     def computeTentArea(self):
         '''
         Computes the effective area for each node (1/3 of the summed area of all neighbor triangles)
@@ -434,9 +496,9 @@ class TriangularTents(TriangularPatches):
         else:
             vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
         vz = vertices[:,2]*factor_depth
-        self.gocad_vertices = np.column_stack((vx, vy, vz))
-        self.gocad_vertices_ll = vertices
-        self.gocad_faces = faces
+        self.Vertices = np.column_stack((vx, vy, vz))
+        self.Vertices_ll = vertices
+        self.Faces = faces
         print('min/max depth: {} km/ {} km'.format(vz.min(),vz.max()))
         print('min/max lat: {} deg/ {} deg'.format(vertices[:,1].min(),vertices[:,1].max()))
         print('min/max lon: {} deg/ {} deg'.format(vertices[:,0].min(),vertices[:,0].max()))
@@ -481,6 +543,9 @@ class TriangularTents(TriangularPatches):
             self.depth = np.max(vz)
         self.z_patches = np.linspace(self.depth, 0.0, 5)
 
+        # Create the adjacency map
+        self.buildAdjacencyMapVT(verbose=False)
+
         # All done
         return
 
@@ -488,7 +553,62 @@ class TriangularTents(TriangularPatches):
         '''
         Transfers the edksSources list into the node based setup.
         '''
+    
+        # Get the faces and Nodes
+        Faces = self.Faces
+        Vertices = self.Vertices
 
+        # Get the surrounding triangles
+        Nodes = {}
+
+        # Loop for that 
+        for nId in self.tentid:
+            Nodes[nId] = {'nTriangles': 0, 'idTriangles': []}
+            for idFace in range(self.Faces.shape[0]):
+                ns = self.Faces[idFace,:].tolist()
+                if nId in ns:
+                    Nodes[nId]['nTriangles'] += 1
+                    Nodes[nId]['idTriangles'].append(idFace)
+
+        # Save the nodes
+        self.Nodes = Nodes
+
+        # Create the new edksSources
+        Ids = []
+        xs = []; ys = []; zs = []
+        strike = []; dip = []
+        areas = []; slip = []
+
+        # Iterate on the nodes to derive the weights
+        for mainNode in Nodes:
+            # Loop over each of these triangles
+            for tId in Nodes[mainNode]['idTriangles']:
+                # Find the sources in edksSources
+                iS = np.flatnonzero(self.edksSources[0]==(tId)).tolist()
+                # Get the three nodes
+                tNodes = Faces[tId]
+                # Affect the master node and the two outward nodes
+                nodeOne, nodeTwo = tNodes[np.where(tNodes!=mainNode)]
+                # Get weights
+                Wi = self._getWeights(Vertices[mainNode], Vertices[nodeOne], Vertices[nodeTwo], 
+                           self.edksSources[1][iS], self.edksSources[2][iS], self.edksSources[3][iS])
+                # Save each source
+                Ids += (np.ones((len(iS),))*mainNode).tolist()
+                xs += self.edksSources[1][iS].tolist()
+                ys += self.edksSources[2][iS].tolist()
+                zs += self.edksSources[3][iS].tolist()
+                strike += self.edksSources[4][iS].tolist()
+                dip += self.edksSources[5][iS].tolist()
+                areas += self.edksSources[6][iS].tolist()
+                slip += Wi.tolist()
+
+        # Set the new edksSources
+        self.edksFacetSources = copy.deepcopy(self.edksSources)
+        self.edksSources = [np.array(Ids), np.array(xs), np.array(ys), np.array(zs), 
+                np.array(strike), np.array(dip), np.array(areas), np.array(slip)]
+
+        # All done
+        return
 
     def buildAdjacencyMapVT(self, verbose=True):
         """
@@ -502,16 +622,16 @@ class TriangularTents(TriangularPatches):
         self.adjacencyMapVT = []
 
         # Cache the vertices and faces arrays
-        vertices, faces = self.gocad_vertices, self.gocad_faces
+        vertices, faces = self.Vertices, self.Faces
 
         # First find adjacent triangles for all triangles
         numvert = len(vertices)
         numface = len(faces)
 
         for i in range(numvert):
-
-            sys.stdout.write('%i / %i\r' % (i + 1, numvert))
-            sys.stdout.flush()
+            if verbose:
+                sys.stdout.write('%i / %i\r' % (i + 1, numvert))
+                sys.stdout.flush()
 
             # Find triangles that share an edge
             adjacents = []
@@ -521,7 +641,8 @@ class TriangularTents(TriangularPatches):
 
             self.adjacencyMapVT.append(adjacents)
 
-        print('\n')
+        if verbose:
+            print('\n')
         return
 
 
@@ -541,7 +662,7 @@ class TriangularTents(TriangularPatches):
         centers = self.getcenters()
 
         # Cache the vertices and faces arrays
-        vertices, faces = self.gocad_vertices, self.gocad_faces
+        vertices, faces = self.Vertices, self.Faces
 
         # Allocate array for Laplace operator
         npatch = len(self.patch)
@@ -581,147 +702,6 @@ class TriangularTents(TriangularPatches):
         print('\n')
         D = D / np.max(np.abs(np.diag(D)))
         return D
-
-
-    def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False, w_file=True):
-        '''
-        Write the subParam file needed for the interpolation of the green's function in EDKS.
-        Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source,
-        then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
-        If amax is specified, the minimum size is fixed.
-        Args:
-            * data          : Data object from gpsrates or insarrates.
-            * edksfilename  : Name of the file containing the kernels
-            * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle (default=None)
-            * plot          : Activates plotting (default=False)
-            * w_file        : if False, will not write the subParam fil (default=True)
-        Returns:
-            * filename         : Name of the subParams file created (only if w_file==True)
-            * TrianglePropFile : Name of the triangle properties file
-            * PointCoordFile   : Name of the Point coordinates file
-            * ReceiverFile     : Name of the receiver file
-            * method_par       : Dictionary including useful EDKS parameters
-        '''
-
-        # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
-
-        # Write the geometry to the EDKS file
-        fltname,TrianglePropFile, PointCoordFile = self.writeEDKSgeometry()
-
-        # Write the data to the EDKS file
-        datname,ReceiverFile = data.writeEDKSdata()
-
-        # Assign some EDKS parameters
-        if data.dtype is 'insarrates':
-            useRecvDir = True # True for InSAR, uses LOS information
-        else:
-            useRecvDir = False # False for GPS, uses ENU displacements
-        EDKSunits = 1000.0
-        EDKSfilename = '{}'.format(edksfilename)
-        prefix = 'edks_{}_{}'.format(fltname, datname)
-        plotGeometry = '{}'.format(plot)
-
-        # Build usefull outputs
-        parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
-        parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
-        method_par = dict(zip(parNames, parValues))
-
-        # Open the EDKSsubParams.py file
-        if w_file:
-            filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
-            fout = open(filename, 'w')
-
-            # Write in it
-            fout.write("# File with the triangle properties\n")
-            fout.write("TriPropFile = '{}'\n".format(TrianglePropFile))
-            fout.write("# File with the Triangles' Points (vertex) coordinates \n")
-            fout.write("TriPointsFile = '{}'\n".format(PointCoordFile))
-            fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
-            fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
-            fout.write("# read receiver direction (# not yet implemented)\n")
-            fout.write("useRecvDir = {} # leace this to False for now\n".format(useRecvDir))
-            fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
-            if amax is None:
-                fout.write("Amax = None # None computes Amax automatically. \n")
-            else:
-                fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
-            fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
-            fout.write("EDKSfilename = '{}'\n".format(edksfilename))
-            fout.write("prefix = '{}'\n".format(prefix))
-            fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
-
-            # Close the file
-            fout.close()
-            return filename, TrianglePropFile, PointCoordFile, ReceiverFile, method_par
-        else:
-            return TrianglePropFile, PointCoordFile, ReceiverFile, method_par
-
-    def writeEDKSgeometry(self, ref=None):
-        '''
-        This routine spits out 2 files:
-        filename.TriangleProp: Patch ID | Lon (deg) | Lat | East (km) | North | Depth (km) | Strike (deg) | Dip  | Area (km^2) | Vertice ids
-        (coordinates are given for the center of the patch)
-        filename.PointCoord: Vertice ID | Lon (deg) | Lat | East (km) | North | Depth (km)
-
-        These files are to be used with edks/MPI_EDKS/calcGreenFunctions_EDKS_subTriangles.py
-        '''
-
-        # Filename
-        fltname = self.name.replace(' ','_')
-        filename = 'edks_{}'.format(fltname)
-        TrianglePropFile = filename+'.TriangleProp'
-        PointCoordFile   = filename+'.PointCoord'
-
-        # Open the output file and write headers
-        TriP = open(TrianglePropFile,'w')
-        h_format ='%-6s %10s %10s %10s %10s %10s %10s %10s %10s %6s %6s %6s\n'
-        h_tuple = ('%Tid','lon','lat','E[km]','N[km]','dep[km]','strike','dip',
-                  'Area[km2]','idP1','idP2','idP3')
-        TriP.write(h_format%h_tuple)
-        PoC = open(PointCoordFile,'w')
-        PoC.write('%-6s %10s %10s %10s %10s %10s\n'%('Pid','lon','lat','E[km]','N[km]','dep[km]'))
-
-        # Reference
-        if ref is not None:
-            refx, refy = self.putm(ref[0], ref[1])
-            refx /= 1000.
-            refy /= 1000.
-
-        # Loop over the patches
-        TriP_format = '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %6d %6d %6d\n'
-        for p in range(self.numpatch):
-            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)
-            strike = strike*180./np.pi
-            dip = dip*180./np.pi
-            lonc, latc = self.xy2ll(xc,yc)
-            if ref is not None:
-                xc -= refx
-                yc -= refy
-            verts = copy.deepcopy(self.patch[p])
-            v1, v2, v3 = self.gocad_faces[p,:]
-            TriP_tuple = (p,lonc,latc,xc,yc,zc,strike,dip,self.area[p],v1,v2,v3)
-            TriP.write(TriP_format%TriP_tuple)
-
-        PoC_format =  '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f\n'
-        for v in range(self.gocad_vertices.shape[0]):
-            xv,yv,zv = self.gocad_vertices[v,:]
-            lonv,latv,zv2 = self.gocad_vertices_ll[v,:]
-            assert zv == zv2*1.0e-3, 'inconsistend depth in gocad_vertices and gocad_vertices_ll'
-            if ref is not None:
-                xv -= refx
-                yv -= refy
-            PoC.write(PoC_format%(v,lonv,latv,xv,yv,zv))
-
-        # Close the files
-        TriP.close()
-        PoC.close()
-
-        # All done
-        return fltname,TrianglePropFile,PointCoordFile
-
 
     def getEllipse(self, tent, ellipseCenter=None, Npoints=10, factor=1.0):
         '''
@@ -844,7 +824,6 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-
     def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False):
         '''
         Computes the segment indicating the slip direction.
@@ -924,118 +903,6 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-
-
-    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None, lonlat=None,
-                          slipVec=None):
-        '''
-        Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
-        Args:
-            * box       : Can be a list of [minlon, maxlon, minlat, maxlat].
-            * disk      : list of [xcenter, ycenter, radius, n]
-            * lonlat    : Arrays of lat and lon. [lon, lat]
-        '''
-
-        # Check size
-        if self.N_slip!=None and self.N_slip!=len(self.patch):
-            raise NotImplementedError('Only works for len(slip)==len(patch)')
-
-        # create a fake gps object
-        from .gpsrates import gpsrates
-        self.sim = gpsrates('simulation', utmzone=self.utmzone)
-
-        # Create a lon lat grid
-        if lonlat is None:
-            if (box is None) and (disk is None) :
-                lon = np.linspace(self.lon.min(), self.lon.max(), 100)
-                lat = np.linspace(self.lat.min(), self.lat.max(), 100)
-                lon, lat = np.meshgrid(lon,lat)
-                lon = lon.flatten()
-                lat = lat.flatten()
-            elif (box is not None):
-                lon = np.linspace(box[0], box[1], 100)
-                lat = np.linspace(box[2], box[3], 100)
-                lon, lat = np.meshgrid(lon,lat)
-                lon = lon.flatten()
-                lat = lat.flatten()
-            elif (disk is not None):
-                lon = []; lat = []
-                xd, yd = self.ll2xy(disk[0], disk[1])
-                xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
-                ampx = (xmax-xmin)
-                ampy = (ymax-ymin)
-                n = 0
-                while n<disk[3]:
-                    x, y = np.random.rand(2)
-                    x *= ampx; x -= ampx/2.; x += xd
-                    y *= ampy; y -= ampy/2.; y += yd
-                    if ((x-xd)**2 + (y-yd)**2) <= (disk[2]**2):
-                        lo, la = self.xy2ll(x,y)
-                        lon.append(lo); lat.append(la)
-                        n += 1
-                lon = np.array(lon); lat = np.array(lat)
-        else:
-            lon = np.array(lonlat[0])
-            lat = np.array(lonlat[1])
-
-        # Clean it
-        if (lon.max()>360.) or (lon.min()<-180.0) or (lat.max()>90.) or (lat.min()<-90):
-            self.sim.x = lon
-            self.sim.y = lat
-        else:
-            self.sim.lon = lon
-            self.sim.lat = lat
-            # put these in x y utm coordinates
-            self.sim.ll2xy()
-
-        # Initialize the vel_enu array
-        self.sim.vel_enu = np.zeros((lon.size, 3))
-
-        # Create the station name array
-        self.sim.station = []
-        for i in range(len(self.sim.x)):
-            name = '{:04d}'.format(i)
-            self.sim.station.append(name)
-        self.sim.station = np.array(self.sim.station)
-
-        # Create an error array
-        if err is not None:
-            self.sim.err_enu = []
-            for i in range(len(self.sim.x)):
-                x,y,z = np.random.rand(3)
-                x *= err
-                y *= err
-                z *= err
-                self.sim.err_enu.append([x,y,z])
-            self.sim.err_enu = np.array(self.sim.err_enu)
-
-        # import stuff
-        import sys
-
-        # Load the slip values if provided
-        if slipVec is not None:
-            nPatches = len(self.patch)
-            print(nPatches, slipVec.shape)
-            assert slipVec.shape == (nPatches,3), 'mismatch in shape for input slip vector'
-            self.slip = slipVec
-
-        # Loop over the patches
-        for p in range(len(self.patch)):
-            sys.stdout.write('\r Patch {} / {} '.format(p+1,len(self.patch)))
-            sys.stdout.flush()
-            # Get the surface displacement due to the slip on this patch
-            ss, ds, op = self.slip2dis(self.sim, p)
-            # Sum these to get the synthetics
-            self.sim.vel_enu += ss
-            self.sim.vel_enu += ds
-            self.sim.vel_enu += op
-
-        sys.stdout.write('\n')
-        sys.stdout.flush()
-
-        # All done
-        return
-
     def cumdistance(self, discretized=False):
         '''
         Computes the distance between the first point of the fault and every other
@@ -1064,342 +931,8 @@ class TriangularTents(TriangularPatches):
         # all done
         return dis
 
-    def AverageAlongStrikeOffsets(self, name, insars, filename, discretized=True, smooth=None):
-        '''
-        If the profiles have the lon lat vectors as the fault,
-        This routines averages it and write it to an output file.
-        '''
-
-        if discretized:
-            lon = self.loni
-            lat = self.lati
-        else:
-            lon = self.lon
-            lat = self.lat
-
-        # Check if good
-        for sar in insars:
-            dlon = sar.AlongStrikeOffsets[name]['lon']
-            dlat = sar.AlongStrikeOffsets[name]['lat']
-            assert (dlon==lon).all(), '{} dataset rejected'.format(sar.name)
-            assert (dlat==lat).all(), '{} dataset rejected'.format(sar.name)
-
-        # Get distance
-        x = insars[0].AlongStrikeOffsets[name]['distance']
-
-        # Initialize lists
-        D = []; AV = []; AZ = []; LO = []; LA = []
-
-        # Loop on the distance
-        for i in range(len(x)):
-
-            # initialize average
-            av = 0.0
-            ni = 0.0
-
-            # Get values
-            for sar in insars:
-                o = sar.AlongStrikeOffsets[name]['offset'][i]
-                if np.isfinite(o):
-                    av += o
-                    ni += 1.0
-
-            # if not only nan
-            if ni>0:
-                d = x[i]
-                av /= ni
-                az = insars[0].AlongStrikeOffsets[name]['azimuth'][i]
-                lo = lon[i]
-                la = lat[i]
-            else:
-                d = np.nan
-                av = np.nan
-                az = np.nan
-                lo = lon[i]
-                la = lat[i]
-
-            # Append
-            D.append(d)
-            AV.append(av)
-            AZ.append(az)
-            LO.append(lo)
-            LA.append(la)
-
-
-        # smooth?
-        if smooth is not None:
-            # Arrays
-            D = np.array(D); AV = np.array(AV); AZ = np.array(AZ); LO = np.array(LO); LA = np.array(LA)
-            # Get the non nans
-            u = np.flatnonzero(np.isfinite(AV))
-            # Gaussian Smoothing
-            dd = np.abs(D[u][:,None] - D[u][None,:])
-            dd = np.exp(-0.5*dd*dd/(smooth*smooth))
-            norm = np.sum(dd, axis=1)
-            dd = dd/norm[:,None]
-            AV[u] = np.dot(dd,AV[u])
-            # List
-            D = D.tolist(); AV = AV.tolist(); AZ = AZ.tolist(); LO = LO.tolist(); LA = LA.tolist()
-
-        # Open file and write header
-        fout = open(filename, 'w')
-        fout.write('# Distance (km) || Offset || Azimuth (rad) || Lon || Lat \n')
-
-        # Write to file
-        for i in range(len(D)):
-            d = D[i]; av = AV[i]; az = AZ[i]; lo = LO[i]; la = LA[i]
-            fout.write('{} {} {} {} {} \n'.format(d,av,az,lo,la))
-
-        # Close the file
-        fout.close()
-
-        # All done
-        return
-
-    def horizshrink1patch(self, ipatch, fixedside='south', finallength=25.):
-        '''
-        Takes an existing patch and shrinks its size in the horizontal direction.
-        Args:
-            * ipatch        : Index of the patch of concern.
-            * fixedside     : One side has to be fixed, takes the southernmost if 'south',
-                                                        takes the northernmost if 'north'
-            * finallength   : Length of the final patch.
-        '''
-
-        # Get the patch
-        patch = self.patch[ipatch]
-        patchll = self.patchll[ipatch]
-
-        # Find the southernmost points
-        y = np.array([patch[i][1] for i in range(4)])
-        imin = y.argmin()
-
-        # Take the points we need to move
-        if fixedside is 'south':
-            fpts = np.flatnonzero(y==y[imin])
-            mpts = np.flatnonzero(y!=y[imin])
-        elif fixedside is 'north':
-            fpts = np.flatnonzero(y!=y[imin])
-            mpts = np.flatnonzero(y==y[imin])
-
-        # Find which depths match
-        d = np.array([patch[i][2] for i in range(4)])
-
-        # Deal with the shallow points
-        isf = fpts[d[fpts].argmin()]      # Index of the shallow fixed point
-        ism = mpts[d[mpts].argmin()]      # Index of the shallow moving point
-        x1 = patch[isf][0]; y1 = patch[isf][1]
-        x2 = patch[ism][0]; y2 = patch[ism][1]
-        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
-        Dy = y1 - y2                            # Y-Distance between the original points
-        Dx = x1 - x2                            # X-Distance between the original points
-        dy = finallength*Dy/DL                  # Y-Distance between the new points
-        dx = finallength*Dx/DL                  # X-Distance between the new points
-        patch[ism][0] = patch[isf][0] - dx
-        patch[ism][1] = patch[isf][1] - dy
-
-        # Deal with the deep points
-        idf = fpts[d[fpts].argmax()]      # Index of the deep fixed point
-        idm = mpts[d[mpts].argmax()]      # Index of the deep moving point
-        x1 = patch[idf][0]; y1 = patch[idf][1]
-        x2 = patch[idm][0]; y2 = patch[idm][1]
-        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
-        Dy = y1 - y2                            # Y-Distance between the original points
-        Dx = x1 - x2                            # X-Distance between the original points
-        dy = finallength*Dy/DL                  # Y-Distance between the new points
-        dx = finallength*Dx/DL                  # X-Distance between the new points
-        patch[idm][0] = patch[idf][0] - dx
-        patch[idm][1] = patch[idf][1] - dy
-
-        # Rectify the lon lat patch
-        for i in range(4):
-            x, y = patch[i][0], patch[i][1]
-            lon, lat = self.xy2ll(x, y)
-            patchll[i][0] = lon
-            patchll[i][1] = lat
-
-        # All done
-        return
-
-    def ExtractAlongStrikeVariationsOnDiscretizedFault(self, depth=0.5, filename=None, discret=0.5):
-        '''
-        Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
-        Args:
-            depth       : Depth at which we extract the along strike variations of slip.
-            discret     : Discretization length
-            filename    : Saves to a file.
-        '''
-
-        # Import things we need
-        import scipy.spatial.distance as scidis
-
-        # Dictionary to store these guys
-        if not hasattr(self, 'AlongStrike'):
-            self.AlongStrike = {}
-
-        # Creates the list where we store things
-        # [lon, lat, strike-slip, dip-slip, tensile, distance, xi, yi]
-        Var = []
-
-        # Open the output file if needed
-        if filename is not None:
-            fout = open(filename, 'w')
-            fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Distance to origin (km) | Position (x,y) (km)\n')
-
-        # Discretize the fault
-        if discret is not None:
-            self.discretize(every=discret, tol=discret/10., fracstep=discret/12.)
-        nd = self.xi.shape[0]
-
-        # Compute the cumulative distance along the fault
-        dis = self.cumdistance(discretized=True)
-
-        # Get the patches concerned by the depths asked
-        dPatches = []
-        sPatches = []
-        for p in self.patch:
-            # Check depth
-            if ((p[0][2]<=depth) and (p[2][2]>=depth)):
-                # Get patch
-                sPatches.append(self.getslip(p))
-                # Put it in dis
-                xc, yc = self.getcenter(p)[:2]
-                d = scidis.cdist([[xc, yc]], [[self.xi[i], self.yi[i]] for i in range(self.xi.shape[0])])[0]
-                imin1 = d.argmin()
-                dmin1 = d[imin1]
-                d[imin1] = 99999999.
-                imin2 = d.argmin()
-                dmin2 = d[imin2]
-                dtot=dmin1+dmin2
-                # Put it along the fault
-                xcd = (self.xi[imin1]*dmin1 + self.xi[imin2]*dmin2)/dtot
-                ycd = (self.yi[imin1]*dmin1 + self.yi[imin2]*dmin2)/dtot
-                # Distance
-                if dmin1<dmin2:
-                    jm = imin1
-                else:
-                    jm = imin2
-                dPatches.append(dis[jm] + np.sqrt( (xcd-self.xi[jm])**2 + (ycd-self.yi[jm])**2) )
-
-        # Create the interpolator
-        ssint = sciint.interp1d(dPatches, [sPatches[i][0] for i in range(len(sPatches))], kind='linear', bounds_error=False)
-        dsint = sciint.interp1d(dPatches, [sPatches[i][1] for i in range(len(sPatches))], kind='linear', bounds_error=False)
-        tsint = sciint.interp1d(dPatches, [sPatches[i][2] for i in range(len(sPatches))], kind='linear', bounds_error=False)
-
-        # Interpolate
-        for i in range(self.xi.shape[0]):
-            x = self.xi[i]
-            y = self.yi[i]
-            lon = self.loni[i]
-            lat = self.lati[i]
-            d = dis[i]
-            ss = ssint(d)
-            ds = dsint(d)
-            ts = tsint(d)
-            Var.append([lon, lat, ss, ds, ts, d, x, y])
-            # Write things if asked
-            if filename is not None:
-                fout.write('{} {} {} {} {} {} {} {} \n'.format(lon, lat, ss, ds, ts, d, x, y))
-
-        # Store it in AlongStrike
-        self.AlongStrike['Depth {}'.format(depth)] = np.array(Var)
-
-        # Close fi needed
-        if filename is not None:
-            fout.close()
-
-        # All done
-        return
-
-    def ExtractAlongStrikeVariations(self, depth=0.5, origin=None, filename=None, orientation=0.0):
-        '''
-        Extract the Along Strike Variations of the creep at a given depth
-        Args:
-            depth   : Depth at which we extract the along strike variations of slip.
-            origin  : Computes a distance from origin. Give [lon, lat].
-            filename: Saves to a file.
-            orientation: defines the direction of positive distances.
-        '''
-
-        # Check size
-        if self.N_slip!=None and self.N_slip!=len(self.patch):
-            raise NotImplementedError('Only works for len(slip)==len(patch)')
-
-        # Dictionary to store these guys
-        if not hasattr(self, 'AlongStrike'):
-            self.AlongStrike = {}
-
-        # Creates the List where we will store things
-        # For each patch, it will be [lon, lat, strike-slip, dip-slip, tensile, distance]
-        Var = []
-
-        # Creates the orientation vector
-        Dir = np.array([np.cos(orientation*np.pi/180.), np.sin(orientation*np.pi/180.)])
-
-        # initialize the origin
-        x0 = 0
-        y0 = 0
-        if origin is not None:
-            x0, y0 = self.ll2xy(origin[0], origin[1])
-
-        # open the output file
-        if filename is not None:
-            fout = open(filename, 'w')
-            fout.write('# Lon | Lat | Strike-Slip | Dip-Slip | Tensile | Patch Area (km2) | Distance to origin (km) \n')
-
-        # compute area, if not done yet
-        if not hasattr(self,'area'):
-            self.computeArea()
-
-        # Loop over the patches
-        for p in self.patch:
-
-            # Get depth range
-            dmin = np.min([p[i][2] for i in range(4)])
-            dmax = np.max([p[i][2] for i in range(4)])
-
-            # If good depth, keep it
-            if ((depth>=dmin) & (depth<=dmax)):
-
-                # Get index
-                io = self.getindex(p)
-
-                # Get the slip and area
-                slip = self.slip[io,:]
-                area = self.area[io]
-
-                # Get patch center
-                xc, yc, zc = self.getcenter(p)
-                lonc, latc = self.xy2ll(xc, yc)
-
-                # Computes the horizontal distance
-                vec = np.array([x0-xc, y0-yc])
-                sign = np.sign( np.dot(Dir,vec) )
-                dist = sign * np.sqrt( (xc-x0)**2 + (yc-y0)**2 )
-
-                # Assemble
-                o = [lonc, latc, slip[0], slip[1], slip[2], area, dist]
-
-                # write output
-                if filename is not None:
-                    fout.write('{} {} {} {} {} {} \n'.format(lonc, latc, slip[0], slip[1], slip[2], area, dist))
-
-                # append
-                Var.append(o)
-
-        # Close the file
-        if filename is not None:
-            fout.close()
-
-        # Stores it
-        self.AlongStrike['Depth {}'.format(depth)] = np.array(Var)
-
-        # all done
-        return
-
-
     def plot(self, ref='utm', figure=134, add=False, maxdepth=None, axis='equal',
-             value_to_plot='total', neg_depth=False):
+             slip='total', neg_depth=False):
         '''
         Plot the available elements of the fault.
 
@@ -1407,114 +940,74 @@ class TriangularTents(TriangularPatches):
             * ref           : Referential for the plot ('utm' or 'lonlat').
             * figure        : Number of the figure.
         '''
+        
+        # Create a geodetic plot
+        fig = geoplot(figure=figure, ref=ref)
 
-        # Import necessary things
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-        fig = plt.figure(figure)
-        ax = fig.add_subplot(111, projection='3d')
+        # Trace
+        if hasattr(self, 'lon') or hasattr(self, 'xf'):
+            fig.faulttrace(self)
 
-        # Set the axes
-        if ref is 'utm':
-            ax.set_xlabel('Easting (km)')
-            ax.set_ylabel('Northing (km)')
-        else:
-            ax.set_xlabel('Longitude')
-            ax.set_ylabel('Latitude')
-        ax.set_zlabel('Depth (km)')
+        # 3D geometry
+        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=None, colorbar=True, plot_on_2d=False, npoints=40)
 
-        # Sign factor for negative depths
-        if neg_depth:
-            negFactor = 1.0
-        else:
-            negFactor = -1.0
-
-        # Plot the surface trace
-        if ref is 'utm':
-            if self.xf is None:
-                self.trace2xy()
-            ax.plot(self.xf, self.yf, '-b')
-        else:
-            ax.plot(self.lon, self.lat,'-b')
-
-        if add and (ref is 'utm'):
-            for fault in self.addfaultsxy:
-                ax.plot(fault[:,0], fault[:,1], '-k')
-        elif add and (ref is not 'utm'):
-            for fault in self.addfaults:
-                ax.plot(fault[:,0], fault[:,1], '-k')
-
-        # Plot the discretized trace
-        if self.xi is not None:
-            if ref is 'utm':
-                ax.plot(self.xi, self.yi, '.r')
-            else:
-                if self.loni is None:
-                    self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
-                ax.plot(loni, lati, '.r')
-
-        # Compute the total slip
-        if value_to_plot=='total':
-            self.computetotalslip()
-            plotval = self.totalslip
-        elif value_to_plot=='index':
-            plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
-
-        # Plot the patches
-        if self.patch is not None:
-
-            # import stuff
-            import mpl_toolkits.mplot3d.art3d as art3d
-            import matplotlib.colors as colors
-            import matplotlib.cm as cmx
-
-            # set z axis
-            ax.set_zlim3d([negFactor * (self.depth - negFactor * 5), 0])
-            zticks = []
-            zticklabels = []
-            for z in self.z_patches:
-                zticks.append(negFactor * z)
-                zticklabels.append(z)
-            ax.set_zticks(zticks)
-            ax.set_zticklabels(zticklabels)
-
-            # set color business
-            cmap = plt.get_cmap('jet')
-            cNorm  = colors.Normalize(vmin=0, vmax=plotval.max())
-            scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
-
-            for p in range(len(self.patch)):
-                ncorners = len(self.patch[0])
-                x = []
-                y = []
-                z = []
-                for i in range(ncorners):
-                    if ref is 'utm':
-                        x.append(self.patch[p][i][0])
-                        y.append(self.patch[p][i][1])
-                        z.append(negFactor * self.patch[p][i][2])
-                    else:
-                        x.append(self.patchll[p][i][0])
-                        y.append(self.patchll[p][i][1])
-                        z.append(negFactor * self.patchll[p][i][2])
-                verts = [zip(x, y, z)]
-                rect = art3d.Poly3DCollection(verts)
-                rect.set_color(scalarMap.to_rgba(plotval[p]))
-                rect.set_edgecolors('k')
-                ax.add_collection3d(rect)
-
-            # put up a colorbar
-            scalarMap.set_array(plotval)
-            plt.colorbar(scalarMap)
-
-        # Depth
-        if maxdepth is not None:
-            ax.set_zlim3d([neg_factor * maxdepth, 0])
-
-        # show
-        plt.show()
+        # Show
+        fig.show(showFig=['fault'])
 
         # All done
-        return
+        return x, y, z, slip
+
+    def _getWeights(self, mainNode, nodeOne, nodeTwo, x, y, z):
+        '''
+        For a triangle given by the coordinates of its summits, compute the weight of
+        the points given by x, y, and z positions (these guys need to be inside the triangle).
+        Args:
+            * mainNode  : [x,y,z] of the main Node
+            * nodeOne   : [x,y,z] of the first Node
+            * nodeTwo   : [x,y,z] of the second Node
+            * x         : X position of all the subpoints
+            * y         : Y position of all the subpoints
+            * z         : Z position of all the subpoints
+        '''
+
+        # Calculate the three vectors of the sides of the triangle
+        v1 = nodeOne - mainNode
+        v2 = nodeTwo - mainNode
+
+        # Barycentric coordinates: Less lines. Implemented nicely.
+        Area = 0.5 * np.sqrt(np.sum(np.cross(v1, v2)**2))
+        Is = np.array([x,y,z])
+        S1 = nodeOne[:,np.newaxis] - Is
+        S2 = nodeTwo[:,np.newaxis] - Is
+        Areas = 0.5 * np.sqrt(np.sum(np.cross(S1, S2, axis=0)**2, axis=0))
+        Wi = Areas/Area
+
+        # Vectorial Method: More Lines, same results.
+        ## Calculate the height of the triangle
+        #v3 = Vertices[nodeTwo] - Vertices[nodeOne]
+        #if np.dot(v1, v3)==0:
+        #    h = v1
+        #elif np.dot(v2, v3)==0:
+        #    h = v2
+        #else:
+        #    v4 = np.cross(v1, v2)
+        #    C = Vertices[nodeOne][2] - Vertices[mainNode][2]
+        #    h = np.ones((3,))
+        #    h[2] = C
+        #    h[1] = C * (v4[2]*v3[0] - v3[2]*v4[0]) / (v3[1]*v4[0] - v3[0]*v4[1])
+        #    h[0] = C * (v4[2]*v3[1] - v3[2]*v4[1]) / (v3[0]*v4[1] - v4[0]*v3[1])
+        ## Normalize it
+        #h = h/np.sqrt(np.sum(h**2))
+        ## Compute the vectors between the mainNode and each subPoint
+        #Is = np.array([self.edksSources[1][iS], self.edksSources[2][iS], self.edksSources[3][iS]])
+        #Vi = Is - Vertices[mainNode][:,np.newaxis]
+        ## Compute the scalar product (which is the distance we want)
+        #d = np.dot(Vi.T, h[:,None])
+        ## Compute the distance max
+        #Dmax = np.dot(Vertices[nodeOne] - Vertices[mainNode], h) 
+        ## Compute the weights
+        #Wi = 1. - d/Dmax
+
+        return Wi
 
 #EOF

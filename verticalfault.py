@@ -430,7 +430,6 @@ class verticalfault(RectangularPatches):
         # All done 
         return
 
-
     def mergePatches(self, p1, p2):
         '''
         Merges 2 patches that have common corners.
