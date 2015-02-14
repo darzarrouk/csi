@@ -775,9 +775,6 @@ class cosicorrrates(SourceInv):
             * include_poly  : if a polynomial function has been estimated, include it.
         '''
 
- #       raise NotImplementedError('do it later')
- #       return
-
         # Build synthetics
         self.buildsynth(faults, direction=direction, poly=poly)
 

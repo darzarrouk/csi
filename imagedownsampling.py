@@ -127,22 +127,21 @@ class imagedownsampling(object):
                           [x, y-startingsize] ]
                 blocks.append(block)
 
+        # Set blocks
+        self.setBlocks(blocks)
+
         # Generate the sampling to test
-        self.downsample(blocks, plot=plot, decimorig=decimorig)
+        self.downsample(plot=plot, decimorig=decimorig)
 
         # All done
         return
 
-    def downsample(self, blocks, plot=False, decimorig=10):
+    def setBlocks(self, blocks):
         '''
-        From the saved list of blocks, computes the downsampled data set and the informations that come along.
+        Takes a list of blocks and set it in self.
+        Args:
+            * blocks    : List of blocks (xy coordinates)
         '''
-
-        # Create the new image object
-        if self.datatype is 'insarrates':
-            newimage = insarrates('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
-        elif self.datatype is 'cosicorrrates':
-            newimage = cosicorrrates('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
 
         # Save the blocks
         self.blocks = blocks
@@ -157,6 +156,24 @@ class imagedownsampling(object):
                         self.xy2ll(c4[0], c4[1]) ]
             blocksll.append(blockll)
         self.blocksll = blocksll
+
+        # All done
+        return
+
+    def downsample(self, plot=False, decimorig=10):
+        '''
+        From the saved list of blocks, computes the downsampled data set and the informations that come along.
+        '''
+
+        # Create the new image object
+        if self.datatype is 'insarrates':
+            newimage = insarrates('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
+        elif self.datatype is 'cosicorrrates':
+            newimage = cosicorrrates('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
+
+        # Get the blocks 
+        blocks = self.blocks
+        blocksll = self.blocksll
 
         # Create the variables
         if self.datatype is 'insarrates':
@@ -260,6 +277,30 @@ class imagedownsampling(object):
         # All done
         return
 
+    def downsampleFromRspFile(self, prefix, tolerance=0.5, plot=False, decimorig=10):
+        '''
+        From the downsampling scheme saved in a .rsp file, downsamples
+        the image.
+        Args:
+            * prefix        : Prefix of the rsp file.
+            * tolerance     : Minimum surface covered in a patch to be kept. 
+            * plot          : Plot the downsampled data (True/False)
+            * decimorig     : Simple decimation factor of the data for
+                              lighter plotting.
+        '''
+
+        # Set tolerance
+        self.tolerance = tolerance
+
+        # Read the file
+        self.readDownsamplingScheme(prefix)
+
+        # Downsample
+        self.downsample(plot=plot, decimorig=decimorig)
+
+        # All done
+        return
+
     def cutblockinfour(self, block):
         '''
         From a block, returns 4 equal blocks.
@@ -355,8 +396,10 @@ class imagedownsampling(object):
                         newblocks.append(b4)
                     else:
                         newblocks.append(block)
+                # Set the blocks
+                self.setBlocks(newblocks)
                 # Do the downsampling
-                self.downsample(newblocks, plot=plot, decimorig=decimorig)
+                self.downsample(plot=plot, decimorig=decimorig)
             else:
                 do_cut = True
 
@@ -625,6 +668,45 @@ class imagedownsampling(object):
             self.blocks.pop(i-j)
             self.blocksll.pop(i-j)
             j += 1
+
+        # All done
+        return
+    
+    def readDownsamplingScheme(self, prefix):
+        '''
+        Reads a downsampling scheme from a rsp file.
+        and set it as self.blocks
+        Args:
+            * prefix          : Prefix of a .rsp file written by 
+                                writeDownsampled2File.
+        '''
+    
+        # Replace spaces
+        prefix = prefix.replace(" ", "_")
+
+        # Open file
+        frsp = open(prefix+'.rsp', 'r')
+
+        # Create a block list
+        blocks = []
+
+        # Read all the file
+        Lines = frsp.readlines()
+
+        # Close the file
+        frsp.close()
+
+        # Loop 
+        for line in Lines[2:]:
+            ulx, uly, drx, dry = [np.float(line.split()[i]) for i in range(2,6)]
+            c1 = [ulx, uly]
+            c2 = [drx, uly]
+            c3 = [drx, dry]
+            c4 = [ulx, dry]
+            blocks.append([c1, c2, c3, c4])
+
+        # Set the blocks
+        self.setBlocks(blocks)
 
         # All done
         return
