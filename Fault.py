@@ -482,7 +482,9 @@ class Fault(SourceInv):
 
     def getslip(self, p):
         '''
-        Returns the slip vector for a patch.
+        Returns the slip vector for a patch or tent
+        Args:
+            * p         : patch or tent
         '''
 
         # Get patch index
@@ -658,6 +660,8 @@ class Fault(SourceInv):
             * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
             * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
         '''
+
+        assert self.patchType is not 'triangletent', 'Need to run EDKS for that particular type of fault'
 
         # Initialize the slip vector
         SLP = []
@@ -884,15 +888,15 @@ class Fault(SourceInv):
         
         # Numbers
         Ndata = Ncomp*xr.shape[0]
-        Npatch = len(self.patch)
+        Nparm = self.slip.shape[0]
 
         # Check format
         if data.dtype in ['gpsrates', 'cosicorrrates', 'multigps']:
             # Flat arrays with e, then n, then u (optional)
             if 's' in slipdir:
-                Gss = Gss.reshape((Ndata, Npatch))
+                Gss = Gss.reshape((Ndata, Nparm))
             if 'd' in slipdir:
-                Gds = Gds.reshape((Ndata, Npatch))
+                Gds = Gds.reshape((Ndata, Nparm))
         elif data.dtype is 'insarrates':
             # If InSAR, do the dot product with the los
             if 's' in slipdir:
@@ -900,15 +904,15 @@ class Fault(SourceInv):
             if 'd' in slipdir:
                 Gds_los = []
             for i in range(xr.shape[0]):
-                for j in range(Npatch):
+                for j in range(Nparm):
                     if 's' in slipdir:
                         Gss_los.append(np.dot(data.los[i,:], Gss[:,i,j]))
                     if 'd' in slipdir:
                         Gds_los.append(np.dot(data.los[i,:], Gds[:,i,j]))
             if 's' in slipdir:
-                Gss = np.array(Gss_los).reshape((xr.shape[0], Npatch))
+                Gss = np.array(Gss_los).reshape((xr.shape[0], Nparm))
             if 'd' in slipdir:
-                Gds = np.array(Gds_los).reshape((xr.shape[0], Npatch))
+                Gds = np.array(Gds_los).reshape((xr.shape[0], Nparm))
 
         # Create the dictionary
         G = {'strikeslip':[], 'dipslip':[], 'tensile':[]}
@@ -950,7 +954,7 @@ class Fault(SourceInv):
 
         # Get the number of patches
         if self.N_slip == None:
-            self.N_slip = len(self.patch)
+            self.N_slip = self.slip.shape[0]
 
         # Read the files and reshape the GFs
         Gss = None; Gds = None; Gts = None; Gcp = None
@@ -1160,7 +1164,66 @@ class Fault(SourceInv):
         # All done
         return
 
+    def rotateGFs(self, data, convergence, returnGFs=False):
+        '''
+            For the data set data, rotates the Greens' functions so that dip slip motion is aligned with
+        the convergence vector.
+        These Greens' functions are not stored in self.G or returned, given arguments.
+
+        Args:
+            * data          : Name of the data set.
+            * convergence   : Convergence vector, or list/array of convergence vector with
+                                shape = (Number of fault patches, 2). 
+        '''
+        
+        # Get the name of the data
+        data = data.name
+
+        # Assert Green's functions have been computed 
+        assert data in self.G.keys(), 'Need to compute regular GFs first...'
+        assert 'dipslip' in self.G[data].keys(), 'Need to compute GFs for unitary dip slip first...'
+        assert 'strikeslip' in self.G[data].keys(), 'Need to compute GFs for unitary strike slip first...'
+
+        # Number of slip parameters
+        nSlip = self.slip.shape[0]
+
+        # Get the convergence vector
+        if len(convergence)==2:
+            Conv = np.ones((nSlip, 2))
+            Conv[:,0] *= convergence[0]
+            Conv[:,1] *= convergence[1]
+            self.convergence = Conv
+        elif len(convergence)==nSlip:
+            if type(convergence) is list:
+                self.convergence = np.array(convergence)
+        else:
+            print('Convergence vector is of wrong format...')
+            sys.exit()
+
+        # Get the fault strike
+        strike = self.getStrikes()
+        np.array([self.getpatchgeometry(p)[5] for p in self.patch])
+
+        # Get the green's functions
+        Gss = self.G[data]['strikeslip']
+        Gds = self.G[data]['dipslip']
+
+        # Project the convergence along strike and dip
+        Sbr = self.convergence[:,0]*np.sin(strike)+self.convergence[:,1]*np.cos(strike)
+        Dbr = self.convergence[:,0]*np.cos(strike)-self.convergence[:,1]*np.sin(strike)
+
+        # Optional return
+        if returnGFs:
+            return Sbr, Dbr
+        else:
+            self.G[data]['dipslip'] = Dbr
+            self.G[data]['strikeslip'] = Sbr
+
+        # All done
+        return
+
     def computeCouplingGFs(self, data, convergence, initializeCoupling=True):
+
         '''
             For the data set data, computes the Green's Function for coupling, using the formula
         described in Francisco Ortega's PhD, pages 106 to 108.
@@ -1177,48 +1240,23 @@ class Fault(SourceInv):
                                 shape = (Number of fault patches, 2). 
         '''
         
-        # Get the name of the data
-        data = data.name
-
-        # Assert Green's functions have been computed 
-        assert data in self.G.keys(), 'Need to compute regular GFs first...'
-        assert 'dipslip' in self.G[data].keys(), 'Need to compute GFs for unitary dip slip first...'
-        assert 'strikeslip' in self.G[data].keys(), 'Need to compute GFs for unitary strike slip first...'
-
-        # Get the convergence vector
-        if len(convergence)==2:
-            Conv = np.ones((len(self.patch), 2))
-            Conv[:,0] *= convergence[0]
-            Conv[:,1] *= convergence[1]
-            self.convergence = Conv
-        elif len(convergence)==len(self.patch):
-            if type(convergence) is list:
-                self.convergence = np.array(convergence)
-        else:
-            print('Convergence vector is of wrong format...')
-            sys.exit()
-
-        # Get the fault strike
-        strike = np.array([self.getpatchgeometry(p)[5] for p in self.patch])
-
         # Get the green's functions
-        Gss = self.G[data]['strikeslip']
-        Gds = self.G[data]['dipslip']
+        Gss = self.G[data.name]['strikeslip']
+        Gds = self.G[data.name]['dipslip']
 
-        # Project the convergence along strike and dip
-        Sbr = self.convergence[:,0]*np.sin(strike)+self.convergence[:,1]*np.cos(strike)
-        Dbr = self.convergence[:,0]*np.cos(strike)-self.convergence[:,1]*np.sin(strike)
+        # Rotates the Greens' functions
+        Sbr, Dbr = self.rotateGFs(data, convergence, returnGFs=True)
 
         # Multiply and sum
         Gc = -1.0*(np.multiply(-1.0*Gss, Sbr) + np.multiply(Gds, Dbr))
         # Precision: (the -1.0* is because we use a different convention from that of Francisco)
 
         # Store those new GFs
-        self.G[data]['coupling'] = Gc
+        self.G[data.name]['coupling'] = Gc
 
         # Initialize a coupling vector
         if initializeCoupling:
-            self.coupling = np.zeros((len(self.patch),))
+            self.coupling = np.zeros((self.slip.shape[0],))
 
         # All done
         return
@@ -1333,7 +1371,7 @@ class Fault(SourceInv):
 
         # Get the number of parameters
         if self.N_slip == None:
-            self.N_slip = len(self.patch)
+            self.N_slip = self.slip.shape[0]
         Nps = self.N_slip*len(slipdir)
         Npo = 0
         for data in datas :
@@ -1472,7 +1510,7 @@ class Fault(SourceInv):
         # Get the number of slip directions
         slipdir = len(self.slipdir)
         if self.N_slip==None:
-            self.N_slip = len(self.patch)
+            self.N_slip = self.slip.shape[0]
 
         # Number of parameters
         Np = self.N_slip * slipdir
@@ -1511,10 +1549,10 @@ class Fault(SourceInv):
 
         # lambda
         if type(lam) is float:
-            lam = [lam for i in len(self.slipdir)]
+            lam = [lam for i in range(len(self.slipdir))]
 
         # Get the number of patches
-        nPatch = len(self.patch)
+        nSlip = self.N_slip
         if extra_params is not None:
             nExtra = len(extra_params)
         else:
@@ -1531,19 +1569,21 @@ class Fault(SourceInv):
         # Build the laplacian
         D = self.buildLaplacian(verbose=True)
 
+        Sensitivity = {}
+
         # Loop over directions:
         for i in range(len(self.slipdir)):
 
             # Start/Stop
-            ist = nPatch*i
-            ied = ist+nPatch
+            ist = nSlip*i
+            ied = ist+nSlip
 
             if sensitivity:
 
                 # Compute sensitivity matrix (see Loveless & Meade, 2011)
                 G = self.Gassembled[:,ist:ied]
                 S = np.diag(np.dot(G.T, G))
-                self.sensitivity = S
+                Sensitivity[self.slipdir[i]] = S
 
                 # Weight Laplacian by sensitivity (see F. Ortega-Culaciati PhD Thesis)
                 iS = np.sqrt(1./S)
@@ -1563,6 +1603,8 @@ class Fault(SourceInv):
 
         # Set inside the fault
         self.Cm = Cm
+        self.Laplacian = D
+        self.Sensitivity = Sensitivity
 
         # All done
         return
@@ -1586,11 +1628,6 @@ class Fault(SourceInv):
             print ("Sigma = {}".format(sigma))
             print ("Lambda = {}".format(lam))
 
-        # Need the patch geometry
-        if self.patch is None:
-            print("You should build the patches and the Green's functions first.")
-            return
-
         # Geth the desired slip directions
         slipdir = self.slipdir
 
@@ -1612,39 +1649,15 @@ class Fault(SourceInv):
 
         # Creates the principal Cm matrix
         if self.N_slip==None:
-            self.N_slip = len(self.patch)
+            self.N_slip = self.slip.shape[0]
         Np = self.N_slip * len(slipdir)
         if extra_params is not None:
             Np += len(extra_params)
-        Cmt = np.zeros((self.N_slip, self.N_slip))
         Cm = np.zeros((Np, Np))
 
         # Loop over the patches
-        if self.N_slip == len(self.patch):
-            flag_patch = True
-            vertices = None
-        elif self.patchType == 'triangle' and self.N_slip == len(self.Vertices):
-            flag_patch = False
-            vertices = self.Vertices
-        else:
-            raise NotImplementedError('Error: Inconsistent number of slip values')
-
-        for i in range(self.N_slip):
-            distances = np.zeros((self.N_slip,))
-            if flag_patch:
-                p1 = self.patch[i]
-            else:
-                v1 = vertices[i]
-            for j in range(self.N_slip):
-                if j == i:
-                    continue
-                if flag_patch:
-                    p2 = self.patch[j]
-                    distances[j] = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
-                else:
-                    v2 = vertices[j]
-                    distances[j] = distanceVertexToVertex(v1, v2, lim=lim)
-            Cmt[i,:] = C * np.exp(-distances / lam)
+        distances = self.distanceMatrix(distance='center', lim=lim)
+        Cmt = C * np.exp(-distances / lam)
 
         # Store that into Cm
         st = 0
@@ -1688,6 +1701,10 @@ class Fault(SourceInv):
             print("You should build the patches and the Green's functions first.")
             return
 
+        # Get slip
+        if self.N_slip is None:
+            self.N_slip = self.slip.shape[0]
+
         # Geth the desired slip directions
         slipdir = self.slipdir
 
@@ -1702,10 +1719,10 @@ class Fault(SourceInv):
             lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
 
         # Creates the principal Cm matrix
-        Np = len(self.patch)*len(slipdir)
+        Np = self.N_slip*len(slipdir)
         if extra_params is not None:
             Np += len(extra_params)
-        Cmt = np.zeros((len(self.patch), len(self.patch)))
+        Cmt = np.zeros((self.N_slip, self.N_slip))
         Cm = np.zeros((Np, Np))
 
         # Build the sigma and lambda lists
@@ -1727,25 +1744,14 @@ class Fault(SourceInv):
             # pick the right values
             la = lam[sl]
             C = (sigma[sl]*lam0/la)**2
-            # Loop over the patches
-            i = 0
-            for p1 in self.patch:
-                j = 0
-                for p2 in self.patch:
-                    # Compute the distance
-                    d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
-                    # Compute Cm
-                    Cmt[i,j] = C * np.exp( -1.0*d/la)
-                    Cmt[j,i] = C * np.exp( -1.0*d/la)
-                    # Upgrade counter
-                    j += 1
-                # upgrade counter
-                i += 1
-
+            # Get distance matrix
+            distance = self.distanceMatrix(distance='center', lim=lim)
+            # Compute Cmt
+            Cmt = C * np.exp( -1.0*distance/la)
             # Store that into Cm
-            se = st + len(self.patch)
+            se = st + self.N_slip
             Cm[st:se, st:se] = Cmt
-            st += len(self.patch)
+            st += self.N_slip
 
         # Put the extra values
         if extra_params is not None:
@@ -1787,6 +1793,9 @@ class Fault(SourceInv):
             print("You should build the patches and the Green's functions first.")
             return
 
+        # Set
+        self.N_slip = self.slip.shape[0]
+
         # Geth the desired slip directions
         slipdir = self.slipdir
 
@@ -1801,11 +1810,11 @@ class Fault(SourceInv):
             lam0 = np.sqrt( xd**2 + yd**2 + zd**2 )
 
         # Creates the principal Cm matrix
-        Np = len(self.patch)*len(slipdir)
+        Np = self.N_slip*len(slipdir)
         if extra_params is not None:
             Np += len(extra_params)
-        Cmt = np.zeros((len(self.patch), len(self.patch)))
-        lambdast = np.zeros((len(self.patch), len(self.patch)))
+        Cmt = np.zeros((self.N_slip, self.N_slip))
+        lambdast = np.zeros((self.N_slip, self.N_slip))
         Cm = np.zeros((Np, Np))
         Lambdas = np.zeros((Np, Np))
 
@@ -1826,7 +1835,7 @@ class Fault(SourceInv):
         for sl in range(len(slipdir)):
 
             # Update a counter
-            se = st + len(self.patch)
+            se = st + self.N_slip
             
             # Get the greens functions and build sensitivity
             G = self.Gassembled[:,st:se]
@@ -1838,29 +1847,18 @@ class Fault(SourceInv):
             la = lam[sl]
 
             # Loop over the patches
-            i = 0
-            for p1 in self.patch:
-                j = 0
-                for p2 in self.patch:
-                    # Compute the distance
-                    d = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
-                    # Weight Lambda by the relative sensitivity
-                    L = la/np.sqrt(S[i]*S[j])
-                    lambdast[i,j] = L
-                    lambdast[j,i] = L
-                    # Compute Cm
-                    C = (sigma[sl]*lam0/L)**2
-                    Cmt[i,j] = C * np.exp( -1.0*d/L)
-                    Cmt[j,i] = C * np.exp( -1.0*d/L)
-                    # Upgrade counter
-                    j += 1
-                # upgrade counter
-                i += 1
+            distance = self.distanceMatrix(distance='center', lim=lim)
+
+            # Weight Lambda by the relative sensitivity
+            s1, s2 = np.meshgrid(S, S)
+            L = la/np.sqrt(s1*s2)
+            # Compute Cm
+            Cmt = ((sigma[sl]*lam0/L)**2) * np.exp( -1.0*distance/L)
 
             # Store that into Cm
             Cm[st:se, st:se] = Cmt
             Lambdas[st:se, st:se] = lambdast
-            st += len(self.patch)
+            st += self.N_slip
 
         # Put the extra values
         if extra_params is not None:
@@ -1962,24 +1960,10 @@ class Fault(SourceInv):
         '''
 
         # Number of patches
-        nP = len(self.patch)
+        nP = self.slip.shape[0]
 
         # Build the smoothing matrix
-        S = np.zeros((nP, nP))
-
-        # Iterate over the patches
-        for i1 in range(len(self.patch)):
-            for i2 in range(len(self.patch)):
-
-                # indexes
-                p1 = self.patch[i1]
-                p2 = self.patch[i2]
-
-                # distance
-                d = self.distancePatchToPatch(p1, p2, distance='center')
-
-                # set filter
-                S[i1, i2] = d**2
+        S = self.distanceMatrix(distance='center', lim=None)**2
 
         # Compute
         S = np.exp(-0.5*S/(length**2))

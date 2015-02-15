@@ -15,6 +15,7 @@ import sys
 
 # Personals
 from .SourceInv import SourceInv
+from .geodeticplot import geodeticplot as geoplot
 
 class insarrates(SourceInv):
 
@@ -1943,103 +1944,38 @@ class insarrates(SourceInv):
 
         Args:
             * ref       : utm or lonlat.
-            * faults    : list of fault object.
+            * faults    : list of fault objects.
             * figure    : number of the figure.
-            * gps       : superpose a GPS dataset.
+            * gps       : list of gps objects.
             * decim     : plot the insar following the decimation process of varres.
         '''
 
-        # select data to plt
-        if data is 'data':
-            z = self.vel
-        elif data is 'synth':
-            z = self.synth
+        # Create a figure
+        fig = geoplot(figure=figure, ref=ref)
 
-        # Create the figure
-        fig = plt.figure(figure)
-        ax = fig.add_subplot(111)
-
-        # Set the axes
-        if ref is 'utm':
-            ax.set_xlabel('Easting (km)')
-            ax.set_ylabel('Northing (km)')
-        else:
-            ax.set_xlabel('Longitude')
-            ax.set_ylabel('Latitude')
-
-        # Plot the surface fault trace if asked
+        # Plot the fault trace if asked
         if faults is not None:
-            if faults.__class__ is not list:
+            if type(faults) is not list:
                 faults = [faults]
             for fault in faults:
-                if ref is 'utm':
-                    ax.plot(fault.xf, fault.yf, '-b')
-                else:
-                    ax.plot(fault.lon, fault.lat, '-b')
+                fig.faulttrace(fault)
 
-        # Plot the gps if asked
+        # Plot the gps data if asked
         if gps is not None:
+            if type(gps) is not list:
+                gps = [gps]
             for g in gps:
-                if ref is 'utm':
-                        ax.quiver(g.x, g.y, g.vel_enu[:,0], g.vel_enu[:,1])
-                else:
-                        ax.quiver(g.lon, g.lat, g.vel_enu[:,0], g.vel_enu[:,1])
+                fig.gpsvelocities(g)
 
-        # Norm
-        if norm is None:
-            vmin = np.nanmin(z)
-            vmax = np.nanmax(z)
-        else:
-            vmin = norm[0]
-            vmax = norm[1]
+        # Plot the decimation process, if asked
+        if decim:
+            fig.insar_decimate(self, colorbar=False, data=data)
 
-        # prepare a color map for insar
-        import matplotlib.colors as colors
-        import matplotlib.cm as cmx
-        cmap = plt.get_cmap('jet')
-        cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
-        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
-
-        # Plot the decimation process
-        if decim and (ref is 'utm'):
-            import matplotlib.collections as colls
-            for i in range(self.xycorner.shape[0]):
-                x = []
-                y = []
-                # upper left
-                x.append(self.xycorner[i,0])
-                y.append(self.xycorner[i,1])
-                # upper right
-                x.append(self.xycorner[i,2])
-                y.append(self.xycorner[i,1])
-                # down right
-                x.append(self.xycorner[i,2])
-                y.append(self.xycorner[i,3])
-                # down left
-                x.append(self.xycorner[i,0])
-                y.append(self.xycorner[i,3])
-                verts = [zip(x, y)]
-                rect = colls.PolyCollection(verts)
-                rect.set_color(scalarMap.to_rgba(z[i]))
-                rect.set_edgecolors('k')
-                ax.add_collection(rect)
-
-        # Plot the insar
-        if ref is 'utm':
-            ax.scatter(self.x, self.y, s=10, c=z, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
-        else:
-            ax.scatter(self.lon, self.lat, s=10, c=z, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
-
-        # Colorbar
-        scalarMap.set_array(z)
-        plt.colorbar(scalarMap)
-
-        # Axis
-        plt.axis(axis)
+        # Plot the insar_scatter
+        fig.insar_scatter(self, colorbar=True, data=data)
 
         # Show
-        if show:
-            plt.show()
+        fig.show(showFig=['map'])
 
         # All done
         return

@@ -15,6 +15,7 @@ import sys
 # Personals
 from .SourceInv import SourceInv
 from .gpstimeseries import gpstimeseries
+from .geodeticplot import geodeticplot as geoplot
 
 class gpsrates(SourceInv):
 
@@ -2281,7 +2282,7 @@ class gpsrates(SourceInv):
         # all done
         return
 
-    def plot(self, ref='utm', faults=None, figure=135, name=False, legendscale=10., color='b', scale=150, plot_los=False, show=True):
+    def plot(self, ref='utm', faults=None, figure=135, name=False, legendscale=10., scale=None, plot_los=False):
         '''
         Args:
             * ref       : can be 'utm' or 'lonlat'.
@@ -2290,84 +2291,25 @@ class gpsrates(SourceInv):
             * plot_los  : Plot the los projected gps as scatter points
         '''
 
-        # Import some things
-        import matplotlib.pyplot as plt
+        # Create a figure
+        fig = geoplot(figure=figure, ref=ref)
 
-        # Create the figure
-        fig = plt.figure(figure)
-        ax = fig.add_subplot(111)
-
-        # Set the axes
-        if ref is 'utm':
-            ax.set_xlabel('Easting (km)')
-            ax.set_ylabel('Northing (km)')
-        else:
-            ax.set_xlabel('Longitude')
-            ax.set_ylabel('Latitude')
-
-        # Plot the surface fault trace if asked
+        # Plot faults
         if faults is not None:
+            if type(faults) is not list:
+                faults = [faults]
             for fault in faults:
-                if ref is 'utm':
-                    ax.plot(fault.xf, fault.yf, '-r', label=fault.name)
-                else:
-                    ax.plot(fault.lon, fault.lat, '-r', label=fault.name)
+                fig.faulttrace(fault)
 
-        # Plot the gps projected
+        # plot GPS along the LOS
         if plot_los:
-            if not hasattr(self,'los'):
-                print('Need to project the GPS first, cannot plot projected...')
-            else:
-                if ref is 'utm':
-                    ax.scatter(self.x, self.y, 100, self.vel_los, linewidth=1)
-                else:
-                    ax.scatter(self.lon, self.lat, 100, self.vel_los, linewidth=1)
+            fig.gps_projected(self, colorbar=True)
 
-        # Plot the GPS velocities
-        if ref is 'utm':
-            p = ax.quiver(self.x, self.y, self.vel_enu[:,0], self.vel_enu[:,1], label='data', color=color, scale=scale)
-            q = ax.quiverkey(p, 0.04, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
-        else:
-            p = ax.quiver(self.lon, self.lat, self.vel_enu[:,0], self.vel_enu[:,1], label='data', scale=scale)
-            q = ax.quiverkey(p, 0.04, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color=color)
+        # Plot GPS velocities
+        fig.gpsvelocities(self, name=name, legendscale=legendscale, scale=scale)
 
-        # if some synthetics exist
-        if self.synth is not None:
-            if ref is 'utm':
-                s = ax.quiver(self.x, self.y, self.synth[:,0], self.synth[:,1], label='synth', color='r', scale=scale)
-                q = ax.quiverkey(s, 0.04, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color='r')
-            else:
-                s = ax.quiver(self.lon, self.lat, self.synth[:,0], self.synth[:,1], label='synth', color='r', scale=scale)
-                q = ax.quiverkey(s, 0.04, 0.8, legendscale, "{}".format(legendscale), coordinates='axes', color='r')
-
-        # If the Helmert transform has been estimated
-        if hasattr(self, 'HelmTransform'):
-            if ref is 'utm':
-                s = ax.quiver(self.x, self.y, self.HelmTransform[:,0], self.HelmTransform[:,1], label='Helmert Tranform', color='b', scale=scale)
-                q = ax.quiverkey(s, 0.04, 0.05, legendscale, "{}".format(legendscale), coordinates='axes', color='b')
-            else:
-                s = ax.quiver(self.lon, self.lat, self.HelmTransform[:,0], self.HelmTransform[:,1], label='Helmert Tranform', color='b', scale=scale)
-                q = ax.quiverkey(s, 0.04, 0.05, legendscale, "{}".format(legendscale), coordinates='axes', color='b')
-
-        # Plot the name of the stations if asked
-        if name:
-            if ref is 'utm':
-                for i in range(len(self.x)):
-                    ax.text(self.x[i], self.y[i], self.station[i], fontsize=12)
-            else:
-                for i in range(len(self.lon)):
-                    ax.text(self.lon[i], self.lat[i], self.station[i], fontsize=12)
-
-        # Plot the legend
-        handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles, labels)
-
-        # Axis
-        ax.axis('equal')
-
-        # Do the plot
-        if show:
-            plt.show()
+        # Show
+        fig.show(showFig=['map'])
 
         # All done
         return

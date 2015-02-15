@@ -353,7 +353,7 @@ def dropSourcesInPatches(fault, verbose=False):
         spacing = fault.sourceSpacing
         if fault.patchType is 'rectangle':
             charArea = np.ones((len(fault.patch),))*spacing**2
-        elif fault.patchType is 'triangle':
+        elif fault.patchType in ('triangle', 'triangletent'):
             charArea = np.ones((len(fault.patch),))*spacing**2/2.
     if hasattr(fault, 'sourceNumber'):
         number = fault.sourceNumber

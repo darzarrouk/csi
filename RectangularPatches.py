@@ -158,6 +158,14 @@ class RectangularPatches(Fault):
         # All done
         return
 
+    def getStrikes(self):
+        '''
+        Returns an array of strikes.
+        '''
+
+        # all done in one line
+        return np.array([self.getpatchgeometry(p)[5] for p in self.patch])
+
     def splitPatchesHoriz(self, nPatches):
         '''
         Splits all the patches in nPatches Horizontally.
@@ -1351,6 +1359,33 @@ class RectangularPatches(Fault):
 
         # All done
         return x1, x2, x3, width, length, strike, dip
+
+    def distanceMatrix(self, distance='center', lim=None):
+        '''
+        Returns a matrix of the distances between patches.
+        Args:
+            * distance  : distance estimation mode
+                            center : distance between the centers of the patches.
+                            no other method is implemented for now.
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+        '''
+
+        # Check
+        if self.N_slip==None:
+            self.N_slip = self.slip.shape[0]
+
+        # Loop
+        Distances = np.zeros((self.N_slip, self.N_slip))
+        for i in range(self.N_slip):
+            p1 = self.patch[i]
+            for j in range(self.N_slip):
+                if j == i:
+                    continue
+                p2 = self.patch[j]
+                Distances[i,j] = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
+
+        # All done
+        return Distances
 
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
         '''

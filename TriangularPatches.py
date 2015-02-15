@@ -17,6 +17,7 @@ import os
 
 # Personals
 from .Fault import Fault
+from .geodeticplot import geodeticplot as geoplot
 
 
 class TriangularPatches(Fault):
@@ -261,6 +262,14 @@ class TriangularPatches(Fault):
 
         # All done
         return
+
+    def getStrikes(self):
+        '''
+        Returns an array of strikes.
+        '''
+
+        # all done in one line
+        return np.array([self.getpatchgeometry(p)[5] for p in self.patch])
 
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
         '''
@@ -676,7 +685,7 @@ class TriangularPatches(Fault):
         else:
             return x1, x2, x3, width, length, strike, dip
 
-    def distanceVertexToVertex(self, vertex1, vertex2, lim=None):
+    def distanceVertexToVertex(self, vertex1, vertex2, distance='center', lim=None):
         '''
         Measures the distance between two vertexes.
         Args:
@@ -704,6 +713,36 @@ class TriangularPatches(Fault):
 
         # All done
         return dis
+
+    def distanceMatrix(self, distance='center', lim=None):
+        '''
+        Returns a matrix of the distances between patches.
+        Args:
+            * distance  : distance estimation mode
+                            center : distance between the centers of the patches.
+                            no other method is implemented for now.
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+        '''
+
+        # Assert 
+        assert distance is 'center', 'No other method implemented than center'
+
+        # Check
+        if self.N_slip==None:
+            self.N_slip = self.slip.shape[0]
+
+        # Loop
+        Distances = np.zeros((self.N_slip, self.N_slip))
+        for i in range(self.N_slip):
+            p1 = self.patch[i]
+            for j in range(self.N_slip):
+                if j == i:
+                    continue
+                p2 = self.patch[j]
+                Distances[i,j] = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
+
+        # All done
+        return Distances
 
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
         '''
@@ -800,8 +839,9 @@ class TriangularPatches(Fault):
         npatch = len(self.patch)
         for i in range(npatch):
 
-            sys.stdout.write('%i / %i\r' % (i, npatch))
-            sys.stdout.flush()
+            if verbose:
+                sys.stdout.write('%i / %i\r' % (i, npatch))
+                sys.stdout.flush()
 
             # Indices of Vertices of current patch
             refVertInds = faces[i,:]
@@ -821,7 +861,8 @@ class TriangularPatches(Fault):
 
             self.adjacencyMap.append(adjacents)
 
-        print('\n')
+        if verbose:
+            print('\n')
         return
 
 
@@ -829,13 +870,14 @@ class TriangularPatches(Fault):
         """
         Build a discrete Laplacian smoothing matrix.
         """
+        
+        if self.adjacencyMap is None or len(self.adjacencyMap) != len(self.patch):
+            self.buildAdjacencyMap(verbose=verbose)
+
         if verbose:
             print("------------------------------------------")
             print("------------------------------------------")
             print("Building the Laplacian matrix")
-
-        if self.adjacencyMap is None or len(self.adjacencyMap) != len(self.patch):
-            assert False, 'Must run self.buildAdjacencyMap() first'
 
         # Pre-compute patch centers
         centers = self.getcenters()
@@ -850,8 +892,9 @@ class TriangularPatches(Fault):
         # Loop over patches
         for i in range(npatch):
 
-            sys.stdout.write('%i / %i\r' % (i, npatch))
-            sys.stdout.flush()
+            if verbose:
+                sys.stdout.write('%i / %i\r' % (i, npatch))
+                sys.stdout.flush()
 
             # Center for current patch
             refCenter = np.array(centers[i])
@@ -878,7 +921,8 @@ class TriangularPatches(Fault):
                 sumProd = h13*h14 + h12*h14 + h12*h13
             D[i,i] = -sumProd
 
-        print('\n')
+        if verbose:
+            print('\n')
         D = D / np.max(np.abs(np.diag(D)))
         return D
 
@@ -1595,8 +1639,7 @@ class TriangularPatches(Fault):
         # All done
         return
 
-    def plot(self, ref='utm', figure=134, add=False, maxdepth=None, axis='equal',
-             value_to_plot='total', neg_depth=False):
+    def plot(self, ref='utm', figure=134, add=False, value_to_plot='total', revmap=False):
         '''
         Plot the available elements of the fault.
 
@@ -1605,117 +1648,17 @@ class TriangularPatches(Fault):
             * figure        : Number of the figure.
         '''
 
-        # Import necessary things
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-        fig = plt.figure(figure)
-        ax = fig.add_subplot(111, projection='3d')
+        # Create a figure
+        fig = geoplot(figure=figure, ref=ref)
 
-        # Set the axes
-        if ref is 'utm':
-            ax.set_xlabel('Easting (km)')
-            ax.set_ylabel('Northing (km)')
-        else:
-            ax.set_xlabel('Longitude')
-            ax.set_ylabel('Latitude')
-        ax.set_zlabel('Depth (km)')
+        # Plot fault trace
+        fig.faulttrace(self,  add=add)
 
-        # Sign factor for negative depths
-        if neg_depth:
-            negFactor = 1.0
-        else:
-            negFactor = -1.0
+        # Plot the fault 
+        fig.faultpatches(self, slip=value_to_plot, revmap=revmap)
 
-        # Plot the surface trace
-        if ref is 'utm':
-            if self.xf is None:
-                self.trace2xy()
-            ax.plot(self.xf, self.yf, '-b')
-        else:
-            ax.plot(self.lon, self.lat,'-b')
-
-        if add and (ref is 'utm'):
-            for fault in self.addfaultsxy:
-                ax.plot(fault[:,0], fault[:,1], '-k')
-        elif add and (ref is not 'utm'):
-            for fault in self.addfaults:
-                ax.plot(fault[:,0], fault[:,1], '-k')
-
-        # Plot the discretized trace
-        if self.xi is not None:
-            if ref is 'utm':
-                ax.plot(self.xi, self.yi, '.r')
-            else:
-                if self.loni is None:
-                    self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
-                ax.plot(loni, lati, '.r')
-
-        # Compute the total slip
-        if value_to_plot=='total':
-            self.computetotalslip()
-            plotval = self.totalslip
-        elif value_to_plot=='index':
-            plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
-        elif value_to_plot=='dipslip':
-            plotval = self.slip[:,1]
-        elif value_to_plot=='strikeslip':
-            plotval = self.slip[:,0]
-        else:
-            print('Unknow keyword for value_to_plot')
-
-        # Plot the patches
-        if self.patch is not None:
-
-            # import stuff
-            import mpl_toolkits.mplot3d.art3d as art3d
-            import matplotlib.colors as colors
-            import matplotlib.cm as cmx
-
-            # set z axis
-            ax.set_zlim3d([negFactor * (self.depth - negFactor * 5), 0])
-            zticks = []
-            zticklabels = []
-            for z in self.z_patches:
-                zticks.append(negFactor * z)
-                zticklabels.append(z)
-            ax.set_zticks(zticks)
-            ax.set_zticklabels(zticklabels)
-
-            # set color business
-            cmap = plt.get_cmap('jet')
-            cNorm  = colors.Normalize(vmin=0, vmax=plotval.max())
-            scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
-
-            for p in range(len(self.patch)):
-                ncorners = len(self.patch[0])
-                x = []
-                y = []
-                z = []
-                for i in range(ncorners):
-                    if ref is 'utm':
-                        x.append(self.patch[p][i][0])
-                        y.append(self.patch[p][i][1])
-                        z.append(negFactor * self.patch[p][i][2])
-                    else:
-                        x.append(self.patchll[p][i][0])
-                        y.append(self.patchll[p][i][1])
-                        z.append(negFactor * self.patchll[p][i][2])
-                verts = [zip(x, y, z)]
-                rect = art3d.Poly3DCollection(verts)
-                rect.set_color(scalarMap.to_rgba(plotval[p]))
-                rect.set_edgecolors('k')
-                ax.add_collection3d(rect)
-
-            # put up a colorbar
-            scalarMap.set_array(plotval)
-            plt.colorbar(scalarMap)
-
-        # Depth
-        if maxdepth is not None:
-            ax.set_zlim3d([neg_factor * maxdepth, 0])
-
-        # show
-        plt.show()
+        # Show the thing
+        fig.show(showFig=['fault'], triDaxis=None)
 
         # All done
         return

@@ -77,11 +77,11 @@ class multifaultsolve(object):
         for fault in faults:
             if fault.patchType == 'triangletent':
                 fault.computeTentArea()
-                for tentIndex in range(len(fault.tent)):
+                for tentIndex in range(fault.slip.shape[0]):
                     patchAreas.append(fault.area_tent[tentIndex])
             else:
                 fault.computeArea()
-                for patchIndex in range(len(fault.patch)):
+                for patchIndex in range(fault.slip.shape[0]):
                     patchAreas.append(fault.area[patchIndex])
         self.patchAreas = np.array(patchAreas)
 
@@ -179,21 +179,21 @@ class multifaultsolve(object):
 
             # Conditions on slip
             if 's' in fault.slipdir:
-                ne += len(fault.patch)
+                ne += fault.slip.shape[0]
                 ss = '{} - {}'.format(ns,ne)
-                ns += len(fault.patch)
+                ns += fault.slip.shape[0]
             if 'd' in fault.slipdir:
-                ne += len(fault.patch)
+                ne += fault.slip.shape[0]
                 ds = '{} - {}'.format(ns, ne)
-                ns += len(fault.patch)
+                ns += fault.slip.shape[0]
             if 't' in fault.slipdir:
-                ne += len(fault.patch)
+                ne += fault.slip.shape[0]
                 ts = '{} - {}'.format(ns, ne)
-                ns += len(fault.patch)
+                ns += fault.slip.shape[0]
             if 'c' in fault.slipdir:
-                ne += len(fault.patch)
+                ne += fault.slip.shape[0]
                 cp = '{} - {}'.format(ns, ne)
-                ns += len(fault.patch)
+                ns += fault.slip.shape[0]
 
             # How many slip parameters
             if ne>nSlip:
@@ -596,7 +596,6 @@ class multifaultsolve(object):
 
         # Get the number of model parameters
         Nm = Cm.shape[0]
-        Npatch = len(self.patchAreas)
 
         # Check If Cm is symmetric and positive definite
         if (Cm.transpose() != Cm).all():
@@ -635,10 +634,11 @@ class multifaultsolve(object):
             return 0.5 * dataLikely + 0.5 * priorLikely
 
         # Define the moment magnitude inequality constraint function
-        def computeMwDiff(m, Mw_thresh, patchAreas, Npatch):
+        def computeMwDiff(m, Mw_thresh, patchAreas):
             """
             Ahhhhh hard coded shear modulus.
             """
+            Npatch = len(self.patchAreas)
             shearModulus = 22.5e9
             moment = shearModulus * np.abs(np.dot(patchAreas, m[:Npatch]))
             if moment>0.:
@@ -651,7 +651,7 @@ class multifaultsolve(object):
         if Mw_thresh is not None:
             constraints = {'type': 'ineq',
                            'fun': computeMwDiff,
-                           'args': (Mw_thresh, self.patchAreas, Npatch)}
+                           'args': (Mw_thresh, self.patchAreas)}
         else:
             constraints = ()
 

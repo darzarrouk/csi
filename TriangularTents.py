@@ -41,7 +41,6 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-
     def setdepth(self, nump, width, top=0):
         '''
         Set depth patch attributes
@@ -62,6 +61,13 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
+    def getStrikes(self):
+        '''
+        Returns the strikes of each nodes.
+        '''
+
+        # All done in one line
+        return np.array([self.getTentInfo(t)[3] for t in self.tent])
 
     def getTentInfo(self, tent):
         '''
@@ -79,7 +85,7 @@ class TriangularTents(TriangularPatches):
 
         x, y, z = self.tent[u]
         strike, dip = 0, 0
-        nbr_faces = self.adjacencyMapVT[self.tentid[u]]
+        nbr_faces = self.adjacencyMap[self.tentid[u]]
 
         for pid in nbr_faces:
             xc, yc, zc, w, l, stk, dp = self.getpatchgeometry(pid, center=True)
@@ -161,6 +167,13 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
+    def getcenters(self):
+        '''
+        Returns a list of nodes.
+        '''
+
+        # All done
+        return self.tent
 
     def addTent(self, tent, slip=[0, 0, 0]):
         '''
@@ -383,7 +396,7 @@ class TriangularTents(TriangularPatches):
                 elif values is 'dip':
                     values = np.array([self.getTentInfo(t)[6] for t in self.tent])
                 elif values is 'index':
-                    values = np.array([np.float(self.getindex(p)) for t in self.tent])
+                    values = np.array([np.float(self.getindex(t)) for t in self.tent])
                 self.slip[:,0] = values
             # Numpy array 
             if type(values) is np.ndarray:
@@ -398,6 +411,36 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+
+    def distanceMatrix(self, distance='center', lim=None):
+        '''
+        Returns a matrix of the distances between Nodes.
+        Args:
+            * distance  : distance estimation mode
+                            center : distance between the centers of the patches.
+                            no other method is implemented for now.
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+        '''
+
+        # Assert 
+        assert distance is 'center', 'No other method implemented than center'
+
+        # Check
+        if self.N_slip==None:
+            self.N_slip = self.slip.shape[0]
+
+        # Loop
+        Distances = np.zeros((self.N_slip, self.N_slip))
+        for i in range(self.N_slip):
+            v1 = self.Vertices[i]
+            for j in range(self.N_slip):
+                if j == i:
+                    continue
+                v2 = self.Vertices[j]
+                Distances[i,j] = self.distanceVertexToVertex(v1, v2, lim=lim)
+
+        # All done
+        return Distances
 
     def getindex(self, tent):
         '''
@@ -437,7 +480,7 @@ class TriangularTents(TriangularPatches):
             vid = self.tentid[i]
 
             # find the triangle neighbors for each vertex
-            nbr_triangles = self.adjacencyMapVT[vid]
+            nbr_triangles = self.adjacencyMap[vid]
             area = 1./3 * np.sum(areas[nbr_triangles])
             self.area_tent.append(area)
 
@@ -544,7 +587,7 @@ class TriangularTents(TriangularPatches):
         self.z_patches = np.linspace(self.depth, 0.0, 5)
 
         # Create the adjacency map
-        self.buildAdjacencyMapVT(verbose=False)
+        self.buildAdjacencyMap(verbose=False)
 
         # All done
         return
@@ -589,9 +632,13 @@ class TriangularTents(TriangularPatches):
                 tNodes = Faces[tId]
                 # Affect the master node and the two outward nodes
                 nodeOne, nodeTwo = tNodes[np.where(tNodes!=mainNode)]
-                # Get weights
-                Wi = self._getWeights(Vertices[mainNode], Vertices[nodeOne], Vertices[nodeTwo], 
-                           self.edksSources[1][iS], self.edksSources[2][iS], self.edksSources[3][iS])
+                # Get weights (Attention: Vertices are in km, edksSources in m)
+                Wi = self._getWeights(Vertices[mainNode], 
+                                      Vertices[nodeOne], 
+                                      Vertices[nodeTwo], 
+                                      self.edksSources[1][iS]/1000., 
+                                      self.edksSources[2][iS]/1000., 
+                                      self.edksSources[3][iS]/1000.)
                 # Save each source
                 Ids += (np.ones((len(iS),))*mainNode).tolist()
                 xs += self.edksSources[1][iS].tolist()
@@ -610,16 +657,17 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-    def buildAdjacencyMapVT(self, verbose=True):
+    def buildAdjacencyMap(self, verbose=True):
         """
         For each triangle vertex, find the indices of the adjacent triangles.
+        This function overwrites that from the parent class TriangularPatches.
         """
         if verbose:
             print("-----------------------------------------------")
             print("-----------------------------------------------")
             print("Finding the adjacent triangles for all vertices")
 
-        self.adjacencyMapVT = []
+        self.adjacencyMap = []
 
         # Cache the vertices and faces arrays
         vertices, faces = self.Vertices, self.Faces
@@ -639,69 +687,22 @@ class TriangularTents(TriangularPatches):
                 if i in faces[j,:]:
                     adjacents.append(j)
 
-            self.adjacencyMapVT.append(adjacents)
+            self.adjacencyMap.append(adjacents)
 
         if verbose:
             print('\n')
         return
 
-
     def buildLaplacian(self, extra_params=None, verbose=True):
         """
         Build a discrete Laplacian smoothing matrix.
         """
-        if verbose:
-            print("------------------------------------------")
-            print("------------------------------------------")
-            print("Building the Laplacian matrix")
+        
+        # No Laplacian method implemented so far
+        raise NotImplementedError('Laplacian method not implemented for class {}'.format(self.__class__))
 
-        if self.adjacencyMap is None or len(self.adjacencyMap) != len(self.patch):
-            assert False, 'Must run self.buildAdjacencyMap() first'
-
-        # Pre-compute patch centers
-        centers = self.getcenters()
-
-        # Cache the vertices and faces arrays
-        vertices, faces = self.Vertices, self.Faces
-
-        # Allocate array for Laplace operator
-        npatch = len(self.patch)
-        D = np.zeros((npatch,npatch))
-
-        # Loop over patches
-        for i in range(npatch):
-
-            sys.stdout.write('%i / %i\r' % (i, npatch))
-            sys.stdout.flush()
-
-            # Center for current patch
-            refCenter = np.array(centers[i])
-
-            # Compute Laplacian using adjacent triangles
-            hvals = []
-            adjacents = self.adjacencyMap[i]
-            for index in adjacents:
-                pcenter = np.array(centers[index])
-                dist = np.linalg.norm(pcenter - refCenter)
-                hvals.append(dist)
-            if len(hvals) == 3:
-                h12, h13, h14 = hvals
-                D[i,adjacents[0]] = h13*h14
-                D[i,adjacents[1]] = h12*h14
-                D[i,adjacents[2]] = h12*h13
-                sumProd = h13*h14 + h12*h14 + h12*h13
-            elif len(hvals) == 2:
-                h12, h13 = hvals
-                # Make a virtual patch
-                h14 = max(h12, h13)
-                D[i,adjacents[0]] = h13*h14
-                D[i,adjacents[1]] = h12*h14
-                sumProd = h13*h14 + h12*h14 + h12*h13
-            D[i,i] = -sumProd
-
-        print('\n')
-        D = D / np.max(np.abs(np.diag(D)))
-        return D
+        # All done
+        return 
 
     def getEllipse(self, tent, ellipseCenter=None, Npoints=10, factor=1.0):
         '''
@@ -717,8 +718,6 @@ class TriangularTents(TriangularPatches):
 
         # Get strike and dip
         xc, yc, zc, strike, dip = self.getTentInfo(tent)
-        # dip *= np.pi/180.
-        # strike *= np.pi/180.
         if ellipseCenter!=None:
             xc, yc, zc = ellipseCenter
 
