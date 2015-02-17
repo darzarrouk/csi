@@ -380,11 +380,16 @@ class insarrates(SourceInv):
 
         # Read the files if needed
         if origin in ('grd', 'GRD'):
-            import scipy.io.netcdf as netcdf
-            fincidence = netcdf.netcdf_file(incidence)
-            fheading = netcdf.netcdf_file(heading)
-            incidence = fincidence.variables['z'][:,:].flatten()
-            heading = fheading.variables['z'][:,:].flatten()
+            try:
+                from netCDF4 import Dataset as netcdf
+                fincidence = netcdf(incidence, 'r', format='NETCDF4')
+                fheading = netcdf(heading, 'r', format='NETCDF4')
+            except:
+                import scipy.io.netcdf as netcdf
+                fincidence = netcdf.netcdf_file(incidence)
+                fheading = netcdf.netcdf_file(heading)
+            incidence = np.array(fincidence.variables['z'][:]).flatten()
+            heading = np.array(fheading.variables['z'][:]).flatten()
             self.origininchd = origin
         elif origin in ('binary', 'bin'):
             incidence = np.fromfile(incidence, dtype=np.float32)
@@ -392,6 +397,9 @@ class insarrates(SourceInv):
             self.origininchd = origin
         elif origin in ('binaryfloat'):
             self.origininchd = origin
+
+        self.Incidence = incidence
+        self.Heading = heading
 
         # Convert angles
         alpha = (heading+90.)*np.pi/180.
@@ -435,8 +443,8 @@ class insarrates(SourceInv):
 
         # Open the input file
         try:
-            from netCDF4 import Dataset
-            fin = Dataset(filename, 'r', format='NETCDF4')
+            from netCDF4 import Dataset as netcdf
+            fin = netcdf(filename, 'r', format='NETCDF4')
         except ImportError:
             import scipy.io.netcdf as netcdf
             fin = netcdf.netcdf_file(filename)
@@ -488,6 +496,8 @@ class insarrates(SourceInv):
             else:
                 ori = 'float'
             self.inchd2los(incidence, heading, origin=ori)
+            if not keepnans:
+                self.los = self.los[u,:] 
         elif los is not None:
             # If strings, they are meant to be grd files
             if type(los[0]) is str:
@@ -505,9 +515,9 @@ class insarrates(SourceInv):
                     finx = netcdf.netcdf_file(los[0])
                     finy = netcdf.netcdf_file(los[1])
                     finz = netcdf.netcdf_file(los[2])
-                losx = finx.variables['z'][:,:].flatten()
-                losy = finy.variables['z'][:,:].flatten()
-                losz = finz.variables['z'][:,:].flatten()
+                losx = np.array(finx.variables['z']).flatten()
+                losy = np.array(finy.variables['z']).flatten()
+                losz = np.array(finz.variables['z']).flatten()
                 # Remove NaNs?
                 if not keepnans:
                     losx = losx[u]
@@ -1969,10 +1979,10 @@ class insarrates(SourceInv):
 
         # Plot the decimation process, if asked
         if decim:
-            fig.insar_decimate(self, colorbar=False, data=data)
+            fig.insar_decimate(self, norm=norm, colorbar=False, data=data)
 
         # Plot the insar_scatter
-        fig.insar_scatter(self, colorbar=True, data=data)
+        fig.insar_scatter(self, norm=norm, colorbar=True, data=data)
 
         # Show
         fig.show(showFig=['map'])

@@ -776,8 +776,6 @@ class strainfield(object):
 
         # Import netcdf
         import scipy.io.netcdf as netcdf
-
-        # Open the file
         fid = netcdf.netcdf_file(outfile,'w')
 
         # Create a dimension variable

@@ -447,9 +447,16 @@ class cosicorrrates(SourceInv):
         self.err_north = []
 
         # Open the input file
-        import scipy.io.netcdf as netcdf
-        feast = netcdf.netcdf_file(filename+'_east.grd')
-        fnorth = netcdf.netcdf_file(filename+'_north.grd')
+        try:
+            import scipy.io.netcdf as netcdf
+            feast = netcdf.netcdf_file(filename+'_east.grd')
+            fnorth = netcdf.netcdf_file(filename+'_north.grd')
+        except:
+            from netCDF4 import Dataset as netcdf
+            feast = netcdf(filename+'_east.grd', format='NETCDF4')
+            fnorth = netcdf(filename+'_north.grd', format='NETCDF4')
+        
+        # Shape
         self.grd_shape = feast.variables['z'][:].shape
 
         # Get the values

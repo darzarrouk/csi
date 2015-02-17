@@ -607,6 +607,9 @@ class geodeticplot(object):
                               if 'transformation', plots the transformation.
         '''
 
+        # Assert 
+        assert data in ('both', 'res', 'synth', 'strain', 'transformation'), 'Data type to plot unknown'
+
         if data is 'both':
             # Plot the GPS velocities
             if self.ref is 'utm':
@@ -745,6 +748,8 @@ class geodeticplot(object):
             * colorbar  : activates the plotting of the colorbar.
             * data      : plots either the 'data', 'synth', or 'res'
         '''
+
+        assert data in ('data', 'synth', 'res'), 'Data type to plot unknown'
 
         if data == 'data':
             d = insar.vel
@@ -889,6 +894,8 @@ class geodeticplot(object):
             * data      : plot either 'data' or 'synth' or 'res'.
         '''
 
+        assert data in ('data', 'synth', 'res', 'poly'), 'Data type to plot unknown'
+
         # Choose data type
         if data == 'data':
             d = insar.vel
@@ -975,6 +982,8 @@ class geodeticplot(object):
             * plotType  : plot either rectangular patches (rect) or scatter (scatter)
         '''
 
+        assert data in ('dataEast', 'dataNorth', 'synthEast', 'synthNorth', 'resEast', 'resNorth'), 'Data type to plot unknown'
+
         # Choose the data
         if data == 'dataEast':
             d = corr.east
@@ -988,9 +997,6 @@ class geodeticplot(object):
             d = corr.east - corr.east_synth
         elif data == 'resNorth':
             d = corr.north - corr.north_synth
-        else:
-            print('unknown data type')
-            return
 
         # Prepare the colorlimits
         if norm is None:
