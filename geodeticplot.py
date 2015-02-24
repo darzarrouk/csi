@@ -15,7 +15,8 @@ import scipy.interpolate as sciint
 
 class geodeticplot(object):
 
-    def __init__(self, figure=130, ref='utm', pbaspect=None, Faille=True, Carte=True):
+    def __init__(self, figure=130, ref='utm', pbaspect=None, Faille=True, Carte=True,
+                 fig1size=None):
         '''
         Args:
             * figure        : Number of the figure.
@@ -24,7 +25,7 @@ class geodeticplot(object):
 
         # Open a figure
         if Faille:
-            fig1 = plt.figure(figure)
+            fig1 = plt.figure(figure, figsize=fig1size)
             faille = fig1.add_subplot(111, projection='3d')
         if Carte:
             fig2  = plt.figure(figure+1)

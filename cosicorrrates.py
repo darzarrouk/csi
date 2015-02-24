@@ -787,7 +787,7 @@ class cosicorrrates(SourceInv):
 
         # Correct
         self.east -= self.east_synth
-	self.north -= self.north_synth
+        self.north -= self.north_synth
 	
         # All done
         return

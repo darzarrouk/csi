@@ -110,20 +110,20 @@ class Fault(SourceInv):
         if values is not None:
             # string type
             if type(values) is str:
-                if values is 'depth':
+                if values == 'depth':
                     values = np.array([self.getpatchgeometry(p, center=True)[2] for p in self.patch])
-                elif values is 'strike':
+                elif values == 'strike':
                     values = np.array([self.getpatchgeometry(p, center=True)[5] for p in self.patch])
-                elif values is 'dip':
+                elif values == 'dip':
                     values = np.array([self.getpatchgeometry(p, center=True)[6] for p in self.patch])
-                elif values is 'length':
+                elif values == 'length':
                     values = np.array([self.getpatchgeometry(p, center=True)[4] for p in self.patch])
-                elif values is 'width':
+                elif values == 'width':
                     values = np.array([self.getpatchgeometry(p, center=True)[3] for p in self.patch])
-                elif values is 'area':
+                elif values == 'area':
                     self.computeArea()
                     values = self.area
-                elif values is 'index':
+                elif values == 'index':
                     values = np.array([np.float(self.getindex(p)) for p in self.patch])
                 self.slip[:,0] = values
             # Numpy array 
@@ -599,7 +599,7 @@ class Fault(SourceInv):
         '''
 
         # Chech something
-        if self.patchType is 'triangletent':
+        if self.patchType == 'triangletent':
             assert method is 'edks', 'Homogeneous case based on Meade, 2007, \
                                       not implemented yet'
 
@@ -611,11 +611,11 @@ class Fault(SourceInv):
 
         # Check something
         if method in ('homogeneous', 'Homogeneous'):
-            if self.patchType is 'rectangle':
+            if self.patchType == 'rectangle':
                 method = 'Okada'
-            elif self.patchType is 'triangle':
+            elif self.patchType == 'triangle':
                 method = 'Meade'
-            elif self.patchType is 'triangletent':
+            elif self.patchType == 'triangletent':
                 method = 'Meade'
         
         # Print
@@ -623,7 +623,7 @@ class Fault(SourceInv):
             print('Greens functions computation method: {}'.format(method))
 
         # Data type check
-        if data.dtype is 'insarrates':
+        if data.dtype == 'insarrates':
             if not vertical:
                 print('---------------------------------')
                 print('---------------------------------')
@@ -661,7 +661,7 @@ class Fault(SourceInv):
             * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
         '''
 
-        assert self.patchType is not 'triangletent', 'Need to run EDKS for that particular type of fault'
+        assert self.patchType != 'triangletent', 'Need to run EDKS for that particular type of fault'
 
         # Initialize the slip vector
         SLP = []
@@ -707,7 +707,7 @@ class Fault(SourceInv):
                 ds = ds.T.flatten()
                 op = op.T.flatten()
 
-            elif data.dtype is 'insarrates':
+            elif data.dtype == 'insarrates':
                 # If InSAR, do the dot product with the los
                 ss_los = []
                 ds_los = []
@@ -768,7 +768,7 @@ class Fault(SourceInv):
         Args:
             * data      : data object from gpsrates or insarrates.
             * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
-            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip). No tensile option....
+            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile).
         '''
 
         # Check if we can find kernels
@@ -816,7 +816,7 @@ class Fault(SourceInv):
 
         # Check something
         if not hasattr(self, 'keepTrackOfSources'):  
-            if self.patchType is 'triangletent':
+            if self.patchType == 'triangletent':
                 self.keepTrackOfSources = True
             else:
                 self.keepTrackOfSources = False
@@ -846,7 +846,7 @@ class Fault(SourceInv):
         # Get the slip vector
         if self.patchType in ('triangle', 'rectangle'):
             slip = np.ones(dip.shape)
-        if self.patchType is 'triangletent':
+        if self.patchType == 'triangletent':
             # If saved, good
             if self.keepTrackOfSources and hasattr(self, 'edksSources') and (len(self.edksSources)>7):
                 slip = self.edksSources[7]
@@ -866,16 +866,25 @@ class Fault(SourceInv):
             Gss = sum_layered_sub(Ids, xs, ys, zs, \
                                   strike, dip, np.zeros(dip.shape), slip, \
                                   Areas,\
-                                  xr, yr, stratKernels, prefix)
+                                  xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN')
             Gss = np.array(Gss)
         if 'd' in slipdir:
             if verbose:
                 print('Running Dip Slip component for data set {}'.format(data.name))
             Gds = sum_layered_sub(Ids, xs, ys, zs, \
-                                  strike, dip, np.ones(dip.shape)*90., slip, \
+                                  strike, dip, np.ones(dip.shape)*90.0, slip, \
                                   Areas,\
-                                  xr, yr, stratKernels, prefix)
+                                  xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN')
             Gds = np.array(Gds)
+        if 't' in slipdir:
+            if verbose:
+                print('Running tensile component for data set {}'.format(data.name))
+            Gts = sum_layered_sub(Ids, xs, ys, zs,
+                                  strike, dip, np.zeros(dip.shape), slip,
+                                  Areas, xr, yr, stratKernels, prefix,
+                                  BIN_EDKS='EDKS_BIN', tensile=True)
+            Gts = np.array(Gts)
+                             
         
         # Verticals?
         Ncomp = 3
@@ -885,6 +894,8 @@ class Fault(SourceInv):
                 Gds = Gds[:2,:,:]
             if 's' in slipdir:
                 Gss = Gss[:2,:,:]
+            if 't' in slipdir:
+                Gts = Gts[:2,:,:]
         
         # Numbers
         Ndata = Ncomp*xr.shape[0]
@@ -897,22 +908,30 @@ class Fault(SourceInv):
                 Gss = Gss.reshape((Ndata, Nparm))
             if 'd' in slipdir:
                 Gds = Gds.reshape((Ndata, Nparm))
-        elif data.dtype is 'insarrates':
+            if 't' in slipdir:
+                Gts = Gts.reshape((Ndata, Nparm))
+        elif data.dtype == 'insarrates':
             # If InSAR, do the dot product with the los
             if 's' in slipdir:
                 Gss_los = []
             if 'd' in slipdir:
                 Gds_los = []
+            if 't' in slipdir:
+                Gts_los = []
             for i in range(xr.shape[0]):
                 for j in range(Nparm):
                     if 's' in slipdir:
                         Gss_los.append(np.dot(data.los[i,:], Gss[:,i,j]))
                     if 'd' in slipdir:
                         Gds_los.append(np.dot(data.los[i,:], Gds[:,i,j]))
+                    if 't' in slipdir:
+                        Gts_los.append(np.dot(data.los[i,:], Gts[:,i,j]))
             if 's' in slipdir:
                 Gss = np.array(Gss_los).reshape((xr.shape[0], Nparm))
             if 'd' in slipdir:
                 Gds = np.array(Gds_los).reshape((xr.shape[0], Nparm))
+            if 't' in slipdir:
+                Gts = np.array(Gts_los).reshape((xr.shape[0], Nparm))
 
         # Create the dictionary
         G = {'strikeslip':[], 'dipslip':[], 'tensile':[]}
@@ -926,7 +945,10 @@ class Fault(SourceInv):
             G['dipslip'] = Gds
         else:
             G['dipslip'] = None
-        G['tensile']= None
+        if 't' in slipdir:
+            G['tensile'] = Gts
+        else:
+            G['tensile'] = None
 
         # All done
         return G
@@ -1014,7 +1036,7 @@ class Fault(SourceInv):
                 if np.isnan(data.vel_enu[:,2]).any():
                     raise ValueError('Vertical can only be true if all stations have vertical components')
                 data.obs_per_station += 1
-        elif data.dtype is 'cosicorrrates':
+        elif data.dtype == 'cosicorrrates':
             data.obs_per_station = 2
             if vertical:
                 data.obs_per_station += 1
@@ -1026,10 +1048,10 @@ class Fault(SourceInv):
 
         # Initializes the data vector
         if not synthetic:
-            if data.dtype is 'insarrates':
+            if data.dtype == 'insarrates':
                 self.d[data.name] = data.vel
                 vertical = True # Always true for InSAR
-            elif data.dtype is 'tsunami':
+            elif data.dtype == 'tsunami':
                 self.d[data.name] = data.d
                 vertical = True
             elif data.dtype in ('gpsrates', 'multigps'):
@@ -1038,7 +1060,7 @@ class Fault(SourceInv):
                 else:
                     self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
                 self.d[data.name]=self.d[data.name][-np.isnan(self.d[data.name])]
-            elif data.dtype is 'cosicorrrates':
+            elif data.dtype == 'cosicorrrates':
                 self.d[data.name] = np.hstack((data.east.T.flatten(),
                                                data.north.T.flatten()))
                 if vertical:
@@ -1914,7 +1936,7 @@ class Fault(SourceInv):
         self.deletepatches(iPatches[1:])
 
         # Equivalent Patches
-        if self.patchType is 'rectangle':
+        if self.patchType == 'rectangle':
             self.computeEquivRectangle()
 
         # Check 

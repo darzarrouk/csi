@@ -175,7 +175,7 @@ class seismic(SourceInv):
         print(R.shape)
         Cd = np.zeros((len(D),len(D)))
         for dkey in self.sta_name:
-            print('Cd for %s'%dkey)
+            print(('Cd for %s'%dkey))
             npts = self.d[dkey].npts
             print(npts)
             res  = R[n:n+npts]
@@ -284,7 +284,7 @@ class seismic(SourceInv):
             #if not self.d[sac.kstnm].has_key(sac.kcmpnm):
             #    self.d[sac.kstnm][sac.kcmpnm] = {}
             #self.d[sac.kstnm][sac.kcmpnm[-1]] = sac.copy()
-            assert not self.d.has_key(stanm), 'Multiple data for {}'.format(stanm)
+            assert stanm not in self.d, 'Multiple data for {}'.format(stanm)
             self.d[stanm] = sac.copy()
 
         # All done
