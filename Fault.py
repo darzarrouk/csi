@@ -1153,7 +1153,7 @@ class Fault(SourceInv):
         elif len(tensile) == 1:             # InSAR/Tsunami Case
             Green_ts = tensile[0]
             if Green_ts is not None:
-                G['dipslip'] = Green_ts
+                G['tensile'] = Green_ts
 
         # Coupling
         if len(coupling) == 3:               # GPS case
