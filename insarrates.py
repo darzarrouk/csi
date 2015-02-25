@@ -1026,7 +1026,7 @@ class insarrates(SourceInv):
         xc, yc = self.ll2xy(loncenter, latcenter)
 
         # Get the profile
-        Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth = self.coord2prof(
+        Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth, los = self.coord2prof(
                 xc, yc, length, azimuth, width)
 
         # Store it in the profile list
@@ -1046,6 +1046,7 @@ class insarrates(SourceInv):
         lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
         dic['EndPointsLL'] = [[lone1, late1],
                               [lone2, late2]]
+        dic['LOS vector'] = los
 
         # All done
         return
@@ -1251,6 +1252,7 @@ class insarrates(SourceInv):
             boxll               : lon lat coordinates of the profile box used
             xe1, ye1            : coordinates (UTM) of the profile endpoint
             xe2, ye2            : coordinates (UTM) of the profile endpoint
+            los                 : List of los vectors for each point of the profile
         '''
 
         # Azimuth into radians
@@ -1328,6 +1330,7 @@ class insarrates(SourceInv):
             err = self.err[Bol]
         else:
             err = None
+        los = self.los[Bol]
 
         # Check if lengths are ok
         if len(xg) > 5:
@@ -1362,6 +1365,7 @@ class insarrates(SourceInv):
         vel = vel[jj]
         Dalong = Dalong[jj]
         Dacros = Dacros[jj]
+        los = los[jj]
         if err is not None:
             err = err[jj]
         if synth is not None:
@@ -1390,7 +1394,7 @@ class insarrates(SourceInv):
             plt.show()
 
         # All done
-        return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth
+        return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth, los
 
     def curve2prof(self, xl, yl, width, widthDir):
         '''
