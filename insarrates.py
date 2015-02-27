@@ -1158,6 +1158,7 @@ class insarrates(SourceInv):
         # Get profile
         dis = self.profiles[name]['Distance']
         vel = self.profiles[name]['LOS Velocity']
+        los = self.profiles[name]['LOS vector']
 
         # Create the bins
         bins = np.arange(dis.min(), dis.max(), window)
@@ -1167,6 +1168,8 @@ class insarrates(SourceInv):
         outvel = []
         outerr = []
         outdis = []
+        if los is not None:
+            outlos = []
 
         # Run a runing average on it
         for i in range(len(bins)-1):
@@ -1194,12 +1197,19 @@ class insarrates(SourceInv):
                 outerr.append(e)
                 outdis.append(d)
 
+                # Get the LOS
+                if los is not None:
+                    l = los[uu,:].mean(axis=0)
+                    outlos.append(l)
+
         # Copy the old profile and modify it
         newName = 'Smoothed {}'.format(name)
         self.profiles[newName] = copy.deepcopy(self.profiles[name])
         self.profiles[newName]['LOS Velocity'] = np.array(outvel)
         self.profiles[newName]['LOS Error'] = np.array(outerr)
         self.profiles[newName]['Distance'] = np.array(outdis)
+        if los is not None:
+            self.profiles[newName]['LOS vector'] = np.array(outlos)
 
         # All done
         return
