@@ -298,10 +298,12 @@ class insarrates(SourceInv):
         # Compute the LOS
         if type(incidence) in (float, np.float, np.float32):
             self.inchd2los(incidence, heading, origin='binaryfloat')
-        else:
+        elif type(incidence) is str:
             self.inchd2los(incidence, heading, origin='binary')
             self.los = self.los[::downsample,:]
             self.los = self.los[iFinite,:]
+        else:
+            self.los = None
 
         # compute x, y
         self.x, self.y = self.ll2xy(self.lon, self.lat)
@@ -1330,7 +1332,10 @@ class insarrates(SourceInv):
             err = self.err[Bol]
         else:
             err = None
-        los = self.los[Bol]
+        if self.los is not None:
+            los = self.los[Bol]
+        else:
+            los = None
 
         # Check if lengths are ok
         if len(xg) > 5:
@@ -1365,7 +1370,8 @@ class insarrates(SourceInv):
         vel = vel[jj]
         Dalong = Dalong[jj]
         Dacros = Dacros[jj]
-        los = los[jj]
+        if los is not None:
+            los = los[jj]
         if err is not None:
             err = err[jj]
         if synth is not None:
