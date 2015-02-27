@@ -103,11 +103,16 @@ class insartimeseries(SourceInv):
             self.lon = np.fromfile(lonfile, dtype=np.float32)
         if latfile is not None:
             self.lat = np.fromfile(latfile, dtype=np.float32)
-        if zfile is not None:
-            self.z = np.fromfile(zfile, dtype=np.float32)
 
         # Compute utm
         self.x, self.y = self.ll2xy(self.lon, self.lat) 
+
+        # Elevation
+        if zfile is not None:
+            self.elevation = insarrates('Elevation', utmzone=self.utmzone, verbose=False)
+            self.elevation.read_from_binary(zfile, lonfile, latfile, 
+                    incidence=None, heading=None, remove_nan=False, remove_zeros=False)
+            self.z = self.elevation.vel
 
         # Get the time
         dates = h5in['dates']
@@ -132,18 +137,12 @@ class insartimeseries(SourceInv):
             # Create an insar object
             sar = insarrates(date.isoformat(), utmzone=self.utmzone, verbose=False)
 
-            # Get places where we have finite values
-            if not keepnan:
-                ii = np.flatnonzero(np.isfinite(dat))
-            else:
-                ii = np.flatnonzero(dat)
-
             # Put thing in the insarrate object
-            sar.vel = dat.flatten()[ii]
-            sar.lon = self.lon[ii]
-            sar.lat = self.lat[ii]
-            sar.x = self.x[ii]
-            sar.y = self.y[ii]
+            sar.vel = dat.flatten()
+            sar.lon = self.lon
+            sar.lat = self.lat
+            sar.x = self.x
+            sar.y = self.y
 
             # Things should remain None
             sar.corner = None
@@ -157,6 +156,20 @@ class insartimeseries(SourceInv):
 
             # Store the object in the list
             self.timeseries.append(sar)
+
+        # Make a common mask if asked
+        if not keepnan:
+            # Create an array
+            checkNaNs = np.array(self.lon.shape)
+            checkNaNs[:] = False
+            # Trash the pixels where there is only NaNs
+            for sar in self.timeseries:
+                checkNaNs += np.isfinite(sar.vel)
+            uu = np.flatnonzero(not checkNaNs)
+            # Keep 'em
+            for sar in self.timeseries:
+                sar.reject_pixels(uu)
+            elevation.reject_pixels(uu)
 
         # all done
         return
@@ -213,6 +226,11 @@ class insartimeseries(SourceInv):
             # Get the profile
             sar.getprofile(pname, loncenter, latcenter, length, azimuth, width)
         
+        # Elevation
+        if hasattr(self, 'elevation'):
+            pname = 'Elevation {}'.format(prefix)
+            self.elevation.getprofile(pname, loncenter,latcenter, length, azimuth, width)
+
         # verbose
         if verbose:
             print('')
