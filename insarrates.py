@@ -281,7 +281,7 @@ class insarrates(SourceInv):
         if remove_nan:
             iFinite = np.flatnonzero(np.isfinite(vel))
         else:
-            iFinite = range(vel.shape[0])
+            iFinite = list(range(vel.shape[0]))
 
         # Set things in self
         self.vel = vel[iFinite]
@@ -296,7 +296,7 @@ class insarrates(SourceInv):
         self.factor = factor
 
         # Compute the LOS
-        if type(incidence) in (float, np.float, np.float32):
+        if type(incidence) in (float, np.float, np.float32, np.ndarray):
             self.inchd2los(incidence, heading, origin='binaryfloat')
         elif type(incidence) is str:
             self.inchd2los(incidence, heading, origin='binary')
@@ -738,7 +738,7 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def getPolyEstimator(self, ptype):
+    def getPolyEstimator(self, ptype, x0=None, y0=None, normX=None, normY=None):
         '''
         Returns the Estimator for the polynomial form to estimate in the InSAR data.
         Args:
@@ -762,10 +762,14 @@ class insarrates(SourceInv):
             # Compute normalizing factors
             if not hasattr(self, 'OrbNormalizingFactor'):
                 self.OrbNormalizingFactor = {}
-            x0 = self.x[0]
-            y0 = self.y[0]
-            normX = np.abs(self.x - x0).max()
-            normY = np.abs(self.y - y0).max()
+            if x0 is None:
+                x0 = self.x[0]
+            if y0 is None:
+                y0 = self.y[0]
+            if normX is None:
+                normX = np.abs(self.x - x0).max()
+            if normY is None:
+                normY = np.abs(self.y - y0).max()
             # Save them for later
             self.OrbNormalizingFactor['x'] = normX
             self.OrbNormalizingFactor['y'] = normY

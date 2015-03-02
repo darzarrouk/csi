@@ -284,6 +284,7 @@ def sum_layered_sub(IDs, xs, ys, zs, strike, dip, rake, slip, A, \
     else:
         cmd = '{}/sum_layered_sub {} {} {} {} {} {} '.format(BIN_EDKS,
                                     edks, prefix, nrec, Np, ntsp, nspp)
+    print(cmd)
     os.system(cmd)
     
     # read sum_layered output Greens function
