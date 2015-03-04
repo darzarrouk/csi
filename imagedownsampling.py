@@ -92,6 +92,8 @@ class imagedownsampling(object):
         self.spacing = distance.cdist([[image.x[0], image.y[0]]], [[image.x[i], image.y[i]] for i in range(1, image.x.shape[0])])[0]
         self.spacing = self.spacing.min()
 
+	print 'effective pixel spacing',self.spacing
+	
         # Deduce the original pixel area
         self.pixelArea = self.spacing**2
 
