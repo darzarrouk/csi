@@ -123,8 +123,10 @@ class geodeticplot(object):
         '''
         Clears the figures
         '''
-        self.fig1.clf()
-        self.fig2.clf()
+        if self.faille_flag:
+            self.fig1.clf()
+        if self.carte_flag:
+            self.fig2.clf()
         return
 
     def titlemap(self, titre):
