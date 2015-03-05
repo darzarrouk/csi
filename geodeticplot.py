@@ -763,8 +763,8 @@ class geodeticplot(object):
 
         # Prepare the color limits
         if norm is None:
-            vmin = d.min()
-            vmax = d.max()
+            vmin = np.nanmin(d)
+            vmax = np.nanmax(d)
         else:
             vmin = norm[0]
             vmax = norm[1]
