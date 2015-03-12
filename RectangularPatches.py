@@ -891,28 +891,33 @@ class RectangularPatches(Fault):
             # Select the string for the color
             string = '  '
             if add_slip is not None:
-                if add_slip is 'strikeslip':
+                if add_slip == 'strikeslip':
                     if stdh5 is not None:
                         slp = np.std(samples[:,p])
                     else:
                         slp = self.slip[p,0]*scale
-                elif add_slip is 'dipslip':
+                elif add_slip == 'dipslip':
                     if stdh5 is not None:
                         slp = np.std(samples[:,p+nPatches])
                     else:
                         slp = self.slip[p,1]*scale
-                elif add_slip is 'total':
+                elif add_slip == 'opening':
+                    if stdh5 is not None:
+                        slp = np.std(samples[:,p+2*nPatches])
+                    else:
+                        slp = self.slip[p,2]*scale
+                elif add_slip == 'total':
                     if stdh5 is not None:
                         slp = np.std(samples[:,p]**2 + samples[:,p+nPatches]**2)
                     else:
                         slp = np.sqrt(self.slip[p,0]**2 + self.slip[p,1]**2)*scale
-                elif add_slip is 'normaltraction':
+                elif add_slip == 'normaltraction':
                     slp = self.Normal
-                elif add_slip is 'strikesheartraction':
+                elif add_slip == 'strikesheartraction':
                     slp = self.ShearStrike
-                elif add_slip is 'dipsheartraction':
+                elif add_slip == 'dipsheartraction':
                     slp = self.ShearDip
-                elif add_slip is 'coupling':
+                elif add_slip == 'coupling':
                     slp = self.coupling[p]
                 # Make string
                 string = '-Z{}'.format(slp)

@@ -2074,7 +2074,7 @@ class insarrates(SourceInv):
         fin = open('xyz.xyz', 'r')
 
         # Execute command
-        subp.call(com, stdin=fin)
+        subp.call(com, stdin=fin, shell=True)
 
         # CLose the files
         fin.close()
