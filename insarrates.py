@@ -2028,12 +2028,14 @@ class insarrates(SourceInv):
         # Get variables
         x = self.lon
         y = self.lat
-        if data is 'data':
+        if data == 'data':
             z = self.vel
-        elif data is 'synth':
+        elif data == 'synth':
             z = self.synth
-        elif data is 'poly':
+        elif data == 'poly':
             z = self.orb
+        elif data == 'res':
+            z = self.vel - self.synth
 
         # Write these to a dummy file
         fout = open('xyz.xyz', 'w')
