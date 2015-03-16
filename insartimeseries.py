@@ -54,7 +54,7 @@ class insartimeseries(SourceInv):
         # All done
         return
 
-    def readFromGIAnT(self, h5file, zfile=None, lonfile=None, latfile=None, incidence=None, heading=None, field='recons', keepnan=False, mask=None):
+    def readFromGIAnT(self, h5file, zfile=None, lonfile=None, latfile=None, incidence=None, heading=None, field='recons', keepnan=False, mask=None, readVel=None):
         '''
         Read the output from a tipycal GIAnT h5 output file.
         Args:
@@ -69,6 +69,7 @@ class insartimeseries(SourceInv):
                                 mask is an array the same size as the data with nans and 1
                                 It can also be a tuple with a key word in 
                                 the h5file, a value and 'above' or 'under'
+            * readVel       : If not None, reads the values of parameter given.
         '''
 
         # open the h5file
@@ -157,6 +158,27 @@ class insartimeseries(SourceInv):
             # Store the object in the list
             self.timeseries.append(sar)
 
+        # if readVel
+        if readVel is not None:
+            u = np.flatnonzero(self.h5in['mName'][:]==readVel)
+            if len(u)==1:
+                self.param = insarrates('Parameter {}'.format(readVel), utmzone=self.utmzone, 
+                        verbose=False)
+                self.param.vel = h5in['parms'][u[0]]
+                self.param.lon = self.lon
+                self.param.lat = self.lat
+                self.param.x = self.x
+                self.param.y = self.y
+                self.param.corner = None
+                self.param.err = None
+                self.param.factor=1.0
+                self.param.inchd2los(incidence, heading)
+            else:
+                print('{}: No such parameter in {}'.format(readVel,h5file))
+                sys.exit()
+        else:
+            self.param = None
+
         # Make a common mask if asked
         if not keepnan:
             # Create an array
@@ -170,6 +192,8 @@ class insartimeseries(SourceInv):
             for sar in self.timeseries:
                 sar.reject_pixels(uu)
             elevation.reject_pixels(uu)
+            if self.param is not None:
+                self.param.reject_pixels(uu)
 
         # all done
         return
@@ -230,6 +254,12 @@ class insartimeseries(SourceInv):
         if hasattr(self, 'elevation'):
             pname = 'Elevation {}'.format(prefix)
             self.elevation.getprofile(pname, loncenter,latcenter, length, azimuth, width)
+
+        # Parameter
+        if hasattr(self, 'param'):
+            if self.param is not None:
+                pname = '{} {}'.format(self.param.name,prefix)
+                self.param.getprofile(pname, loncenter, latcenter, length, azimuth, width)
 
         # verbose
         if verbose:
