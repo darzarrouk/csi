@@ -164,7 +164,7 @@ class insartimeseries(SourceInv):
             if len(u)==1:
                 self.param = insarrates('Parameter {}'.format(readVel), utmzone=self.utmzone, 
                         verbose=False)
-                self.param.vel = h5in['parms'][u[0]]
+                self.param.vel = h5in['parms'][u[0]].flatten()
                 self.param.lon = self.lon
                 self.param.lat = self.lat
                 self.param.x = self.x
