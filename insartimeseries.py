@@ -19,7 +19,7 @@ import copy
 from .SourceInv import SourceInv
 from .insarrates import insarrates
 
-class insartimeseries(SourceInv):
+class insartimeseries(insarrates):
 
     def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
         '''
@@ -54,6 +54,59 @@ class insartimeseries(SourceInv):
         # All done
         return
 
+    def initializeTimeSeries(self, lon, lat, incidence=None, heading=None, elevation=None, Dates=None, Start=None, Increment=None, Steps=None, dtype='f'):
+        '''
+        Initializes the time series object using a series of dates.
+        Args:
+            * lon           : Can be an array or a string.
+            * lat           : Can be an array or a string.
+            * incidence     : Can be an array or a string.
+            * heading       : Can be an array or a string.
+            * elevation     : Can be an array or a string.
+        Can give different inputs:
+        Mode 1
+            * Dates         : List of dates (datetime object)
+        Mode 2
+            * Start         : Starting date (datetime object)
+            * Increment     : Increment in days
+            * Steps         : How many steps
+        '''
+
+        # Set up a list of Dates
+        if Dates is not None:
+            self.dates = Dates
+        else:
+            assert Start is not None, 'Need a starting point...'
+            assert Increment is not None, 'Need an increment in days...'
+            assert Steps is not None, 'Need a number of steps...'
+            self.dates = [dt.datetime.fromordinal(Start.toordinal()+Increment*i) for i in range(Steps)] 
+
+        # Get some size
+        if type(lon) is str:
+            lon = np.fromfile(lon, dtype=dtype)
+        nSamples = lon.shape[0]
+
+        # Set the main stuff
+        self.read_from_binary(np.ones((nSamples,)), lon, lat, incidence=incidence, heading=heading, dtype=dtype, remove_nan=False, remove_zeros=False)
+        self.vel = None
+
+        # Set the elevation if provided
+        self.elevation = insarrates('Elevation', utmzone=selfutmzone, verbose=False)
+        self.elevation.read_from_binary(elevation, lon, lat, incidence=None, heading=None, remove_nan=False, remove_zeros=False)
+        self.z = self.elevation.vel
+
+        # Create timeseries
+        self.timeseries = []
+
+        # Create an insarrate instance for each step
+        for date in self.dates:
+            sar = insarrates(date.isoformat(), utmzone=self.utmzone, verbose=False)
+            sar.read_from_binary(np.zeros((nSamples,)), lon, lat, incidence=incidence, heading=heading, dtype=dtype, remove_nan=False, remove_zeros=False)
+            self.timeseries.append(sar)
+
+        # All done
+        return
+    
     def readFromGIAnT(self, h5file, zfile=None, lonfile=None, latfile=None, incidence=None, heading=None, field='recons', keepnan=False, mask=None, readVel=None):
         '''
         Read the output from a tipycal GIAnT h5 output file.
@@ -227,6 +280,32 @@ class insartimeseries(SourceInv):
         # All done
         return
 
+    def dates2time(self, start=0):
+        '''
+        Computes a time vector in years, starting from the date #start.
+        Args:
+            * start     : Index of the starting date.
+        '''
+
+        # Create a list
+        Time = []
+
+        # Iterate over the dates
+        for date in self.dates:
+            Time.append(date.toordinal())
+
+        # Convert to years
+        Time = np.array(Time)/365.25
+
+        # Reference
+        Time -= Time[start]
+
+        # Set
+        self.time = Time
+
+        # All done
+        return
+
     def getProfiles(self, prefix, loncenter, latcenter, length, azimuth, width, verbose=False):
         '''
         Get a profile for each time step
@@ -234,6 +313,8 @@ class insartimeseries(SourceInv):
         '''
 
         if verbose:
+            print('---------------------------------')
+            print('---------------------------------')
             print('Get Profile for each time step: ')
 
         # Simply iterate over the steps
