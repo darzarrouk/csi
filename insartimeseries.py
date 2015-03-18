@@ -30,7 +30,7 @@ class insartimeseries(insarrates):
         '''
 
         # Base class init
-        super(insartimeseries,self).__init__(name,utmzone,ellps) 
+        super(insartimeseries,self).__init__(name,utmzone,ellps, verbose=False) 
 
         # Initialize the data set 
         self.dtype = 'insartimeseries'
@@ -91,9 +91,10 @@ class insartimeseries(insarrates):
         self.vel = None
 
         # Set the elevation if provided
-        self.elevation = insarrates('Elevation', utmzone=selfutmzone, verbose=False)
-        self.elevation.read_from_binary(elevation, lon, lat, incidence=None, heading=None, remove_nan=False, remove_zeros=False)
-        self.z = self.elevation.vel
+        if elevation is not None:
+            self.elevation = insarrates('Elevation', utmzone=self.utmzone, verbose=False)
+            self.elevation.read_from_binary(elevation, lon, lat, incidence=None, heading=None, remove_nan=False, remove_zeros=False)
+            self.z = self.elevation.vel
 
         # Create timeseries
         self.timeseries = []
@@ -107,6 +108,28 @@ class insartimeseries(insarrates):
         # All done
         return
     
+    def setTimeSeries(self, timeseries):
+        '''
+        Sets the values in the time series.
+        Args:
+            * timeseries    : List of arrays of the right size.
+        '''
+
+        # Assert
+        assert type(timeseries) is list, 'Input argument must be a list...'
+
+        # Iterate
+        for data, ts in zip(timeseries, self.timeseries):
+            # Convert
+            data = np.array(data)
+            # Check
+            assert data.shape==self.lon.shape, 'Wrong size for input for {}...'.format(ts.name)
+            # Set
+            ts.vel = data
+
+        # All done
+        return
+
     def readFromGIAnT(self, h5file, zfile=None, lonfile=None, latfile=None, incidence=None, heading=None, field='recons', keepnan=False, mask=None, readVel=None):
         '''
         Read the output from a tipycal GIAnT h5 output file.
@@ -172,7 +195,7 @@ class insartimeseries(insarrates):
         dates = h5in['dates']
         self.dates = []
         for i in range(nDates):
-            self.dates.append(dt.date.fromordinal(int(dates[i])))
+            self.dates.append(dt.datetime.fromordinal(int(dates[i])))
 
         # Create a list to hold the dates
         self.timeseries = []
@@ -259,13 +282,18 @@ class insartimeseries(insarrates):
         '''
 
         # Make date
-        if len(date)==3:
-            date = dt.date(date[0], date[1], date[2])
-        elif len(date)==6:
-            date = dt.datetime(date[0], date[1], date[2], date[3], date[4], date[5])
-        else:
-            print('Unknow date format...')
-            sys.exit(1)
+        if type(date) is tuple:
+            if len(date)==3:
+                date = dt.datetime(date[0], date[1], date[2])
+            elif len(date)==6:
+                date = dt.datetime(date[0], date[1], date[2], date[3], date[4], date[5])
+            elif len(date)==1:
+                print('Unknow date format...')
+                sys.exit(1)
+        assert (type(date) is type(self.dates[0])), 'Provided date can be \n \
+                tuple of (year, month, day), \n \
+                tuple of (year, month, day ,hour, min,s), \n \
+                datetime.datetime object'
 
         # Find the date
         i = np.flatnonzero(np.array(self.dates)==date)
@@ -276,6 +304,20 @@ class insartimeseries(insarrates):
             del self.dates[i[0]]
         else:
             print('No date to remove')
+
+        # All done
+        return
+
+    def removeDates(self, dates):
+        '''
+        Remove a list of dates from the time series.
+        Args:
+            * dates     : List of dates to be removed.
+        '''
+        
+        # Iterate
+        for date in dates:
+            self.removeDate(date)
 
         # All done
         return
@@ -399,7 +441,7 @@ class insartimeseries(insarrates):
 
         # Get the date
         if len(date)==3:
-            date = dt.date(date[0], date[1], date[2])
+            date = dt.datetime(date[0], date[1], date[2])
         elif len(date)==6:
             date = dt.datetime(date[0], date[1], date[2],
                                date[3], date[4], date[5])
@@ -409,7 +451,7 @@ class insartimeseries(insarrates):
 
         # Get the profile
         i = np.flatnonzero(np.array(self.dates)==date)[0]
-        pname = '{} {}'.format(prefix, date)
+        pname = '{} {}'.format(prefix, date.isoformat())
         refProfile = self.timeseries[i].profiles[pname]
 
         # Create a linear interpolator
@@ -421,7 +463,7 @@ class insartimeseries(insarrates):
         for date, sar in zip(self.dates, self.timeseries):
 
             # Get profile
-            pname = '{} {}'.format(prefix, date)
+            pname = '{} {}'.format(prefix, date.isoformat())
             profile = sar.profiles[pname]
 
             # Copy profile
