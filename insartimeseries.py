@@ -357,7 +357,7 @@ class insartimeseries(insarrates):
         if verbose:
             print('---------------------------------')
             print('---------------------------------')
-            print('Get Profile for each time step: ')
+            print('Get Profile for each time step of time series {}: '.format(self.name))
 
         # Simply iterate over the steps
         for date, sar in zip(self.dates, self.timeseries):
