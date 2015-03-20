@@ -850,7 +850,7 @@ class RectangularPatches(Fault):
 
         # Translate slip to np.array
         if not donotreadslip:
-            self.initializeslip(np.array(Slip))
+            self.initializeslip(values=np.array(Slip))
         else:
             self.initializeslip()
         if readpatchindex:

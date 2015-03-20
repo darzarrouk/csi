@@ -130,6 +130,40 @@ class insartimeseries(insarrates):
         # All done
         return
 
+    def referenceTimeSeries2Date(self, date):
+        '''
+        References the time series to the date given as argument.
+        Args:
+            * date              : Can a be tuple/list of 3 integers (year, month, day)
+                                  or a tuple/list of 6 integers (year, month, day, hour, min, sec) 
+                                  or a datetime object.
+        '''
+
+        # Make date
+        if type(date) in (tuple, list):
+            if len(date)==3:
+                date = dt.datetime(date[0], date[1], date[2])
+            elif len(date)==6:
+                date = dt.datetime(date[0], date[1], date[2], date[3], date[4], date[5])
+            elif len(date)==1:
+                print('Unknow date format...')
+                sys.exit(1)
+        assert (type(date) is type(self.dates[0])), 'Provided date can be \n \
+                tuple of (year, month, day), \n \
+                tuple of (year, month, day ,hour, min,s), \n \
+                datetime.datetime object'
+
+        # Get the reference
+        i = np.flatnonzero(np.array(self.dates)==date)[0]
+        reference = copy.deepcopy(self.timeseries[i].vel)
+
+        # Reference
+        for ts in self.timeseries:
+            ts.vel -= reference
+
+        # All done
+        return
+
     def readFromGIAnT(self, h5file, zfile=None, lonfile=None, latfile=None, incidence=None, heading=None, field='recons', keepnan=False, mask=None, readVel=None):
         '''
         Read the output from a tipycal GIAnT h5 output file.
@@ -282,7 +316,7 @@ class insartimeseries(insarrates):
         '''
 
         # Make date
-        if type(date) is tuple:
+        if type(date) in (tuple, list):
             if len(date)==3:
                 date = dt.datetime(date[0], date[1], date[2])
             elif len(date)==6:
@@ -439,15 +473,19 @@ class insartimeseries(insarrates):
               or date = (year(int), month(int), day(int), hour(int), min(int), s(float))
         '''
 
-        # Get the date
-        if len(date)==3:
-            date = dt.datetime(date[0], date[1], date[2])
-        elif len(date)==6:
-            date = dt.datetime(date[0], date[1], date[2],
-                               date[3], date[4], date[5])
-        else:
-            print('Date should be tuple of length 3 or 6')
-            sys.exit(1)
+        # Make date
+        if type(date) in (tuple, list):
+            if len(date)==3:
+                date = dt.datetime(date[0], date[1], date[2])
+            elif len(date)==6:
+                date = dt.datetime(date[0], date[1], date[2], date[3], date[4], date[5])
+            elif len(date)==1:
+                print('Unknow date format...')
+                sys.exit(1)
+        assert (type(date) is type(self.dates[0])), 'Provided date can be \n \
+                tuple of (year, month, day), \n \
+                tuple of (year, month, day ,hour, min,s), \n \
+                datetime.datetime object'
 
         # Get the profile
         i = np.flatnonzero(np.array(self.dates)==date)[0]
