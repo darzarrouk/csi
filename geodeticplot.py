@@ -500,7 +500,7 @@ class geodeticplot(object):
 
         elif method is 'scatter':
             # Do the scatter plot
-            cb = self.faille.scatter(X, Y, zs=-1.0*Z, c=Slip, cmap=scalarMap, linewidth=0)
+            cb = self.faille.scatter(X, Y, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0)
 
             # put up a colorbar
             if colorbar:

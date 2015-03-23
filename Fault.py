@@ -200,6 +200,30 @@ class Fault(SourceInv):
         return
 
 
+    def patch2ll(self):
+        '''
+        Takes all the patches in self.patch and convert them to lonlat.
+        '''
+
+        # Create list
+        patchll = []
+
+        # Iterate
+        for patch in self.patch:
+            # Create a patch
+            pll = []
+            # Iterate again
+            for p in patch.tolist():
+                lon, lat = self.xy2ll(p[0], p[1])
+                pll.append([lon, lat, p[2]])
+            patchll.append(np.array(pll))
+
+        # Save
+        self.patchll = patchll
+
+        # All done
+        return
+
     def setTrace(self,delta_depth=0.):
         '''
         Set Trace from patches (assuming positive depth)
@@ -1224,15 +1248,18 @@ class Fault(SourceInv):
 
         # Get the fault strike
         strike = self.getStrikes()
-        np.array([self.getpatchgeometry(p)[5] for p in self.patch])
 
         # Get the green's functions
         Gss = self.G[data]['strikeslip']
         Gds = self.G[data]['dipslip']
 
+        # Get the strike and dip vectors
+        strikeVec = np.vstack((np.sin(strike), np.cos(strike))).T
+        dipVec = np.vstack((np.sin(strike+np.pi/2.), np.cos(strike+np.pi/2.))).T
+
         # Project the convergence along strike and dip
-        Sbr = self.convergence[:,0]*np.sin(strike)+self.convergence[:,1]*np.cos(strike)
-        Dbr = self.convergence[:,0]*np.cos(strike)-self.convergence[:,1]*np.sin(strike)
+        Sbr = (self.convergence*strikeVec).sum(axis=1)
+        Dbr = (self.convergence*dipVec).sum(axis=1)
 
         # Optional return
         if returnGFs:
@@ -1270,7 +1297,7 @@ class Fault(SourceInv):
         Sbr, Dbr = self.rotateGFs(data, convergence, returnGFs=True)
 
         # Multiply and sum
-        Gc = -1.0*(np.multiply(-1.0*Gss, Sbr) + np.multiply(Gds, Dbr))
+        Gc = -1.0*((np.multiply(-1.0*Gss, Sbr) + np.multiply(Gds, Dbr)))
         # Precision: (the -1.0* is because we use a different convention from that of Francisco)
 
         # Store those new GFs

@@ -151,6 +151,96 @@ class TriangularPatches(Fault):
                 self.xf = np.delete(self.xf,i)
                 self.yf = np.delete(self.yf,i)
 
+    def vertices2ll(self):
+        '''
+        Converts all the vertices into lonlat coordinates.
+        '''
+
+        # Create a list
+        vertices_ll = []
+
+        # iterate
+        for vertex in self.Vertices:
+            lon, lat = self.xy2ll(vertex[0], vertex[1])
+            vertices_ll.append([lon, lat, vertex[2]])
+
+        # Save
+        self.Vertices_ll = vertices_ll
+
+        # All done
+        return
+
+    def patches2triangles(self, fault):
+        '''
+        Takes a fault with rectangular patches and splits them into triangles to 
+        initialize self.
+        Args:
+            * fault : instance of rectangular patches.
+        '''
+
+        # Initialize the lists of patches
+        self.patch = []
+        self.patchll = []
+
+        # Initialize vertices and faces
+        vertices = []
+        faces = []
+
+        # Each patch is being splitted in 4 triangles
+        for patch in fault.patch:
+
+            # Get the center
+            center = fault.getpatchgeometry(patch, center=True)[:3]
+
+            # Add vertices
+            for vertex in patch.tolist():
+                if vertex not in vertices:
+                    vertices.append(vertex)
+            vertices.append(list(center))
+
+            # Find the vertices in the list
+            i0 = np.flatnonzero(patch[0]==np.array(vertices))[0]
+            i1 = np.flatnonzero(patch[1]==np.array(vertices))[0]
+            i2 = np.flatnonzero(patch[2]==np.array(vertices))[0]
+            i3 = np.flatnonzero(patch[3]==np.array(vertices))[0]
+            ic = np.flatnonzero(center==np.array(vertices))[0]
+
+            # Split in 4
+            t1 = np.array([patch[0], patch[1], center])
+            t2 = np.array([patch[1], patch[2], center])
+            t3 = np.array([patch[2], patch[3], center])
+            t4 = np.array([patch[3], patch[0], center])
+
+            # faces
+            faces.append([i0, i1, ic])
+            faces.append([i1, i2, ic])
+            faces.append([i2, i3, ic])
+            faces.append([i3, i0, ic])
+        
+            # patches
+            self.patch.append(t1)
+            self.patch.append(t2)
+            self.patch.append(t3)
+            self.patch.append(t4)
+
+        # Save
+        self.Vertices = vertices
+        self.Faces = faces
+
+        # Convert
+        self.vertices2ll()
+        self.patch2ll()
+
+        # Initialize slip
+        self.initializeslip()
+
+        # Set depth
+        self.depth = np.max([v[2] for v in self.Vertices])
+        self.z_patches = np.linspace(self.depth, 0.0, 5)
+
+        # All done
+        return
+
     def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0,
                          factor_depth=1.0, box=None):
         """
@@ -648,7 +738,7 @@ class TriangularPatches(Fault):
         else:
             if checkindex:
                 for i in range(len(self.patch)):
-                    if (self.patch[i]==patch):
+                    if (self.patch[i]==patch).all():
                         u = i
         if u is not None:
             patch = self.patch[u]
@@ -776,7 +866,6 @@ class TriangularPatches(Fault):
         # All done
         return dis
 
-
     def slip2dis(self, data, patch, slip=None):
         '''
         Computes the surface displacement for a given patch at the data location
@@ -799,7 +888,7 @@ class TriangularPatches(Fault):
             SLP = slip
 
         # Get patch vertices
-        vertices = self.patch[patch]
+        vertices = list(self.patch[patch])
 
         # Get data position
         x = data.x

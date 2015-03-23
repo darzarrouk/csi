@@ -392,9 +392,9 @@ class TriangularTents(TriangularPatches):
                 if values is 'depth':
                     values = np.array([self.getTentInfo(t)[2] for t in self.tent])
                 elif values is 'strike':
-                    values = np.array([self.getTentInfo(t)[5] for t in self.tent])
+                    values = np.array([self.getTentInfo(t)[3] for t in self.tent])
                 elif values is 'dip':
-                    values = np.array([self.getTentInfo(t)[6] for t in self.tent])
+                    values = np.array([self.getTentInfo(t)[4] for t in self.tent])
                 elif values is 'index':
                     values = np.array([np.float(self.getindex(t)) for t in self.tent])
                 self.slip[:,0] = values
