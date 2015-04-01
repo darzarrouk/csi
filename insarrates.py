@@ -686,7 +686,8 @@ class insarrates(SourceInv):
         self.vel = self.vel[u]
         if self.err is not None:
             self.err = self.err[u]
-        self.los = self.los[u]
+        if self.los is not None:
+            self.los = self.los[u]
         if self.synth is not None:
             self.synth = self.synth[u,:]
         if self.corner is not None:
