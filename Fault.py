@@ -624,8 +624,7 @@ class Fault(SourceInv):
 
         # Chech something
         if self.patchType == 'triangletent':
-            assert method is 'edks', 'Homogeneous case based on Meade, 2007, \
-                                      not implemented yet'
+            assert method is 'edks', 'Homogeneous case not implemented for {} faults'.format(self.patchType)
 
         # Print
         if verbose:

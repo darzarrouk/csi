@@ -1322,9 +1322,7 @@ class RectangularPatches(Fault):
             u = patch
         else:
             if checkindex:
-                for i in range(len(self.patch)):
-                    if (self.patch[i]==patch).all():
-                        u = i
+                u = self.getindex(patch)
         if u is not None:
             if hasattr(self, 'equivpatch'):
                 patch = self.equivpatch[u]

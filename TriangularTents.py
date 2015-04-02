@@ -8,6 +8,7 @@ Written by Junle Jiang Apr, 2014
 # Externals
 import numpy as np
 import pyproj as pp
+import inspect
 import matplotlib.pyplot as plt
 import scipy.interpolate as sciint
 from . import triangularDisp as tdisp
@@ -37,6 +38,43 @@ class TriangularTents(TriangularPatches):
         self.patchType = 'triangletent'
         self.area = None
         self.area_tent = None
+
+        # All done
+        return
+
+    def initializeFromFault(self, fault, adjMap=True):
+        '''
+        Initializes the tent fault object from a triangularPatches or a triangularTents instance.
+        Args:
+            * fault     : Instance of triangular fault.
+            * adjMap    : Build the adjacency map (True/False).
+        '''
+
+        # Assert
+        assert type(fault) in (TriangularPatches, type(self)), 'Input fault type must be {} or {}'.format(TriangularPatches, type(self))
+
+        # Create a list of the attributes we want to copy
+        Attributes = []
+        for attr in dir(fault):
+            if (attr[:2] not in ('__')) and (not inspect.ismethod(fault.__getattribute__(attr))):
+                Attributes.append(attr)
+
+        # Loop 
+        for attr in Attributes:
+            self.__setattr__(attr, fault.__getattribute__(attr))
+
+        # patchType
+        self.patchType = 'triangletent'
+
+        # Vertices2Tents
+        self.vertices2tents()
+
+        # Build the adjacency map
+        if adjMap:
+            self.buildAdjacencyMap()
+
+        # Slip
+        self.initializeslip()
 
         # All done
         return
@@ -81,7 +119,7 @@ class TriangularTents(TriangularPatches):
         if tent.__class__ is int:
             u = tent
         else:
-            u = self.getindex(tent)
+            u = self.getTentindex(tent)
 
         x, y, z = self.tent[u]
         strike, dip = 0, 0
@@ -396,7 +434,7 @@ class TriangularTents(TriangularPatches):
                 elif values is 'dip':
                     values = np.array([self.getTentInfo(t)[4] for t in self.tent])
                 elif values is 'index':
-                    values = np.array([np.float(self.getindex(t)) for t in self.tent])
+                    values = np.array([np.float(self.getTentindex(t)) for t in self.tent])
                 self.slip[:,0] = values
             # Numpy array 
             if type(values) is np.ndarray:
@@ -442,7 +480,7 @@ class TriangularTents(TriangularPatches):
         # All done
         return Distances
 
-    def getindex(self, tent):
+    def getTentindex(self, tent):
         '''
         Returns the index of a tent.
         This function over-writes that from the parent class Fault.
@@ -453,12 +491,8 @@ class TriangularTents(TriangularPatches):
 
         # Find it
         for t in range(len(self.tent)):
-            try:
-                if (self.tent[t] == tent).all():
-                    iout = t
-            except:
-                if (self.tent[t]==tent):
-                    iout = t
+            if (self.tent[t] == tent):
+                iout = t
         
         # All done
         return iout
@@ -488,7 +522,7 @@ class TriangularTents(TriangularPatches):
         return
 
     def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0,
-                         factor_depth=1.0, box=None):
+                         factor_depth=1.0, box=None, verbose=False):
         """
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
         Args:
@@ -498,93 +532,43 @@ class TriangularTents(TriangularPatches):
             * factor_xy: if utm==True, multiplication factor for x and y
             * factor_depth: multiplication factor for z
         """
+
+        # Run the upper level routine 
+        super(TriangularTents, self).readGocadPatches(filename, neg_depth=neg_depth, utm=utm,
+                    factor_xy=factor_xy, factor_depth=factor_depth, box=box, verbose=verbose)
+
+        # Vertices to Tents
+        self.vertices2tents()
+
+        # All done
+        return
+
+    def vertices2tents(self):
+        '''
+        Takes the list of vertices and builds the tents.
+        '''
+
         # Initialize the lists of patches
-        self.patch   = []
-        self.patchll = []
         self.tent   = []
         self.tentll = []
         self.tentid   = []
 
-        # Factor to correct input negative depths (we want depths to be positive)
-        if neg_depth:
-            negFactor = -1.0
-        else:
-            negFactor =  1.0
-
-        # Get the geographic vertices and connectivities from the Gocad file
-        with open(filename, 'r') as fid:
-            vertices = []
-            vids     = []
-            faces    = []
-            for line in fid:
-                if line.startswith('VRTX'):
-                    items = line.split()
-                    name, vid, x, y, z = items[:5]
-                    vids.append(vid)
-                    vertices.append([float(x), float(y), negFactor*float(z)])
-                elif line.startswith('TRGL'):
-                    name, p1, p2, p3 = line.split()
-                    faces.append([int(p1), int(p2), int(p3)])
-            fid.close()
-            vids = np.array(vids,dtype=int) - 1
-            i    = np.argsort(vids)
-            vertices = np.array(vertices, dtype=float)[i,:]
-            faces = np.array(faces, dtype=int) - 1
-
-        # Resample vertices to UTM
-        if utm:
-            vx = vertices[:,0].copy()*factor_xy
-            vy = vertices[:,1].copy()*factor_xy
-            vertices[:,0],vertices[:,1] = self.xy2ll(vx,vy)
-        else:
-            vx, vy = self.ll2xy(vertices[:,0], vertices[:,1])
-        vz = vertices[:,2]*factor_depth
-        self.Vertices = np.column_stack((vx, vy, vz))
-        self.Vertices_ll = vertices
-        self.Faces = faces
-        print('min/max depth: {} km/ {} km'.format(vz.min(),vz.max()))
-        print('min/max lat: {} deg/ {} deg'.format(vertices[:,1].min(),vertices[:,1].max()))
-        print('min/max lon: {} deg/ {} deg'.format(vertices[:,0].min(),vertices[:,0].max()))
-        print('min/max x: {} km/ {} km'.format(vx.min(),vx.max()))
-        print('min/max y: {} km/ {} km'.format(vy.min(),vy.max()))
-
-        # Loop over faces and create a triangular patch consisting of coordinate tuples
-        self.numpatch = faces.shape[0]
-        for i in range(self.numpatch):
-            # Get the indices of the vertices
-            v1, v2, v3 = faces[i,:]
-            # Get the coordinates
-            x1, y1, lon1, lat1, z1 = vx[v1], vy[v1], vertices[v1,0], vertices[v1,1], vz[v1]
-            x2, y2, lon2, lat2, z2 = vx[v2], vy[v2], vertices[v2,0], vertices[v2,1], vz[v2]
-            x3, y3, lon3, lat3, z3 = vx[v3], vy[v3], vertices[v3,0], vertices[v3,1], vz[v3]
-            # Make the coordinate tuples
-            p1 = [x1, y1, z1]; pll1 = [lon1, lat1, z1]
-            p2 = [x2, y2, z2]; pll2 = [lon2, lat2, z2]
-            p3 = [x3, y3, z3]; pll3 = [lon3, lat3, z3]
-            # Store the patch
-            self.patch.append([p1, p2, p3])
-            self.patchll.append([pll1, pll2, pll3])
+        # Get vertices
+        vertices = self.Vertices
+        verticesll = self.Vertices_ll
+        vx, vy, vz = vertices[:,0], vertices[:,1], vertices[:,2]
 
         # Loop over vetices and create a node-based tent consisting of coordinate tuples
         self.numtent = vertices.shape[0]
         for i in range(self.numtent):
             # Get the coordinates
-            x, y, lon, lat, z = vx[i], vy[i], vertices[i,0], vertices[i,1], vz[i]
+            x, y, lon, lat, z = vx[i], vy[i], verticesll[i,0], verticesll[i,1], vz[i]
             # Make the coordinate tuples
             p = [x, y, z]; pll = [lon, lat, z]
             # Store the patch
             self.tent.append(p)
             self.tentll.append(pll)
             self.tentid.append(i)
-
-        # Update the depth of the bottom of the fault
-        if neg_depth:
-            self.top   = np.max(vz)
-            self.depth = np.min(vz)
-        else:
-            self.top   = np.min(vz)
-            self.depth = np.max(vz)
-        self.z_patches = np.linspace(self.depth, 0.0, 5)
 
         # Create the adjacency map
         self.buildAdjacencyMap(verbose=False)
@@ -598,7 +582,7 @@ class TriangularTents(TriangularPatches):
         '''
     
         # Get the faces and Nodes
-        Faces = self.Faces
+        Faces = np.array(self.Faces)
         Vertices = self.Vertices
 
         # Get the surrounding triangles
@@ -670,7 +654,7 @@ class TriangularTents(TriangularPatches):
         self.adjacencyMap = []
 
         # Cache the vertices and faces arrays
-        vertices, faces = self.Vertices, self.Faces
+        vertices, faces = self.Vertices, np.array(self.Faces)
 
         # First find adjacent triangles for all triangles
         numvert = len(vertices)

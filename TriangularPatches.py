@@ -39,7 +39,6 @@ class TriangularPatches(Fault):
         # All done
         return
 
-
     def setdepth(self, nump, width, top=0):
         '''
         Set depth patch attributes
@@ -83,7 +82,7 @@ class TriangularPatches(Fault):
         '''
 
         # Get vertices of patch
-        p1, p2, p3 = patch[:3]
+        p1, p2, p3 = list(patch)
 
         # Compute side lengths
         a = np.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2 + (p2[2] - p1[2])**2)
@@ -106,7 +105,7 @@ class TriangularPatches(Fault):
         '''
 
         # Get corners
-        p1, p2, p3 = patch
+        p1, p2, p3 = list(patch)
         if type(p1) is not list:
             p1 = p1.tolist()
         if type(p2) is not list:
@@ -165,7 +164,7 @@ class TriangularPatches(Fault):
             vertices_ll.append([lon, lat, vertex[2]])
 
         # Save
-        self.Vertices_ll = vertices_ll
+        self.Vertices_ll = np.array(vertices_ll)
 
         # All done
         return
@@ -190,7 +189,7 @@ class TriangularPatches(Fault):
         for patch in fault.patch:
 
             # Get the center
-            center = fault.getpatchgeometry(patch, center=True)[:3]
+            center = np.array(fault.getpatchgeometry(patch, center=True)[:3])
 
             # Add vertices
             for vertex in patch.tolist():
@@ -199,11 +198,11 @@ class TriangularPatches(Fault):
             vertices.append(list(center))
 
             # Find the vertices in the list
-            i0 = np.flatnonzero(patch[0]==np.array(vertices))[0]
-            i1 = np.flatnonzero(patch[1]==np.array(vertices))[0]
-            i2 = np.flatnonzero(patch[2]==np.array(vertices))[0]
-            i3 = np.flatnonzero(patch[3]==np.array(vertices))[0]
-            ic = np.flatnonzero(center==np.array(vertices))[0]
+            i0 = np.flatnonzero(np.array([patch[0].tolist()==v for v in vertices]))[0]
+            i1 = np.flatnonzero(np.array([patch[1].tolist()==v for v in vertices]))[0]
+            i2 = np.flatnonzero(np.array([patch[2].tolist()==v for v in vertices]))[0]
+            i3 = np.flatnonzero(np.array([patch[3].tolist()==v for v in vertices]))[0]
+            ic = np.flatnonzero(np.array([center.tolist()==v for v in vertices]))[0]
 
             # Split in 4
             t1 = np.array([patch[0], patch[1], center])
@@ -224,8 +223,8 @@ class TriangularPatches(Fault):
             self.patch.append(t4)
 
         # Save
-        self.Vertices = vertices
-        self.Faces = faces
+        self.Vertices = np.array(vertices)
+        self.Faces = np.array(faces)
 
         # Convert
         self.vertices2ll()
@@ -233,6 +232,17 @@ class TriangularPatches(Fault):
 
         # Initialize slip
         self.initializeslip()
+
+        # Set fault trace
+        self.xf = fault.xf
+        self.yf = fault.yf
+        self.lon = fault.lon
+        self.lat = fault.lat
+        if hasattr(fault, 'xi'):
+            self.xi = fault.xi
+            self.yi = fault.yi
+            self.loni = fault.loni
+            self.lati = fault.lati
 
         # Set depth
         self.depth = np.max([v[2] for v in self.Vertices])
@@ -242,7 +252,7 @@ class TriangularPatches(Fault):
         return
 
     def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0,
-                         factor_depth=1.0, box=None):
+                         factor_depth=1.0, box=None, verbose=False):
         """
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
         Args:
@@ -296,11 +306,12 @@ class TriangularPatches(Fault):
         self.Vertices = np.column_stack((vx, vy, vz))
         self.Vertices_ll = vertices
         self.Faces = faces
-        print('min/max depth: {} km/ {} km'.format(vz.min(),vz.max()))
-        print('min/max lat: {} deg/ {} deg'.format(vertices[:,1].min(),vertices[:,1].max()))
-        print('min/max lon: {} deg/ {} deg'.format(vertices[:,0].min(),vertices[:,0].max()))
-        print('min/max x: {} km/ {} km'.format(vx.min(),vx.max()))
-        print('min/max y: {} km/ {} km'.format(vy.min(),vy.max()))
+        if verbose:
+            print('min/max depth: {} km/ {} km'.format(vz.min(),vz.max()))
+            print('min/max lat: {} deg/ {} deg'.format(vertices[:,1].min(),vertices[:,1].max()))
+            print('min/max lon: {} deg/ {} deg'.format(vertices[:,0].min(),vertices[:,0].max()))
+            print('min/max x: {} km/ {} km'.format(vx.min(),vx.max()))
+            print('min/max y: {} km/ {} km'.format(vy.min(),vy.max()))
 
         # Loop over faces and create a triangular patch consisting of coordinate tuples
         self.numpatch = faces.shape[0]
@@ -316,8 +327,8 @@ class TriangularPatches(Fault):
             p2 = [x2, y2, z2]; pll2 = [lon2, lat2, z2]
             p3 = [x3, y3, z3]; pll3 = [lon3, lat3, z3]
             # Store the patch
-            self.patch.append([p1, p2, p3])
-            self.patchll.append([pll1, pll2, pll3])
+            self.patch.append(np.array([p1, p2, p3]))
+            self.patchll.append(np.array([pll1, pll2, pll3]))
 
         # Update the depth of the bottom of the fault
         if neg_depth:
@@ -516,7 +527,7 @@ class TriangularPatches(Fault):
         return
 
 
-    def getEllipse(self,patch,ellipseCenter=None,Npoints=10,factor=1.0):
+    def getEllipse(self, patch, ellipseCenter=None, Npoints=10, factor=1.0):
         '''
         Compute the ellipse error given Cm for a given patch
         args:
@@ -590,7 +601,6 @@ class TriangularPatches(Fault):
             # Get some geometry
             xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)
             # Get the slip vector
-            #slip = self.getslip(self.patch[p]) # This is weird
             slip = self.slip[p,:]
             rake = np.arctan2(slip[1],slip[0])
 
@@ -647,12 +657,16 @@ class TriangularPatches(Fault):
         # Remove the patch
         del self.patch[patch]
         del self.patchll[patch]
-        if self.N_slip!=None or self.N_slip==len(self.patch):
+        vids = self.Faces[patch]
+        for v in vids:
+            if not (v==self.Faces).any():
+                self.Vertices = np.delete(self.Vertices, v, axis=0)
+                self.Vertices_ll = np.delete(self.Vertices_ll, v, axis=0)
+        self.Faces = np.delete(self.Faces, patch, axis=0)
+        if self.slip is not None:
             self.slip = np.delete(self.slip, patch, axis=0)
             self.N_slip = len(self.slip)
             self.numpatch -= 1
-        else:
-            raise NotImplementedError('Only works for len(slip)==len(patch)',self.N_slip,len(self.slip),len(self.patch))
 
         # All done
         return
@@ -679,14 +693,19 @@ class TriangularPatches(Fault):
         # All done
         return
 
-
     def addpatch(self, patch, slip=[0, 0, 0]):
         '''
         Adds a patch to the list.
         Args:
-            * patch     : Geometry of the patch to add
+            * patch     : Geometry of the patch to add (km, not lon lat)
             * slip      : List of the strike, dip and tensile slip.
+            * resetTents: Recompute the list of tents (default is True)
         '''
+
+        # Check that patch is an array
+        if type(patch) is list:
+            patch = np.array(patch)
+        assert type(patch) is np.ndarray, 'addPatch: Patch has to be a numpy array'
 
         # append the patch
         self.patch.append(patch)
@@ -702,7 +721,22 @@ class TriangularPatches(Fault):
             tmp[-1,:] = slip
             self.slip = tmp
         else:
-            raise NotImplementedError('Only works for len(slip)==len(patch)')
+            print('Slip has not been modified')
+
+        # Check if vertices are already there
+        vids = []
+        for p in patch:
+            ii = np.flatnonzero(np.array([(p.tolist()==v).all() for v in self.Vertices]))
+            if len(ii)==0:
+                self.Vertices = np.insert(self.Vertices, self.Vertices.shape[0],
+                        p, axis=0)
+                vids.append(self.Vertices.shape[0]-1)
+            else:
+                vids.append(ii[0])
+        self.Faces = np.insert(self.Faces, self.Faces.shape[0], vids, axis=0)
+
+        # Vertices2ll
+        self.vertices2ll()
 
         # All done
         return
@@ -716,6 +750,9 @@ class TriangularPatches(Fault):
         '''
 
         # Replace
+        if type(patch) is list:
+            patch = np.array(patch)
+        assert type(patch) is np.ndarray, 'replacePatch: Patch must be an array'
         self.patch[iPatch] = patch
 
         # All done
@@ -737,9 +774,7 @@ class TriangularPatches(Fault):
             u = patch
         else:
             if checkindex:
-                for i in range(len(self.patch)):
-                    if (self.patch[i]==patch).all():
-                        u = i
+                u = self.getindex(patch)
         if u is not None:
             patch = self.patch[u]
 
@@ -1014,148 +1049,6 @@ class TriangularPatches(Fault):
             print('\n')
         D = D / np.max(np.abs(np.diag(D)))
         return D
-
-
-    def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False, w_file=True):
-        '''
-        Write the subParam file needed for the interpolation of the green's function in EDKS.
-        Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source,
-        then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
-        If amax is specified, the minimum size is fixed.
-        Args:
-            * data          : Data object from gpsrates or insarrates.
-            * edksfilename  : Name of the file containing the kernels
-            * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle (default=None)
-            * plot          : Activates plotting (default=False)
-            * w_file        : if False, will not write the subParam fil (default=True)
-        Returns:
-            * filename         : Name of the subParams file created (only if w_file==True)
-            * TrianglePropFile : Name of the triangle properties file
-            * PointCoordFile   : Name of the Point coordinates file
-            * ReceiverFile     : Name of the receiver file
-            * method_par       : Dictionary including useful EDKS parameters
-        '''
-
-        # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
-
-        # Write the geometry to the EDKS file
-        fltname,TrianglePropFile, PointCoordFile = self.writeEDKSgeometry()
-
-        # Write the data to the EDKS file
-        datname,ReceiverFile = data.writeEDKSdata()
-
-        # Assign some EDKS parameters
-        if data.dtype is 'insarrates':
-            useRecvDir = True # True for InSAR, uses LOS information
-        else:
-            useRecvDir = False # False for GPS, uses ENU displacements
-        EDKSunits = 1000.0
-        EDKSfilename = '{}'.format(edksfilename)
-        prefix = 'edks_{}_{}'.format(fltname, datname)
-        plotGeometry = '{}'.format(plot)
-
-        # Build usefull outputs
-        parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
-        parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
-        method_par = dict(zip(parNames, parValues))
-
-        # Open the EDKSsubParams.py file
-        if w_file:
-            filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
-            fout = open(filename, 'w')
-
-            # Write in it
-            fout.write("# File with the triangle properties\n")
-            fout.write("TriPropFile = '{}'\n".format(TrianglePropFile))
-            fout.write("# File with the Triangles' Points (vertex) coordinates \n")
-            fout.write("TriPointsFile = '{}'\n".format(PointCoordFile))
-            fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
-            fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
-            fout.write("# read receiver direction (# not yet implemented)\n")
-            fout.write("useRecvDir = {} # leace this to False for now\n".format(useRecvDir))
-            fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
-            if amax is None:
-                fout.write("Amax = None # None computes Amax automatically. \n")
-            else:
-                fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
-            fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
-            fout.write("EDKSfilename = '{}'\n".format(edksfilename))
-            fout.write("prefix = '{}'\n".format(prefix))
-            fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
-
-            # Close the file
-            fout.close()
-            return filename, TrianglePropFile, PointCoordFile, ReceiverFile, method_par
-        else:
-            return TrianglePropFile, PointCoordFile, ReceiverFile, method_par
-
-    def writeEDKSgeometry(self, ref=None):
-        '''
-        This routine spits out 2 files:
-        filename.TriangleProp: Patch ID | Lon (deg) | Lat | East (km) | North | Depth (km) | Strike (deg) | Dip  | Area (km^2) | Vertice ids
-        (coordinates are given for the center of the patch)
-        filename.PointCoord: Vertice ID | Lon (deg) | Lat | East (km) | North | Depth (km)
-
-        These files are to be used with edks/MPI_EDKS/calcGreenFunctions_EDKS_subTriangles.py
-        '''
-
-        # Filename
-        fltname = self.name.replace(' ','_')
-        filename = 'edks_{}'.format(fltname)
-        TrianglePropFile = filename+'.TriangleProp'
-        PointCoordFile   = filename+'.PointCoord'
-
-        # Open the output file and write headers
-        TriP = open(TrianglePropFile,'w')
-        h_format ='%-6s %10s %10s %10s %10s %10s %10s %10s %10s %6s %6s %6s\n'
-        h_tuple = ('%Tid','lon','lat','E[km]','N[km]','dep[km]','strike','dip',
-                  'Area[km2]','idP1','idP2','idP3')
-        TriP.write(h_format%h_tuple)
-        PoC = open(PointCoordFile,'w')
-        PoC.write('%-6s %10s %10s %10s %10s %10s\n'%('Pid','lon','lat','E[km]','N[km]','dep[km]'))
-
-        # Reference
-        if ref is not None:
-            refx, refy = self.putm(ref[0], ref[1])
-            refx /= 1000.
-            refy /= 1000.
-
-        # Loop over the patches
-        TriP_format = '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %6d %6d %6d\n'
-        for p in range(self.numpatch):
-            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)
-            strike = strike*180./np.pi
-            dip = dip*180./np.pi
-            lonc, latc = self.xy2ll(xc,yc)
-            if ref is not None:
-                xc -= refx
-                yc -= refy
-            verts = copy.deepcopy(self.patch[p])
-            v1, v2, v3 = self.Faces[p,:]
-            TriP_tuple = (p,lonc,latc,xc,yc,zc,strike,dip,self.area[p],v1,v2,v3)
-            TriP.write(TriP_format%TriP_tuple)
-
-        PoC_format =  '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f\n'
-        for v in range(self.Vertices.shape[0]):
-            xv,yv,zv = self.Vertices[v,:]
-            lonv,latv,zv2 = self.Vertices_ll[v,:]
-            assert zv == zv2*self.factor_depth, \
-                'inconsistent depth in Vertices and Vertices_ll'
-            if ref is not None:
-                xv -= refx
-                yv -= refy
-            PoC.write(PoC_format%(v,lonv,latv,xv,yv,zv))
-
-        # Close the files
-        TriP.close()
-        PoC.close()
-
-        # All done
-        return fltname,TrianglePropFile,PointCoordFile
-
 
     def getcenter(self, p):
         '''
@@ -1438,71 +1331,6 @@ class TriangularPatches(Fault):
         # All done
         return
 
-    def horizshrink1patch(self, ipatch, fixedside='south', finallength=25.):
-        '''
-        Takes an existing patch and shrinks its size in the horizontal direction.
-        Args:
-            * ipatch        : Index of the patch of concern.
-            * fixedside     : One side has to be fixed, takes the southernmost if 'south',
-                                                        takes the northernmost if 'north'
-            * finallength   : Length of the final patch.
-        '''
-
-        # Get the patch
-        patch = self.patch[ipatch]
-        patchll = self.patchll[ipatch]
-
-        # Find the southernmost points
-        y = np.array([patch[i][1] for i in range(4)])
-        imin = y.argmin()
-
-        # Take the points we need to move
-        if fixedside is 'south':
-            fpts = np.flatnonzero(y==y[imin])
-            mpts = np.flatnonzero(y!=y[imin])
-        elif fixedside is 'north':
-            fpts = np.flatnonzero(y!=y[imin])
-            mpts = np.flatnonzero(y==y[imin])
-
-        # Find which depths match
-        d = np.array([patch[i][2] for i in range(4)])
-
-        # Deal with the shallow points
-        isf = fpts[d[fpts].argmin()]      # Index of the shallow fixed point
-        ism = mpts[d[mpts].argmin()]      # Index of the shallow moving point
-        x1 = patch[isf][0]; y1 = patch[isf][1]
-        x2 = patch[ism][0]; y2 = patch[ism][1]
-        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
-        Dy = y1 - y2                            # Y-Distance between the original points
-        Dx = x1 - x2                            # X-Distance between the original points
-        dy = finallength*Dy/DL                  # Y-Distance between the new points
-        dx = finallength*Dx/DL                  # X-Distance between the new points
-        patch[ism][0] = patch[isf][0] - dx
-        patch[ism][1] = patch[isf][1] - dy
-
-        # Deal with the deep points
-        idf = fpts[d[fpts].argmax()]      # Index of the deep fixed point
-        idm = mpts[d[mpts].argmax()]      # Index of the deep moving point
-        x1 = patch[idf][0]; y1 = patch[idf][1]
-        x2 = patch[idm][0]; y2 = patch[idm][1]
-        DL = np.sqrt( (x1-x2)**2 + (y1-y2)**2 ) # Distance between the original points
-        Dy = y1 - y2                            # Y-Distance between the original points
-        Dx = x1 - x2                            # X-Distance between the original points
-        dy = finallength*Dy/DL                  # Y-Distance between the new points
-        dx = finallength*Dx/DL                  # X-Distance between the new points
-        patch[idm][0] = patch[idf][0] - dx
-        patch[idm][1] = patch[idf][1] - dy
-
-        # Rectify the lon lat patch
-        for i in range(4):
-            x, y = patch[i][0], patch[i][1]
-            lon, lat = self.xy2ll(x, y)
-            patchll[i][0] = lon
-            patchll[i][1] = lat
-
-        # All done
-        return
-
     def ExtractAlongStrikeVariationsOnDiscretizedFault(self, depth=0.5, filename=None, discret=0.5):
         '''
         Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
@@ -1541,7 +1369,7 @@ class TriangularPatches(Fault):
         sPatches = []
         for p in self.patch:
             # Check depth
-            if ((p[0][2]<=depth) and (p[2][2]>=depth)):
+            if ((p[0,2]<=depth) and (p[2,2]>=depth)):
                 # Get patch
                 sPatches.append(self.getslip(p))
                 # Put it in dis
@@ -1637,8 +1465,8 @@ class TriangularPatches(Fault):
         for p in self.patch:
 
             # Get depth range
-            dmin = np.min([p[i][2] for i in range(4)])
-            dmax = np.max([p[i][2] for i in range(4)])
+            dmin = np.min([p[i,2] for i in range(4)])
+            dmax = np.max([p[i,2] for i in range(4)])
 
             # If good depth, keep it
             if ((depth>=dmin) & (depth<=dmax)):
@@ -1693,7 +1521,7 @@ class TriangularPatches(Fault):
             fout = open(filename, 'w')
 
         # Create the list of depths
-        depths = np.unique(np.array([[self.patch[i][u][2] for u in range(4)] for i in range(len(self.patch))]).flatten())
+        depths = np.unique(np.array([[self.patch[i][u,2] for u in range(4)] for i in range(len(self.patch))]).flatten())
         depths = depths[:-1] + (depths[1:] - depths[:-1])/2.
 
         # Discretize the fault
@@ -1957,5 +1785,154 @@ class TriangularPatches(Fault):
 
         # All done
         return Map
+
+#--------------------------------------------------------------
+#--------------------------------------------------------------
+# These routines have become useless. I comment them now.
+# If someone is against it, let me know before August 2015
+# Past August 1st, 2015, I will delete these
+# RJ April 1st, 2015
+#
+#    def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False, w_file=True):
+#        '''
+#        Write the subParam file needed for the interpolation of the green's function in EDKS.
+#        Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source,
+#        then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
+#        If amax is specified, the minimum size is fixed.
+#        Args:
+#            * data          : Data object from gpsrates or insarrates.
+#            * edksfilename  : Name of the file containing the kernels
+#            * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle (default=None)
+#            * plot          : Activates plotting (default=False)
+#            * w_file        : if False, will not write the subParam fil (default=True)
+#        Returns:
+#            * filename         : Name of the subParams file created (only if w_file==True)
+#            * TrianglePropFile : Name of the triangle properties file
+#            * PointCoordFile   : Name of the Point coordinates file
+#            * ReceiverFile     : Name of the receiver file
+#            * method_par       : Dictionary including useful EDKS parameters
+#        '''
+#
+#        # print
+#        print ("---------------------------------")
+#        print ("---------------------------------")
+#        print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
+#
+#        # Write the geometry to the EDKS file
+#        fltname,TrianglePropFile, PointCoordFile = self.writeEDKSgeometry()
+#
+#        # Write the data to the EDKS file
+#        datname,ReceiverFile = data.writeEDKSdata()
+#
+#        # Assign some EDKS parameters
+#        if data.dtype is 'insarrates':
+#            useRecvDir = True # True for InSAR, uses LOS information
+#        else:
+#            useRecvDir = False # False for GPS, uses ENU displacements
+#        EDKSunits = 1000.0
+#        EDKSfilename = '{}'.format(edksfilename)
+#        prefix = 'edks_{}_{}'.format(fltname, datname)
+#        plotGeometry = '{}'.format(plot)
+#
+#        # Build usefull outputs
+#        parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
+#        parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
+#        method_par = dict(zip(parNames, parValues))
+#
+#        # Open the EDKSsubParams.py file
+#        if w_file:
+#            filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
+#            fout = open(filename, 'w')
+#
+#            # Write in it
+#            fout.write("# File with the triangle properties\n")
+#            fout.write("TriPropFile = '{}'\n".format(TrianglePropFile))
+#            fout.write("# File with the Triangles' Points (vertex) coordinates \n")
+#            fout.write("TriPointsFile = '{}'\n".format(PointCoordFile))
+#            fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
+#            fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
+#            fout.write("# read receiver direction (# not yet implemented)\n")
+#            fout.write("useRecvDir = {} # leace this to False for now\n".format(useRecvDir))
+#            fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
+#            if amax is None:
+#                fout.write("Amax = None # None computes Amax automatically. \n")
+#            else:
+#                fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
+#            fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
+#            fout.write("EDKSfilename = '{}'\n".format(edksfilename))
+#            fout.write("prefix = '{}'\n".format(prefix))
+#            fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
+#
+#            # Close the file
+#            fout.close()
+#            return filename, TrianglePropFile, PointCoordFile, ReceiverFile, method_par
+#        else:
+#            return TrianglePropFile, PointCoordFile, ReceiverFile, method_par
+#
+#    def writeEDKSgeometry(self, ref=None):
+#        '''
+#        This routine spits out 2 files:
+#        filename.TriangleProp: Patch ID | Lon (deg) | Lat | East (km) | North | Depth (km) | Strike (deg) | Dip  | Area (km^2) | Vertice ids
+#        (coordinates are given for the center of the patch)
+#        filename.PointCoord: Vertice ID | Lon (deg) | Lat | East (km) | North | Depth (km)
+#
+#        These files are to be used with edks/MPI_EDKS/calcGreenFunctions_EDKS_subTriangles.py
+#        '''
+#
+#        # Filename
+#        fltname = self.name.replace(' ','_')
+#        filename = 'edks_{}'.format(fltname)
+#        TrianglePropFile = filename+'.TriangleProp'
+#        PointCoordFile   = filename+'.PointCoord'
+#
+#        # Open the output file and write headers
+#        TriP = open(TrianglePropFile,'w')
+#        h_format ='%-6s %10s %10s %10s %10s %10s %10s %10s %10s %6s %6s %6s\n'
+#        h_tuple = ('%Tid','lon','lat','E[km]','N[km]','dep[km]','strike','dip',
+#                  'Area[km2]','idP1','idP2','idP3')
+#        TriP.write(h_format%h_tuple)
+#        PoC = open(PointCoordFile,'w')
+#        PoC.write('%-6s %10s %10s %10s %10s %10s\n'%('Pid','lon','lat','E[km]','N[km]','dep[km]'))
+#
+#        # Reference
+#        if ref is not None:
+#            refx, refy = self.putm(ref[0], ref[1])
+#            refx /= 1000.
+#            refy /= 1000.
+#
+#        # Loop over the patches
+#        TriP_format = '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %10.4f %6d %6d %6d\n'
+#        for p in range(self.numpatch):
+#            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)
+#            strike = strike*180./np.pi
+#            dip = dip*180./np.pi
+#            lonc, latc = self.xy2ll(xc,yc)
+#            if ref is not None:
+#                xc -= refx
+#                yc -= refy
+#            verts = copy.deepcopy(self.patch[p])
+#            v1, v2, v3 = self.Faces[p,:]
+#            TriP_tuple = (p,lonc,latc,xc,yc,zc,strike,dip,self.area[p],v1,v2,v3)
+#            TriP.write(TriP_format%TriP_tuple)
+#
+#        PoC_format =  '%-6d %10.4f %10.4f %10.4f %10.4f %10.4f\n'
+#        for v in range(self.Vertices.shape[0]):
+#            xv,yv,zv = self.Vertices[v,:]
+#            lonv,latv,zv2 = self.Vertices_ll[v,:]
+#            assert zv == zv2*self.factor_depth, \
+#                'inconsistent depth in Vertices and Vertices_ll'
+#            if ref is not None:
+#                xv -= refx
+#                yv -= refy
+#            PoC.write(PoC_format%(v,lonv,latv,xv,yv,zv))
+#
+#        # Close the files
+#        TriP.close()
+#        PoC.close()
+#
+#        # All done
+#        return fltname,TrianglePropFile,PointCoordFile
+#--------------------------------------------------------------
+#--------------------------------------------------------------
 
 #EOF
