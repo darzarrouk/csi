@@ -52,6 +52,43 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def checkNaNs(self):
+        ''' 
+        Checks and remove data points that have NaNs in vel, err, lon, lat or los.
+        '''
+
+        # Check 
+        if self.vel is not None:
+            uVel = np.flatnonzero(np.isnan(self.vel))
+        else:
+            uVel = np.array([])
+        if self.err is not None:
+            uErr = np.flatnonzero(np.isnan(self.err))
+        else:
+            uErr = np.array([])
+        if self.lon is not None:
+            uLon = np.flatnonzero(np.isnan(self.lon))
+        else:
+            uLon = np.array([])
+        if self.lat is not None:
+            uLat = np.flatnonzero(np.isnan(self.lat))
+        else:
+            uLat = np.array([])
+        if self.los is not None:
+            uLos, toto = np.where(np.isnan(self.los))
+            uLos = np.unique(uLos.flatten())
+        else:
+            uLos = np.array([])
+
+        # Concatenate all these guys
+        uRemove = np.concatenate((uVel, uErr, uLon, uLat, uLos))
+
+        # Reject pixels
+        self.reject_pixel(uRemove)
+
+        # All done
+        return
+
     def read_from_ascii_simple(self, filename, factor=1.0, step=0.0, header=0, los=None):
         '''
         Read the InSAR data from an ascii file with 3 cols.
