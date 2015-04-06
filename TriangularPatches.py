@@ -646,7 +646,6 @@ class TriangularPatches(Fault):
         # All done
         return
 
-
     def deletepatch(self, patch):
         '''
         Deletes a patch.
@@ -657,12 +656,25 @@ class TriangularPatches(Fault):
         # Remove the patch
         del self.patch[patch]
         del self.patchll[patch]
+
+        # Check which vertices to delete
+        v2del = []
         vids = self.Faces[patch]
-        for v in vids:
-            if not (v==self.Faces).any():
-                self.Vertices = np.delete(self.Vertices, v, axis=0)
-                self.Vertices_ll = np.delete(self.Vertices_ll, v, axis=0)
         self.Faces = np.delete(self.Faces, patch, axis=0)
+        for v in vids:
+            if v not in self.Faces.flatten().tolist():
+                v2del.append(v)
+
+        # Modify the vertex numbers in Faces
+        for v in v2del:
+            i,j = np.where(self.Faces>v)
+            self.Faces[i,j] -= 1
+         
+        # Do the deletion
+        self.Vertices = np.delete(self.Vertices, v2del, axis=0)
+        self.Vertices_ll = np.delete(self.Vertices_ll, v2del, axis=0)
+        
+        # Clean slip vector
         if self.slip is not None:
             self.slip = np.delete(self.slip, patch, axis=0)
             self.N_slip = len(self.slip)
@@ -670,7 +682,6 @@ class TriangularPatches(Fault):
 
         # All done
         return
-
 
     def deletepatches(self, tutu):
         '''

@@ -889,7 +889,8 @@ class Fault(SourceInv):
             Gss = sum_layered_sub(Ids, xs, ys, zs, \
                                   strike, dip, np.zeros(dip.shape), slip, \
                                   Areas,\
-                                  xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN')
+                                  xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
+                                  cleanUp=False)
             Gss = np.array(Gss)
         if 'd' in slipdir:
             if verbose:
@@ -897,7 +898,8 @@ class Fault(SourceInv):
             Gds = sum_layered_sub(Ids, xs, ys, zs, \
                                   strike, dip, np.ones(dip.shape)*90.0, slip, \
                                   Areas,\
-                                  xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN')
+                                  xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
+                                  cleanUp=False)
             Gds = np.array(Gds)
         if 't' in slipdir:
             if verbose:

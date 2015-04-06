@@ -15,7 +15,8 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
                 npw, npy,\
                 xr, yr, edks,\
                 prefix, \
-                BIN_EDKS = 'EDKS_BIN' ):
+                BIN_EDKS = 'EDKS_BIN',
+                cleanUp=True):
     '''
     --- INPUT ---
     --- SOURCE INFO
@@ -144,8 +145,9 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
     file.close()
  
     # remove IO files.
-    cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
-    os.system(cmd)  
+    if cleanUp:
+        cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
+        os.system(cmd)  
  
     # return the GF matrices
     return [ux, uy, uz]
@@ -153,7 +155,8 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
 def sum_layered_sub(IDs, xs, ys, zs, strike, dip, rake, slip, A, \
                        xr, yr, edks,\
                        prefix, \
-                       BIN_EDKS = 'EDKS_BIN', tensile=False):
+                       BIN_EDKS = 'EDKS_BIN', tensile=False,
+                       cleanUp=True):
     '''
     --- INPUT ---
     --- SOURCE INFO
@@ -326,8 +329,9 @@ def sum_layered_sub(IDs, xs, ys, zs, strike, dip, rake, slip, A, \
     file.close()
 
     # remove IO files.
-    cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
-    os.system(cmd)  
+    if cleanUp:
+        cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
+        os.system(cmd)  
 
     # return the computed displacements for each sources
     return [ux, uy, uz]
