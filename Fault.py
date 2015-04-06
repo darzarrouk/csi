@@ -890,7 +890,7 @@ class Fault(SourceInv):
                                   strike, dip, np.zeros(dip.shape), slip, \
                                   Areas,\
                                   xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                  cleanUp=False)
+                                  cleanUp=True)
             Gss = np.array(Gss)
         if 'd' in slipdir:
             if verbose:
@@ -899,7 +899,7 @@ class Fault(SourceInv):
                                   strike, dip, np.ones(dip.shape)*90.0, slip, \
                                   Areas,\
                                   xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                  cleanUp=False)
+                                  cleanUp=True)
             Gds = np.array(Gds)
         if 't' in slipdir:
             if verbose:
