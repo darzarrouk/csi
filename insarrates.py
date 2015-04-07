@@ -2010,7 +2010,7 @@ class insarrates(SourceInv):
 
         # All done
 
-    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='data', show=True):
+    def plot(self, faults=None, figure=133, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2022,8 +2022,22 @@ class insarrates(SourceInv):
             * decim     : plot the insar following the decimation process of varres.
         '''
 
+        # Get lons lats
+        lonmin = self.lon.min()-expand
+        if lonmin<0.:
+            lonmin += 360.
+        lonmax = self.lon.max()+expand
+        if lonmax<0.:
+            lonmax += 360.
+        latmin = self.lat.min()-expand
+        latmax = self.lat.max()+expand
+
         # Create a figure
-        fig = geoplot(figure=figure, ref=ref)
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
+
+        # Draw the coastlines
+        if drawCoastlines:
+            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
 
         # Plot the fault trace if asked
         if faults is not None:
@@ -2041,10 +2055,10 @@ class insarrates(SourceInv):
 
         # Plot the decimation process, if asked
         if decim:
-            fig.insar_decimate(self, norm=norm, colorbar=False, data=data)
+            fig.insar(self, norm=norm, colorbar=False, data=data, plotType='decimate')
 
-        # Plot the insar_scatter
-        fig.insar_scatter(self, norm=norm, colorbar=True, data=data)
+        # Plot the insar
+        fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter')
 
         # Show
         fig.show(showFig=['map'])
