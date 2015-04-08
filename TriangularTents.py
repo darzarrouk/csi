@@ -914,28 +914,41 @@ class TriangularTents(TriangularPatches):
         # all done
         return dis
 
-    def plot(self, ref='utm', figure=134, add=False, maxdepth=None, axis='equal',
-             slip='total', neg_depth=False):
+    def plot(self, figure=134, slip='total', equiv=False, show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
+            drawCoastlines=True, expand=0.2):
         '''
         Plot the available elements of the fault.
-
+        
         Args:
             * ref           : Referential for the plot ('utm' or 'lonlat').
             * figure        : Number of the figure.
         '''
-        
-        # Create a geodetic plot
-        fig = geoplot(figure=figure, ref=ref)
 
-        # Trace
-        if hasattr(self, 'lon') or hasattr(self, 'xf'):
-            fig.faulttrace(self)
+        # Get lons lats
+        lon = np.unique([p[:,0] for p in self.patchll])
+        lon[lon<0.] += 360.
+        lat = np.unique([p[:,1] for p in self.patchll])
+        lonmin = lon.min()-expand
+        lonmax = lon.max()+expand
+        latmin = lat.min()-expand
+        latmax = lat.max()+expand
 
-        # 3D geometry
-        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=None, colorbar=True, plot_on_2d=False, npoints=40)
+        # Create a figure
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
 
-        # Show
-        fig.show(showFig=['fault'])
+        # Draw the coastlines
+        if drawCoastlines:
+            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
+
+        # Draw the fault
+        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=True, plot_on_2d=plot_on_2d, npoints=40)
+
+        # show
+        if show:
+            showFig = ['fault']
+            if plot_on_2d:
+                showFig.append('map')
+            fig.show(showFig=showFig)
 
         # All done
         return x, y, z, slip

@@ -1,2 +1,3 @@
 1. Add uncertainties on the covariance plots (standard deviations, for instance)
 2. Add plotting of continents fill in geodetic plot 3D fault (pass a Polygon list into a Collection of 3D polygons).
+

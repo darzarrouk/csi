@@ -2061,7 +2061,8 @@ class insarrates(SourceInv):
         fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter')
 
         # Show
-        fig.show(showFig=['map'])
+        if show:
+            fig.show(showFig=['map'])
 
         # All done
         return

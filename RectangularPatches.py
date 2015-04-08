@@ -25,6 +25,7 @@ import os
 from .Fault import Fault
 from .stressfield import stressfield
 from . import okadafull
+from .geodeticplot import geodeticplot as geoplot
 
 class RectangularPatches(Fault):
     
@@ -2366,7 +2367,8 @@ class RectangularPatches(Fault):
         # all done
         return
 
-    def plot(self,ref='utm', figure=134, add=False, maxdepth=None, axis='equal', value_to_plot='total', equiv=False, show=True, axesscaling=True, Norm=None, linewidth=1.0):
+    def plot(self, figure=134, slip='total', equiv=False, show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
+            drawCoastlines=True, expand=0.2):
         '''
         Plot the available elements of the fault.
         
@@ -2375,149 +2377,31 @@ class RectangularPatches(Fault):
             * figure        : Number of the figure.
         '''
 
-        # Import necessary things
-        import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
-        fig = plt.figure(figure)
-        ax = fig.add_subplot(111, projection='3d', aspect='equal')
+        # Get lons lats
+        lon = np.unique([p[:,0] for p in self.patchll])
+        lon[lon<0.] += 360.
+        lat = np.unique([p[:,1] for p in self.patchll])
+        lonmin = lon.min()-expand
+        lonmax = lon.max()+expand
+        latmin = lat.min()-expand
+        latmax = lat.max()+expand
 
-        # Set the axes
-        if ref is 'utm':
-            ax.set_xlabel('Easting (km)')
-            ax.set_ylabel('Northing (km)')
-        else:
-            ax.set_xlabel('Longitude')
-            ax.set_ylabel('Latitude')
-        ax.set_zlabel('Depth (km)')
+        # Create a figure
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
 
-        # Plot the surface trace
-        if ref is 'utm':
-            if self.xf is None:
-                self.trace2xy()
-            ax.plot(self.xf, self.yf, '-b')
-        else:
-            ax.plot(self.lon, self.lat,'-b')
+        # Draw the coastlines
+        if drawCoastlines:
+            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
 
-        if add and (ref is 'utm'):
-            for fault in self.addfaultsxy:
-                ax.plot(fault[:,0], fault[:,1], '-k')
-        elif add and (ref is not 'utm'):
-            for fault in self.addfaults:
-                ax.plot(fault[:,0], fault[:,1], '-k')
-
-        # Plot the discretized trace
-        if self.xi is not None:
-            if ref is 'utm':
-                ax.plot(self.xi, self.yi, '.r')
-            else:
-                if self.loni is None:
-                    self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000., inverse=True)
-                ax.plot(loni, lati, '.r')
-
-        # Compute the total slip
-        if value_to_plot=='total':
-            self.computetotalslip()
-            plotval = self.totalslip
-        elif value_to_plot=='strikeslip':
-            plotval = self.slip[:,0]
-        elif value_to_plot=='dipslip':
-            plotval = self.slip[:,1]
-        elif value_to_plot=='tensile':
-            plotval = self.slip[:,2]
-        elif value_to_plot=='normaltraction':
-            plotval = self.Normal
-        elif value_to_plot=='strikesheartraction':
-            plotval = self.ShearStrike
-        elif value_to_plot=='dipsheartraction':
-            plotval = self.ShearDip
-        elif value_to_plot=='coulomb':
-            plotval = self.Coulomb
-        elif value_to_plot=='index':
-            plotval = np.linspace(0, len(self.patch)-1, len(self.patch))
-
-        # Plot the patches
-        if self.patch is not None:
-            
-            # import stuff
-            import mpl_toolkits.mplot3d.art3d as art3d
-            import matplotlib.colors as colors
-            import matplotlib.cm as cmx
-            
-            # set z axis
-            if axesscaling:
-                ax.set_zlim3d([-1.0*(self.depth+5), 0])
-                zticks = []
-                zticklabels = []
-                for z in self.z_patches:
-                    zticks.append(-1.0*z)
-                    zticklabels.append(z)
-                ax.set_zticks(zticks)
-                ax.set_zticklabels(zticklabels)
-            
-            # set color business
-            cmap = plt.get_cmap('jet')
-            if Norm is not None:
-                cNorm = colors.Normalize(vmin=Norm[0], vmax=Norm[1])
-            else:
-                cNorm  = colors.Normalize(vmin=plotval.min(), vmax=plotval.max())
-            scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
-
-            for p in range(len(self.patch)):
-                ncorners = len(self.patch[0])
-                x = []
-                y = []
-                z = []
-                for i in range(ncorners):
-                    if ref is 'utm':
-                        x.append(self.patch[p][i][0])
-                        y.append(self.patch[p][i][1])
-                        z.append(-1.0*self.patch[p][i][2])
-                    else:
-                        x.append(self.patchll[p][i][0])
-                        y.append(self.patchll[p][i][1])
-                        z.append(-1.0*self.patchll[p][i][2])
-                verts = [zip(x, y, z)]
-                rect = art3d.Poly3DCollection(verts)
-                rect.set_color(scalarMap.to_rgba(plotval[p]))
-                rect.set_linewidth(linewidth)
-                rect.set_edgecolors('k')
-                ax.add_collection3d(rect)
-
-            if equiv:
-                for p in range(len(self.equivpatch)): 
-                    ncorners = len(self.equivpatch[0])                                                                
-                    x = []                                                                                       
-                    y = []
-                    z = []
-                    for i in range(ncorners):                                                                    
-                        if ref is 'utm':
-                            x.append(self.equivpatch[p][i][0])                                                        
-                            y.append(self.equivpatch[p][i][1])                                                        
-                            z.append(-1.0*self.equivpatch[p][i][2])                                                   
-                        else: 
-                            x.append(self.equivpatchll[p][i][0])                                                      
-                            y.append(self.equivpatchll[p][i][1])                                                      
-                            z.append(-1.0*self.equivpatchll[p][i][2])
-                    verts = [zip(x, y, z)]
-                    rect = art3d.Poly3DCollection(verts)                                                         
-                    rect.set_color(scalarMap.to_rgba(plotval[p]))
-                    rect.set_edgecolors('r')                                                                     
-                    ax.add_collection3d(rect)               
-
-            # put up a colorbar        
-            scalarMap.set_array(plotval)
-            plt.colorbar(scalarMap)
-
-        # Depth
-        if maxdepth is not None:
-            ax.set_zlim3d([-1.0*maxdepth, 0])
-
-        # Store it 
-        self.ax = ax
+        # Draw the fault
+        fig.faultpatches(self, slip=slip, Norm=Norm, colorbar=True, plot_on_2d=plot_on_2d)
 
         # show
         if show:
-            plt.show()
+            showFig = ['fault']
+            if plot_on_2d:
+                showFig.append('map')
+            fig.show(showFig=showFig)
 
         # All done
         return

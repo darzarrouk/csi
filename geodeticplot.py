@@ -41,6 +41,12 @@ class geodeticplot(object):
                lonmin += 360.
                lonmax += 360.
 
+        # Save 
+        self.lonmin = lonmin
+        self.lonmax = lonmax
+        self.latmin = latmin
+        self.latmax = latmax
+
         # Open a figure
         fig1 = plt.figure(figure, figsize=figSize[0])
         faille = fig1.add_subplot(111, projection='3d')
@@ -69,9 +75,15 @@ class geodeticplot(object):
         # All done
         return
 
-    def show(self, mapaxis=None, triDaxis='auto', showFig=['fault', 'map']):
+    def show(self, mapaxis=None, triDaxis=None, showFig=['fault', 'map'], fitOnBox=True):
         '''
         Show to screen
+        Args:
+            * mapaxis   : Specify the axis type for the map (see matplotlib)
+            * triDaxis  : Specify the axis type for the 3D projection (see mpl_toolkits)
+            * showFig   : List of plots to show on screen ('fault' and/or 'map')
+            * fitOnBox  : If True, fits the horizontal axis to the one asked at initialization 
+                          even if data fall outside the box.
         '''
 
         # Change axis of the map
@@ -81,6 +93,13 @@ class geodeticplot(object):
         # Change the axis of the 3d projection
         if triDaxis is not None:
             self.faille.axis(triDaxis)
+
+        # Fits the horizontal axis to the asked values
+        if fitOnBox:
+            self.carte.ax.set_xlim([self.lonmin, self.lonmax])
+            self.carte.ax.set_ylim([self.latmin, self.latmax])
+            self.faille.set_xlim(self.carte.ax.get_xlim())
+            self.faille.set_ylim(self.carte.ax.get_ylim())
 
         # Delete figures
         if 'map' not in showFig:
@@ -238,12 +257,13 @@ class geodeticplot(object):
                 self.faille.add_collection3d(cote)
 
         # Draw parallels 
-        lmin = np.floor(self.carte.latmin)-1.
-        lmax = np.floor(self.carte.latmax)+1. 
+        lmin = self.carte.latmin
+        lmax = self.carte.latmax 
         if type(parallels) is int:
-            parallels = np.linspace(lmin, lmax, parallels)
+            parallels = np.linspace(lmin, lmax, parallels+1)
         elif type(parallels) is float:
-            parallels = np.arange(lmin, lmax, parallels)
+            parallels = np.arange(lmin, lmax+parallels, parallels)
+        parallels = np.round(parallels, decimals=2)
         parDir = self.carte.drawparallels(parallels, labels=[0,1,0,0], linewidth=0.4, color='gray', zorder=0)
         if drawOnFault and parDir!={}:
             segments = []
@@ -260,12 +280,13 @@ class geodeticplot(object):
             self.faille.add_collection3d(parallel)
 
         # Draw meridians
-        lmin = np.floor(self.carte.lonmin)-1.
-        lmax = np.floor(self.carte.lonmax)+1.
+        lmin = self.carte.lonmin
+        lmax = self.carte.lonmax
         if type(meridians) is int:
-            meridians = np.linspace(lmin, lmax, meridians)
+            meridians = np.linspace(lmin, lmax, meridians+1)
         elif type(meridians) is float:
-            meridians = np.arange(lmin, lmax, meridians)
+            meridians = np.arange(lmin, lmax+meridians, meridians)
+        meridians = np.round(meridians, decimals=2)
         merDir = self.carte.drawmeridians(meridians, labels=[0,0,1,0], linewidth=0.4, color='gray', zorder=0)
         if drawOnFault and merDir!={}:
             segments = []

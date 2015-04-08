@@ -1617,30 +1617,44 @@ class TriangularPatches(Fault):
         # All done
         return
 
-    def plot(self, ref='utm', figure=134, add=False, value_to_plot='total', revmap=False):
+    def plot(self, figure=134, slip='total', equiv=False, show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
+            drawCoastlines=True, expand=0.2):
         '''
         Plot the available elements of the fault.
-
+        
         Args:
             * ref           : Referential for the plot ('utm' or 'lonlat').
             * figure        : Number of the figure.
         '''
 
+        # Get lons lats
+        lon = np.unique([p[:,0] for p in self.patchll])
+        lon[lon<0.] += 360.
+        lat = np.unique([p[:,1] for p in self.patchll])
+        lonmin = lon.min()-expand
+        lonmax = lon.max()+expand
+        latmin = lat.min()-expand
+        latmax = lat.max()+expand
+
         # Create a figure
-        fig = geoplot(figure=figure, ref=ref)
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
 
-        # Plot fault trace
-        fig.faulttrace(self,  add=add)
+        # Draw the coastlines
+        if drawCoastlines:
+            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
 
-        # Plot the fault 
-        fig.faultpatches(self, slip=value_to_plot, revmap=revmap)
+        # Draw the fault
+        fig.faultpatches(self, slip=slip, Norm=Norm, colorbar=True, plot_on_2d=plot_on_2d)
 
-        # Show the thing
-        fig.show(showFig=['fault'], triDaxis=None)
+        # show
+        if show:
+            showFig = ['fault']
+            if plot_on_2d:
+                showFig.append('map')
+            fig.show(showFig=showFig)
 
         # All done
         return
-
 
     def plotMayavi(self, neg_depth=True, value_to_plot='total', colormap='jet',
                    reverseSign=False):

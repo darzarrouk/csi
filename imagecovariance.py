@@ -505,7 +505,8 @@ class imagecovariance(object):
         if plotData:
             plt.figure(figure+1)
             plt.clf()
-            self.image.plot(show=False, figure=figure+1, ref='lonlat')
+            plt.ion()
+            self.image.plot(figure=figure+1)
             if savefig:
                 figname = 'Data_{}.png'.format(self.name.replace(' ','_'))
                 plt.savefig(figname)
@@ -577,6 +578,7 @@ class imagecovariance(object):
             plt.savefig(figname)
 
         # Show me
+        plt.ioff()
         plt.show()
 
         # All done

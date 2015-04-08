@@ -1367,7 +1367,7 @@ class cosicorrrates(SourceInv):
 
         # All done  
 
-    def plot(self, ref='utm', faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='total', show=True):
+    def plot(self, faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='total', show=True, drawCoastlines=True, expand=0.2):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -1380,102 +1380,47 @@ class cosicorrrates(SourceInv):
             * data      : can be 'total', 'east', 'north', 'synth_east', synth_north'
         '''
 
-        # select data to plt
-        if data is 'total':
-            z = np.sqrt(self.east**2 + self.north**2)
-        elif data is 'east':
-            z = self.east
-        elif data is 'north':
-            z = self.north
-        elif data is 'synth_east':
-            z = self.err_east
-        elif data is 'synth_north':
-            z = self.err_north
+        # Get lons lats
+        lonmin = self.lon.min()-expand
+        if lonmin<0.:
+            lonmin += 360.
+        lonmax = self.lon.max()+expand
+        if lonmax<0.:
+            lonmax += 360.
+        latmin = self.lat.min()-expand
+        latmax = self.lat.max()+expand
 
-        # Create the figure
-        fig = plt.figure(figure)
-        ax = fig.add_subplot(111)
+        # Create a figure
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
 
-        # Set the axes
-        if ref is 'utm':
-            ax.set_xlabel('Easting (km)')
-            ax.set_ylabel('Northing (km)')
-        else:
-            ax.set_xlabel('Longitude')
-            ax.set_ylabel('Latitude')
+        # Draw the coastlines
+        if drawCoastlines:
+            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
 
-        # Plot the surface fault trace if asked
+        # Plot the fault trace if asked
         if faults is not None:
-            if faults.__class__ is not list:
-                faults = [faults] 
+            if type(faults) is not list:
+                faults = [faults]
             for fault in faults:
-                if ref is 'utm':
-                    ax.plot(fault.xf, fault.yf, '-b')
-                else:
-                    ax.plot(fault.lon, fault.lat, '-b')
-        
-        # Plot the gps if asked
+                fig.faulttrace(fault)
+
+        # Plot the gps data if asked
         if gps is not None:
+            if type(gps) is not list:
+                gps = [gps]
             for g in gps:
-                if ref is 'utm':
-                        ax.quiver(g.x, g.y, g.vel_enu[:,0], g.vel_enu[:,1])
-                else:
-                        ax.quiver(g.lon, g.lat, g.vel_enu[:,0], g.vel_enu[:,1])
+                fig.gpsvelocities(g)
 
-        # Norm 
-        if norm is None:
-            vmin = np.nanmin(z)
-            vmax = np.nanmax(z)
-        else:
-            vmin = norm[0]
-            vmax = norm[1]
+        # Plot the decimation process, if asked
+        if decim:
+            fig.cosicorr(self, norm=norm, colorbar=False, data=data, plotType='decimate')
 
-        # prepare a color map for insar
-        import matplotlib.colors as colors
-        import matplotlib.cm as cmx
-        cmap = plt.get_cmap('jet')
-        cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
-        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+        # Plot the data
+        fig.cosicorr(self, norm=norm, colorbar=True, data=data, plotType='scatter')
 
-        # Plot the decimation process
-        if decim and (ref is 'utm'):
-            import matplotlib.collections as colls
-            for i in range(self.xycorner.shape[0]):
-                x = []
-                y = []
-                # upper left
-                x.append(self.xycorner[i,0])
-                y.append(self.xycorner[i,1])
-                # upper right
-                x.append(self.xycorner[i,2])
-                y.append(self.xycorner[i,1])
-                # down right
-                x.append(self.xycorner[i,2])
-                y.append(self.xycorner[i,3])
-                # down left
-                x.append(self.xycorner[i,0])
-                y.append(self.xycorner[i,3])
-                verts = [zip(x, y)]
-                rect = colls.PolyCollection(verts)
-                rect.set_color(scalarMap.to_rgba(z[i]))
-                rect.set_edgecolors('k')
-                ax.add_collection(rect)
+        # Show
+        fig.show(showFig=['map'])
 
-        # Plot the insar
-        if not decim:
-            if ref is 'utm':
-                ax.scatter(self.x, self.y, s=10, c=z, cmap=cmap, vmin=vmin, 
-                        vmax=vmax, linewidths=0.)
-            else:
-                ax.scatter(self.lon, self.lat, s=10, c=z, cmap=cmap, vmin=vmin, 
-                        vmax=vmax, linewidths=0.)
-
-        # Colorbar
-        scalarMap.set_array(z[np.isfinite(z)])
-        plt.colorbar(scalarMap)
-
-        # Axis
-        plt.axis(axis)
 
         # Show
         if show:

@@ -2282,7 +2282,7 @@ class gpsrates(SourceInv):
         # all done
         return
 
-    def plot(self, ref='utm', faults=None, figure=135, name=False, legendscale=10., scale=None, plot_los=False):
+    def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, plot_los=False, drawCoastlines=True, expand=0.2, show=True, data=('data')):
         '''
         Args:
             * ref       : can be 'utm' or 'lonlat'.
@@ -2290,11 +2290,24 @@ class gpsrates(SourceInv):
             * faults    : List of fault objects to plot the surface trace of a fault object (see verticalfault.py).
             * plot_los  : Plot the los projected gps as scatter points
         '''
+        # Get lons lats
+        lonmin = self.lon.min()-expand
+        if lonmin<0.:
+            lonmin += 360.
+        lonmax = self.lon.max()+expand
+        if lonmax<0.:
+            lonmax += 360.
+        latmin = self.lat.min()-expand
+        latmax = self.lat.max()+expand
 
         # Create a figure
-        fig = geoplot(figure=figure, ref=ref)
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
 
-        # Plot faults
+        # Draw the coastlines
+        if drawCoastlines:
+            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
+
+        # Plot the fault trace if asked
         if faults is not None:
             if type(faults) is not list:
                 faults = [faults]
@@ -2309,7 +2322,8 @@ class gpsrates(SourceInv):
         fig.gpsvelocities(self, name=name, legendscale=legendscale, scale=scale)
 
         # Show
-        fig.show(showFig=['map'])
+        if show:
+            fig.show(showFig=['map'])
 
         # All done
         return
