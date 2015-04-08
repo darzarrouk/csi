@@ -25,7 +25,7 @@ from .SourceInv import SourceInv
 class geodeticplot(object):
 
     def __init__(self, figure=130, pbaspect=None, 
-                 projection='cyl',
+                 projection='merc',
                  lonmin=None, latmin=None, lonmax=None, latmax=None,
                  resolution='i',
                  figSize=[None,None]):
@@ -221,7 +221,7 @@ class geodeticplot(object):
         return
 
     def drawCoastlines(self, color='k', linewidth=1.0, linestyle='solid', 
-            resolution='i', drawLand=True, 
+            resolution='i', drawLand=True, drawMapScale=None, 
             parallels=4, meridians=4, drawOnFault=True):
         '''
         Draws the coast lines in the desired area.
@@ -232,6 +232,7 @@ class geodeticplot(object):
             * resolution    : Resolution of the coastline. 
                               Can be c (crude), l (low), i (intermediate), h (high), f (full)
             * drawLand      : Fill the continents (True/False)
+            * drawMapScale  : Draw a map scale (None or length in km)
             * parallels     : If int -> Number of parallels 
                               If float -> spacing in degrees between paralles
                               If np.array -> array of parallels
@@ -242,6 +243,18 @@ class geodeticplot(object):
         # Draw landmask
         if drawLand:
             continents = self.carte.fillcontinents(color='0.9', zorder=0)
+
+        # MapScale
+        if drawMapScale is not None:
+            lon = self.lonmin + (self.lonmax-self.lonmin)/6.
+            lat = self.latmin + (self.latmax-self.latmin)/6.
+            try:
+                self.carte.drawmapscale(lon, lat, 
+                                        self.lonmin + (self.lonmax-self.lonmin)/2., 
+                                        self.latmin + (self.latmax-self.latmin)/2., 
+                                        drawMapScale, units='km', barstyle='simple')
+            except:
+                print('Map Scale cannot be plotted with this projection')
 
         # Draw and get the line object
         coasts = self.carte.drawcoastlines(color=color, linewidth=linewidth, linestyle=linestyle, zorder=1)
@@ -439,7 +452,7 @@ class geodeticplot(object):
         return 
 
     def faultTents(self, fault, slip='strikeslip', Norm=None, colorbar=True, method='surface',
-            plot_on_2d=False, revmap=False, factor=1.0, npoints=50, xystrides=[100, 100]):
+            plot_on_2d=False, revmap=False, factor=1.0, npoints=10, xystrides=[100, 100]):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -496,8 +509,8 @@ class geodeticplot(object):
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
         # Get the variables we need
-        vertices = fault.Vertices_ll.tolist()
-        patches = fault.patchll
+        vertices = fault.Vertices.tolist()
+        patches = fault.patch
         faces = fault.Faces
 
         # Plot the triangles
@@ -515,9 +528,13 @@ class geodeticplot(object):
         # Plot the color for slip
         # 1. Get the subpoints for each triangle
         from .EDKS import dropSourcesInPatches as Patches2Sources
-        fault.sourceNumber = npoints
-        Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(fault, verbose=False)
-        fault.plotSources = [Ids, xs, ys, zs, strike, dip, Areas]
+        if hasattr(fault, 'plotSources'):
+            if fault.sourceNumber==npoints:
+                print('Using precomputed sources for plotting')
+        else:
+            fault.sourceNumber = npoints
+            Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(fault, verbose=False)
+            fault.plotSources = [Ids, xs, ys, zs, strike, dip, Areas]
 
         # Get them
         Ids = fault.plotSources[0]
@@ -560,7 +577,9 @@ class geodeticplot(object):
                 for j in range(x.shape[1]):
                     cols[i,j] = scalarMap.to_rgba(slip[i,j])
 
-            self.faille.plot_surface(x, y, -1.0*z, facecolors=cols, rstride=1, cstride=1, antialiased=True, linewidth=0)
+            lon, lat = fault.xy2ll(x, y)
+            lon[lon<0.] += 360.
+            self.faille.plot_surface(lon, lat, -1.0*z, facecolors=cols, rstride=1, cstride=1, antialiased=True, linewidth=0)
 
             # Color Bar
             if colorbar:
@@ -568,8 +587,10 @@ class geodeticplot(object):
                 self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
 
         elif method is 'scatter':
-            # Do the scatter plot
-            cb = self.faille.scatter(X, Y, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0)
+            # Do the scatter ploto
+            lon, lat = fault.xy2ll(X, Y)
+            lon[lon<0.] += 360.
+            cb = self.faille.scatter3D(lon, lat, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0)
 
             # put up a colorbar
             if colorbar:
