@@ -25,7 +25,7 @@ from .SourceInv import SourceInv
 class geodeticplot(object):
 
     def __init__(self, figure=130, pbaspect=None, 
-                 projection='merc',
+                 projection='cyl',
                  lonmin=None, latmin=None, lonmax=None, latmax=None,
                  resolution='i',
                  figSize=[None,None]):
@@ -985,12 +985,13 @@ class geodeticplot(object):
                 rect = colls.PolyCollection([verts])
                 rect.set_color(scalarMap.to_rgba(disp))
                 rect.set_edgecolors('k')
+                rect.set_zorder(2)
                 self.carte.ax.add_collection(rect)
 
         elif plotType is 'scatter':
             lon = insar.lon; lon[lon<0.] += 360.
             lat = insar.lat
-            sc = self.carte.scatter(lon[::decim], lat[::decim], s=30, c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0)
+            sc = self.carte.scatter(lon[::decim], lat[::decim], s=30, c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=2)
 
         else:
             print('Unknown plot type: {}'.format(plotType))
