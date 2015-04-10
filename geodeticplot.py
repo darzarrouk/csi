@@ -510,12 +510,13 @@ class geodeticplot(object):
 
         # Get the variables we need
         vertices = fault.Vertices.tolist()
+        vertices_ll = fault.Vertices_ll.tolist()
         patches = fault.patch
         faces = fault.Faces
 
         # Plot the triangles
         for face in faces:
-            verts = [vertices[f] for f in face]
+            verts = [vertices_ll[f] for f in face]
             x = [v[0] for v in verts]
             y = [v[1] for v in verts]
             z = [-1.0*v[2] for v in verts]

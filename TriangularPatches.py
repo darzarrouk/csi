@@ -1051,7 +1051,7 @@ class TriangularPatches(Fault):
         return
 
 
-    def buildLaplacian(self, extra_params=None, verbose=True):
+    def buildLaplacian(self, verbose=True):
         """
         Build a discrete Laplacian smoothing matrix.
         """

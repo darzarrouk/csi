@@ -677,16 +677,92 @@ class TriangularTents(TriangularPatches):
             print('\n')
         return
 
-    def buildLaplacian(self, extra_params=None, verbose=True):
+    def buildTentAdjacencyMap(self, verbose=True):
+        '''
+        For each triangle vertex, finds the indices of the surrounding vertices.
+        This function runs typically after buildAdjacencyMap.
+        '''
+
+        if verbose:
+            print("-----------------------------------------------")
+            print("-----------------------------------------------")
+            print("Finding the adjacent vertices for all vertices.")
+
+        # Check adjacency Map
+        if not hasattr(self, 'adjacencyMap'):
+            self.buildAdjacencyMap(verbose=verbose)
+
+        # Cache adjacencyMap
+        adjacency = self.adjacencyMap 
+        faces = self.Faces
+
+        # Create empty lists
+        adjacentTents = []
+
+        # Iterate over adjacency map
+        for adj, iVert in zip(adjacency, range(len(adjacency))):
+            # Create a list for that tent
+            tent = []
+            # Iterate over the surrounding triangles
+            for iTriangle in adj:
+                face = faces[iTriangle]
+                face = face[face!=iVert]
+                tent.append(face)
+            # Clean up tent
+            tent = np.unique(np.concatenate(tent)).tolist()
+            # Append
+            adjacentTents.append(tent)
+
+        # Save
+        self.adjacentTents = adjacentTents
+
+        # All don
+        return
+
+    def buildLaplacian(self, verbose=True, method='distance'):
         """
         Build a discrete Laplacian smoothing matrix.
+        Args:
+            * verbose       : if True, displays stuff.
+            * method        : Method to estimate the Laplacian operator
+                'count'     --> The diagonal is the number of surrounding nodes.
+                                Off diagonals are -1 for the surrounding nodes, 0 otherwise.
+
+                'distance'  --> Computes the scale-dependent operator based on Desbrun et al 1999.
+                                
+                                Mathieu Desbrun, Mark Meyer, Peter Schr\"oder, and Alan Barr, 1999. 
+                                Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow,  
+                                Proceedings of SIGGRAPH.
         """
-        
-        # No Laplacian method implemented so far
-        raise NotImplementedError('Laplacian method not implemented for class {}'.format(self.__class__))
+ 
+        # Build the tent adjacency map
+        self.buildTentAdjacencyMap(verbose=verbose)
+
+        # Get the vertices
+        vertices = self.Vertices
+
+        # Allocate an array
+        D = np.zeros((len(vertices), len(vertices)))
+
+        # Iterate over the vertices
+        for adja, i in zip(self.adjacentTents, range(len(vertices))):
+            
+            if method=='count':
+
+                D[i,i] = float(len(adj))
+                D[i,adja] = -1.
+
+            elif method=='distance':
+
+                x0, y0, z0 = vertices[i,0], vertices[i,1], vertices[i,2]
+                xv, yv, zv = vertices[adja,0], vertices[adja,1], vertices[adja,2]
+                distances = np.array([np.sqrt((x-x0)**2+(y-y0)**2+(z-z0)**2) for x, y, z in zip(xv, yv, zv)])
+                E = np.sum(distances)
+                D[i,i] = 2./E * np.sum(1./distances)
+                D[i,adja] = -2./E * 1./distances
 
         # All done
-        return 
+        return D
 
     def getEllipse(self, tent, ellipseCenter=None, Npoints=10, factor=1.0):
         '''
@@ -914,8 +990,10 @@ class TriangularTents(TriangularPatches):
         # all done
         return dis
 
-    def plot(self, figure=134, slip='total', equiv=False, show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
-            drawCoastlines=True, expand=0.2):
+    def plot(self, figure=134, slip='total', equiv=False, 
+             show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
+             method='scatter', npoints=10,
+             drawCoastlines=True, expand=0.2):
         '''
         Plot the available elements of the fault.
         
@@ -941,7 +1019,9 @@ class TriangularTents(TriangularPatches):
             fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
 
         # Draw the fault
-        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=True, plot_on_2d=plot_on_2d, npoints=40)
+        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=True, 
+                plot_on_2d=plot_on_2d, npoints=npoints,
+                method=method)
 
         # show
         if show:
