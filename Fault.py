@@ -791,6 +791,71 @@ class Fault(SourceInv):
         # All done
         return G
 
+    def writePointSources2Pickle(self, filename):
+        '''
+        Writes the point sources to a file.
+        Always writes the Facet based point sources.
+        Args:
+            * filename      : Name of the pickle file.
+        '''
+
+        # Import
+        try:
+            import pickle
+        except:
+            print('Needs the pickle module...')
+            return
+
+        # Assert
+        assert hasattr(self, 'edksSources'), 'Need to compute sources'
+
+        # Get the right source
+        if len(self.edksSources)>7:
+            edksSources = self.edksFacetSources
+        else:
+            edksSources = self.edksSources
+
+        # Open file
+        fout = open(filename, 'wb')
+
+        # Save
+        pickle.dump(edksSources, fout)
+
+        # Close 
+        fout.close()
+
+        # All done
+        return
+
+    def readPointSourcesFromPickle(self, filename):
+        '''
+        Reads the point sources for computing Green's functions with EDKS.
+        Args:
+            * filename      : Name of the pickle file
+        '''
+
+        # Import
+        try:
+            import pickle
+        except:
+            print('Needs the pickle module...')
+            return
+
+        # Create lists, clean lists
+        if hasattr(self, 'edksFacetSources'):
+            del self.edksFacetSources
+
+        # Read the whole file
+        fin = open(filename, 'rb')
+        sources = pickle.load(fin)
+        fin.close()
+
+        # Store 
+        self.edksSources = sources
+
+        # All done
+        return
+
     def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True):
         '''
         Builds the Green's functions based on the solution by Zhao & Rivera 2002.
