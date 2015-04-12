@@ -83,6 +83,20 @@ class Fault(SourceInv):
         # All done
         return
 
+    def initializeEmptyFault(self):
+        '''
+        Creates a fault with no patches.
+        '''
+
+        # Initialize
+        self.patch = []
+        self.patchll = []
+        self.N_slip = 0
+        self.initializeslip()
+
+        # All done
+        return
+
     def duplicateFault(self):
         '''
         Returns a copy of the fault.
@@ -1587,7 +1601,7 @@ class Fault(SourceInv):
         # all done
         return
 
-    def buildCmLaplacian(self, lam, extra_params=None, sensitivity=True):
+    def buildCmLaplacian(self, lam, extra_params=None, sensitivity=True, method='distance'):
         '''
         Implements the Laplacian smoothing with sensitivity (optional)
         Description can be found in F. Ortega-Culaciati's PhD thesis.
@@ -1617,7 +1631,7 @@ class Fault(SourceInv):
         Cm = np.zeros((Np, Np))
 
         # Build the laplacian
-        D = self.buildLaplacian(verbose=True)
+        D = self.buildLaplacian(verbose=True, method=method)
 
         Sensitivity = {}
 
@@ -1640,8 +1654,8 @@ class Fault(SourceInv):
                 D = D*iS[:,np.newaxis]
 
             # Cm
-            DtD = np.dot(D.T, D)
-            localCm = 1./lam[i]*np.linalg.inv(DtD)
+            D2 = np.dot(D.T, D)
+            localCm = 1./lam[i]*np.linalg.pinv(D2)
 
             # Put it into Cm
             Cm[ist:ied, ist:ied] = localCm

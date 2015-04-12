@@ -698,10 +698,12 @@ class geodeticplot(object):
         '''
 
         # Assert
-        if (type(data) is not tuple) and (type(data) is str):
-            data = (data)
-        if (type(color) is not tuple):
-            color = (color)
+        if (type(data) is not list) and (type(data) is str):
+            data = [data]
+        if (type(color) is not list):
+            color = [color]
+        if len(color)==1 and len(data)>1:
+            color = [color[0] for d in data]
 
         # Get lon lat
         lon = gps.lon
@@ -733,8 +735,8 @@ class geodeticplot(object):
         # Plot these
         for dName in Data:
             values = Data[dName]['Values']
-            color = Data[dName]['Color']
-            p = self.carte.quiver(lon, lat, values[:,0], values[:,1], width=0.005, color=color, scale=scale, linewidths=linewidths, zorder=2)
+            c = Data[dName]['Color']
+            p = self.carte.quiver(lon, lat, values[:,0], values[:,1], width=0.005, color=c, scale=scale, linewidths=linewidths, zorder=2)
 
         # Plot Legend
         q = plt.quiverkey(p, 0.1, 0.1, legendscale, '{}'.format(legendscale), coordinates='axes', color='k', zorder=10)

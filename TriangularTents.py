@@ -749,7 +749,7 @@ class TriangularTents(TriangularPatches):
             
             if method=='count':
 
-                D[i,i] = float(len(adj))
+                D[i,i] = float(len(adja))
                 D[i,adja] = -1.
 
             elif method=='distance':
@@ -760,6 +760,12 @@ class TriangularTents(TriangularPatches):
                 E = np.sum(distances)
                 D[i,i] = 2./E * np.sum(1./distances)
                 D[i,adja] = -2./E * 1./distances
+
+        # Condition
+        if np.linalg.eigvals(D).min() < 0.:
+            S, V = np.linalg.eig(D)
+            S[S<0.] = 0.
+            D = np.dot(np.dot(V.T, np.diag(S)), V)
 
         # All done
         return D

@@ -155,7 +155,7 @@ class multifaultsolve(object):
         '''
 
         # Prepare the table
-        print('          Fault Name          ||   Strike Slip   ||   Dip Slip   ||   Tensile   ||   Coupling   ||  Orbits   ')
+        print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format('Fault Name', 'Strike Slip', 'Dip Slip', 'Tensile', 'Coupling', 'Extra Parms'))
 
         # initialize the counters
         ns = 0
@@ -180,19 +180,19 @@ class multifaultsolve(object):
             # Conditions on slip
             if 's' in fault.slipdir:
                 ne += fault.slip.shape[0]
-                ss = '{} - {}'.format(ns,ne)
+                ss = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
                 ns += fault.slip.shape[0]
             if 'd' in fault.slipdir:
                 ne += fault.slip.shape[0]
-                ds = '{} - {}'.format(ns, ne)
+                ds = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
                 ns += fault.slip.shape[0]
             if 't' in fault.slipdir:
                 ne += fault.slip.shape[0]
-                ts = '{} - {}'.format(ns, ne)
+                ts = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
                 ns += fault.slip.shape[0]
             if 'c' in fault.slipdir:
                 ne += fault.slip.shape[0]
-                cp = '{} - {}'.format(ns, ne)
+                cp = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
                 ns += fault.slip.shape[0]
 
             # How many slip parameters
@@ -204,13 +204,13 @@ class multifaultsolve(object):
             no = fault.Gassembled.shape[1] - np
             if no>0:
                 ne += no
-                op = '{} - {}'.format(ns, ne)
+                op = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
                 ns += no
             else:
                 op = 'None'
 
             # print things
-            print('{:30s}||{:17s}||{:14s}||{:13s}||{:13s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
+            print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
 
             # Store details
             self.paramDescription[fault.name] = {}
@@ -667,11 +667,11 @@ class multifaultsolve(object):
         else:
             print("Performing constrained minimzation")
             options = {'disp': True, 'maxiter': iterations}
-            if tolerance is not None:
-                options['ftol'] = tolerance
+            #if tolerance is not None:
+            #    options['ftol'] = tolerance
             res = minimize(costFunction, mprior, args=(G,d,iCd,iCm,mprior),
                            constraints=constraints, method=method, bounds=bounds,
-                           options=options)
+                           options=options, tol=tolerance)
             m = res.x
 
         # Store result

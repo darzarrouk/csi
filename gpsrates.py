@@ -2282,7 +2282,9 @@ class gpsrates(SourceInv):
         # all done
         return
 
-    def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, plot_los=False, drawCoastlines=True, expand=0.2, show=True, data=('data')):
+    def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, 
+            plot_los=False, drawCoastlines=True, expand=0.2, show=True, 
+            data=['data'], color=['k']):
         '''
         Args:
             * ref       : can be 'utm' or 'lonlat'.
@@ -2319,7 +2321,7 @@ class gpsrates(SourceInv):
             fig.gps_projected(self, colorbar=True)
 
         # Plot GPS velocities
-        fig.gpsvelocities(self, name=name, legendscale=legendscale, scale=scale)
+        fig.gpsvelocities(self, data=data, name=name, legendscale=legendscale, scale=scale, color=color)
 
         # Show
         if show:
