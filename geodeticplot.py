@@ -743,24 +743,61 @@ class geodeticplot(object):
 
         # Plot the name of the stations if asked
         if name:
+            font = {'family' : 'serif',
+                    'color'  : 'k',
+                    'weight' : 'normal',
+                    'size'   : 15}
             for lo, la, sta in zip(lon.tolist(), lat.tolist(), gps.station):
-                self.carte.ax.text(lo, la, sta, fontsize=12)
+                self.carte.ax.text(lo, la, sta, fontdict=font)
 
         # All done
         return
 
-    def gpsverticals(self, gps, norm=None, colorbar=True, markersize=20.):
+    def gpsverticals(self, gps, norm=None, colorbar=True, data=['data'], markersize=[10], linewidth=0.1):
         '''
         Scatter plot of the vertical displacement of the GPS.
         '''
 
-        # Get xy
-        x = gps.lon
-        x[x<0.] += 360.
-        y = gps.lat
+        # Assert
+        if (type(data) is not list) and (type(data) is str):
+            data = [data]
+        if (type(markersize) is not list):
+            markersize = [markersize]
+        if len(markersize)==1 and len(data)>1:
+            markersize = [markersize[0] for d in data]
 
-        # Get the verticals
-        V = gps.vel_enu[:,2]
+        # Get lon lat
+        lon = gps.lon
+        lat = gps.lat
+        lon[lon<0.] += 360.
+
+        # Initiate
+        vmin = 999999999.
+        vmax = -999999999.
+
+        # Make the dictionary of the things to plot
+        Data = {}
+        for dtype,mark in zip(data, markersize):
+            if dtype is 'data':
+                dName = '{} Data'.format(gps.name)
+                Values = gps.vel_enu[:,2]
+            elif dtype is 'synth':
+                dName = '{} Synth.'.format(gps.name)
+                Values = gps.synth[:,2]
+            elif dtype is 'res':
+                dName = '{} Res.'.format(gps.name)
+                Values = gps.vel_enu[:,2] - gps.synth[:,2] 
+            elif dtype is 'strain':
+                dName = '{} Strain'.format(gps.name)
+                Values = gps.Strain[:,2]
+            elif dtype is 'transformation':
+                dName = '{} Trans.'.format(gps.name)
+                Values = gps.transformation[:,2]
+            Data[dName] = {}
+            Data[dName]['Values'] = Values
+            Data[dName]['Markersize'] = mark
+            vmin = np.min([vmin, np.min(Values)])
+            vmax = np.max([vmax, np.max(Values)])
 
         # Get a colormap
         cmap = plt.get_cmap('jet')
@@ -769,12 +806,12 @@ class geodeticplot(object):
         if norm is not None:
             vmin = norm[0]
             vmax = norm[1]
-        else:
-            vmin = V.min()
-            vmax = V.max()
 
         # Plot that on the map
-        sc = self.carte.scatter(x, y, s=markersize, c=V, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.01)
+        for dName in Data:
+            mark = Data[dName]['Markersize']
+            V = Data[dName]['Values']
+            sc = self.carte.scatter(lon, lat, s=mark, c=V, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
 
         # Colorbar
         if colorbar:

@@ -1718,9 +1718,9 @@ class Fault(SourceInv):
                 iS = np.sqrt(1./S)
                 D = D*iS[:,np.newaxis]
 
-            # Cm
-            D2 = np.dot(D.T, D)
-            localCm = 1./lam[i]*np.linalg.pinv(D2)
+            # LocalCm
+            D2 = np.dot(D.T,D)
+            localCm = 1./lam[i]*np.linalg.inv(D2)
 
             # Put it into Cm
             Cm[ist:ied, ist:ied] = localCm

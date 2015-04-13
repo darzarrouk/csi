@@ -725,8 +725,8 @@ class TriangularTents(TriangularPatches):
         Args:
             * verbose       : if True, displays stuff.
             * method        : Method to estimate the Laplacian operator
-                'count'     --> The diagonal is the number of surrounding nodes.
-                                Off diagonals are -1 for the surrounding nodes, 0 otherwise.
+                'count'     --> The diagonal is 2-times the number of surrounding nodes.
+                                Off diagonals are -2/(number of surrounding nodes) for the surrounding nodes, 0 otherwise.
 
                 'distance'  --> Computes the scale-dependent operator based on Desbrun et al 1999.
                                 
@@ -744,28 +744,46 @@ class TriangularTents(TriangularPatches):
         # Allocate an array
         D = np.zeros((len(vertices), len(vertices)))
 
-        # Iterate over the vertices
-        for adja, i in zip(self.adjacentTents, range(len(vertices))):
-            
-            if method=='count':
-
-                D[i,i] = float(len(adja))
-                D[i,adja] = -1.
-
-            elif method=='distance':
-
+        # Normalize the distances
+        if method=='distance':
+            self.Distances = []
+            for adja, i in zip(self.adjacentTents, range(len(vertices))):
                 x0, y0, z0 = vertices[i,0], vertices[i,1], vertices[i,2]
-                xv, yv, zv = vertices[adja,0], vertices[adja,1], vertices[adja,2]
-                distances = np.array([np.sqrt((x-x0)**2+(y-y0)**2+(z-z0)**2) for x, y, z in zip(xv, yv, zv)])
+                xv, yv, zv = vertices[adja,0], vertices[adja,1], vertices[adja,2] 
+                distances = np.array([np.sqrt((x-x0)**2+(y-y0)**2+(z-z0)**2) 
+                    for x, y, z in zip(xv, yv, zv)])
+                self.Distances.append(distances)
+            normalizer = np.max([d.max() for d in self.Distances])
+
+        # Iterate over the vertices
+        i = 0
+        for adja in self.adjacentTents:
+            # Counting Laplacian
+            if method=='count':
+                D[i,i] = 2*float(len(adja))
+                D[i,adja] = -2./float(len(adja))
+            # Distance-based
+            elif method=='distance':
+                distances = self.Distances[i]/normalizer
                 E = np.sum(distances)
-                D[i,i] = 2./E * np.sum(1./distances)
+                D[i,i] = float(len(adja))*2./E * np.sum(1./distances)
                 D[i,adja] = -2./E * 1./distances
 
+            # Increment 
+            i += 1
+
         # Condition
-        if np.linalg.eigvals(D).min() < 0.:
-            S, V = np.linalg.eig(D)
-            S[S<0.] = 0.
-            D = np.dot(np.dot(V.T, np.diag(S)), V)
+        #S, V = np.linalg.eig(D) 
+        #uu = 0
+        #while S.min()<0.:
+        #    uu += 1
+        #    S[S<0.] = 0.
+        #    D = np.dot(np.dot(V.T, np.diag(S)), V)
+        #    S, V = np.linalg.eig(D)
+        #    if uu>100:
+        #        print('Laplacian cannot be conditioned easily.')
+        #        print('You will have to think about something smart...')
+        #        return D
 
         # All done
         return D

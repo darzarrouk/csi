@@ -1682,19 +1682,42 @@ class gpsrates(SourceInv):
         # All done
         return
 
-    def remove_euler_rotation(self, eradius=6378137.0):
+    def remove_euler_rotation(self, eradius=6378137.0, stations=None, verbose=True):
         '''
         Removes the best fit Euler rotation from the network.
         Args:
             * eradius   : Radius of the earth (should not change that much :-)).
+            * stations  : List of stations on which rotation is estimated. If None, 
+                          uses all the stations.
         '''
-
-        print ("Remove the best fot euler rotation in GPS data set {}".format(self.name))
+        if verbose:
+            print('--------------------------------------------------')
+            print('--------------------------------------------------')
+            print ("Remove the best fot euler rotation in GPS data set {}".format(self.name))
 
         import eulerPoleUtils as eu
 
+        # Get the list of stations
+        if stations is not None:
+            lon = []
+            lat = []
+            vel = []
+            for station in stations:
+                u = np.flatnonzero(self.station==station)
+                if len(u)>0:
+                    lon.append(self.lon[u[0]]*np.pi/180.)
+                    lat.append(self.lat[u[0]]*np.pi/180.)
+                    vel.append(self.vel_enu[u[0],:2]/self.factor)
+            lon = np.array(lon)
+            lat = np.array(lat)
+            vel = np.array(vel)
+        else:
+            lon = self.lon*np.pi/180.
+            lat = self.lat*np.pi/180.
+            vel = self.vel_enu[:,:2]/self.factor
+
         # Estimate the roation pole coordinates and the velocity
-        self.elat,self.elon,self.omega = eu.gps2euler(self.lat*np.pi/180., self.lon*np.pi/180., np.zeros(self.lon.shape), self.vel_enu[:,0]/self.factor, self.vel_enu[:,1]/self.factor)
+        self.elat,self.elon,self.omega = eu.gps2euler(lat, lon, np.zeros(lon.shape), vel[:,0], vel[:,1])
 
         # Remove the rotation
         self.remove_rotation(self.elon, self.elat, self.omega)
@@ -1825,8 +1848,8 @@ class gpsrates(SourceInv):
                     self.synth[:,1] += ss_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if ss_synth.size > 2*Nd and east and north:
-                        self.synth[:,2] += ss_synth[N:N+Nd]
+                    # if ss_synth.size > 2*Nd and east and north:
+                    self.synth[:,2] += ss_synth[N:N+Nd]
             if ('d' in direction) and ('dipslip' in G.keys()):
                 Gd = G['dipslip']
                 Sd = fault.slip[:,1]
@@ -1839,8 +1862,8 @@ class gpsrates(SourceInv):
                     self.synth[:,1] += ds_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if ds_synth.size > 2*Nd and east and north:
-                        self.synth[:,2] += ds_synth[N:N+Nd]
+                    #if ds_synth.size > 2*Nd and east and north:
+                    self.synth[:,2] += ds_synth[N:N+Nd]
             if ('t' in direction) and ('tensile' in G.keys()):
                 Gt = G['tensile']
                 St = fault.slip[:,2]
@@ -1853,22 +1876,22 @@ class gpsrates(SourceInv):
                     self.synth[:,1] += op_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if op_synth.size > 2*Nd and east and north:
-                        self.synth[:,2] += op_synth[N:N+Nd]
+                    #if op_synth.size > 2*Nd and east and north:
+                    self.synth[:,2] += op_synth[N:N+Nd]
             if ('c' in direction) and ('coupling' in G.keys()):
                 Gc = G['coupling']
                 Sc = fault.coupling
                 dc_synth = np.dot(Gc,Sc)
                 N = 0
                 if east:
-                    self.synth[:,0] += dc_synth[0:Nd]
+                    self.synth[:,0] += dc_synth[N:Nd]
                     N += Nd
                 if north:
                     self.synth[:,1] += dc_synth[N:N+Nd]
                     N += Nd
                 if vertical:
-                    if dc_synth.size > 2*Nd and east and north:
-                        self.synth[:,2] += dc_synth[N:N+Nd]
+                    #if dc_synth.size > 2*Nd and east and north:
+                    self.synth[:,2] += dc_synth[N:N+Nd]
 
             if poly == 'build' or poly == 'include':
                 if (self.name in fault.poly.keys()):

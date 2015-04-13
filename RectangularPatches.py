@@ -2978,7 +2978,7 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def buildLaplacian(self, verbose=False):
+    def buildLaplacian(self, verbose=False, method=None):
         """
         Build normalized Laplacian smoothing array.
         This routine is not designed for unevenly paved faults.
