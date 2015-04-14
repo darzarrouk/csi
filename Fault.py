@@ -954,7 +954,15 @@ class Fault(SourceInv):
                 slip = self.edksSources[7]
             # Else, we have to re-organize the Ids from facet to nodes
             else:
-                self.Facet2Nodes()
+                if hasattr(self, 'homogeneousStrike'):
+                    homS = self.homogeneousStrike
+                else:
+                    homS = False
+                if hasattr(self, 'homogeneousDip'):
+                    homD = self.homogeneousDip
+                else:
+                    homD = False
+                self.Facet2Nodes(homogeneousStrike=homS, homogeneousDip=homD)
                 Ids, xs, ys, zs, strike, dip, Areas, slip = self.edksSources
 
         # Informations

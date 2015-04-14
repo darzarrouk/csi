@@ -1,7 +1,8 @@
 '''
-A class that deal with downsampling the insar data.
+A class that deals with downsampling the insar data.
 
-Written by R. Jolivet, January 2014.
+Authors: R. Jolivet, January 2014.
+         R. Grandin, April 2015
 '''
 
 # Externals
@@ -342,6 +343,71 @@ class imagedownsampling(object):
 
         # all done
         return b1, b2, b3, b4
+
+    def distanceBased(self, chardist=15, expodist=1, plot=False, decimorig=10):
+        '''
+        Downsamples the dataset depending on the distance from the fault
+        R.Grandin, April 2015
+        Args:
+            * chardist      : Characteristic distance of downsampling.
+            * expodist      : Exponent of the distance-based downsampling criterion.
+            * damping       : Damping coefficient (damping is made through an identity matrix).   
+            * slipdirection : Which direction to accout for to build the slip Green's functions.
+        '''
+
+        if self.verbose:
+            print ("\r---------------------------------")
+            print ("---------------------------------")
+            print ("Distance-based downsampling ")
+           
+        # by default, try to do at least one pass 
+        do_downsamp=True
+        
+        # Iteration counter #
+        it=0
+        
+        # Loops until done
+        while do_downsamp:
+                        
+            # If some block has to be downsampled, "do_resamp" will be set back to "True"
+            do_downsamp=False
+        
+            # Check if block size is minimum
+            Bsize = self._is_minimum_size(self.blocks)
+            
+            # Iteration #
+            it += 1
+            if self.verbose: 
+                print('\r Iteration {}: Testing {} data samples \r'.format(it, len(self.blocks)))
+
+            # New list of blocks
+            newblocks = []
+            # Iterate over blocks
+            for j in range(len(self.blocks)):
+                block = self.blocks[j]
+                # downsample if the block is too large, given its distance to the fault
+                # ( except if the block already has minimum size )
+                if ((self.distToFault(block)-chardist)<self.blockSize(block) ** expodist) and not Bsize[j]:
+                    b1, b2, b3, b4 = self.cutblockinfour(block)
+                    newblocks.append(b1)
+                    newblocks.append(b2)
+                    newblocks.append(b3)
+                    newblocks.append(b4)
+                    do_downsamp=True
+                # otherwise, leave the block unchanged
+                else:
+                    newblocks.append(block)
+                
+            # Set the blocks
+            self.setBlocks(newblocks)
+            # Do the downsampling
+            self.downsample(plot=plot, decimorig=decimorig)
+
+        if self.verbose:
+            print(" ")
+
+        # All done
+        return
 
     def ResolutionBasedIterations(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum', decimorig=10, vertical=False):
         '''
@@ -809,4 +875,52 @@ class imagedownsampling(object):
 
         # All done
         return Bsize
+
+    def distToFault(self,block):
+        '''
+        Returns distance from block to fault.
+        The distance is here defined as the minimum distance
+        from any of the four block corners to the fault.
+        R.Grandin, April 2015
+        Args:
+            * block     : Block instance of the imagedownsampling class.
+        '''
+        
+        # Get the four corners
+        c1, c2, c3, c4 = block
+        x1, y1 = c1
+        x2, y2 = c2
+        x3, y3 = c3
+        x4, y4 = c4
+
+        # Compute the position of the center
+        xc = x1 + (x2 - x1)/2.
+        yc = y1 + (y4 - y1)/2.
+
+        # Faults
+        distMin=99999999.
+        for fault in self.faults:
+            distCorner1=np.min(np.hypot(fault.xf-x1,fault.yf-y1))
+            distCorner2=np.min(np.hypot(fault.xf-x2,fault.yf-y2))
+            distCorner3=np.min(np.hypot(fault.xf-x3,fault.yf-y3))
+            distCorner4=np.min(np.hypot(fault.xf-x4,fault.yf-y4))
+            distMin=np.min([distMin,distCorner1,distCorner2,distCorner3,distCorner4])
+        
+        # all done
+        return distMin
+        
+    def blockSize(self,block):
+        '''
+        Returns block size.
+        R.Grandin, April 2015
+        Args:
+            * block     : Block instance of the imagedownsampling class.
+        '''
+        
+        # compute the size
+        BlockSizeW = block[1][0] - block[0][0]
+        
+        # all done
+        return BlockSizeW
+
 #EOF

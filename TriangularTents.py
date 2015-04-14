@@ -122,16 +122,17 @@ class TriangularTents(TriangularPatches):
             u = self.getTentindex(tent)
 
         x, y, z = self.tent[u]
-        strike, dip = 0, 0
         nbr_faces = self.adjacencyMap[self.tentid[u]]
+        strike = []
+        dip = []
 
         for pid in nbr_faces:
             xc, yc, zc, w, l, stk, dp = self.getpatchgeometry(pid, center=True)
-            strike += stk
-            dip += dp
+            strike.append(stk)
+            dip.append(dp)
 
-        strike /= len(nbr_faces)
-        dip /= len(nbr_faces)
+        strike = (np.sum(strike))%(2*np.pi) / len(nbr_faces)
+        dip = np.mean(dip)
 
         # All done
         return x, y, z, strike, dip
@@ -576,9 +577,16 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-    def Facet2Nodes(self):
+    def Facet2Nodes(self, homogeneousStrike=False, homogeneousDip=False):
         '''
         Transfers the edksSources list into the node based setup.
+        Args:
+            * honogeneousStrike     : In a tent, the strike varies among the faces. This variation
+                                      can be a problem if the variation in strikes is too large, 
+                                      with slip that can partially cancel each other.
+                                      If True, the strike of each of the point is equal to the strike
+                                      of the main node of the tent.
+            * homogeneousDip        : Same thing for the dip angle.
         '''
     
         # Get the faces and Nodes
@@ -608,6 +616,10 @@ class TriangularTents(TriangularPatches):
 
         # Iterate on the nodes to derive the weights
         for mainNode in Nodes:
+            if homogeneousDip:
+                mainDip = self.getTentInfo(mainNode)[4]
+            if homogeneousStrike:
+                mainStrike = self.getTentInfo(mainNode)[3]
             # Loop over each of these triangles
             for tId in Nodes[mainNode]['idTriangles']:
                 # Find the sources in edksSources
@@ -628,10 +640,16 @@ class TriangularTents(TriangularPatches):
                 xs += self.edksSources[1][iS].tolist()
                 ys += self.edksSources[2][iS].tolist()
                 zs += self.edksSources[3][iS].tolist()
-                strike += self.edksSources[4][iS].tolist()
-                dip += self.edksSources[5][iS].tolist()
                 areas += self.edksSources[6][iS].tolist()
                 slip += Wi.tolist()
+                if homogeneousStrike:
+                    strike += (np.ones((len(iS),))*mainStrike).tolist()
+                else:
+                    strike += self.edksSources[4][iS].tolist()
+                if homogeneousDip:
+                    dip += (np.ones((len(iS),))*mainDip).tolist()
+                else:
+                    dip += self.edksSources[5][iS].tolist()
 
         # Set the new edksSources
         self.edksFacetSources = copy.deepcopy(self.edksSources)
