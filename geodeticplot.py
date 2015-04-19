@@ -728,6 +728,11 @@ class geodeticplot(object):
             elif dtype is 'transformation':
                 dName = '{} Trans.'.format(gps.name)
                 Values = gps.transformation
+#            else:
+#                print('dtype '+dtype+' not recognized')
+#                dName = '{} Data'.format(gps.name)
+#                print('set dName='+dName)
+#                Values = gps.vel_enu
             Data[dName] = {}
             Data[dName]['Values'] = Values
             Data[dName]['Color'] = col
@@ -884,8 +889,8 @@ class geodeticplot(object):
             cmap = None
 
         # Get lon lat
-        lon = earthquake.lon; lon[lon<0.] += 360.
-        lat = earthquake.lat
+        lon = earthquakes.lon; lon[lon<0.] += 360.
+        lat = earthquakes.lat
 
         # plot the earthquakes on the map if ask
         if '2d' in plot:
