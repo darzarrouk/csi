@@ -174,6 +174,8 @@ class Fault(SourceInv):
                 if len(tmpflt) > 0:
                     self.addfaults.append(np.array(tmpflt))
                 tmpflt = []
+            elif A.split()[0] is '#':  
+                pass # comment line, ignore
             else:
                 lon = float(A.split()[0])
                 lat = float(A.split()[1])
