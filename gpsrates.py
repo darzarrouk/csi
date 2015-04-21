@@ -38,6 +38,7 @@ class gpsrates(SourceInv):
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Initialize GPS array {}".format(self.name))
+        self.verbose = verbose
 
         # Initialize things
         self.vel_enu = None
@@ -172,6 +173,42 @@ class gpsrates(SourceInv):
 
         # all done
         return
+
+    def getSubNetwork(self, name, stations):
+        '''
+        Given a list of station names, returns the corresponding gpsrates object.
+        Args:
+            * name      : Name of the returned gps object
+            * stations  : List of station names.
+        '''
+        
+        # initialize lists
+        Lon = []
+        Lat = []
+        Vel = []
+        Err = []
+
+        # Get lon lat velocities and errors values for each stations
+        for station in stations:
+            assert station in self.station, 'Site {} not in {} GPS object'.format(station,
+                    gps.name)
+            Lon.append(self.lon[station==self.station])
+            Lat.append(self.lat[station==self.station])
+            Vel.append(self.getvelo(station))
+            Err.append(self.geterr(station))
+
+        # Create the object
+        gps = gpsrates(name, utmzone=self.utmzone, verbose=self.verbose)
+
+        # Set Stations
+        gps.setStat(stations, Lon, Lat)
+
+        # Set Velocity and Error
+        gps.vel_enu = np.array(Vel)
+        gps.err_enu = np.array(Err)
+
+        # all done
+        return gps
 
     def buildCd(self, direction='en'):
         '''
@@ -580,7 +617,8 @@ class gpsrates(SourceInv):
             * minerr    : if err=0, then err=minerr.
         '''
 
-        print ("Read data from file {} into data set {}".format(velfile, self.name))
+        if self.verbose:
+            print ("Read data from file {} into data set {}".format(velfile, self.name))
 
         # Keep the file
         self.velfile = velfile
@@ -645,8 +683,8 @@ class gpsrates(SourceInv):
             * factor    : multiplication factor for velocities
             * minerr    : if err=0, then err=minerr.
         '''
-
-        print ("Read data from file {} into data set {}".format(velfile, self.name))
+        if self.verbose:
+            print ("Read data from file {} into data set {}".format(velfile, self.name))
 
         # Keep the file
         self.velfile = velfile
@@ -710,8 +748,8 @@ class gpsrates(SourceInv):
             * velfile   : File containing the velocities.
             * factor    : multiplication factor for velocities
         '''
-
-        print ("Read data from file {} into data set {}".format(velfile, self.name))
+        if self.verbose:
+            print ("Read data from file {} into data set {}".format(velfile, self.name))
 
         # Keep the file
         self.velfile = velfile
@@ -793,7 +831,8 @@ class gpsrates(SourceInv):
         Reading velocities from a unavco file
         '''
 
-        print ("Read data from file {} into data set {}".format(velfile, self.name))
+        if self.verbose:
+            print ("Read data from file {} into data set {}".format(velfile, self.name))
 
         # Keep the file
         self.velfile = velfile
@@ -857,8 +896,8 @@ class gpsrates(SourceInv):
             * velfile   : File containing the velocities.
             * coordfile : File containing the coordinates.
         '''
-
-        print ("Read data from file {} into data set {}".format(velfile, self.name))
+        if self.verbose:
+            print ("Read data from file {} into data set {}".format(velfile, self.name))
 
         # Keep the files, to remember
         self.velfile = velfile+'.vel'
@@ -1128,9 +1167,7 @@ class gpsrates(SourceInv):
             u = np.flatnonzero(self.station == station)
            
             # Case station missing
-            if len(u) == 0:
-                print("This station is not part of your network")
-                return
+            assert len(u)>0, 'This station is not part of your network'
 
             # Reference
             self.vel_enu = self.vel_enu - self.vel_enu[u,:]
@@ -1340,7 +1377,7 @@ class gpsrates(SourceInv):
         transformation = fault.poly[self.name]
         if type(transformation) is list:
             transformation = transformation[0]
-        if verbose:
+        if verbose and self.verbose:
             print('Computing transformation of type {} on data set {}'.format(transformation, self.name))
 
         # Get the estimator
@@ -1957,8 +1994,9 @@ class gpsrates(SourceInv):
             filename = outDir+filename+data+'.dat'
         else: 
             filename = outDir+namefile
-
-        print ("Write {} set {} to file {}".format(data, self.name, filename))
+        
+        if self.verbose:        
+            print ("Write {} set {} to file {}".format(data, self.name, filename))
 
         # open the file
         fout = open(filename,'w')

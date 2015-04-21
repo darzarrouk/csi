@@ -781,7 +781,8 @@ class geodeticplot(object):
         vmax = -999999999.
 
         # Make the dictionary of the things to plot
-        Data = {}
+        from collections import OrderedDict
+        Data = OrderedDict()
         for dtype,mark in zip(data, markersize):
             if dtype is 'data':
                 dName = '{} Data'.format(gps.name)

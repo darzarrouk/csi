@@ -378,7 +378,7 @@ class TriangularPatches(Fault):
         Args:
             * filename      : Name of the file.
             * add_slip      : Put the slip as a value for the color.
-                              Can be None, strikeslip, dipslip, total.
+                              Can be None, strikeslip, dipslip, total, coupling
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
         '''
@@ -406,6 +406,9 @@ class TriangularPatches(Fault):
             # Select the string for the color
             string = '  '
             if add_slip is not None:
+                if add_slip is 'coupling':
+                    slp = self.coupling[pIndex]
+                    string = '-Z{}'.format(slp)
                 if add_slip is 'strikeslip':
                     if stdh5 is not None:
                         slp = np.std(samples[:,pIndex])
@@ -434,7 +437,11 @@ class TriangularPatches(Fault):
                 parameter = '# {} {} {} '.format(i,j,k)
 
             # Put the slip value
-            slipstring = ' # {} {} {} '.format(self.slip[pIndex,0],
+            if add_slip is not None:
+                if add_slip=='coupling':
+                    slipstring = ' # {}'.format(self.coupling[pIndex])
+            else:
+                slipstring = ' # {} {} {} '.format(self.slip[pIndex,0],
                                                self.slip[pIndex,1], self.slip[pIndex,2])
 
             # Write the string to file
@@ -1047,7 +1054,7 @@ class TriangularPatches(Fault):
             self.adjacencyMap.append(adjacents)
 
         if verbose:
-            print('\n')
+            print('')
         return
 
 
@@ -1107,7 +1114,7 @@ class TriangularPatches(Fault):
             D[i,i] = -sumProd
 
         if verbose:
-            print('\n')
+            print('')
         D = D / np.max(np.abs(np.diag(D)))
         return D
 

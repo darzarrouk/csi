@@ -1362,7 +1362,6 @@ class Fault(SourceInv):
         return
 
     def computeCouplingGFs(self, data, convergence, initializeCoupling=True):
-
         '''
             For the data set data, computes the Green's Function for coupling, using the formula
         described in Francisco Ortega's PhD, pages 106 to 108.
@@ -1379,6 +1378,8 @@ class Fault(SourceInv):
                                 shape = (Number of fault patches, 2). 
         '''
         
+        assert self.patchType not in ('triangletent'), 'This function is not for {} type of fault'.format(self.patchType)
+
         # Get the green's functions
         Gss = self.G[data.name]['strikeslip']
         Gds = self.G[data.name]['dipslip']
@@ -2007,6 +2008,58 @@ class Fault(SourceInv):
         # Store Cm into self
         self.Cm = Cm
         self.Lambdas = Lambdas
+
+        # All done
+        return
+
+    def writePatchesCenters2File(self, filename, add_slip=None, scale=1.0):
+        '''
+        Writes the patch corners in a file that can be used in psxyz.
+        Args:
+            * filename      : Name of the file.
+            * add_slip      : Put the slip as a value for the color.
+                              Can be None, strikeslip, dipslip, total, coupling
+            * scale         : Multiply the slip value by a factor.
+            * patch         : Can be 'normal' or 'equiv'
+        '''
+
+        # Check size
+        if self.N_slip!=None and self.N_slip!=len(self.patch):
+            raise NotImplementedError('Only works for len(slip)==len(patch)')
+
+        # Write something
+        print('Writing geometry to file {}'.format(filename))
+
+        # Open the file
+        fout = open(filename, 'w')
+
+        # Loop over the patches
+        nPatches = len(self.patch)
+        for patch in self.patch:
+
+            # Get patch index
+            pIndex = self.getindex(patch)
+
+            # Get patch center
+            xc, yc, zc = self.getcenter(patch)
+            lonc, latc = self.xy2ll(xc, yc)
+
+            # Select the string for the color
+            if add_slip is not None:
+                if add_slip is 'coupling':
+                    slp = self.coupling[pIndex]
+                elif add_slip is 'strikeslip':
+                    slp = self.slip[pIndex,0]*scale
+                elif add_slip is 'dipslip':
+                    slp = self.slip[pIndex,1]*scale
+                elif add_slip is 'total':
+                    slp = np.sqrt(self.slip[pIndex,0]**2 + self.slip[pIndex,1]**2)*scale
+
+            # Write the string to file
+            fout.write('{} {} {} {} \n'.format(lonc, latc, zc, slp))
+
+        # Close the file
+        fout.close()
 
         # All done
         return
