@@ -577,6 +577,27 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
+    def computeCouplingGFs(self, data, convergence, initializeCoupling=True):
+        '''
+            For the data set data, computes the Green's Function for coupling, 
+            using the formula described in Francisco Ortega's PhD, pages 106 to 108.
+            This function re-computes the Green's functions. No need to pre-compute them.
+
+            The corresponding GFs are stored in the GFs dictionary, under 
+            the name of the data set and are named 'coupling'. 
+            When inverting for coupling, we suggest building these functions and 
+            assembling with slipdir='c'.
+        
+        Args:
+            * data          : Name of the data set.
+            * convergence   : Convergence vector, or list/array of convergence vector with
+                                shape = (Number of fault patches, 2). 
+        '''
+
+        assert False, 'Not implemented yet... Working...'
+
+        return
+
     def Facet2Nodes(self, homogeneousStrike=False, homogeneousDip=False):
         '''
         Transfers the edksSources list into the node based setup.

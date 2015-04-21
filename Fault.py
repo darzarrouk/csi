@@ -1360,7 +1360,6 @@ class Fault(SourceInv):
         return
 
     def computeCouplingGFs(self, data, convergence, initializeCoupling=True):
-
         '''
             For the data set data, computes the Green's Function for coupling, using the formula
         described in Francisco Ortega's PhD, pages 106 to 108.
@@ -1377,6 +1376,8 @@ class Fault(SourceInv):
                                 shape = (Number of fault patches, 2). 
         '''
         
+        assert self.patchType not in ('triangletent'), 'This function is not for {} type of fault'.format(self.patchType)
+
         # Get the green's functions
         Gss = self.G[data.name]['strikeslip']
         Gds = self.G[data.name]['dipslip']

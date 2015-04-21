@@ -683,7 +683,7 @@ class gpsrates(SourceInv):
             * factor    : multiplication factor for velocities
             * minerr    : if err=0, then err=minerr.
         '''
-        if sel.verbose:
+        if self.verbose:
             print ("Read data from file {} into data set {}".format(velfile, self.name))
 
         # Keep the file
