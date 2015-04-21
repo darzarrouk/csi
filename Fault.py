@@ -583,12 +583,13 @@ class Fault(SourceInv):
 
             # Create one file for each slip componenets
             for c in G.keys():
-                g = G[c].flatten()
-                n = self.name.replace(' ', '_')
-                d = data.replace(' ', '_')
-                filename = '{}_{}_{}.gf'.format(n, d, suffix[c])
-                g = g.astype(dtype)
-                g.tofile(os.path.join(outputDir, filename))
+                if G[c] is not None:
+                    g = G[c].flatten()
+                    n = self.name.replace(' ', '_')
+                    d = data.replace(' ', '_')
+                    filename = '{}_{}_{}.gf'.format(n, d, suffix[c])
+                    g = g.astype(dtype)
+                    g.tofile(os.path.join(outputDir, filename))
 
        # All done
         return
@@ -858,7 +859,7 @@ class Fault(SourceInv):
         # All done
         return
 
-    def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True):
+    def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True, TentCouplingCase=False):
         '''
         Builds the Green's functions based on the solution by Zhao & Rivera 2002.
         The Corresponding functions are in the EDKS code that needs to be installed and 
@@ -870,9 +871,10 @@ class Fault(SourceInv):
         self.sourceNumber   : Number of sources per patches.
         self.sourceArea     : Maximum Area of the sources.
         Args:
-            * data      : data object from gpsrates or insarrates.
-            * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
-            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile).
+            * data              : data object from gpsrates or insarrates.
+            * vertical          : if True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir           : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile).
+            * TentCouplingCase  : Set to True when computing the coupling green's function for a Node based fault.
         '''
 
         # Check if we can find kernels
@@ -964,7 +966,7 @@ class Fault(SourceInv):
                     homD = self.homogeneousDip
                 else:
                     homD = False
-                self.Facet2Nodes(homogeneousStrike=homS, homogeneousDip=homD)
+                self.Facet2Nodes(homogeneousStrike=homS, homogeneousDip=homD, keepFacetsSeparated=TentCouplingCase)
                 Ids, xs, ys, zs, strike, dip, Areas, slip = self.edksSources
 
         # Informations
@@ -1013,7 +1015,10 @@ class Fault(SourceInv):
         
         # Numbers
         Ndata = Ncomp*xr.shape[0]
-        Nparm = self.slip.shape[0]
+        if TentCouplingCase:
+            Nparm = np.unique(Ids).shape[0]
+        else:
+            Nparm = self.slip.shape[0]
 
         # Check format
         if data.dtype in ['gpsrates', 'cosicorrrates', 'multigps']:
@@ -1290,7 +1295,7 @@ class Fault(SourceInv):
                 nd += 1
             if nd > 0:
                 cp = np.array(cp)
-                cp = ts.reshape((nd*d, m))
+                cp = cp.reshape((nd*d, m))
                 G['coupling'] = cp
 
         elif len(coupling) == 1:             # InSAR/Tsunami Case
@@ -1300,11 +1305,11 @@ class Fault(SourceInv):
         # All done
         return
 
-    def rotateGFs(self, data, convergence, returnGFs=False):
+    def rotateGFs(self, data, convergence):
         '''
-            For the data set data, rotates the Greens' functions so that dip slip motion is aligned with
+            For the data set data, returns the rotated GFs so that dip slip motion is aligned with
         the convergence vector.
-        These Greens' functions are not stored in self.G or returned, given arguments.
+            These Greens' functions are stored in self.G.
 
         Args:
             * data          : Name of the data set.
@@ -1312,16 +1317,12 @@ class Fault(SourceInv):
                                 shape = (Number of fault patches, 2). 
         '''
         
-        # Get the name of the data
-        data = data.name
-
-        # Assert Green's functions have been computed 
-        assert data in self.G.keys(), 'Need to compute regular GFs first...'
-        assert 'dipslip' in self.G[data].keys(), 'Need to compute GFs for unitary dip slip first...'
-        assert 'strikeslip' in self.G[data].keys(), 'Need to compute GFs for unitary strike slip first...'
+        # Get the Green's functions
+        Gss = self.G[data.name]['strikeslip']
+        Gds = self.G[data.name]['dipslip']
 
         # Number of slip parameters
-        nSlip = self.slip.shape[0]
+        nSlip = Gss.shape[1]
 
         # Get the convergence vector
         if len(convergence)==2:
@@ -1339,10 +1340,6 @@ class Fault(SourceInv):
         # Get the fault strike
         strike = self.getStrikes()
 
-        # Get the green's functions
-        Gss = self.G[data]['strikeslip']
-        Gds = self.G[data]['dipslip']
-
         # Get the strike and dip vectors
         strikeVec = np.vstack((np.sin(strike), np.cos(strike))).T
         dipVec = np.vstack((np.sin(strike+np.pi/2.), np.cos(strike+np.pi/2.))).T
@@ -1351,44 +1348,48 @@ class Fault(SourceInv):
         Sbr = (self.convergence*strikeVec).sum(axis=1)
         Dbr = (self.convergence*dipVec).sum(axis=1)
 
-        # Optional return
-        if returnGFs:
-            return Sbr, Dbr
-        else:
-            self.G[data]['dipslip'] = Dbr
-            self.G[data]['strikeslip'] = Sbr
+        # Rotate the GFs
+        Gss = np.multiply(-1.0*Gss, Sbr)
+        Gds = np.multiply(Gds, Dbr)
+
+        # Set GFs
+        self.G[data.name]['strikeslip'] = Gss
+        self.G[data.name]['dipslip'] = Gds
 
         # All done
-        return
+        return 
 
-    def computeCouplingGFs(self, data, convergence, initializeCoupling=True):
+    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False):
         '''
             For the data set data, computes the Green's Function for coupling, using the formula
-        described in Francisco Ortega's PhD, pages 106 to 108.
-
-                    !!!! YOU NEED TO COMPUTE THE GREEN'S FUNCTIONS BEFORE !!!!
+            described in Francisco Ortega's PhD, pages 106 to 108.
+            This function re-computes the Green's functions. No need to pre-compute them.
 
             The corresponding GFs are stored in the GFs dictionary, under the name of the data
-        set and are named 'coupling'. When inverting for coupling, we suggest building these 
-        functions and assembling with slipdir='c'.
+            set and are named 'coupling'. When inverting for coupling, we suggest building these 
+            functions and assembling with slipdir='c'.
         
         Args:
-            * data          : Name of the data set.
-            * convergence   : Convergence vector, or list/array of convergence vector with
-                                shape = (Number of fault patches, 2). 
+            * data                  : Name of the data set.
+            * convergence           : Convergence vector, or list/array of convergence vector with
+                                      shape = (Number of fault patches, 2). 
+            * initializeCoupling    : Initialize coupling?
+            * method                : Green's function method
+            * vertical              : Use the vertical displacements?
         '''
         
-        assert self.patchType not in ('triangletent'), 'This function is not for {} type of fault'.format(self.patchType)
+        assert self.patchType!='triangletent', 'This function is not for {} type of fault'.format(self.patchType)
 
-        # Get the green's functions
+        # Compute the Green's functions
+        self.buildGFs(data, method=method, slipdir='sd', vertical=vertical)
+
+        # Rotates the Greens' functions
+        self.rotateGFs(data, convergence)
         Gss = self.G[data.name]['strikeslip']
         Gds = self.G[data.name]['dipslip']
 
-        # Rotates the Greens' functions
-        Sbr, Dbr = self.rotateGFs(data, convergence, returnGFs=True)
-
         # Multiply and sum
-        Gc = -1.0*((np.multiply(-1.0*Gss, Sbr) + np.multiply(Gds, Dbr)))
+        Gc = -1.0*(Gss + Gds)
         # Precision: (the -1.0* is because we use a different convention from that of Francisco)
 
         # Store those new GFs

@@ -866,7 +866,7 @@ class TriangularPatches(Fault):
             p2, p3 = p3, p2
 
         # Get the strike vector and strike angle
-        strike = np.arctan2(-normal[0], normal[1])
+        strike = np.arctan2(-normal[1], normal[0])
         if strike<0.:
             strike += 2*np.pi
 

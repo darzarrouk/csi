@@ -131,7 +131,7 @@ class TriangularTents(TriangularPatches):
             strike.append(stk)
             dip.append(dp)
 
-        strike = (np.sum(strike))%(2*np.pi) / len(nbr_faces)
+        strike = np.mean(strike)
         dip = np.mean(dip)
 
         # All done
@@ -577,7 +577,69 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-    def computeCouplingGFs(self, data, convergence, initializeCoupling=True):
+    def rotateGFs(self, data, convergence):
+        '''
+            For the data set data, returns the rotation operator so that dip slip motion is aligned with
+        the convergence vector.
+            These Greens' functions are stored in self.G or returned, given arguments.
+
+        Args:
+            * data          : Name of the data set.
+            * convergence   : Convergence vector, or list/array of convergence vector with
+                                shape = (Number of fault patches, 2). 
+        '''
+        
+        # Get the Green's functions
+        Gss = self.G[data.name]['strikeslip']
+        Gds = self.G[data.name]['dipslip']
+
+        # Number of parameters
+        nSlip = Gss.shape[1]
+
+        # Get the convergence vector
+        if len(convergence)==2:
+            Conv = np.ones((nSlip, 2))
+            Conv[:,0] *= convergence[0]
+            Conv[:,1] *= convergence[1]
+            self.convergence = Conv
+        elif len(convergence)==nSlip:
+            if type(convergence) is list:
+                self.convergence = np.array(convergence)
+        else:
+            print('Convergence vector is of wrong format...')
+            sys.exit()
+
+        # Get the fault strike (for the facets)
+        ss = super(TriangularTents, self).getStrikes()
+
+        # Organize strike
+        strike = np.zeros((nSlip,))
+        for iNode in self.Nodes:
+            Triangles = self.Nodes[iNode]['idTriangles']
+            Sources = self.Nodes[iNode]['subSources']
+            for source,triangle in zip(Sources, Triangles):
+                strike[source] = ss[triangle]
+
+        # Get the strike and dip vectors
+        strikeVec = np.vstack((np.sin(strike), np.cos(strike))).T
+        dipVec = np.vstack((np.sin(strike+np.pi/2.), np.cos(strike+np.pi/2.))).T
+
+        # Project the convergence along strike and dip
+        Sbr = (self.convergence*strikeVec).sum(axis=1)
+        Dbr = (self.convergence*dipVec).sum(axis=1)
+
+        # Rotate the Green's functions
+        Gss = np.multiply(-1.0*Gss, Sbr)
+        Gds = np.multiply(Gds, Dbr)
+
+        # Set GFs
+        self.G[data.name]['strikeslip'] = Gss
+        self.G[data.name]['dipslip'] = Gds
+
+        # All done
+        return 
+
+    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, vertical=True, verbose=True):
         '''
             For the data set data, computes the Green's Function for coupling, 
             using the formula described in Francisco Ortega's PhD, pages 106 to 108.
@@ -589,16 +651,51 @@ class TriangularTents(TriangularPatches):
             assembling with slipdir='c'.
         
         Args:
-            * data          : Name of the data set.
-            * convergence   : Convergence vector, or list/array of convergence vector with
-                                shape = (Number of fault patches, 2). 
+            * data                  : Name of the data set.
+            * convergence           : Convergence vector, or list/array of convergence vector with
+                                        shape = (Number of fault patches, 2). 
+            * initializeCoupling    : Do you initialize the coupling vector in fault (True/False)
+            * vertical              : Use the verticals?
         '''
 
-        assert False, 'Not implemented yet... Working...'
+        # 0. Initialize?
+        if initializeCoupling:
+            self.coupling = np.zeros((len(self.tent),))
 
+        # 1. Compute the Green's function by keeping triangles separated
+        G = self.edksGFs(data, vertical=vertical, slipdir='sd', verbose=verbose, TentCouplingCase=True)
+        self.G[data.name] = G
+
+        # 2. Rotate these green's functions (this is the rotation matrix for the node based GFs)
+        self.rotateGFs(data, convergence)
+        bigGss = self.G[data.name]['strikeslip']
+        bigGds = self.G[data.name]['dipslip']
+
+        # 3. Compute the coupling GFs
+        bigGc = -1.0*(bigGss + bigGds)
+        # Precision: (the -1.0* is because we use a different convention from that of Francisco)
+
+        # 3. Sum the triangles that need to be summed
+        Gc = []; Gss=[]; Gds=[]
+        for iNode in self.Nodes:
+            iTriangles = self.Nodes[iNode]['subSources']
+            Gc.append(bigGc[:,iTriangles].sum(axis=1))
+            Gss.append(bigGss[:,iTriangles].sum(axis=1))
+            Gds.append(bigGds[:,iTriangles].sum(axis=1))
+        Gc = np.array(Gc).T
+        Gss = np.array(Gss).T
+        Gds = np.array(Gds).T
+
+        # 6. Set the GFs
+        G = {'coupling': Gc, 
+             'strikeslip': Gss,
+             'dipslip': Gds}
+        data.setGFsInFault(self, G, vertical=vertical)
+
+        # All done
         return
 
-    def Facet2Nodes(self, homogeneousStrike=False, homogeneousDip=False):
+    def Facet2Nodes(self, homogeneousStrike=False, homogeneousDip=False, keepFacetsSeparated=False):
         '''
         Transfers the edksSources list into the node based setup.
         Args:
@@ -608,6 +705,8 @@ class TriangularTents(TriangularPatches):
                                       If True, the strike of each of the point is equal to the strike
                                       of the main node of the tent.
             * homogeneousDip        : Same thing for the dip angle.
+            * keepFacetsSeparated   : If True, each facet of each node will have a different identifier (int).
+                                      This is needed when computing the Green's function for the Node based case. 
         '''
     
         # Get the faces and Nodes
@@ -635,12 +734,17 @@ class TriangularTents(TriangularPatches):
         strike = []; dip = []
         areas = []; slip = []
 
+        # Initialize counter
+        iSource = -1
+
         # Iterate on the nodes to derive the weights
         for mainNode in Nodes:
             if homogeneousDip:
                 mainDip = self.getTentInfo(mainNode)[4]
             if homogeneousStrike:
                 mainStrike = self.getTentInfo(mainNode)[3]
+            if keepFacetsSeparated:
+                Nodes[mainNode]['subSources'] = []
             # Loop over each of these triangles
             for tId in Nodes[mainNode]['idTriangles']:
                 # Find the sources in edksSources
@@ -656,8 +760,14 @@ class TriangularTents(TriangularPatches):
                                       self.edksSources[1][iS]/1000., 
                                       self.edksSources[2][iS]/1000., 
                                       self.edksSources[3][iS]/1000.)
+                # Source Ids
+                if keepFacetsSeparated:
+                    iSource += 1
+                else:
+                    iSource = mainNode
+                Nodes[mainNode]['subSources'].append(iSource)
                 # Save each source
-                Ids += (np.ones((len(iS),))*mainNode).tolist()
+                Ids += (np.ones((len(iS),))*iSource).astype(int).tolist()
                 xs += self.edksSources[1][iS].tolist()
                 ys += self.edksSources[2][iS].tolist()
                 zs += self.edksSources[3][iS].tolist()
