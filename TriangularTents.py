@@ -343,6 +343,35 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
+    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip'):
+        '''
+        Writes the values of slip in a grd file (lon, lat, slip).
+        Args:
+            * filename      : Name of the grdfile.
+            * npoints       : Number of points inside each patch.
+            * dlon          : Longitude increment of the output file
+            * dlat          : Latitude increment of the output file
+            * slip          : Slip value to store.
+        '''
+
+        assert False, 'Not implemented yet'
+
+        # Import needed stuff
+        import scipy.interpolate as sciint
+
+        # Get the sources
+        gp = geoplot(figure=np.random.randint(1000))
+        lon, lat, z, slip = gp.faultTents(self, slip=slip, method='scatter',
+                                            npoints=npoints)
+        del gp
+
+        # Resample on a regular grid
+        olon, olat = np.meshgrid(np.arange(lon.min(), lon.max()+dlon, dlon), 
+                np.arange(lat.min(), lat.max()+dlat, dlat))
+        interp = sciint.LinearNDInterpolator()
+
+        # All done
+        return
 
     def writeNodes2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
         '''

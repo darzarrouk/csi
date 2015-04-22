@@ -643,12 +643,6 @@ class Fault(SourceInv):
         if self.patchType == 'triangletent':
             assert method is 'edks', 'Homogeneous case not implemented for {} faults'.format(self.patchType)
 
-        # Print
-        if verbose:
-            print('---------------------------------')
-            print('---------------------------------')
-            print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
-
         # Check something
         if method in ('homogeneous', 'Homogeneous'):
             if self.patchType == 'rectangle':
@@ -702,6 +696,12 @@ class Fault(SourceInv):
         '''
 
         assert self.patchType != 'triangletent', 'Need to run EDKS for that particular type of fault'
+
+        # Print
+        if verbose:
+            print('---------------------------------')
+            print('---------------------------------')
+            print ("Building Green's functions for the data set {} of type {} in a homogeneous half-space".format(data.name, data.dtype))
 
         # Initialize the slip vector
         SLP = []
@@ -876,6 +876,12 @@ class Fault(SourceInv):
             * slipdir           : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile).
             * TentCouplingCase  : Set to True when computing the coupling green's function for a Node based fault.
         '''
+
+        # Print
+        if verbose:
+            print('---------------------------------')
+            print('---------------------------------')
+            print ("Building Green's functions for the data set {} of type {} using EDKS".format(data.name, data.dtype))
 
         # Check if we can find kernels
         if not hasattr(self, 'kernelsEDKS'):

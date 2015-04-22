@@ -661,11 +661,11 @@ class gpsrates(SourceInv):
                 self.err_enu.append([east, north, up])
 
         # Make np array with that
-        self.lon = np.array(self.lon)
-        self.lat = np.array(self.lat)
-        self.vel_enu = np.array(self.vel_enu)*factor
-        self.err_enu = np.array(self.err_enu)*factor
-        self.station = np.array(self.station)
+        self.lon = np.array(self.lon).squeeze()
+        self.lat = np.array(self.lat).squeeze()
+        self.vel_enu = np.array(self.vel_enu).squeeze()*factor
+        self.err_enu = np.array(self.err_enu).squeeze()*factor
+        self.station = np.array(self.station).squeeze()
         self.factor = factor
 
         # Pass to xy 
@@ -728,11 +728,11 @@ class gpsrates(SourceInv):
                 self.err_enu.append([east, north, up])
 
         # Make np array with that
-        self.lon = np.array(self.lon)
-        self.lat = np.array(self.lat)
-        self.vel_enu = np.array(self.vel_enu)*factor
-        self.err_enu = np.array(self.err_enu)*factor
-        self.station = np.array(self.station)
+        self.lon = np.array(self.lon).squeeze()
+        self.lat = np.array(self.lat).squeeze()
+        self.vel_enu = np.array(self.vel_enu).squeeze()*factor
+        self.err_enu = np.array(self.err_enu).squeeze()*factor
+        self.station = np.array(self.station).squeeze()
         self.factor = factor
 
         # Pass to xy 
@@ -2018,6 +2018,9 @@ class gpsrates(SourceInv):
         else:
             print('Unknown data type to write...')
             return
+
+        z = z.squeeze()
+        self.err_enu = self.err_enu.squeeze()
 
         # Loop over stations
         for i in range(len(self.station)):

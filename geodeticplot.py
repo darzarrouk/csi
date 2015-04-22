@@ -598,7 +598,7 @@ class geodeticplot(object):
                 self.fphbar = self.fig1.colorbar(cb, shrink=0.6, orientation='horizontal')
 
         # All done
-        return X, Y, Z, Slip
+        return lon, lat, Z, Slip
 
     def setzaxis(self, depth, zticklabels=None):
         '''

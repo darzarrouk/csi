@@ -297,6 +297,8 @@ class multifaultsolve(object):
         for fault in faults:
 
             if verbose:
+                print ("---------------------------------")
+                print ("---------------------------------")
                 print("Distribute the slip values to fault {}".format(fault.name))
 
             # Store the mpost
@@ -556,7 +558,8 @@ class multifaultsolve(object):
 
     def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=None, bounds=None,
                                    method='SLSQP', rcond=None, 
-                                   iterations=100, tolerance=None):
+                                   iterations=100, tolerance=None, maxfun=100000,
+                                   checkIter=False, checkNorm=False):
         """
         Solves the least squares problem:
 
@@ -581,7 +584,7 @@ class multifaultsolve(object):
         from scipy.optimize import minimize, nnls
 
         # Check the provided method is valid
-        assert method in ['SLSQP', 'COBYLA', 'nnls'], 'unsupported minimizing method'
+        assert method in ['SLSQP', 'COBYLA', 'nnls', 'TNC', 'L-BFGS-B'], 'unsupported minimizing method'
 
         # Print
         print ("---------------------------------")
@@ -623,7 +626,7 @@ class multifaultsolve(object):
             mprior = np.zeros((Nm,))
 
         # Define the cost function
-        def costFunction(m, G, d, iCd, iCm, mprior):
+        def costFunction(m, G, d, iCd, iCm, mprior, verbose=False):
             """
             Compute data + prior misfits.
             """
@@ -631,6 +634,8 @@ class multifaultsolve(object):
             dataLikely = np.dot(dataMisfit, np.dot(iCd, dataMisfit))
             priorMisfit = m - mprior
             priorLikely = np.dot(priorMisfit, np.dot(iCm, priorMisfit))
+            if verbose:
+                print(0.5 * dataLikely + 0.5 * priorLikely)
             return 0.5 * dataLikely + 0.5 * priorLikely
 
         # Define the moment magnitude inequality constraint function
@@ -666,10 +671,10 @@ class multifaultsolve(object):
         
         else:
             print("Performing constrained minimzation")
-            options = {'disp': True, 'maxiter': iterations}
-            #if tolerance is not None:
-            #    options['ftol'] = tolerance
-            res = minimize(costFunction, mprior, args=(G,d,iCd,iCm,mprior),
+            options = {'disp': checkIter, 'maxiter': iterations}
+            if method=='L-BFGS-B':
+                options['maxfun']= maxfun
+            res = minimize(costFunction, mprior, args=(G,d,iCd,iCm,mprior,checkNorm),
                            constraints=constraints, method=method, bounds=bounds,
                            options=options, tol=tolerance)
             m = res.x
