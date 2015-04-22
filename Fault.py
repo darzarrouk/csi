@@ -1537,6 +1537,9 @@ class Fault(SourceInv):
                 Npo += transformation
         Np = Nps + Npo
 
+        # Save extra Parameters
+        self.TransformationParameters = Npo
+
         # Get the number of data
         Nd = 0
         for data in datas:

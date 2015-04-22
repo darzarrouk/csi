@@ -1288,6 +1288,8 @@ class gpsrates(SourceInv):
     def getNumberOfTransformParameters(self, transformation):
         '''
         Returns the number of transform parameters for the given transformation.
+        Strain is only computed as an aerial strain (2D). If verticals are included, it just estimates 
+        a vertical translation for the network.
         Args:
             * transformation : String. Can be
                         'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
@@ -1301,31 +1303,29 @@ class gpsrates(SourceInv):
                 Npo = 4                    # 2D Helmert transform is 4 parameters
         # Full Strain (Translation + Strain + Rotation)
         elif transformation is 'strain':
-            assert self.obs_per_station==2, '3d strain has not been implemented'
             Npo = 6
         # Strain without rotation (Translation + Strain)
         elif transformation is 'strainnorotation':
-            assert self.obs_per_station==2, '3d strain has not been implemented'
             Npo = 5
         # Strain Only (Strain)
         elif transformation is 'strainonly':
-            assert self.obs_per_station==2, '3d strain has not been implemented'
             Npo = 3
         # Strain without translation (Strain + Rotation)
         elif transformation is 'strainnotranslation':
-            assert self.obs_per_station==2, '3d strain has not been implemented'
             Npo = 4
         # Translation
         elif transformation is 'translation':
-            assert self.obs_per_station==2, '3d strain has not been implemented'
             Npo = 2
         # Translation and Rotation
         elif transformation is 'translationrotation':
-            assert self.obs_per_station==2, '3d strain has not been implemented'
             Npo = 3
         # Uknown
         else:
             return 0
+
+        # If verticals
+        if not np.isnan(self.vel_enu[:,2]).any() and transformation is not 'full':
+            Npo += 1
             
         # All done
         return Npo
@@ -1491,8 +1491,16 @@ class gpsrates(SourceInv):
         if rotation:
             columns.append(5)
 
+        # Get the right values
+        Hout = Hf[:,columns]
+
+        # Add a translation for the verticals
+        if not np.isnan(self.vel_enu[:,2]).any():
+            Hout = np.vstack((np.hstack((Hout, np.zeros((Hout.shape[0], 1)))), np.zeros((ns,len(columns)+1))))
+            Hout[-ns:,-1] = 1.
+
         # All done
-        return Hf[:,columns]
+        return Hout
 
     def getHelmertMatrix(self, components=2):
         '''

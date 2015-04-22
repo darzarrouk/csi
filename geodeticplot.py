@@ -242,7 +242,7 @@ class geodeticplot(object):
 
         # Draw landmask
         if drawLand:
-            continents = self.carte.fillcontinents(color='0.9', zorder=0)
+            continents = self.carte.fillcontinents(color='0.9', alpha=0.7)
 
         # MapScale
         if drawMapScale is not None:
@@ -591,7 +591,11 @@ class geodeticplot(object):
             # Do the scatter ploto
             lon, lat = fault.xy2ll(X, Y)
             lon[lon<0.] += 360.
-            cb = self.faille.scatter3D(lon, lat, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0)
+            cb = self.faille.scatter3D(lon, lat, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax)
+
+            # On 2D?
+            if plot_on_2d:
+                self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax) 
 
             # put up a colorbar
             if colorbar:
