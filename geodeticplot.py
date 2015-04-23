@@ -257,7 +257,7 @@ class geodeticplot(object):
                 print('Map Scale cannot be plotted with this projection')
 
         # Draw and get the line object
-        coasts = self.carte.drawcoastlines(color=color, linewidth=linewidth, linestyle=linestyle, zorder=1)
+        coasts = self.carte.drawcoastlines(color=color, linewidth=linewidth, linestyle=linestyle)
         if drawOnFault:
             segments = []
             for path in coasts.get_paths():
@@ -435,13 +435,22 @@ class geodeticplot(object):
 
         # If 2d.
         if plot_on_2d:
-            for patch in fault.patchll:
-                x = [patch[i][0] for i in range(len(patch))]
-                y = [patch[i][1] for i in range(len(patch))]
-                x.append(x[0]); y.append(y[0])
-                x = np.array(x)
-                x[x<0.] += 360.
-                self.carte.plot(x, y, '-', color='gray', linewidth=1)
+            for p, patch in zip(range(len(fault.patchll)), fault.patchll):
+                x = []
+                y = []
+                for i in range(ncorners):
+                    x.append(patch[i][0])
+                    y.append(patch[i][1])
+                verts = []
+                for xi,yi in zip(x,y):
+                    if xi<0.:
+                        xi += 360.
+                    verts.append((xi,yi))
+                rect = colls.PolyCollection([verts])
+                rect.set_facecolor(scalarMap.to_rgba(slip[p]))
+                rect.set_edgecolors('gray')
+                rect.set_linewidth(linewidth)
+                self.carte.ax.add_collection(rect)
                 
         # put up a colorbar
         if colorbar:
@@ -821,7 +830,7 @@ class geodeticplot(object):
         for dName in Data:
             mark = Data[dName]['Markersize']
             V = Data[dName]['Values']
-            sc = self.carte.scatter(lon, lat, s=mark, c=V, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
+            sc = self.carte.scatter(lon, lat, s=mark, c=V, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth, zorder=2)
 
         # Colorbar
         if colorbar:

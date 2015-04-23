@@ -56,7 +56,7 @@ class TriangularTents(TriangularPatches):
         # Create a list of the attributes we want to copy
         Attributes = []
         for attr in dir(fault):
-            if (attr[:2] not in ('__')) and (not inspect.ismethod(fault.__getattribute__(attr))):
+            if (attr[:2] not in ('__')) and (not inspect.ismethod(fault.__getattribute__(attr))) and attr!='name':
                 Attributes.append(attr)
 
         # Loop 
