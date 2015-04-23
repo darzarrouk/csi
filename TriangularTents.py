@@ -792,9 +792,9 @@ class TriangularTents(TriangularPatches):
                 # Source Ids
                 if keepFacetsSeparated:
                     iSource += 1
+                    Nodes[mainNode]['subSources'].append(iSource)
                 else:
                     iSource = mainNode
-                Nodes[mainNode]['subSources'].append(iSource)
                 # Save each source
                 Ids += (np.ones((len(iS),))*iSource).astype(int).tolist()
                 xs += self.edksSources[1][iS].tolist()
