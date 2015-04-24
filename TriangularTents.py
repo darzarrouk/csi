@@ -61,7 +61,7 @@ class TriangularTents(TriangularPatches):
 
         # Loop 
         for attr in Attributes:
-            self.__setattr__(attr, fault.__getattribute__(attr))
+            self.__setattr__(attr, copy.deepcopy(fault.__getattribute__(attr)))
 
         # patchType
         self.patchType = 'triangletent'
@@ -526,7 +526,38 @@ class TriangularTents(TriangularPatches):
         
         # All done
         return iout
-                    
+    
+    def slipIntegrate(self, slip=None):
+        '''
+        Integrates slip on the patch.
+        Args:
+            * slip  : slip vector
+                    Can be strikeslip, dipslip, tensile, coupling or
+                    a list/array of floats.
+        '''
+
+        # Slip
+        if type(slip) is str:
+            if slip=='strikeslip':
+                slip = self.slip[:,0]
+            elif slip=='dipslip':
+                slip = self.slip[:,1]
+            elif slip=='tensile':
+                slip = self.slip[:,2]
+            elif slip=='coupling':
+                slip = self.coupling
+        elif type(slip) in (np.ndarray, list):
+            assert len(slip)==len(self.tent), 'Slip vector is the wrong size'
+        else:
+            slip = np.ones((len(self.tent),))
+
+        # Compute Volumes
+        self.computeTentArea()
+        self.volume = self.area_tent*slip/3.
+
+        # All done
+        return
+
     def computeTentArea(self):
         '''
         Computes the effective area for each node (1/3 of the summed area of all neighbor triangles)
@@ -545,7 +576,7 @@ class TriangularTents(TriangularPatches):
 
             # find the triangle neighbors for each vertex
             nbr_triangles = self.adjacencyMap[vid]
-            area = 1./3 * np.sum(areas[nbr_triangles])
+            area = np.sum(areas[nbr_triangles])
             self.area_tent.append(area)
 
         # All done

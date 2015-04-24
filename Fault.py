@@ -1687,7 +1687,7 @@ class Fault(SourceInv):
         # all done
         return
 
-    def buildCmLaplacian(self, lam, extra_params=None, sensitivity=True, method='distance'):
+    def buildCmLaplacian(self, lam, diagFact=None, extra_params=None, sensitivity=True, method='distance', sensitivityNormalizing=False):
         '''
         Implements the Laplacian smoothing with sensitivity (optional)
         Description can be found in F. Ortega-Culaciati's PhD thesis.
@@ -1721,6 +1721,11 @@ class Fault(SourceInv):
 
         Sensitivity = {}
 
+        # Normalizing
+        if sensitivityNormalizing:
+            self.slipIntegrate()
+            Volumes = self.volume
+
         # Loop over directions:
         for i in range(len(self.slipdir)):
 
@@ -1732,6 +1737,8 @@ class Fault(SourceInv):
 
                 # Compute sensitivity matrix (see Loveless & Meade, 2011)
                 G = self.Gassembled[:,ist:ied]
+                if sensitivityNormalizing:
+                    G = G/self.volume[np.newaxis,:]
                 S = np.diag(np.dot(G.T, G))
                 Sensitivity[self.slipdir[i]] = S
 
@@ -1743,6 +1750,11 @@ class Fault(SourceInv):
             D2 = np.dot(D.T,D)
             localCm = 1./lam[i]*np.linalg.inv(D2)
 
+            # Mingle with the diagonal
+            if diagFact is not None:
+                localCm -= np.diag(np.diag(localCm))
+                localCm += np.diag(np.max(localCm, axis=1))*diagFact
+        
             # Put it into Cm
             Cm[ist:ied, ist:ied] = localCm
 
@@ -2181,4 +2193,34 @@ class Fault(SourceInv):
         # All done
         return
 
+    def slipIntegrate(self, slip=None):
+        '''
+        Integrates slip on the patch.
+        Args:
+            * slip  : slip vector
+                    Can be strikeslip, dipslip, tensile, coupling or
+                    a list/array of floats.
+        '''
+
+        # Slip
+        if type(slip) is str:
+            if slip=='strikeslip':
+                slip = self.slip[:,0]
+            elif slip=='dipslip':
+                slip = self.slip[:,1]
+            elif slip=='tensile':
+                slip = self.slip[:,2]
+            elif slip=='coupling':
+                slip = self.coupling
+        elif type(slip) in (np.ndarray, list):
+            assert len(slip)==len(self.patch), 'Slip vector is the wrong size'
+        else:
+            slip = np.ones((len(self.patch),))
+
+        # Compute Volumes
+        self.computeArea()
+        self.volume = self.area*slip
+
+        # All done
+        return
 #EOF

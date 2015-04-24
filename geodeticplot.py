@@ -451,7 +451,7 @@ class geodeticplot(object):
                 rect.set_facecolor(scalarMap.to_rgba(slip[p]))
                 rect.set_edgecolors('gray')
                 rect.set_linewidth(linewidth)
-                recr.set_zorder(zorder)
+                rect.set_zorder(zorder)
                 self.carte.ax.add_collection(rect)
                 
         # put up a colorbar
@@ -489,7 +489,7 @@ class geodeticplot(object):
             slip = fault.slip[:,0].copy()
         elif slip in ('dipslip'):
             slip = fault.slip[:,1].copy()
-        elif slip in ('opening'):
+        elif slip in ('tensile'):
             slip = fault.slip[:,2].copy()
         elif slip in ('total'):
             slip = np.sqrt(fault.slip[:,0]**2 + fault.slip[:,1]**2 + fault.slip[:,2]**2)
@@ -743,11 +743,8 @@ class geodeticplot(object):
             elif dtype is 'transformation':
                 dName = '{} Trans.'.format(gps.name)
                 Values = gps.transformation
-#            else:
-#                print('dtype '+dtype+' not recognized')
-#                dName = '{} Data'.format(gps.name)
-#                print('set dName='+dName)
-#                Values = gps.vel_enu
+            else:
+                assert False, 'Data name not recognized'
             Data[dName] = {}
             Data[dName]['Values'] = Values
             Data[dName]['Color'] = col
@@ -757,6 +754,12 @@ class geodeticplot(object):
             values = Data[dName]['Values']
             c = Data[dName]['Color']
             p = self.carte.quiver(lon, lat, values[:,0], values[:,1], width=0.005, color=c, scale=scale, linewidths=linewidths, zorder=zorder)
+#            if np.isfinite(self.err_enu[:,0]).all() and np.isfinite(self.err_enu[:,1]).all():
+                # Extract the location of the arrow head
+
+                # Create an ellipse of the good size at that location
+
+                # Add it to collection, under the arrow
 
         # Plot Legend
         q = plt.quiverkey(p, 0.1, 0.1, legendscale, '{}'.format(legendscale), coordinates='axes', color='k', zorder=10)
