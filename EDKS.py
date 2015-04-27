@@ -110,40 +110,46 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
      
     # read sum_layered output Greens function
     # ux
-    file = open(file_dux, 'rb')
-    ux = np.zeros((nrec, Np))
-    for j in range(0, Np):
-       for i in range(0, nrec):
-          byteVal = file.read(NBYTES_FILE_FMT)
-          if byteVal != '':
-             ux[i][j] = struct.unpack('f', byteVal)[0]
-          else:
-             raise ValueError(' Premature EOF in %s, something nasty happened'%(file_dux))
-    file.close()
+    ux = np.fromfile(file_dux, 'f').reshape((nrec, Np), order='FORTRAN')
+
+    #file = open(file_dux, 'rb')
+    #ux = np.zeros((nrec, Np))
+    #for j in range(0, Np):
+    #   for i in range(0, nrec):
+    #      byteVal = file.read(NBYTES_FILE_FMT)
+    #      if byteVal != '':
+    #         ux[i][j] = struct.unpack('f', byteVal)[0]
+    #      else:
+    #         raise ValueError(' Premature EOF in %s, something nasty happened'%(file_dux))
+    #file.close()
  
     # uy
-    file = open(file_duy, 'rb')
-    uy = np.zeros((nrec, Np))
-    for j in range(0, Np):
-       for i in range(0, nrec):
-          byteVal = file.read(NBYTES_FILE_FMT)
-          if byteVal != '':
-             uy[i][j] = struct.unpack('f', byteVal)[0]
-          else:
-             raise ValueError('Premature EOF in %s, something nasty happened'%(file_duy))
-    file.close()
+    uy = np.fromfile(file_duy, 'f').reshape((nrec, Np), order='FORTRAN')
+
+    #file = open(file_duy, 'rb')
+    #uy = np.zeros((nrec, Np))
+    #for j in range(0, Np):
+    #   for i in range(0, nrec):
+    #      byteVal = file.read(NBYTES_FILE_FMT)
+    #      if byteVal != '':
+    #         uy[i][j] = struct.unpack('f', byteVal)[0]
+    #      else:
+    #         raise ValueError('Premature EOF in %s, something nasty happened'%(file_duy))
+    #file.close()
  
     # uz
-    file = open(file_duz, 'rb')
-    uz = np.zeros((nrec, Np))
-    for j in range(0, Np):
-       for i in range(0, nrec):
-          byteVal = file.read(NBYTES_FILE_FMT)
-          if byteVal != '':
-             uz[i][j] = struct.unpack('f', byteVal)[0]
-          else:
-             raise ValueError('Premature EOF in %s, something nasty happened'%(file_duz))
-    file.close()
+    uz = np.fromfile(file_duz, 'f').reshape((nrec, Np), order='FORTRAN')
+
+    #file = open(file_duz, 'rb')
+    #uz = np.zeros((nrec, Np))
+    #for j in range(0, Np):
+    #   for i in range(0, nrec):
+    #      byteVal = file.read(NBYTES_FILE_FMT)
+    #      if byteVal != '':
+    #         uz[i][j] = struct.unpack('f', byteVal)[0]
+    #      else:
+    #         raise ValueError('Premature EOF in %s, something nasty happened'%(file_duz))
+    #file.close()
  
     # remove IO files.
     if cleanUp:
