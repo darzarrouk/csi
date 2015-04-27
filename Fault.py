@@ -18,7 +18,7 @@ import os
 
 # Personals
 from .SourceInv import SourceInv
-from .EDKS import sum_layered_sub
+from .EDKS import sum_layered
 from .EDKS import dropSourcesInPatches as Patches2Sources
 
 class Fault(SourceInv):
@@ -979,34 +979,54 @@ class Fault(SourceInv):
         if verbose:
             print('{} sources for {} patches and {} data points'.format(len(Ids), len(self.patch), len(xr)))
         
-        # Run EDKS
+        # Run EDKS Strike slip
         if 's' in slipdir:
             if verbose:
                 print('Running Strike Slip component for data set {}'.format(data.name))
-            Gss = sum_layered_sub(Ids, xs, ys, zs, \
-                                  strike, dip, np.zeros(dip.shape), slip, \
-                                  Areas,\
-                                  xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                  cleanUp=True)
-            Gss = np.array(Gss)
+            iGss = np.array(sum_layered(xs, ys, zs, 
+                                        strike, dip, np.zeros(dip.shape), slip, 
+                                        np.sqrt(Areas), np.sqrt(Areas), 1, 1,
+                                        xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
+                                        cleanUp=True))
+            if verbose:
+                print('Summing sub-sources...')
+            Gss = np.zeros((3, iGss.shape[1],np.unique(Ids).shape[0]))
+            for Id in np.unique(Ids):
+                Gss[:,:,Id] = np.sum(iGss[:,:,np.flatnonzero(Ids==Id)], axis=2)
+            del iGss
+
+        # Run EDKS dip slip
         if 'd' in slipdir:
             if verbose:
                 print('Running Dip Slip component for data set {}'.format(data.name))
-            Gds = sum_layered_sub(Ids, xs, ys, zs, \
-                                  strike, dip, np.ones(dip.shape)*90.0, slip, \
-                                  Areas,\
-                                  xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                  cleanUp=True)
-            Gds = np.array(Gds)
+            iGds = np.array(sum_layered(xs, ys, zs, 
+                                        strike, dip, np.ones(dip.shape)*90.0, slip, 
+                                        np.sqrt(Areas), np.sqrt(Areas), 1, 1,
+                                        xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
+                                        cleanUp=True))
+            if verbose:
+                print('Summing sub-sources...')
+            Gds = np.zeros((3, iGds.shape[1], np.unique(Ids).shape[0]))
+            for Id in np.unique(Ids):
+                Gds[:,:,Id] = np.sum(iGds[:,:,np.flatnonzero(Ids==Id)], axis=2)
+            del iGds
+
+        # Run EDKS Tensile?
         if 't' in slipdir:
+            assert False, 'Sorry, this is not working so far... Bryan should get it done soon...'
             if verbose:
                 print('Running tensile component for data set {}'.format(data.name))
-            Gts = sum_layered_sub(Ids, xs, ys, zs,
-                                  strike, dip, np.zeros(dip.shape), slip,
-                                  Areas, xr, yr, stratKernels, prefix,
-                                  BIN_EDKS='EDKS_BIN', tensile=True)
-            Gts = np.array(Gts)
-                             
+            iGts = np.array(sum_layered(xs, ys, zs,
+                                        strike, dip, np.zeros(dip.shape), slip,
+                                        np.sqrt(Areas), np.sqrt(Areas), 1, 1, 
+                                        xr, yr, stratKernels, prefix,
+                                        BIN_EDKS='EDKS_BIN', tensile=True))
+            if verbose:
+                print('Summing sub-sources...')
+            Gts = np.zeros((3, iGts.shape[1], np.unique(Ids).shape[0]))
+            for Id in np.unique(Ids):
+                Gts[:, :,Id] = np.sum(iGts[:,:,np.flatnonzero(Ids==Id)], axis=2)
+            del iGts
         
         # Verticals?
         Ncomp = 3

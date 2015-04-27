@@ -105,6 +105,7 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
   
     # call sum_layered
     cmd = '{}/sum_layered {} {} {} {} {} {}'.format(BIN_EDKS, edks, prefix, nrec, Np, npw, npy)
+    print(cmd)
     os.system(cmd)
      
     # read sum_layered output Greens function

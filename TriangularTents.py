@@ -560,7 +560,7 @@ class TriangularTents(TriangularPatches):
 
     def computeTentArea(self):
         '''
-        Computes the effective area for each node (1/3 of the summed area of all neighbor triangles)
+        Computes the area for each node 
         '''
 
         # Area
