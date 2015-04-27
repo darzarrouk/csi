@@ -363,7 +363,7 @@ class geodeticplot(object):
         '''
         Args:
             * fault         : Fault class from verticalfault.
-            * slip          : Can be 'strikeslip', 'dipslip', 'opening', 'total' or 'coupling'
+            * slip          : Can be 'strikeslip', 'dipslip', 'tensile', 'total' or 'coupling'
             * Norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
             * plot_on_2d    : if True, adds the patches on the map.
@@ -375,7 +375,7 @@ class geodeticplot(object):
             slip = fault.slip[:,0].copy()
         elif slip in ('dipslip'):
             slip = fault.slip[:,1].copy()
-        elif slip in ('opening'):
+        elif slip in ('tensile'):
             slip = fault.slip[:,2].copy()
         elif slip in ('total'):
             slip = np.sqrt(fault.slip[:,0]**2 + fault.slip[:,1]**2 + fault.slip[:,2]**2)
@@ -467,7 +467,7 @@ class geodeticplot(object):
         '''
         Args:
             * fault         : Fault class from verticalfault.
-            * slip          : Can be 'strikeslip', 'dipslip', 'opening', 'total' or 'coupling'
+            * slip          : Can be 'strikeslip', 'dipslip', 'tensile', 'total' or 'coupling'
             * Norm          : Limits for the colorbar.
             * method        : Can be 'scatter' --> Plots all the sub points as a colored dot.
                                      'surface' --> Interpolates a 3D surface (can be ugly)

@@ -860,18 +860,19 @@ class TriangularPatches(Fault):
         # Get the patch normal
         normal = np.cross(p2 - p1, p3 - p1)
         normal /= np.linalg.norm(normal)
+
         # Enforce clockwise circulation
-        if normal[2] > 0:
+        if normal[2] < 0:
             normal *= -1.0
             p2, p3 = p3, p2
 
         # Get the strike vector and strike angle
-        strike = np.arctan2(-normal[1], normal[0])
+        strike = np.arctan2(-normal[0], normal[1]) - np.pi
         if strike<0.:
             strike += 2*np.pi
 
         # Set the dip vector
-        dip = np.arccos(-normal[2])
+        dip = np.arccos(normal[2])
 
         if retNormal:
             return x1, x2, x3, width, length, strike, dip, normal
