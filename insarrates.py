@@ -868,6 +868,16 @@ class insarrates(SourceInv):
         # All done
         return
 
+    def removeTransformation(self, fault, verbose=False):
+        '''
+        Wrapper of removePoly to ensure consistency between data sets.
+        '''
+
+        self.removePoly(fault, verbose=verbose)
+
+        # All done
+        return
+
     def removeSynth(self, faults, direction='sd', poly=None, vertical=True):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
@@ -2010,7 +2020,7 @@ class insarrates(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=133, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2):
+    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2055,10 +2065,11 @@ class insarrates(SourceInv):
 
         # Plot the decimation process, if asked
         if decim:
-            fig.insar(self, norm=norm, colorbar=False, data=data, plotType='decimate')
+            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='decimate')
 
         # Plot the insar
-        fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter')
+        if not decim:
+            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter')
 
         # Show
         if show:

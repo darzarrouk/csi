@@ -24,7 +24,7 @@ from .SourceInv import SourceInv
 
 class geodeticplot(object):
 
-    def __init__(self, figure=130, pbaspect=None, 
+    def __init__(self, figure=None, pbaspect=None, 
                  projection='cyl',
                  lonmin=None, latmin=None, lonmax=None, latmax=None,
                  resolution='i',
@@ -50,7 +50,11 @@ class geodeticplot(object):
         # Open a figure
         fig1 = plt.figure(figure, figsize=figSize[0])
         faille = fig1.add_subplot(111, projection='3d')
-        fig2  = plt.figure(figure+1, figsize=figSize[1])
+        if figure is None:
+            nextFig = np.max(plt.get_fignums())+1
+        else:
+            nextFig=figure+1
+        fig2  = plt.figure(nextFig, figsize=figSize[1])
         ax = fig2.add_subplot(111)
         carte = basemap.Basemap(projection=projection,
                                 llcrnrlon=lonmin, 
@@ -222,7 +226,7 @@ class geodeticplot(object):
 
     def drawCoastlines(self, color='k', linewidth=1.0, linestyle='solid', 
             resolution='i', drawLand=True, drawMapScale=None, 
-            parallels=4, meridians=4, drawOnFault=True, 
+            parallels=4, meridians=4, drawOnFault=True, drawCountries=True,
             zorder=1):
         '''
         Draws the coast lines in the desired area.
@@ -234,6 +238,7 @@ class geodeticplot(object):
                               Can be c (crude), l (low), i (intermediate), h (high), f (full)
             * drawLand      : Fill the continents (True/False)
             * drawMapScale  : Draw a map scale (None or length in km)
+            * drawCountries : Draw County boundaries?
             * parallels     : If int -> Number of parallels 
                               If float -> spacing in degrees between paralles
                               If np.array -> array of parallels
@@ -269,6 +274,20 @@ class geodeticplot(object):
                 cote.set_linestyle(coasts.get_linestyle())
                 cote.set_linewidth(coasts.get_linewidth())
                 self.faille.add_collection3d(cote)
+
+        # Draw countries
+        if drawCountries:
+            countries = self.carte.drawcountries(linewidth=linewidth/2., color='darkgray', zorder=zorder)
+            if drawOnFault:
+                segments = []
+                for path in coasts.get_paths():
+                    segments.append(np.hstack((path.vertices,np.zeros((path.vertices.shape[0],1)))))
+                if len(segments)>0:
+                    border = art3d.Line3DCollection(segments)
+                    border.set_edgecolor(countries.get_color())
+                    border.set_linestyle(countries.get_linestyle())
+                    border.set_linewidth(countries.get_linewidth())
+                    self.faille.add_collection3d(border)
 
         # Draw parallels 
         lmin = self.carte.latmin
@@ -423,7 +442,7 @@ class geodeticplot(object):
                 verts.append((xi,yi,zi))
             rect = art3d.Poly3DCollection([verts])
             rect.set_facecolor(scalarMap.to_rgba(slip[p]))
-            rect.set_edgecolors('k')
+            rect.set_edgecolors('gray')
             alpha = 1.0 - transparency
             if alpha<1.0:
                 rect.set_alpha(alpha)
@@ -776,7 +795,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def gpsverticals(self, gps, norm=None, colorbar=True, data=['data'], markersize=[10], linewidth=0.1, zorder=4):
+    def gpsverticals(self, gps, norm=None, colorbar=True, data=['data'], markersize=[10], linewidth=0.1, zorder=4, cmap='jet'):
         '''
         Scatter plot of the vertical displacement of the GPS.
         '''
@@ -824,7 +843,7 @@ class geodeticplot(object):
             vmax = np.max([vmax, np.max(Values)])
 
         # Get a colormap
-        cmap = plt.get_cmap('jet')
+        cmap = plt.get_cmap(cmap)
 
         # Norm
         if norm is not None:
@@ -877,7 +896,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def earthquakes(self, earthquakes, plot='2d3d', color='k', markersize=5, norm=None, colorbar=False):
+    def earthquakes(self, earthquakes, plot='2d3d', color='k', markersize=5, norm=None, colorbar=False, zorder=2):
         '''
         Args:
             * earthquakes   : object from seismic locations.
@@ -913,7 +932,7 @@ class geodeticplot(object):
 
         # plot the earthquakes on the map if ask
         if '2d' in plot:
-            sc = self.carte.scatter(lon, lat, s=markersize/100., c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0)
+            sc = self.carte.scatter(lon, lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0, zorder=zorder)
             if colorbar:
                 self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
 

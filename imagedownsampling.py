@@ -305,6 +305,25 @@ class imagedownsampling(object):
         # All done
         return
 
+    def getblockcenter(self, block):
+        '''
+        Returns the center of a block.
+        Args:
+            * block         : Block as defined in initialstate.
+        '''
+
+        # Get the four corners
+        c1, c2, c3, c4 = block
+        x1, y1 = c1
+        x2, y2 = c2
+        x4, y4 = c4
+
+        xc = x1 + (x2 - x1)/2.
+        yc = y1 + (y4 - y1)/2.
+
+        # All done
+        return xc, yc
+
     def cutblockinfour(self, block):
         '''
         From a block, returns 4 equal blocks.
@@ -320,9 +339,8 @@ class imagedownsampling(object):
         x4, y4 = c4
 
         # Compute the position of the center
-        xc = x1 + (x2 - x1)/2.
-        yc = y1 + (y4 - y1)/2.
-        
+        xc, yc = self.getblockcenter(block)
+
         # Form the 4 blocks
         b1 = [ [x1, y1],
                [xc, y1],
@@ -409,6 +427,165 @@ class imagedownsampling(object):
         # All done
         return
 
+    def computeGradientCurvature(self, smooth=None):
+        '''
+        Computes the gradient for all the blocks.
+        Args:
+            * smooth        : Smoothes the Gradient and the Curvature using a Gaussian filter.
+                              smooth is the kernel (in km) of the filter.
+                              Default is None
+        '''
+
+        # Get the XY situation
+        PIXXY = np.vstack((self.image.x, self.image.y)).T
+
+        # Get minimum size
+        Bsize = self._is_minimum_size(self.blocks)
+
+        # Gradient (if we cannot compute the gradient, the value is zero, so the algo stops)
+        self.Gradient = np.zeros(len(self.blocks,))
+        self.Curvature = np.zeros(len(self.blocks,))
+
+        # Over each block, we average the position and the phase to have a new point
+        for i in range(len(self.blocks)):
+            if not Bsize[i]:
+                # Get block
+                block = self.blocks[i]
+                # Split it in 4 blocks
+                subBlocks = self.cutblockinfour(block)
+                # Create list
+                xg = []; yg = []; means = []
+                for subblock in subBlocks:
+                    # Create a path
+                    p = path.Path(subblock, closed=False)
+                    # Find those who are inside
+                    ii = p.contains_points(PIXXY)
+                    # Check if total area is sufficient
+                    blockarea = self.getblockarea(block)
+                    coveredarea = np.flatnonzero(ii).shape[0]*self.pixelArea
+                    if (coveredarea/blockarea >= self.tolerance):
+                        if self.datatype is 'insarrates':
+                            vel = np.mean(self.image.vel[ii])
+                            means.append(vel)
+                        elif self.datatype is 'cosicorrrates':
+                            east = np.mean(self.image.east[ii])
+                            north = np.mean(self.image.north[ii])
+                            means.append(np.sqrt(east**2+north**2))
+                        xg.append(np.mean(self.image.x[ii]))
+                        yg.append(np.mean(self.image.y[ii]))
+                means = np.array(means)
+                # estimate gradient
+                if len(xg)>=2:
+                    A = np.zeros((len(xg),3))
+                    A[:,0] = 1.
+                    A[:,1] = xg
+                    A[:,2] = yg
+                    cffs = np.linalg.lstsq(A,means)
+                    self.Gradient[i] = np.abs(np.mean(cffs[0][1:]))
+                    self.Curvature[i] = np.std(means - np.dot(A,cffs[0]))
+
+        # Smooth?
+        if smooth is not None:
+            centers = [self.getblockcenter(block) for block in self.blocks]
+            Distances = distance.cdist(centers,centers)**2
+            gauss = np.exp(-0.5*Distances/(smooth**2))
+            self.Gradient = np.dot(gauss, self.Gradient)/np.sum(gauss, axis=1)
+            self.Curvature = np.dot(gauss, self.Curvature)/np.sum(gauss, axis=1)
+
+        # All done
+        return
+
+    def dataBased(self, threshold, plot=False, verboseLevel='minimum', decimorig=10, quantity='curvature', smooth=None):
+        '''
+        Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
+        Threshold is based on the gradient or curvature of the phase field inside the block.
+        The algorithm is based on the varres downsampler. Please check at http://earthdef.caltech.edu
+        Args:
+            * threshold     : Gradient threshold
+        '''
+        
+        if self.verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Downsampling Iterations")
+
+        # Creates the variable that is supposed to stop the loop
+        # Check = [False]*len(self.blocks)
+        self.Gradient = np.ones(len(self.blocks),)*(threshold+1.)
+        self.Curvature = np.ones(len(self.blocks),)*(threshold+1.)
+        do_cut = False
+
+        # counter
+        it = 0
+
+        # Check
+        if quantity is 'curvature':
+            testable = self.Curvature
+        elif quantity is 'gradient':
+            testable = self.Gradient
+
+        # Check if block size is minimum
+        Bsize = self._is_minimum_size(self.blocks)
+
+        # Loops until done
+        while not (testable<threshold).all():
+
+            # Check 
+            assert testable.shape[0]==len(self.blocks), 'Gradient vector has a size different than number of blocks'
+
+            # Cut if asked
+            if do_cut:
+                # New list of blocks
+                newblocks = []
+                # Iterate over blocks
+                for j in range(len(self.blocks)):
+                    block = self.blocks[j]
+                    if (testable[j]>threshold) and not Bsize[j]:
+                        b1, b2, b3, b4 = self.cutblockinfour(block)
+                        newblocks.append(b1)
+                        newblocks.append(b2)
+                        newblocks.append(b3)
+                        newblocks.append(b4)
+                    else:
+                        newblocks.append(block)
+                # Set the blocks
+                self.setBlocks(newblocks)
+                # Do the downsampling
+                self.downsample(plot=False, decimorig=decimorig)
+            else:
+                do_cut = True
+
+            # Iteration #
+            it += 1
+            if self.verbose: 
+                sys.stdout.write('\r Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
+                sys.stdout.flush()
+
+            # Compute resolution
+            self.computeGradientCurvature(smooth=smooth)
+            if quantity is 'curvature':
+                testable = self.Curvature
+            elif quantity is 'gradient':
+                testable = self.Gradient
+
+            # initialize
+            Bsize = self._is_minimum_size(self.blocks)
+
+            if self.verbose and verboseLevel is not 'minimum':
+                sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(testable.min(), 
+                    testable.max(), testable.mean(), testable.std()))
+                sys.stdout.flush()
+    
+            # Plot at the end of that iteration
+            if plot:
+                self.plotDownsampled(decimorig=decimorig)
+
+        if self.verbose:
+            print(" ")
+
+        # All done
+        return
+
     def ResolutionBasedIterations(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum', decimorig=10, vertical=False):
         '''
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
@@ -468,7 +645,7 @@ class imagedownsampling(object):
                 # Set the blocks
                 self.setBlocks(newblocks)
                 # Do the downsampling
-                self.downsample(plot=plot, decimorig=decimorig)
+                self.downsample(plot=False, decimorig=decimorig)
             else:
                 do_cut = True
 
@@ -489,6 +666,10 @@ class imagedownsampling(object):
                 sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(self.Rd.min(), 
                     self.Rd.max(), self.Rd.mean(), self.Rd.std()))
                 sys.stdout.flush()
+
+            # Plot at the end of that iteration
+            if plot:
+                self.plotDownsampled(decimorig=decimorig)
     
         if self.verbose:
             print(" ")
@@ -710,6 +891,36 @@ class imagedownsampling(object):
         # Savefig
         if savefig is not None:
             plt.savefig(savefig)
+
+        # Gradient?
+        if hasattr(self, 'Gradient'):
+            plt.figure()
+            centers = [self.getblockcenter(block) for block in self.blocks]
+            x = [c[0] for c in centers]
+            y = [c[1] for c in centers]
+            plt.scatter(x, y, s=20, c=self.Gradient, linewidth=0.1)
+            plt.title('Gradient')
+            plt.colorbar(orientation='horizontal')
+
+        # Curvature
+        if hasattr(self, 'Curvature'):
+            plt.figure()
+            centers = [self.getblockcenter(block) for block in self.blocks]
+            x = [c[0] for c in centers]
+            y = [c[1] for c in centers]
+            plt.scatter(x, y, s=20, c=self.Curvature, linewidth=0.1)
+            plt.title('Curvature')
+            plt.colorbar(orientation='horizontal')
+        
+        # Resolution
+        if hasattr(self, 'Resolution'):
+            plt.figure()
+            centers = [self.getblockcenter(block) for block in self.blocks]
+            x = [c[0] for c in centers]
+            y = [c[1] for c in centers]
+            plt.scatter(x, y, s=20, c=self.Rd, linewidth=0.1)
+            plt.title('Resolution')
+            plt.colorbar(orientation='horizontal')
 
         # All done
         if show:

@@ -360,8 +360,8 @@ class seismiclocations(SourceInv):
             # Get values
             time = dt.datetime.strptime(tmp[0], "%Y-%m-%dT%H:%M:%S.%fZ")
             if len(tmp)>=5:
-                lon = np.float(tmp[2])
-                lat = np.float(tmp[1])
+                lon = np.float(tmp[1])
+                lat = np.float(tmp[2])
                 depth = np.float(tmp[3])
                 mag = np.float(tmp[4])
                 self.time.append(time)

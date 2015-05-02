@@ -1215,7 +1215,7 @@ class RectangularPatches(Fault):
                     [lon2, lat2, z2],
                     [lon3, lat3, z3],
                     [lon4, lat4, z4] ]
-        self.patchll.append(patchll)
+        self.patchll.append(np.array(patchll))
 
         # modify the slip
         sh = self.slip.shape
@@ -2391,7 +2391,7 @@ class RectangularPatches(Fault):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
+            fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
 
         # Draw the fault
         fig.faultpatches(self, slip=slip, Norm=Norm, colorbar=True, plot_on_2d=plot_on_2d)

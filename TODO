@@ -1,4 +1,5 @@
-1. Add uncertainties on the covariance plots (standard deviations, for instance)
-2. Add plotting of continents fill in geodetic plot 3D fault (pass a Polygon list into a Collection of 3D polygons).
-3. Incorporate EDKS correctly in csi (stop writing stuff and pass arrays)
-
+1. Verify the computeEquivPatch routine. It behaves weird for the Himalaya case...
+2. Add uncertainties on the covariance plots (standard deviations, for instance)
+3. Add plotting of continents fill in geodetic plot 3D fault (pass a Polygon list into a Collection of 3D polygons).
+4. Incorporate EDKS correctly in csi (stop writing stuff and pass arrays)
+5. Make sure parameters are positive in imagecovariance

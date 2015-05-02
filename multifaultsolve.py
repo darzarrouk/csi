@@ -607,7 +607,10 @@ class multifaultsolve(object):
 
         # Get the inverse of Cm
         print ("Computing the inverse of the model covariance")
-        iCm = scilin.inv(Cm)
+        if rcond is None:
+            iCm = scilin.inv(Cm)
+        else:
+            iCm = scilin.pinv(Cm, rcond=rcond)
 
         # Check If Cm is symmetric and positive definite
         if (Cd.transpose() != Cd).all():
