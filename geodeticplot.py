@@ -342,7 +342,7 @@ class geodeticplot(object):
         # All done
         return
     
-    def faulttrace(self, fault, color='r', add=False, discretized=False, zorder=2):
+    def faulttrace(self, fault, color='r', add=False, discretized=False, zorder=4):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -611,6 +611,12 @@ class geodeticplot(object):
             lon, lat = fault.xy2ll(x, y)
             lon[lon<0.] += 360.
             self.faille.plot_surface(lon, lat, -1.0*z, facecolors=cols, rstride=1, cstride=1, antialiased=True, linewidth=0)
+
+            # On 2D?
+            if plot_on_2d:
+                lon, lat = fault.xy2ll(X, Y)
+                lon[lon<0.] += 360.
+                self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder) 
 
             # Color Bar
             if colorbar:

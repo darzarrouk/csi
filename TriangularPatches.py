@@ -1101,18 +1101,18 @@ class TriangularPatches(Fault):
                 hvals.append(dist)
             if len(hvals) == 3:
                 h12, h13, h14 = hvals
-                D[i,adjacents[0]] = h13*h14
-                D[i,adjacents[1]] = h12*h14
-                D[i,adjacents[2]] = h12*h13
+                D[i,adjacents[0]] = -h13*h14
+                D[i,adjacents[1]] = -h12*h14
+                D[i,adjacents[2]] = -h12*h13
                 sumProd = h13*h14 + h12*h14 + h12*h13
             elif len(hvals) == 2:
                 h12, h13 = hvals
                 # Make a virtual patch
                 h14 = max(h12, h13)
-                D[i,adjacents[0]] = h13*h14
-                D[i,adjacents[1]] = h12*h14
+                D[i,adjacents[0]] = -h13*h14
+                D[i,adjacents[1]] = -h12*h14
                 sumProd = h13*h14 + h12*h14 + h12*h13
-            D[i,i] = -sumProd
+            D[i,i] = sumProd
 
         if verbose:
             print('')

@@ -981,19 +981,6 @@ class TriangularTents(TriangularPatches):
             # Increment 
             i += 1
 
-        # Condition
-        #S, V = np.linalg.eig(D) 
-        #uu = 0
-        #while S.min()<0.:
-        #    uu += 1
-        #    S[S<0.] = 0.
-        #    D = np.dot(np.dot(V.T, np.diag(S)), V)
-        #    S, V = np.linalg.eig(D)
-        #    if uu>100:
-        #        print('Laplacian cannot be conditioned easily.')
-        #        print('You will have to think about something smart...')
-        #        return D
-
         # All done
         return D
 

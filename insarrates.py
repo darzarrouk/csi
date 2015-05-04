@@ -1080,7 +1080,7 @@ class insarrates(SourceInv):
         xc, yc = self.ll2xy(loncenter, latcenter)
 
         # Get the profile
-        Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth, los = self.coord2prof(
+        Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth, los, lon, lat = self.coord2prof(
                 xc, yc, length, azimuth, width)
 
         # Store it in the profile list
@@ -1090,6 +1090,8 @@ class insarrates(SourceInv):
         dic['Length'] = length
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
+        dic['Lon'] = lon
+        dic['Lat'] = lat
         dic['LOS Velocity'] = vel
         dic['LOS Synthetics'] = synth
         dic['LOS Error'] = err
@@ -1385,6 +1387,8 @@ class insarrates(SourceInv):
         # 4. Get these values
         xg = self.x[Bol]
         yg = self.y[Bol]
+        lon = self.lon[Bol]
+        lat = self.lat[Bol]
         vel = self.vel[Bol]
         if self.synth is not None:
             synth = self.synth[Bol]
@@ -1430,6 +1434,8 @@ class insarrates(SourceInv):
         # Toss out nans
         jj = np.flatnonzero(np.isfinite(vel)).tolist()
         vel = vel[jj]
+        lon = lon[jj]
+        lat = lat[jj]
         Dalong = Dalong[jj]
         Dacros = Dacros[jj]
         if los is not None:
@@ -1462,7 +1468,7 @@ class insarrates(SourceInv):
             plt.show()
 
         # All done
-        return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth, los
+        return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth, los, lon, lat
 
     def curve2prof(self, xl, yl, width, widthDir):
         '''
@@ -1767,7 +1773,7 @@ class insarrates(SourceInv):
 
         # Write the header
         fout.write('#---------------------------------------------------\n')
-        fout.write('# Profile Generated with StaticInv\n')
+        fout.write('# Profile Generated with CSI\n')
         fout.write('# Center: {} {} \n'.format(dic['Center'][0], dic['Center'][1]))
         fout.write('# Endpoints: \n')
         fout.write('#           {} {} \n'.format(dic['EndPointsLL'][0][0], dic['EndPointsLL'][0][1]))
@@ -1797,8 +1803,10 @@ class insarrates(SourceInv):
                 Ep = dic['LOS Error'][i]
             else:
                 Ep = None
+            Lon = dic['Lon'][i]
+            Lat = dic['Lat'][i]
             if np.isfinite(Vp):
-                fout.write('{} {} {} \n'.format(d, Vp, Ep))
+                fout.write('{} {} {} {} {} \n'.format(d, Vp, Ep, Lon, Lat))
 
         # Close the file
         fout.close()
@@ -1818,54 +1826,25 @@ class insarrates(SourceInv):
             * synth     : Plot synthetics (True/False).
         '''
 
-        # open a figure
-        fig = plt.figure()
-        carte = fig.add_subplot(232)
-        prof = fig.add_subplot(212)
-
-        # Norm
-        if norm is not None:
-            vmin = norm[0]
-            vmax = norm[1]
-        else:
-            vmin = np.nanmin(self.vel)
-            vmax = np.nanmax(self.vel)
-
-        # Prepare a color map for insar
-        import matplotlib.colors as colors
-        import matplotlib.cm as cmx
-        cmap = plt.get_cmap('jet')
-        cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
-        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
-
-        # plot the InSAR Points on the Map
-        if ref is 'utm':
-            x = self.x
-            y = self.y
-        elif ref is 'lonlat':
-            x = self.lon
-            y = self.lat
-        carte.scatter(x, y, s=10, c=self.vel, cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.0)
-        scalarMap.set_array(self.vel)
-        plt.colorbar(scalarMap)
+        # Plot the insar
+        self.plot(faults=fault, norm=norm, show=False)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
         bb = np.zeros((len(b)+1, 2))
         for i in range(len(b)):
-            if ref is 'utm':
-                x, y = self.ll2xy(b[i,0], b[i,1])
-            elif ref is 'lonlat':
-                x = b[i,0]
-                y = b[i,1]
+            x = b[i,0]
+            if x<0.:
+                x += 360.
             bb[i,0] = x
-            bb[i,1] = y
+            bb[i,1] = b[i,1]
         bb[-1,0] = bb[0,0]
         bb[-1,1] = bb[0,1]
-        carte.plot(bb[:,0], bb[:,1], '-k')
+        self.fig.carte.plot(bb[:,0], bb[:,1], '-k', zorder=40)
 
-        # plot the selected stations on the map
-        # Later
+        # open a figure
+        fig = plt.figure()
+        prof = fig.add_subplot(111)
 
         # plot the profile
         x = self.profiles[name]['Distance']
@@ -1883,10 +1862,6 @@ class insarrates(SourceInv):
                 fault = [fault]
             # Loop on the faults
             for f in fault:
-                if ref is 'utm':
-                    carte.plot(f.xf, f.yf, '-')
-                elif ref is 'lonlat':
-                    carte.plot(f.lon, f.lat, '-')
                 # Get the distance
                 d = self.intersectProfileFault(name, f)
                 if d is not None:
@@ -1896,11 +1871,8 @@ class insarrates(SourceInv):
         # plot the legend
         prof.legend()
 
-        # axis of the map
-        carte.axis('equal')
-
         # Show to screen
-        plt.show()
+        self.fig.show(showFig=['map'])
 
         # All done
         return
@@ -2049,13 +2021,6 @@ class insarrates(SourceInv):
         if drawCoastlines:
             fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
 
-        # Plot the fault trace if asked
-        if faults is not None:
-            if type(faults) is not list:
-                faults = [faults]
-            for fault in faults:
-                fig.faulttrace(fault)
-
         # Plot the gps data if asked
         if gps is not None:
             if type(gps) is not list:
@@ -2071,9 +2036,18 @@ class insarrates(SourceInv):
         if not decim:
             fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter')
 
+        # Plot the fault trace if asked
+        if faults is not None:
+            if type(faults) is not list:
+                faults = [faults]
+            for fault in faults:
+                fig.faulttrace(fault)
+
         # Show
         if show:
             fig.show(showFig=['map'])
+        else:
+            self.fig = fig
 
         # All done
         return
