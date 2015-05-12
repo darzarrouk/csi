@@ -20,6 +20,7 @@ import os
 # Personals
 from .TriangularPatches import TriangularPatches
 from .geodeticplot import geodeticplot as geoplot
+from . import csiutils as utils
 
 class TriangularTents(TriangularPatches):
 
@@ -268,84 +269,30 @@ class TriangularTents(TriangularPatches):
         Writes the patch corners in a file that can be used in psxyz.
         Args:
             * filename      : Name of the file.
-            * add_slip      : Put the slip as a value for the color.
-                              Can be None, strikeslip, dipslip, total.
+            * add_slip      : Will be set to None
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
         '''
 
-        # Check size
+        # Set add_slip to none
         if add_slip is not None:
-            if self.N_slip!=None and self.N_slip!=len(self.patch):
-                raise NotImplementedError('Only works for len(slip)==len(patch)')
+            print('Slip vector is not the same length as the number of patches for TriangularTent type.')
+            print('Setting add_slip to None')
+            add_slip = None
 
-        # Write something
-        print('Writing geometry to file {}'.format(filename))
-
-        # Open the file
-        fout = open(filename, 'w')
-
-        # If an h5 file is specified, open it
-        if stdh5 is not None:
-            import h5py
-            h5fid = h5py.File(stdh5, 'r')
-            samples = h5fid['samples'].value[::decim,:]
-
-        # Loop over the patches
-        nPatches = len(self.patch)
-        for pIndex in range(nPatches):
-
-            # Select the string for the color
-            string = '  '
-            if add_slip is not None:
-                if add_slip is 'strikeslip':
-                    if stdh5 is not None:
-                        slp = np.std(samples[:,pIndex])
-                    else:
-                        slp = self.slip[pIndex,0]*scale
-                    string = '-Z{}'.format(slp)
-                elif add_slip is 'dipslip':
-                    if stdh5 is not None:
-                        slp = np.std(samples[:,pIndex+nPatches])
-                    else:
-                        slp = self.slip[pIndex,1]*scale
-                    string = '-Z{}'.format(slp)
-                elif add_slip is 'total':
-                    if stdh5 is not None:
-                        slp = np.std(samples[:,pIndex]**2 + samples[:,pIndex+nPatches]**2)
-                    else:
-                        slp = np.sqrt(self.slip[pIndex,0]**2 + self.slip[pIndex,1]**2)*scale
-                    string = '-Z{}'.format(slp)
-
-            # Put the slip value
-            slipstring = ''
-            if add_slip is not None:
-                slipstring = ' # {} {} {} '.format(self.slip[pIndex,0],
-                                                   self.slip[pIndex,1], self.slip[pIndex,2])
-            parameter = ''
-
-            # Write the string to file
-            fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
-
-            # Write the 3 patch corners (the order is to be GMT friendly)
-            p = self.patchll[pIndex]
-            pp = p[0]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-            pp = p[1]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-            pp = p[2]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-
-        # Close the file
-        fout.close()
-
-        # Close h5 file if it is open
-        if stdh5 is not None:
-            h5fid.close()
+        # Run the method from the parent class
+        super(TriangularTents, self).writePatches2File(filename, add_slip=add_slip, scale=scale, stdh5=stdh5, decim=decim)
 
         # All done
         return
 
-    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip'):
+    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', increments=None, nSamples=None):
         '''
-        Writes the values of slip in a grd file (lon, lat, slip).
+        Writes the values of slip in a grd file (lon, lat, slip, z).
+        In the netcdf file, you can access each layer independently by using the 'slip' and 'z' keywords.
+        
+        Ex:  gmt grdinfo filename.grd?slip
+
         Args:
             * filename      : Name of the grdfile.
             * npoints       : Number of points inside each patch.
@@ -353,22 +300,24 @@ class TriangularTents(TriangularPatches):
             * dlat          : Latitude increment of the output file
             * slip          : Slip value to store.
         '''
-
-        assert False, 'Not implemented yet'
+    
+        # Assert
+        assert not ( (increments is None) and (nSamples is None) ), 'Specify increments or nSamples...'
 
         # Import needed stuff
         import scipy.interpolate as sciint
 
         # Get the sources
         gp = geoplot(figure=np.random.randint(1000))
-        lon, lat, z, slip = gp.faultTents(self, slip=slip, method='scatter',
+        lon, lat, z, s = gp.faultTents(self, slip=slip, method='scatter',
                                             npoints=npoints)
         del gp
 
-        # Resample on a regular grid
-        olon, olat = np.meshgrid(np.arange(lon.min(), lon.max()+dlon, dlon), 
-                np.arange(lat.min(), lat.max()+dlat, dlat))
-        interp = sciint.LinearNDInterpolator()
+        # write 2 grd
+        utils.write2netCDF('z_{}'.format(filename), 
+                lon, lat, -1.0*z, increments=increments, nSamples=nSamples)
+        utils.write2netCDF('{}_{}'.format(slip, filename),
+                lon, lat, s, increments=increments, nSamples=nSamples)
 
         # All done
         return

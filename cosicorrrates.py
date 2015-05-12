@@ -13,6 +13,7 @@ import scipy.spatial.distance as scidis
 
 # Personals
 from .SourceInv import SourceInv
+from . import csiutils as utils
 
 class cosicorrrates(SourceInv):
 
@@ -1466,7 +1467,7 @@ class cosicorrrates(SourceInv):
         # All done 
         return
 
-    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface'):
+    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', useGMT=False):
         '''
         Uses surface to write the output to a grd file.
         Args:
@@ -1482,6 +1483,7 @@ class cosicorrrates(SourceInv):
             print('---------------------------------')
             print('Write in grd format to files {}_east.grd and {}_north.grd'.format(fname, fname))
 
+
         # Get variables
         x = self.lon
         y = self.lat
@@ -1492,53 +1494,61 @@ class cosicorrrates(SourceInv):
             e = self.synth_east
             n = self.synth_north
 
-        # Write these to a dummy file
-        foute = open('east.xyz', 'w')
-        foutn = open('north.xyz', 'w')
-        for i in range(x.shape[0]):
-            foute.write('{} {} {} \n'.format(x[i], y[i], e[i]))
-            foutn.write('{} {} {} \n'.format(x[i], y[i], n[i]))
-        foute.close()
-        foutn.close()
+        if not useGMT:
 
-        # Import subprocess
-        import subprocess as subp
+            # Write
+            utils.write2netCDF('{}_east.grd'.format(fname), x, y, e, nSamples=interp, title='East Displacements')
+            utils.write2netCDF('{}_north.grd'.format(fname), x, y, n, nSamples=interp, title='North Displacements')
 
-        # Get Rmin/Rmax/Rmin/Rmax
-        lonmin = x.min()
-        lonmax = x.max()
-        latmin = y.min()
-        latmax = y.max()
-        R = '-R{}/{}/{}/{}'.format(lonmin, lonmax, latmin, latmax)
-
-        # Create the -I string
-        if type(interp)!=list:
-            Nlon = int(interp)*int(oversample)
-            Nlat = Nlon
         else:
-            Nlon = int(interp[0])*int(oversample)
-            Nlat = int(interp[1])*int(oversample)
-        I = '-I{}+/{}+'.format(Nlon,Nlat)        
 
-        # Create the G string
-        Ge = '-G'+fname+'_east.grd'
-        Gn = '-G'+fname+'_north.grd'
+            # Write these to a dummy file
+            foute = open('east.xyz', 'w')
+            foutn = open('north.xyz', 'w')
+            for i in range(x.shape[0]):
+                foute.write('{} {} {} \n'.format(x[i], y[i], e[i]))
+                foutn.write('{} {} {} \n'.format(x[i], y[i], n[i]))
+            foute.close()
+            foutn.close()
 
-        # Create the command
-        come = [cmd, R, I, Ge]
-        comn = [cmd, R, I, Gn]
+            # Import subprocess
+            import subprocess as subp
 
-        # open stdin and stdout
-        fine = open('east.xyz', 'r')
-        finn = open('north.xyz', 'r')
+            # Get Rmin/Rmax/Rmin/Rmax
+            lonmin = x.min()
+            lonmax = x.max()
+            latmin = y.min()
+            latmax = y.max()
+            R = '-R{}/{}/{}/{}'.format(lonmin, lonmax, latmin, latmax)
 
-        # Execute command
-        subp.call(come, stdin=fine)
-        subp.call(comn, stdin=finn)
+            # Create the -I string
+            if type(interp)!=list:
+                Nlon = int(interp)*int(oversample)
+                Nlat = Nlon
+            else:
+                Nlon = int(interp[0])*int(oversample)
+                Nlat = int(interp[1])*int(oversample)
+            I = '-I{}+/{}+'.format(Nlon,Nlat)        
 
-        # CLose the files
-        fine.close()
-        finn.close()
+            # Create the G string
+            Ge = '-G'+fname+'_east.grd'
+            Gn = '-G'+fname+'_north.grd'
+
+            # Create the command
+            come = [cmd, R, I, Ge]
+            comn = [cmd, R, I, Gn]
+
+            # open stdin and stdout
+            fine = open('east.xyz', 'r')
+            finn = open('north.xyz', 'r')
+
+            # Execute command
+            subp.call(come, stdin=fine)
+            subp.call(comn, stdin=finn)
+
+            # CLose the files
+            fine.close()
+            finn.close()
 
         # All done
         return

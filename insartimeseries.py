@@ -664,7 +664,7 @@ class insartimeseries(insarrates):
         # All done
         return
 
-    def write2GRDs(self, prefix, interp=100, cmd='surface', oversample=1, tension=None, verbose=False):
+    def write2GRDs(self, prefix, interp=100, cmd='surface', oversample=1, tension=None, verbose=False, useGMT=False):
         '''
         Write all the dates to GRD files.
         For arg description, see insarrates.write2grd
@@ -688,7 +688,7 @@ class insartimeseries(insarrates):
                 sys.stdout.flush()
 
             # Use the insarrates routine to write the GRD
-            sar.write2grd(filename, oversample=1, interp=interp, cmd=cmd)
+            sar.write2grd(filename, oversample=oversample, interp=interp, cmd=cmd, useGMT=useGMT)
 
             # counter
             i += 1

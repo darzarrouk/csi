@@ -62,6 +62,7 @@ from .seismicplot import seismicplot
 
 ## Utils
 from .tidalfit import tidalfit
+from . import csiutils as utils
 
 #from timefnutils import *
 

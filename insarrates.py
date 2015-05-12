@@ -16,6 +16,7 @@ import sys
 # Personals
 from .SourceInv import SourceInv
 from .geodeticplot import geodeticplot as geoplot
+from . import csiutils as utils
 
 class insarrates(SourceInv):
 
@@ -2052,7 +2053,7 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', tension=None):
+    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', tension=None, useGMT=False):
         '''
         Uses surface to write the output to a grd file.
         Args:
@@ -2075,49 +2076,55 @@ class insarrates(SourceInv):
         elif data == 'res':
             z = self.vel - self.synth
 
-        # Write these to a dummy file
-        fout = open('xyz.xyz', 'w')
-        for i in range(x.shape[0]):
-            fout.write('{} {} {} \n'.format(x[i], y[i], z[i]))
-        fout.close()
+        if not useGMT:
 
-        # Import subprocess
-        import subprocess as subp
+            utils.write2netCDF(fname, x, y, z, nSamples=interp)
 
-        # Get Rmin/Rmax/Rmin/Rmax
-        lonmin = x.min()
-        lonmax = x.max()
-        latmin = y.min()
-        latmax = y.max()
-        R = '-R{}/{}/{}/{}'.format(lonmin, lonmax, latmin, latmax)
-
-        # Create the -I string
-        if type(interp)!=list:
-            Nlon = int(interp)*int(oversample)
-            Nlat = Nlon
         else:
-            Nlon = int(interp[0])
-            Nlat = int(interp[1])
-        I = '-I{}+/{}+'.format(Nlon,Nlat)
 
-        # Create the G string
-        G = '-G'+fname
+            # Write these to a dummy file
+            fout = open('xyz.xyz', 'w')
+            for i in range(x.shape[0]):
+                fout.write('{} {} {} \n'.format(x[i], y[i], z[i]))
+            fout.close()
 
-        # Create the command
-        com = [cmd, R, I, G]
+            # Import subprocess
+            import subprocess as subp
 
-        # Add tension
-        if tension is not None and cmd in ('surface'):
-            T = '-T{}'.format(tension)
+            # Get Rmin/Rmax/Rmin/Rmax
+            lonmin = x.min()
+            lonmax = x.max()
+            latmin = y.min()
+            latmax = y.max()
+            R = '-R{}/{}/{}/{}'.format(lonmin, lonmax, latmin, latmax)
 
-        # open stdin and stdout
-        fin = open('xyz.xyz', 'r')
+            # Create the -I string
+            if type(interp)!=list:
+                Nlon = int(interp)*int(oversample)
+                Nlat = Nlon
+            else:
+                Nlon = int(interp[0])
+                Nlat = int(interp[1])
+            I = '-I{}+/{}+'.format(Nlon,Nlat)
 
-        # Execute command
-        subp.call(com, stdin=fin, shell=True)
+            # Create the G string
+            G = '-G'+fname
 
-        # CLose the files
-        fin.close()
+            # Create the command
+            com = [cmd, R, I, G]
+
+            # Add tension
+            if tension is not None and cmd in ('surface'):
+                T = '-T{}'.format(tension)
+
+            # open stdin and stdout
+            fin = open('xyz.xyz', 'r')
+
+            # Execute command
+            subp.call(com, stdin=fin, shell=True)
+
+            # CLose the files
+            fin.close()
 
         # All done
         return
