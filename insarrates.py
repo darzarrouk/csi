@@ -2046,13 +2046,8 @@ class insarrates(SourceInv):
         # Show
         if show:
             fig.show(showFig=['map'])
-<<<<<<< TREE
         else:
             del fig.faille
-=======
-        else:
-            self.fig = fig
->>>>>>> MERGE-SOURCE
 
         # All done
         return
