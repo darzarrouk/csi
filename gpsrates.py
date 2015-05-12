@@ -80,7 +80,7 @@ class gpsrates(SourceInv):
         else:
             self.x = np.append(self.x,x)
             self.y = np.append(self.y,y)
-            self.lon, self.lat = self.ll2xy(self.x,self.y)            
+            self.lon, self.lat = self.xy2ll(self.x,self.y)            
         
         # Initialize the vel_enu array
         if initVel:
