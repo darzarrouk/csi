@@ -2047,7 +2047,7 @@ class insarrates(SourceInv):
         if show:
             fig.show(showFig=['map'])
         else:
-            del fig.faille
+            self.fig = fig
 
         # All done
         return
