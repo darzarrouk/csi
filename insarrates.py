@@ -1157,9 +1157,17 @@ class insarrates(SourceInv):
 
         # All done
         return
-    def referenceProfile(self, name, xmin, xmax):
+
+    def referenceProfile(self, name, xmin, xmax, method='mean'):
         '''
         Removes the mean value of points between xmin and xmax.
+        Optionally, can remove the linear best fit between these 2 values
+        Args:
+            * name      : Name of the profile
+            * xmin      : minimum value along X-axis to consider
+            * xmax      : Maximum value along X-axis to consider
+            * method    : 'mean' will remove the mean value between xmin and xmax
+                          'linear' will remove the linear best fit between xmin and xmax
         '''
 
         # Get the profile
@@ -1167,12 +1175,22 @@ class insarrates(SourceInv):
 
         # Get the indexes
         ii = self._getindexXlimProfile(name, xmin, xmax)
+        
+        # Check 
+        if len(ii)==0:
+            return
 
         # Get average value
-        average = profile['LOS Velocity'][ii].mean()
+        if method=='mean':
+            reference = profile['LOS Velocity'][ii].mean()
+        elif method=='linear':
+            y = profile['LOS Velocity'][ii]
+            x = profile['Distance'][ii]
+            P = np.polyfit(x, y, 1)
+            reference = profile['Distance']*P[0] + P[1]
 
         # Set the reference
-        profile['LOS Velocity'][:] -= average
+        profile['LOS Velocity'] -= reference
 
         # all done
         return
