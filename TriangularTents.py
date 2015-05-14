@@ -288,13 +288,12 @@ class TriangularTents(TriangularPatches):
 
     def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', increments=None, nSamples=None):
         '''
-        Writes the values of slip in a grd file (lon, lat, slip, z).
-        In the netcdf file, you can access each layer independently by using the 'slip' and 'z' keywords.
-        
-        Ex:  gmt grdinfo filename.grd?slip
+        Writes the values of slip in two grd files:
+                -> z_{filename}
+                -> {slip}_{filename}
 
         Args:
-            * filename      : Name of the grdfile.
+            * filename      : Name of the grdfile (should end by grd or nc)
             * npoints       : Number of points inside each patch.
             * dlon          : Longitude increment of the output file
             * dlat          : Latitude increment of the output file

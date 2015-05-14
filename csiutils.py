@@ -9,7 +9,7 @@ except:
 #----------------------------------------------------------------
 # A routine to write netcdf files
 
-def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='CSI product', name='z', scale=1.0, offset=0.0, xyunits=['Lon', 'Lat'], units='None'):
+def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='CSI product', name='z', scale=1.0, offset=0.0, xyunits=['Lon', 'Lat'], units='None', interpolation=True):
     '''
     Creates a netCDF file  with the arrays in Z. 
     Z can be list of array or an array, the size of lon.
@@ -32,18 +32,26 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='C
           
         * None'''
 
-    # Check
-    if nSamples is not None:
-        if type(nSamples) is int:
-            nSamples = [nSamples, nSamples]
-        dlon = (lon.max()-lon.min())/nSamples[0]
-        dlat = (lat.max()-lat.min())/nSamples[1]
-    if increments is not None:
-        dlon, dlat = increments
+    if interpolation:
 
-    # Resample on a regular grid
-    olon, olat = np.meshgrid(np.arange(lon.min(), lon.max(), dlon),
-                             np.arange(lat.min(), lat.max(), dlat))
+        # Check
+        if nSamples is not None:
+            if type(nSamples) is int:
+                nSamples = [nSamples, nSamples]
+            dlon = (lon.max()-lon.min())/nSamples[0]
+            dlat = (lat.max()-lat.min())/nSamples[1]
+        if increments is not None:
+            dlon, dlat = increments
+
+        # Resample on a regular grid
+        olon, olat = np.meshgrid(np.arange(lon.min(), lon.max(), dlon),
+                                 np.arange(lat.min(), lat.max(), dlat))
+    else:
+        # Get lon lat
+        olon = lon
+        olat = lat
+        dlon = olon[0,1]-olon[0,0]
+        dlat = olat[1,0]-olat[0,0]
 
     # Create a file
     fid = netcdf(filename,'w')
@@ -77,11 +85,13 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='C
     fid.variables['y_range'][1] = olat[-1,0]
     fid.variables['spacing'][1] = dlat
     
-    # Interpolate
-    interpZ = sciint.LinearNDInterpolator(np.vstack((lon, lat)).T, z, fill_value=np.nan)
-
-    # Interpolate
-    oZ = interpZ(olon, olat)
+    if interpolation:
+        # Interpolate
+        interpZ = sciint.LinearNDInterpolator(np.vstack((lon, lat)).T, z, fill_value=np.nan)
+        oZ = interpZ(olon, olat)
+    else:
+        # Get values
+        oZ = z
 
     # Range
     zmin = np.nanmin(oZ)
