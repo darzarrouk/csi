@@ -9,7 +9,7 @@ except:
 #----------------------------------------------------------------
 # A routine to write netcdf files
 
-def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='CSI product', name='z', scale=1.0, offset=0.0, xyunits=['Lon', 'Lat'], units='None', interpolation=True):
+def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='CSI product', name='z', scale=1.0, offset=0.0, xyunits=['Lon', 'Lat'], units='None', interpolation=True, verbose=True):
     '''
     Creates a netCDF file  with the arrays in Z. 
     Z can be list of array or an array, the size of lon.
@@ -50,14 +50,19 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='C
         # Get lon lat
         olon = lon
         olat = lat
-        dlon = olon[0,1]-olon[0,0]
-        dlat = olat[1,0]-olat[0,0]
+        if increments is not None:
+            dlon, dlat = increments
+        else:
+            dlon = olon[0,1]-olon[0,0]
+            dlat = olat[1,0]-olat[0,0]
 
     # Create a file
     fid = netcdf(filename,'w')
 
     # Create a dimension variable
     fid.createDimension('side',2)
+    if verbose:
+        print('Create dimension xysize with size {}'.format(np.prod(olon.shape)))
     fid.createDimension('xysize', np.prod(olon.shape))
 
     # Range variables
@@ -77,10 +82,14 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='C
     fid.source = 'CSI.utils.write2netCDF'
 
     # Filing rnage and spacing
+    if verbose:
+        print('x_range from {} to {} with spacing {}'.format(olon[0,0], olon[0,-1], dlon))
     fid.variables['x_range'][0] = olon[0,0]
     fid.variables['x_range'][1] = olon[0,-1]
     fid.variables['spacing'][0] = dlon
 
+    if verbose:
+        print('y_range from {} to {} with spacing {}'.format(olat[0,0], olat[-1,0], dlat))
     fid.variables['y_range'][0] = olat[0,0]
     fid.variables['y_range'][1] = olat[-1,0]
     fid.variables['spacing'][1] = dlat

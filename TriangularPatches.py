@@ -169,12 +169,13 @@ class TriangularPatches(Fault):
         # All done
         return
 
-    def patches2triangles(self, fault):
+    def patches2triangles(self, fault, numberOfTriangles=4):
         '''
         Takes a fault with rectangular patches and splits them into triangles to 
         initialize self.
         Args:
-            * fault : instance of rectangular patches.
+            * fault             : instance of rectangular patches.
+            * numberOfTriangles : Split each patch in 2 or 4 (default) triangle
         '''
 
         # Initialize the lists of patches
@@ -185,42 +186,61 @@ class TriangularPatches(Fault):
         vertices = []
         faces = []
 
-        # Each patch is being splitted in 4 triangles
+        # Each patch is being splitted in 2 or 4 triangles
         for patch in fault.patch:
-
-            # Get the center
-            center = np.array(fault.getpatchgeometry(patch, center=True)[:3])
 
             # Add vertices
             for vertex in patch.tolist():
                 if vertex not in vertices:
                     vertices.append(vertex)
-            vertices.append(list(center))
 
             # Find the vertices in the list
             i0 = np.flatnonzero(np.array([patch[0].tolist()==v for v in vertices]))[0]
             i1 = np.flatnonzero(np.array([patch[1].tolist()==v for v in vertices]))[0]
             i2 = np.flatnonzero(np.array([patch[2].tolist()==v for v in vertices]))[0]
             i3 = np.flatnonzero(np.array([patch[3].tolist()==v for v in vertices]))[0]
-            ic = np.flatnonzero(np.array([center.tolist()==v for v in vertices]))[0]
 
-            # Split in 4
-            t1 = np.array([patch[0], patch[1], center])
-            t2 = np.array([patch[1], patch[2], center])
-            t3 = np.array([patch[2], patch[3], center])
-            t4 = np.array([patch[3], patch[0], center])
+            if numberOfTriangles==4:
+                
+                # Get the center
+                center = np.array(fault.getpatchgeometry(patch, center=True)[:3])
+                vertices.append(list(center))
+                ic = np.flatnonzero(np.array([center.tolist()==v for v in vertices]))[0]
 
-            # faces
-            faces.append([i0, i1, ic])
-            faces.append([i1, i2, ic])
-            faces.append([i2, i3, ic])
-            faces.append([i3, i0, ic])
+                # Split in 4
+                t1 = np.array([patch[0], patch[1], center])
+                t2 = np.array([patch[1], patch[2], center])
+                t3 = np.array([patch[2], patch[3], center])
+                t4 = np.array([patch[3], patch[0], center])
+
+                # faces
+                fs = ([i0, i1, ic],
+                      [i1, i2, ic],
+                      [i2, i3, ic],
+                      [i3, i0, ic])
         
-            # patches
-            self.patch.append(t1)
-            self.patch.append(t2)
-            self.patch.append(t3)
-            self.patch.append(t4)
+                # patches
+                ps = [t1, t2, t3, t4]
+
+            elif numberOfTriangles==2:
+        
+                # Split in 2
+                t1 = np.array([patch[0], patch[1], patch[2]])
+                t2 = np.array([patch[2], patch[3], patch[0]])
+
+                # faces
+                fs = ([i0, i1, i2], [i2, i3, i0])
+
+                # patches
+                ps = (t1, t2)
+            
+            else:
+                assert False, 'numberOfTriangles should be 2 or 4'
+
+            for f,p in zip(fs, ps):
+                faces.append(f)
+                self.patch.append(p)
+
 
         # Save
         self.Vertices = np.array(vertices)
