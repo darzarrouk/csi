@@ -1614,4 +1614,286 @@ class seismiclocations(SourceInv):
         # All done
         return strike, dip, rake
 
+    def getprofile(self, name, loncenter, latcenter, length, azimuth, width):
+        '''
+        Project the seismic locations onto a profile.
+        Works on the lat/lon coordinates system.
+        Args:
+            * name              : Name of the profile.
+            * loncenter         : Profile origin along longitude.
+            * latcenter         : Profile origin along latitude.
+            * length            : Length of profile.
+            * azimuth           : Azimuth in degrees.
+            * width             : Width of the profile.
+        '''
+
+        # the profiles are in a dictionary
+        if not hasattr(self, 'profiles'):
+            self.profiles = {}
+
+        # Convert the lat/lon of the center into UTM.
+        xc, yc = self.ll2xy(loncenter, latcenter)
+
+        # Get the profile
+        Dalong, Mag, Depth, Dacros, boxll, xe1, ye1, xe2, ye2, lon, lat = self.coord2prof(
+                xc, yc, length, azimuth, width)
+
+        # Store it in the profile list
+        self.profiles[name] = {}
+        dic = self.profiles[name]
+        dic['Center'] = [loncenter, latcenter]
+        dic['Length'] = length
+        dic['Width'] = width
+        dic['Box'] = np.array(boxll)
+        dic['Lon'] = lon
+        dic['Lat'] = lat
+        dic['Magnitude'] = Mag
+        dic['Depth'] = Depth
+        dic['Distance'] = np.array(Dalong)
+        dic['Normal Distance'] = np.array(Dacros)
+        dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
+        lone1, late1 = self.putm(xe1*1000., ye1*1000., inverse=True)
+        lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
+        dic['EndPointsLL'] = [[lone1, late1],
+                              [lone2, late2]]
+
+        # All done
+        return
+
+    def coord2prof(self, xc, yc, length, azimuth, width):
+        '''
+        Routine returning the profile
+        Args:
+            * xc                : X pos of center
+            * yc                : Y pos of center
+            * length            : length of the profile.
+            * azimuth           : azimuth of the profile.
+            * width             : width of the profile.
+        Returns:
+            dis                 : Distance from the center
+            mag                 : Magnitude
+            depth               : Depth
+            norm                : distance perpendicular to profile
+            boxll               : lon lat coordinates of the profile box used
+            xe1, ye1            : coordinates (UTM) of the profile endpoint
+            xe2, ye2            : coordinates (UTM) of the profile endpoint
+        '''
+
+        # Azimuth into radians
+        alpha = azimuth*np.pi/180.
+
+        # Copmute the across points of the profile
+        xa1 = xc - (width/2.)*np.cos(alpha)
+        ya1 = yc + (width/2.)*np.sin(alpha)
+        xa2 = xc + (width/2.)*np.cos(alpha)
+        ya2 = yc - (width/2.)*np.sin(alpha)
+
+        # Compute the endpoints of the profile
+        xe1 = xc + (length/2.)*np.sin(alpha)
+        ye1 = yc + (length/2.)*np.cos(alpha)
+        xe2 = xc - (length/2.)*np.sin(alpha)
+        ye2 = yc - (length/2.)*np.cos(alpha)
+
+        # Convert the endpoints
+        elon1, elat1 = self.xy2ll(xe1, ye1)
+        elon2, elat2 = self.xy2ll(xe2, ye2)
+
+        # Design a box in the UTM coordinate system.
+        x1 = xe1 - (width/2.)*np.cos(alpha)
+        y1 = ye1 + (width/2.)*np.sin(alpha)
+        x2 = xe1 + (width/2.)*np.cos(alpha)
+        y2 = ye1 - (width/2.)*np.sin(alpha)
+        x3 = xe2 + (width/2.)*np.cos(alpha)
+        y3 = ye2 - (width/2.)*np.sin(alpha)
+        x4 = xe2 - (width/2.)*np.cos(alpha)
+        y4 = ye2 + (width/2.)*np.sin(alpha)
+
+        # Convert the box into lon/lat for further things
+        lon1, lat1 = self.xy2ll(x1, y1)
+        lon2, lat2 = self.xy2ll(x2, y2)
+        lon3, lat3 = self.xy2ll(x3, y3)
+        lon4, lat4 = self.xy2ll(x4, y4)
+
+        # make the box
+        box = []
+        box.append([x1, y1])
+        box.append([x2, y2])
+        box.append([x3, y3])
+        box.append([x4, y4])
+
+        # make latlon box
+        boxll = []
+        boxll.append([lon1, lat1])
+        boxll.append([lon2, lat2])
+        boxll.append([lon3, lat3])
+        boxll.append([lon4, lat4])
+
+        # Get the InSAR points in this box.
+        # 1. import shapely and nxutils
+        import matplotlib.path as path
+        import shapely.geometry as geom
+
+        # 2. Create an array with the positions
+        XY = np.vstack((self.x, self.y)).T
+
+        # 3. Create a box
+        rect = path.Path(box, closed=False)
+
+        # 4. Find those who are inside
+        Bol = rect.contains_points(XY)
+
+        # 4. Get these values
+        xg = self.x[Bol]
+        yg = self.y[Bol]
+        lon = self.lon[Bol]
+        lat = self.lat[Bol]
+        mag = self.mag[Bol]
+        depth = self.depth[Bol]
+
+        # Check if lengths are ok
+        if len(xg) > 5:
+
+            # 5. Get the sign of the scalar product between the line and the point
+            vec = np.array([xe1-xc, ye1-yc])
+            xy = np.vstack((xg-xc, yg-yc)).T
+            sign = np.sign(np.dot(xy, vec))
+
+            # 6. Compute the distance (along, across profile) and get the velocity
+            # Create the list that will hold these values
+            Dacros = []; Dalong = [];
+            # Build lines of the profile
+            Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
+            Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]])
+            # Build a multipoint
+            PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
+            # Loop on the points
+            for p in range(len(PP.geoms)):
+                Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
+                Dacros.append(Lalong.distance(PP.geoms[p]))
+
+        else:
+            Dalong = mag
+            Dacros = mag
+
+        Dalong = np.array(Dalong)
+        Dacros = np.array(Dacros)
+
+        # Toss out nans
+        jj = np.flatnonzero(np.isfinite(mag)).tolist()
+        mag = mag[jj]
+        lon = lon[jj]
+        lat = lat[jj]
+        Dalong = Dalong[jj]
+        Dacros = Dacros[jj]
+        depth = depth[jj]
+
+        # All done
+        return Dalong, mag, depth, Dacros, boxll, xe1, ye1, xe2, ye2, lon, lat
+
+    def writeProfile2File(self, name, filename, fault=None):
+        '''
+        Writes the profile named 'name' to the ascii file filename.
+        '''
+
+        # open a file
+        fout = open(filename, 'w')
+
+        # Get the dictionary
+        dic = self.profiles[name]
+
+        # Write the header
+        fout.write('#---------------------------------------------------\n')
+        fout.write('# Profile Generated with CSI\n')
+        fout.write('# Center: {} {} \n'.format(dic['Center'][0], dic['Center'][1]))
+        fout.write('# Endpoints: \n')
+        fout.write('#           {} {} \n'.format(dic['EndPointsLL'][0][0], dic['EndPointsLL'][0][1]))
+        fout.write('#           {} {} \n'.format(dic['EndPointsLL'][1][0], dic['EndPointsLL'][1][1]))
+        fout.write('# Box Points: \n')
+        fout.write('#           {} {} \n'.format(dic['Box'][0][0],dic['Box'][0][1]))
+        fout.write('#           {} {} \n'.format(dic['Box'][1][0],dic['Box'][1][1]))
+        fout.write('#           {} {} \n'.format(dic['Box'][2][0],dic['Box'][2][1]))
+        fout.write('#           {} {} \n'.format(dic['Box'][3][0],dic['Box'][3][1]))
+
+        # Place faults in the header
+        if fault is not None:
+            if fault.__class__ is not list:
+                fault = [fault]
+            fout.write('# Fault Positions: \n')
+            for f in fault:
+                d = self.intersectProfileFault(name, f)
+                fout.write('# {}           {} \n'.format(f.name, d))
+
+        fout.write('#---------------------------------------------------\n')
+
+        # Write the values
+        for i in range(len(dic['Distance'])):
+            d = dic['Distance'][i]
+            z = dic['Depth'][i]
+            Mp = dic['Magnitude'][i]
+            Lon = dic['Lon'][i]
+            Lat = dic['Lat'][i]
+            if np.isfinite(Mp):
+                fout.write('{} {} {} {} {} \n'.format(d, z, Mp, Lon, Lat))
+
+        # Close the file
+        fout.close()
+
+        # all done
+        return
+
+    def intersectProfileFault(self, name, fault):
+        '''
+        Gets the distance between the fault/profile intersection and the profile center.
+        Args:
+            * name      : name of the profile.
+            * fault     : fault object from verticalfault.
+        '''
+
+        # Import shapely
+        import shapely.geometry as geom
+
+        # Grab the fault trace
+        xf = fault.xf
+        yf = fault.yf
+
+        # Grab the profile
+        prof = self.profiles[name]
+
+        # import shapely
+        import shapely.geometry as geom
+
+        # Build a linestring with the profile center
+        Lp = geom.LineString(prof['EndPoints'])
+
+        # Build a linestring with the fault
+        ff = []
+        for i in range(len(xf)):
+            ff.append([xf[i], yf[i]])
+        Lf = geom.LineString(ff)
+
+        # Get the intersection
+        if Lp.crosses(Lf):
+            Pi = Lp.intersection(Lf)
+            if type(Pi) is geom.point.Point:
+                p = Pi.coords[0]
+            else:
+                return None
+        else:
+            return None
+
+        # Get the center
+        lonc, latc = prof['Center']
+        xc, yc = self.ll2xy(lonc, latc)
+
+        # Get the sign
+        xa,ya = prof['EndPoints'][0]
+        vec1 = [xa-xc, ya-yc]
+        vec2 = [p[0]-xc, p[1]-yc]
+        sign = np.sign(np.dot(vec1, vec2))
+
+        # Compute the distance to the center
+        d = np.sqrt( (xc-p[0])**2 + (yc-p[1])**2)*sign
+
+        # All done
+        return d
 # EOF
