@@ -20,6 +20,7 @@ from .dippingfault  import dippingfault
 from .faultwithdip import faultwithdip
 from .faultwithvaryingdip import faultwithvaryingdip
 from .faultpostproc import faultpostproc
+from .faultpostproctents import faultpostproctents
 from .fault3D import fault3D
 from .planarfault import planarfault
 

@@ -1254,4 +1254,34 @@ class TriangularTents(TriangularPatches):
 
         return Wi
 
+    def _getSlipOnSubSources(self, Ids, X, Y, Z, slip):
+        '''
+        From a slip distribution in slip at each Node, interpolate onto the sources defined by Ids, X, Y and Z.
+        '''
+
+        # Create array
+        Slip = np.zeros(X.shape)
+
+        # Get Vertices
+        vertices = self.Vertices
+
+        # Compute the slip value at each subpoint
+        for iPatch in range(len(self.patch)):
+            nodeOne, nodeTwo, nodeThree = self.Faces[iPatch]
+            slipOne = slip[nodeOne]
+            slipTwo = slip[nodeTwo]
+            slipThree = slip[nodeThree]
+            vertOne = np.array(vertices[nodeOne])
+            vertTwo = np.array(vertices[nodeTwo])
+            vertThree = np.array(vertices[nodeThree])
+            ids = np.flatnonzero(Ids==iPatch)
+            w1 = self._getWeights(vertOne, vertTwo, vertThree, X[ids], Y[ids], Z[ids])
+            w2 = self._getWeights(vertTwo, vertOne, vertThree, X[ids], Y[ids], Z[ids])
+            w3 = self._getWeights(vertThree, vertTwo, vertOne, X[ids], Y[ids], Z[ids])
+            weightedSlip = w1*slipOne + w2*slipTwo + w3*slipThree
+            Slip[ids] = weightedSlip
+
+        # All Done
+        return Slip
+
 #EOF

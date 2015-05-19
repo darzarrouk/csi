@@ -572,23 +572,9 @@ class geodeticplot(object):
         X = fault.plotSources[1]
         Y = fault.plotSources[2]
         Z = fault.plotSources[3]
-        Slip = np.zeros(X.shape)
 
-        # 2. Compute the slip value at each subpoint
-        for iPatch in range(len(patches)):
-            nodeOne, nodeTwo, nodeThree = fault.Faces[iPatch]
-            slipOne = slip[nodeOne]
-            slipTwo = slip[nodeTwo]
-            slipThree = slip[nodeThree]
-            vertOne = np.array(vertices[nodeOne])
-            vertTwo = np.array(vertices[nodeTwo])
-            vertThree = np.array(vertices[nodeThree])
-            ids = np.flatnonzero(Ids==iPatch)
-            w1 = fault._getWeights(vertOne, vertTwo, vertThree, X[ids], Y[ids], Z[ids])
-            w2 = fault._getWeights(vertTwo, vertOne, vertThree, X[ids], Y[ids], Z[ids])
-            w3 = fault._getWeights(vertThree, vertTwo, vertOne, X[ids], Y[ids], Z[ids])
-            weightedSlip = w1*slipOne + w2*slipTwo + w3*slipThree
-            Slip[ids] = weightedSlip
+        # 2. Interpolate the slip on each subsource
+        Slip = fault._getSlipOnSubSources(Ids, X, Y, Z, slip)
         
         # Check Method:
         if method is 'surface':
@@ -1211,6 +1197,5 @@ class geodeticplot(object):
 
         # All done
         return
-
 
 #EOF

@@ -215,6 +215,29 @@ class Fault(SourceInv):
         # All done
         return
 
+    def patch2xy(self):
+        '''
+        Takes all the patches in self.patchll and convert them to xy.
+        '''
+
+        # Create list
+        patch = []
+
+        # Iterate
+        for patchll in self.patchll:
+            # Create a patch
+            p = []
+            # Iterate again
+            for pll in patchll.tolist():
+                x, y = self.ll2xy(pll[0], pll[1])
+                p.append([x, y, pll[2]])
+            patch.append(np.array(p))
+
+        # Save
+        self.patch = patch
+
+        # All done
+        return
 
     def patch2ll(self):
         '''

@@ -11,44 +11,69 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
-class faultpostproc(object):
+# Locals
+from . import csiutils as utils
 
-    def __init__(self, name, fault, Mu=24e9, utmzone='10', samplesh5=None):
+class faultpostproctents(object):
+
+    def __init__(self, name, fault, Mu=24e9, samplesh5=None, verbose=True):
         '''
         Args:
             * name          : Name of the InSAR dataset.
             * fault         : Fault object
             * Mu            : Shear modulus. Default is 24e9 GPa, because it is the PREM value for the upper 15km. Can be a scalar or a list/array of len=len(fault.patch)
-            * utmzone       : UTM zone. Default is 10 (Western US).
             * samplesh5     : file name of h5 file containing samples
+            * verbose       : Verbose (True/False)
         '''
 
         # Initialize the data set 
         self.name = name
         self.fault = copy.deepcopy(fault) # we don't want to modify fault slip
-        self.utmzone = utmzone
-        self.patchDepths = None
+        self.utmzone = fault.utmzone
+        self.sourceDepths = None
+        self.numNodes = len(fault.tent)
+ 
+        # Create the interpolating sources
+        if not hasattr(self.fault, 'sourceNumber'):
+            self.fault.sourceNumber = npoints
+        if not hasattr(self.fault, 'plotSources'):
+            from .EDKS import dropSourcesInPatches as Patches2Sources
+            Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(self.fault, verbose=False)  
+            self.fault.plotSources = [Ids, xs, ys, zs, strike, dip, Areas] 
 
-        # Determine number of patches along-strike and along-dip
-        self.numPatches = len(self.fault.patch)
-        if self.fault.numz is not None:
-            self.numDepthPatches = self.fault.numz
-            self.numStrikePatches = self.numPatches / self.numDepthPatches
-            
-        # Assign Mu to each patch
+        # Get the interpolating sources
+        Ids, xs, ys, zs, strike, dip, Areas = self.fault.plotSources
+        Lon, Lat = self.fault.xy2ll(xs, ys)
+        X, Y, Z = xs, ys, zs
+
+        # Store what is needed (one source, not three)
+        self.lon = Lon
+        self.lat = Lat
+        self.x = X
+        self.y = Y
+        self.depth = Z
+        self.areas = Areas
+        self.strike = strike
+        self.dip = dip
+        self.ids = Ids
+
+        # Get number of Nodes
+        self.numSources = len(self.ids)
+
+        # Create the slip vector
+        self.setSlipToSources()
+
+        # Assign Mu to each node
         if len(np.array(Mu).flatten())==1:
-            self.Mu = Mu * np.ones((self.numPatches,))
+            self.Mu = Mu * np.ones((self.numSources,))
         else:
-            assert len(Mu)==self.numPatches, 'length of Mu must be 1 or numPatch'
+            assert len(Mu)==self.numSources, 'length of Mu must be 1 or numPatch'
             self.Mu = np.array(Mu)
             
         # Display
         print ("---------------------------------")
         print ("---------------------------------")
         print ("Initialize Post Processing object {} on fault {}".format(self.name, fault.name))
-
-        # Initialize the UTM transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
 
         # Check to see if we're reading in an h5 file for posterior samples
         self.samplesh5 = samplesh5
@@ -77,10 +102,70 @@ class faultpostproc(object):
             self.hfid = h5py.File(self.samplesh5, 'r')
             samples = self.hfid['samples']
             nsamples = np.arange(0, samples.shape[0], decim).size
-            self.fault.slip = np.zeros((self.numPatches,3,nsamples))
-            self.fault.slip[:,0,:] = samples[::decim,:self.numPatches].T
-            self.fault.slip[:,1,:] = samples[::decim,self.numPatches:2*self.numPatches].T
+            self.fault.slip = np.zeros((self.numNodes,3,nsamples))
+            self.fault.slip[:,0,:] = samples[::decim,:self.numNodes].T
+            self.fault.slip[:,1,:] = samples[::decim,self.numNodes:2*self.numNodes].T
 
+        return
+
+    def setMuDepth(self, depthMu):
+        '''
+        Assign values of Mu as a function of depth.
+
+        Args:
+            * depthMu       : List of increasing (depth,mu) tuple.
+                depthMu = [(3, 1e9), (5, 3e9), (10, 5e9), (0, 1e10)]
+                The last value, with depth 0 means everything under the last-1 depth.
+        '''
+
+        # Lists
+        depthup, depthdown = [], []
+        mu = []
+
+        # Set depths
+        dup = 0
+        for dm in depthMu:
+            ddown = dm[0]
+            m = dm[1]
+            depthup.append(dup)
+            depthdown.append(ddown)
+            mu.append(m)
+
+        # Arraying
+        depthup = np.array(dup)
+        depthdown = np.array(depthdown)
+        mu = np.array(mu)
+
+        # Iterate over subsources
+        self.Mu = []
+        for z in self.depth:
+            u = np.flatnonzero(np.logical_and((z>=depthup), (z<depthdown)))
+            assert (len(u)==1), 'More than one value or no value found'
+            self.Mu.append(mu[u])
+    
+        self.Mu = np.array(self.Mu)
+
+        # All done
+        return
+
+    def setSlipToSources(self):
+        '''
+        Takes the slip vector from a fault and organize the slip vector of the postprocessing tool.
+        '''
+
+        # Get values
+        X = self.x
+        Y = self.y
+        Z = self.depth
+        Ids = self.ids
+
+        # Get the corresponding Slip distribution
+        slip = []
+        for i in range(3):
+            slip.append(self.fault._getSlipOnSubSources(Ids, X, Y, Z, self.fault.slip[:,i]))
+        self.slip = np.array(slip).T
+
+        # All done
         return
 
     def h5_finalize(self):
@@ -92,21 +177,17 @@ class faultpostproc(object):
 
         return
             
-    def lonlat2xy(self, lon, lat):
+    def ll2xy(self, lon, lat):
         '''
         Uses the transformation in self to convert  lon/lat vector to x/y utm.
         Args:
             * lon           : Longitude array.
             * lat           : Latitude array.
         '''
+    
+        return self.fault.ll2xy(lon, lat)
 
-        x, y = self.putm(lon,lat)
-        x /= 1000.
-        y /= 1000.
-
-        return x, y
-
-    def xy2lonlat(self, x, y):
+    def xy2ll(self, x, y):
         '''
         Uses the transformation in self to convert x.y vectors to lon/lat.
         Args:
@@ -114,51 +195,36 @@ class faultpostproc(object):
             * y             : Yarray
         '''
 
-        lon, lat = self.putm(x*1000., y*1000., inverse=True)
-        return lon, lat
+        return self.fault.xy2ll(x, y)
 
-    def patchNormal(self, p):
+    def sourceNormal(self):
         '''
-        Returns the Normal to a patch.
-        Args:
-            * p             : Index of the desired patch.
+        Returns the Normal of the subsources
         '''
 
-        if self.fault.patchType == 'triangle':
-            normal = self.fault.getpatchgeometry(p, retNormal=True)[-1]
-            return normal
+        # Get the geometry of the subSources
+        strike, dip = self.strike, self.dip
 
-        elif self.fault.patchType == 'rectangle':
+        # Normal
+        n1 = -1.0*np.sin(dip)*np.sin(strike)
+        n2 = np.sin(dip)*np.cos(strike)
+        n3 = -1.0*np.cos(dip)
+        N = np.sqrt(n1**2+ n2**2 + n3**2)
 
-            # Get the geometry of the patch
-            x, y, z, width, length, strike, dip = self.fault.getpatchgeometry(p, center=True)
+        # All done
+        return np.array([n1/N, n2/N, n3/N]).T
 
-            # Normal
-            n1 = -1.0*np.sin(dip)*np.sin(strike)
-            n2 = np.sin(dip)*np.cos(strike)
-            n3 = -1.0*np.cos(dip)
-            N = np.sqrt(n1**2+ n2**2 + n3**2)
-
-            # All done
-            return np.array([n1/N, n2/N, n3/N])
-
-        else:
-            assert False, 'unsupported patch type'
-
-
-    def slipVector(self, p):
+    def slipVector(self):
         '''
-        Returns the slip vector in the cartesian space for the patch p. We do not deal with 
+        Returns the slip vector in the cartesian space for all subsources. We do not deal with 
         the opening component. The fault slip may be a 3D array for multiple samples of slip.
-        Args:
-            * p             : Index of the desired patch.
         '''
 
         # Get the geometry of the patch
-        x, y, z, width, length, strike, dip = self.fault.getpatchgeometry(p, center=True)
+        strike, dip = self.strike, self.dip
 
         # Get the slip
-        strikeslip, dipslip, tensile = self.fault.slip[p,:,...]
+        strikeslip, dipslip = self.slip[:,0,...], self.slip[:,1,...]
         slip = np.sqrt(strikeslip**2 + dipslip**2)
 
         # Get the rake
@@ -170,64 +236,61 @@ class faultpostproc(object):
         uz = -1.0*slip*np.sin(rake)*np.sin(dip)
 
         # All done
-        if isinstance(ux, np.ndarray):
-            outArr = np.zeros((3,1,ux.size))
-            outArr[0,0,:] = ux
-            outArr[1,0,:] = uy
-            outArr[2,0,:] = uz
+        if ux.ndim==2:
+            outArr = np.zeros((3,self.nSamples,ux.size))
+            outArr[0,:,:] = ux
+            outArr[1,:,:] = uy
+            outArr[2,:,:] = uz
             return outArr
         else:
-            return np.array([[ux], [uy], [uz]])
+            return np.array([ux, uy, uz]).T
 
-    def computePatchMoment(self, p) :
+    def computeSourcesMoments(self) :
         '''
-        Computes the Moment tensor for one patch.
-        Args:
-            * p             : patch index
+        Computes the Moment tensors for all subsources.
         '''
 
         # Get the normal
-        n = self.patchNormal(p).reshape((3,1))
+        normals = self.sourceNormal()
 
         # Get the slip vector
-        u = self.slipVector(p)
+        slip = self.slipVector()
 
         # Compute the moment density
-        if u.ndim == 2:
-            mt = self.Mu[p] * (np.dot(u, n.T) + np.dot(n, u.T)) 
-        elif u.ndim == 3:
+        if slip.ndim == 2:
+            p1 = np.array([np.dot(slip[i,:].reshape((3,1)), normals[i,:].reshape((1,3))) for i in range(slip.shape[0])])
+            p2 = np.array([np.dot(normals[i,:].reshape((3,1)), slip[i,:].reshape((1,3))) for i in range(slip.shape[0])])
+            mt = self.Mu[:,None,None] * (p1 + p2) 
+        elif slip.ndim == 3:
+            assert False, 'Not implemented yet'
             # Careful about tiling - result is already transposed
-            nT = np.tile(n, (1,1,u.shape[2]))
-            n = np.transpose(nT, (1,0,2))
-            uT = np.transpose(u, (1,0,2))
-            # Tricky 3D multiplication
-            mt = self.Mu[p] * ((u[:,:,None]*nT).sum(axis=1) + (n[:,:,None]*uT).sum(axis=1))
+            #nT = np.tile(n, (1,1,slip.shape[2]))
+            #n = np.transpose(nT, (1,0,2))
+            #uT = np.transpose(u, (1,0,2))
+            ## Tricky 3D multiplication
+            #mt = self.Mu[p] * ((u[:,:,None]*nT).sum(axis=1) + (n[:,:,None]*uT).sum(axis=1))
 
-        # Multiply by the area
-        mt *= self.fault.area[p]*1000000.
+        # Multiply by the area 
+        mt *= self.areas[:,None,None]*1e6
+
+        # Save it
+        self.Moments = mt
 
         # All done
-        return mt
+        return 
 
     def computeMomentTensor(self):
         '''
         Computes the full seismic (0-order) moment tensor from the slip distribution.
         '''
 
-        # Compute the area of each patch
-        if not hasattr(self.fault, 'area'):
-            self.fault.computeArea()
 
-        # Initialize an empty moment
-        M = 0.0
+        # Compute the tensor for each subsource
+        self.computeSourcesMoments()
+        
+        # Sum
+        M = self.Moments.sum(axis=0)
 
-        # Compute the tensor for each patch
-        for p in range(len(self.fault.patch)):
-            # Compute the moment of one patch
-            mt = self.computePatchMoment(p)
-            # Add it up to the full tensor
-            M += mt
-            
         # Check if symmetric
         self.checkSymmetric(M)
 
@@ -277,6 +340,7 @@ class faultpostproc(object):
 
         # Plot histogram of magnitudes
         if plotHist is not None:
+            assert False, 'Not implemented yet'
             assert isinstance(Mw, np.ndarray), 'cannot make histogram with one value'
             fig = plt.figure(figsize=(14,8))
             ax = fig.add_subplot(111)
@@ -290,11 +354,23 @@ class faultpostproc(object):
 
         # Write out the samples
         if outputSamp is not None:
+            assert False, 'Not implemented yet'
             with open(os.path.join(outputSamp, 'momentMagSamples.dat'), 'w') as ofid:
                 self.Mw.tofile(ofid)
 
         # All done
         return Mw
+
+    def computePotencies(self):
+        '''
+        Computes the potency of each subSources.
+        '''
+
+        self.computeSourcesMoments()
+        self.Potencies = np.sqrt(0.5 * np.sum( (self.Moments/self.Mu[:,None,None])**2, axis=(1,2))) 
+
+        # All done
+        return
 
     def Aki2Harvard(self):
         '''
@@ -347,35 +423,30 @@ class faultpostproc(object):
         # Get the total Moment
         M = self.Maki
 
-        # initialize centroid loc.
-        xc, yc, zc = 0.0, 0.0, 0.0
+        # Get the moment of each subsource
+        dS = self.Moments
 
-        # Loop on the patches
-        for p in range(self.numPatches):
+        # Get the locations
+        x, y, z = self.x, self.y, self.depth
 
-            # Get patch info 
-            x, y, z, width, length, strike, dip = self.fault.getpatchgeometry(p, center=True)
+        # Compute the normalized scalar moment density 
+        m = 0.5/(Mo**2) * np.sum(M[None,:,:]*dS, axis=(1,2))
 
-            # Get the moment tensor
-            dS = self.computePatchMoment(p)
-
-            # Compute the normalized scalar moment density
-            m = 0.5 / (Mo**2) * np.sum(M * dS, axis=(0,1))
-
-            # Add it up to the centroid location
-            xc += m*x
-            yc += m*y
-            zc += m*z
+        # Centroid location
+        xc = np.sum(m*x)
+        yc = np.sum(m*y)
+        zc = np.sum(m*z)
 
         # Store the x, y, z locations
         self.centroid = [xc, yc, zc]
 
         # Convert to lon lat
-        lonc, latc = self.putm(xc*1000., yc*1000., inverse=True)
+        lonc, latc = self.xy2ll(xc, yc)
         self.centroidll = [lonc, latc, zc]
 
         # Plot scatter
         if plotOutput is not None:
+            assert False, 'Not implemented yet'
             assert isinstance(xc, np.ndarray), 'cannot make scatter plots with one value'
             fig = plt.figure(figsize=(14,8))
             ax1 = fig.add_subplot(121)
@@ -393,6 +464,7 @@ class faultpostproc(object):
 
         # Write points out
         if xyzOutput is not None:
+            assert False, 'Not implemented yet'
             fid = open(os.path.join(xyzOutput, 'centroids.xyz'), 'w')
             for lon,lat,z in zip(*self.centroidll):
                 fid.write('%15.9f%15.9f%12.6f\n' % (lon, lat, z))
@@ -423,17 +495,15 @@ class faultpostproc(object):
         # Initialize moment
         Mo = 0.0
 
-        # Loop on patches
-        for p in range(len(self.fault.patch)):
+        # Get areas
+        S = self.areas*1e6
 
-            # Get area
-            S = self.fault.area[p]*1000000.
+        # Get slip
+        strikeslip, dipslip = self.slip[:2,:,...]
+        totalSlip = np.sqrt(strikeslip**2 + dipslip**2)
 
-            # Get slip
-            strikeslip, dipslip, tensile = self.fault.slip[p,:,...]
-
-            # Add to moment
-            Mo += self.Mu[p] * S * np.sqrt(strikeslip**2 + dipslip**2)
+        # Moment
+        Mo = self.Mu * S * totalSlip
 
         # Compute magnitude
         Mw = 2./3.*(np.log10(Mo) - 9.1)
@@ -444,8 +514,13 @@ class faultpostproc(object):
     def computeMomentAngularDifference(self, Mout, form='harvard'):
         '''
         Computes the difference in angle between the moment Mout and the moment.
-        Mout: full moment in harvard convention.
+            Args:
+                Mout: full moment in harvard convention (if form=='aki', moment will be
+                        transfered to harvard convention).
         '''
+
+        # Assert
+        assert False, 'Not implemented yet'
 
         # import stuff
         from numpy.linalg import eigh
@@ -489,7 +564,7 @@ class faultpostproc(object):
         # All done
         return angles
 
-    def integratedPotencyAlongProfile(self, numXBins=100, outputSamp=None):
+    def integratedPotencyAlongProfile(self, lonc, latc, length, azimuth, width, numXBins=100, fault=None):
         '''
         Computes the cumulative potency as a function of distance to the profile origin.
         If the potencies were computed with multiple samples (in case of Bayesian exploration), we form histograms
@@ -499,9 +574,42 @@ class faultpostproc(object):
             numXBins                        number of bins to group patches along the profile
         '''
 
-        assert False, 'Not implemented for this kind of fault'
+        # Get the profile
+        xc, yc = self.ll2xy(lonc, latc)
+        xDis, yDis, BValues, boxll, xe1, ye1, xe2, ye2, lon, lat = utils.coord2prof(self, xc, yc, 
+                                                                                    length, 
+                                                                                    azimuth, 
+                                                                                    width)
 
-        return
+        # Get Potency
+        self.computePotencies()
+
+        # Get values
+        potencies = self.Potencies[BValues]
+
+        # Make bins
+        xmin, xmax = xDis.min(), xDis.max()
+        xbins = np.linspace(xmin, xmax, numXBins+1)
+        binDistances = 0.5 * (xbins[1:] + xbins[:-1])
+
+        # Loop over the bin depths
+        scalarPotency = [];
+        for xstart, xend in zip(xbins[:-1], xbins[1:]):
+
+            # Get indexes
+            ind = xDis>= xstart
+            ind *= xDis<xend
+            ind = ind.nonzero()[0]
+
+            # Sum the total potency
+            scalarPotency.append(np.sum(potencies[ind]))
+
+        # if fault, set the distances to the fault trace
+        if fault is not None:
+            binDistances -= utils.intersectProfileFault(xe1, ye1, xe2, ye2, xc, yc, self.fault)
+
+        # All done
+        return binDistances, np.array(scalarPotency)
 
     def integratedPotencyWithDepth(self, plotOutput=None, numDepthBins=5, outputSamp=None):
         '''
@@ -514,117 +622,33 @@ class faultpostproc(object):
             numDepthBins                    number of bins to group patch depths
         '''
 
-        # Collect all patch depths
-        patchDepths = np.empty((self.numPatches,))
-        for pIndex in range(self.numPatches):
-            patchDepths[pIndex] = self.fault.getpatchgeometry(pIndex, center=False)[2]
+        # Collect all sources depths
+        sourceDepths = self.depth
 
         # Determine depth bins for grouping
-        zmin, zmax = patchDepths.min(), patchDepths.max()
+        zmin, zmax = sourceDepths.min(), sourceDepths.max()
         zbins = np.linspace(zmin, zmax, numDepthBins+1)
         binDepths = 0.5 * (zbins[1:] + zbins[:-1])
-        dz = abs(zbins[1] - zbins[0])
+
+        # Get Potencies
+        self.computePotencies()
+        Potencies = self.Potencies
 
         # Loop over depth bins
-        potencyDict = {}; scalarPotencyList = []; meanLogPotency = []
+        scalarPotency = []; 
         for i in range(numDepthBins):
 
             # Get the patch indices that fall in this bin
             zstart, zend = zbins[i], zbins[i+1]
-            ind = patchDepths >= zstart
-            ind *= patchDepths <= zend
+            ind = sourceDepths >= zstart
+            ind *= sourceDepths <= zend
             ind = ind.nonzero()[0]
-            print(ind.size)
 
             # Sum the total moment for the depth bin
-            M = 0.0
-            for patchIndex in ind:
-                M += self.computePatchMoment(int(patchIndex)) / self.Mu[p]
-            # Convert to scalar potency
-            potency = np.sqrt(0.5 * np.sum(M**2, axis=(0,1)))
-            logPotency = np.log10(potency)
-            meanLogPotency.append(np.log10(np.mean(potency)))
-
-            # Create and store histogram for current bin
-            if self.samplesh5 is not None:
-                n, bins = np.histogram(logPotency, bins=100, density=True)
-                binCenters = 0.5 * (bins[1:] + bins[:-1])
-                zbindict = {}
-                zbindict['count'] = n
-                zbindict['bins'] = binCenters
-                key = 'depthBin_%03d' % (i)
-                potencyDict[key] = zbindict
-            else:
-                scalarPotencyList.append(potency)
-
-        if plotOutput is not None:
-
-            if self.samplesh5 is None:
-
-                fig = plt.figure(figsize=(12,8))
-                ax1 = fig.add_subplot(121)
-                ax2 = fig.add_subplot(122)
-                scalarPotency = np.array(scalarPotencyList)
-                logPotency = np.log10(scalarPotency)
-                sumLogPotency = np.log10(np.cumsum(scalarPotencyList))
-                for ax,dat in [(ax1, logPotency), (ax2, sumLogPotency)]:
-                    ax.plot(dat, binDepths, '-o')
-                    ax.grid(True)
-                    ax.set_xlabel('Log Potency', fontsize=16)
-                    ax.set_ylabel('Depth (km)', fontsize=16)
-                    ax.tick_params(labelsize=16)
-                    ax.set_ylim(ax.get_ylim()[::-1])
-                ax1.set_title('Potency vs. depth', fontsize=18)
-                ax2.set_title('Integrated Potency vs. depth', fontsize=18)
-                fig.savefig(os.path.join(plotOutput, 'depthPotencyDistribution.pdf'))
-
-            else:
-      
-                fig = plt.figure(figsize=(8,8))
-                ax = fig.add_subplot(111) 
-                
-                for depthIndex in range(numDepthBins):
-                    # Get the histogram for the current depth
-                    key = 'depthBin_%03d' % (depthIndex)
-                    zbindict = potencyDict[key]
-                    nref, bins = zbindict['count'], zbindict['bins']
-                    n = nref.copy()
-                    # Shift the histogram to the current depth and scale it
-                    n /= n.max() / (0.5 * dz)
-                    n -= binDepths[depthIndex]
-                    # Plot normalized histogram
-                    ax.plot(bins, -n)
-
-                # Also draw the means
-                ax.plot(meanLogPotency, binDepths, '-ob', linewidth=2)
-
-                ax.set_ylim(ax.get_ylim()[::-1])
-                ax.set_xlabel('Log potency', fontsize=18)
-                ax.set_ylabel('Depth (km)', fontsize=18)
-                ax.tick_params(labelsize=18)
-                ax.grid(True)
-                fig.savefig(os.path.join(plotOutput, 'depthPotencyDistribution.pdf'))
-
-        # Save histogram for every depth bin
-        if outputSamp is not None:
-            assert self.samplesh5 is not None, 'cannot output only one sample'
-            import h5py
-            outfid = h5py.File(os.path.join(outputSamp, 'depthPotencyHistograms.h5'), 'w') 
-            for depthIndex in range(numDepthBins):
-                # Get the histogram for the current depth
-                key = 'depthBin_%03d' % (depthIndex)
-                zbindict = potencyDict[key]
-                n, bins = zbindict['count'], zbindict['bins']
-                # Save to h5
-                depthSamp = outfid.create_dataset('depth_%fkm' % (binDepths[depthIndex]), 
-                                                  (n.size,3), 'd')
-                depthSamp[:,0] = bins
-                depthSamp[:,1] = n
-                depthSamp[:,2] = meanLogPotency[depthIndex]
-            outfid.close()
+            potency = np.sum(Potencies[ind])
+            scalarPotency.append(potency)
     
-        return
-
+        return binDepths, np.array(scalarPotency)
 
     def write2GCMT(self, form='full', filename=None):
         '''
