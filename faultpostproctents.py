@@ -130,9 +130,10 @@ class faultpostproctents(object):
             depthup.append(dup)
             depthdown.append(ddown)
             mu.append(m)
+            dup = ddown
 
         # Arraying
-        depthup = np.array(dup)
+        depthup = np.array(depthup)
         depthdown = np.array(depthdown)
         mu = np.array(mu)
 
@@ -143,7 +144,7 @@ class faultpostproctents(object):
             assert (len(u)==1), 'More than one value or no value found'
             self.Mu.append(mu[u])
     
-        self.Mu = np.array(self.Mu)
+        self.Mu = np.array(self.Mu).squeeze()
 
         # All done
         return
