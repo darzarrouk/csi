@@ -565,14 +565,26 @@ class faultpostproctents(object):
         # All done
         return angles
 
-    def integratedPotencyAlongProfile(self, lonc, latc, length, azimuth, width, numXBins=100, fault=None):
+    def integrateQuantityAlongProfile(self, lonc, latc, length, azimuth, width, numXBins=100, fault=None, quantity='potency', getDepth=False, method='sum'):
         '''
         Computes the cumulative potency as a function of distance to the profile origin.
         If the potencies were computed with multiple samples (in case of Bayesian exploration), we form histograms
         of potency vs. distance. Otherwise, we just compute a distance profile.
 
-        kwargs:
-            numXBins                        number of bins to group patches along the profile
+        Args:
+            lonc, latc                  : Lon and Lat of the center of the profile
+            length                      : Length of the profile (km)
+            azimuth                     : Azimuth of the profile (degrees)
+            width                       : Width of the profile (km)
+            numXBins                    : number of bins to group patches along the profile
+            fault                       : If provided, the profile will be referenced at the intersection with teh fault trace.
+            quantity                    : Which quantity do we deal with. Can be:
+                                            'potency'
+                                            'moment'
+                                            'strikeslip'
+                                            'dipslip'
+                                            'tensile'
+            method                      : Can be 'sum', 'mean', 'median', 'min' or 'max'
         '''
 
         # Get the profile
@@ -582,19 +594,34 @@ class faultpostproctents(object):
                                                                                     azimuth, 
                                                                                     width)
 
-        # Get Potency
-        self.computePotencies()
-
-        # Get values
-        potencies = self.Potencies[BValues]
+        # Get the right quantity
+        if quantity=='potency':
+            self.computePotencies()
+            quantities = self.Potencies[BValues]
+        elif quantity=='moment':
+            self.computeSourcesMoments()
+            quantities = self.Moments[BValues,:,:]
+        elif quantity=='strikeslip':
+            quantities = self.slip[BValues,0]
+        elif quantity=='dipslip':
+            quantities = self.slip[BValues,1]
+        elif quantity=='tensile':
+            quantities = self.slip[BValues,2]
+        else:
+            assert False, 'Unknown quantity'
 
         # Make bins
         xmin, xmax = xDis.min(), xDis.max()
         xbins = np.linspace(xmin, xmax, numXBins+1)
         binDistances = 0.5 * (xbins[1:] + xbins[:-1])
 
+        # Depth?
+        if getDepth:
+            depths = self.depth[BValues]
+
         # Loop over the bin depths
-        scalarPotency = [];
+        scalarQuant = [];
+        Depth = [];
         for xstart, xend in zip(xbins[:-1], xbins[1:]):
 
             # Get indexes
@@ -603,16 +630,33 @@ class faultpostproctents(object):
             ind = ind.nonzero()[0]
 
             # Sum the total potency
-            scalarPotency.append(np.sum(potencies[ind]))
+            if method=='sum':
+                value = np.sum(quantities[ind])
+            elif method=='mean':
+                value = np.mean(quantities[ind])
+            elif method=='median':
+                value = np.median(quantities[ind])
+            elif method=='min':
+                value = np.min(quantities[ind])
+            elif method=='max':
+                value = np.max(quantities[ind])
+            scalarQuant.append(value)
+
+            # Depth?
+            if getDepth:
+                Depth.append(np.mean(depths[ind]))
 
         # if fault, set the distances to the fault trace
         if fault is not None:
             binDistances -= utils.intersectProfileFault(xe1, ye1, xe2, ye2, xc, yc, self.fault)
 
         # All done
-        return binDistances, np.array(scalarPotency)
+        if getDepth:
+            return binDistances, np.array(Depth), np.array(scalarQuant)
+        else:
+            return binDistances, np.array(scalarQuant)
 
-    def integratedPotencyWithDepth(self, plotOutput=None, numDepthBins=5, outputSamp=None):
+    def integrateQuantityWithDepth(self, plotOutput=None, numDepthBins=5, outputSamp=None, quantity='potency', method='sum'):
         '''
         Computes the cumulative moment with depth by summing the moment per row of
         patches. If the moments were computed with mutiple samples, we form histograms of 
@@ -621,6 +665,13 @@ class faultpostproctents(object):
         kwargs:
             plotOutput                      output directory for figures
             numDepthBins                    number of bins to group patch depths
+            quantity                    : Which quantity do we deal with. Can be:
+                                            'potency'
+                                            'moment'
+                                            'strikeslip'
+                                            'dipslip'
+                                            'tensile'
+            method                      : Can be 'sum', 'mean', 'median'
         '''
 
         # Collect all sources depths
@@ -631,25 +682,44 @@ class faultpostproctents(object):
         zbins = np.linspace(zmin, zmax, numDepthBins+1)
         binDepths = 0.5 * (zbins[1:] + zbins[:-1])
 
-        # Get Potencies
-        self.computePotencies()
-        Potencies = self.Potencies
+        # Get the right quantity
+        if quantity=='potency':
+            self.computePotencies()
+            quantities = self.Potencies
+        elif quantity=='moment':
+            self.computeSourcesMoments()
+            quantities = self.Moments
+        elif quantity=='strikeslip':
+            quantities = self.slip[:,0]
+        elif quantity=='dipslip':
+            quantities = self.slip[:,1]
+        elif quantity=='tensile':
+            quantities = self.slip[:,2]
 
         # Loop over depth bins
-        scalarPotency = []; 
+        scalarQuant = []; 
         for i in range(numDepthBins):
 
             # Get the patch indices that fall in this bin
             zstart, zend = zbins[i], zbins[i+1]
             ind = sourceDepths >= zstart
-            ind *= sourceDepths <= zend
+            ind *= sourceDepths < zend
             ind = ind.nonzero()[0]
 
             # Sum the total moment for the depth bin
-            potency = np.sum(Potencies[ind])
-            scalarPotency.append(potency)
+            if method=='sum':
+                value = np.sum(quantities[ind])
+            elif method=='mean':
+                value = np.mean(quantities[ind])
+            elif method=='median':
+                value = np.median(quantities[ind])
+            elif method=='min':
+                value = np.min(quantities[ind])
+            elif method=='max':
+                value = np.max(quantities[ind])
+            scalarQuant.append(value)
     
-        return binDepths, np.array(scalarPotency)
+        return binDepths, np.array(scalarQuant)
 
     def write2GCMT(self, form='full', filename=None):
         '''
