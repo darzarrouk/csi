@@ -145,7 +145,9 @@ class insarrates(SourceInv):
             for line in Lines:
                 line = line.split()
                 self.los.append([float(line[0]), float(line[1]), float(line[2])])
-        self.los = np.array(self.los)
+            self.los = np.array(self.los)
+        else:
+            self.los = None
 
         # All done
         return
@@ -2071,7 +2073,7 @@ class insarrates(SourceInv):
         # All done
         return
 
-    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', tension=None, useGMT=False):
+    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', tension=None, useGMT=False, verbose=False):
         '''
         Uses surface to write the output to a grd file.
         Args:
@@ -2096,7 +2098,7 @@ class insarrates(SourceInv):
 
         if not useGMT:
 
-            utils.write2netCDF(fname, x, y, z, nSamples=interp)
+            utils.write2netCDF(fname, x, y, z, nSamples=interp, verbose=verbose)
 
         else:
 
@@ -2148,7 +2150,7 @@ class insarrates(SourceInv):
         return
 
 
-    def write2ascii(self, fname, data='data'):
+    def write2file(self, fname, data='data'):
         '''
         Uses surface to write the output to a grd file.
         Args:

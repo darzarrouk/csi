@@ -924,13 +924,13 @@ class geodeticplot(object):
 
         # plot the earthquakes on the map if ask
         if '2d' in plot:
-            sc = self.carte.scatter(lon, lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0, zorder=zorder)
+            sc = self.carte.scatter(lon, lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1, zorder=zorder)
             if colorbar:
                 self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
 
         # plot the earthquakes in the volume if ask
         if '3d' in plot:
-            sc = self.faille.scatter3D(lon, lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.0)
+            sc = self.faille.scatter3D(lon, lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1)
             if colorbar:
                 self.fig1.colorbar(sc, shrink=0.6, orientation='horizontal')
 

@@ -22,7 +22,7 @@ from .geodeticplot import geodeticplot as geoplot
 
 class TriangularPatches(Fault):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84'):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True):
         '''
         Args:
             * name          : Name of the fault.
@@ -31,7 +31,7 @@ class TriangularPatches(Fault):
         '''
 
         # Base class init
-        super(TriangularPatches,self).__init__(name, utmzone, ellps)
+        super(TriangularPatches,self).__init__(name, utmzone, ellps, verbose=verbose)
 
         # Specify the type of patch
         self.patchType = 'triangle'
