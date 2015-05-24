@@ -1847,6 +1847,12 @@ class insarrates(SourceInv):
             * synth     : Plot synthetics (True/False).
         '''
 
+        # Check the profile
+        x = self.profiles[name]['Distance']
+        if len(x)<5.:
+            print('Not enough points to plot the profile')
+            return
+
         # Plot the insar
         self.plot(faults=fault, norm=norm, show=False)
 
@@ -1871,7 +1877,10 @@ class insarrates(SourceInv):
         x = self.profiles[name]['Distance']
         y = self.profiles[name]['LOS Velocity']
         ey = self.profiles[name]['LOS Error']
-        p = prof.errorbar(x, y, yerr=ey, label='los velocity', marker='.', linestyle='')
+        try:
+            p = prof.errorbar(x, y, yerr=ey, label='los velocity', fmt='o')
+        except:
+            p = prof.plot(x, y, label='los velocity', marker='.')
         if synth:
             sy = self.profiles[name]['LOS Synthetics']
             s = prof.plot(x, sy, '-r', label='synthetics')
