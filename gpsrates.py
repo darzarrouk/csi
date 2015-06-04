@@ -1844,8 +1844,7 @@ class gpsrates(SourceInv):
         # All done
         return
 
-
-    def buildsynth(self, faults, direction='sd', poly=None):
+    def buildsynth(self, faults, direction='sd', poly=None, vertical=True):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
         Args:
@@ -1864,12 +1863,11 @@ class gpsrates(SourceInv):
         # Check components
         east     = False
         north    = False
-        vertical = False
         if not np.isnan(self.vel_enu[:,0]).any():
             east = True
         if not np.isnan(self.vel_enu[:,1]).any():
             north = True
-        if not np.isnan(self.vel_enu[:,2]).any():
+        if not np.isnan(self.vel_enu[:,2]).any() and vertical:
             vertical = True
 
         # Clean synth

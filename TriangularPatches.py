@@ -404,7 +404,7 @@ class TriangularPatches(Fault):
         '''
 
         # Check size
-        if self.N_slip!=None and self.N_slip!=len(self.patch):
+        if self.N_slip!=None and self.N_slip!=len(self.patch) and add_slip is not None:
             raise NotImplementedError('Only works for len(slip)==len(patch)')
 
         # Write something
@@ -450,7 +450,7 @@ class TriangularPatches(Fault):
 
             # Put the parameter number in the file as well if it exists
             parameter = ' '
-            if hasattr(self,'index_parameter'):
+            if hasattr(self,'index_parameter') and add_slip is not None:
                 i = np.int(self.index_parameter[pIndex,0])
                 j = np.int(self.index_parameter[pIndex,1])
                 k = np.int(self.index_parameter[pIndex,2])
@@ -460,12 +460,15 @@ class TriangularPatches(Fault):
             if add_slip is not None:
                 if add_slip=='coupling':
                     slipstring = ' # {}'.format(self.coupling[pIndex])
-            else:
-                slipstring = ' # {} {} {} '.format(self.slip[pIndex,0],
+                else:
+                    slipstring = ' # {} {} {} '.format(self.slip[pIndex,0],
                                                self.slip[pIndex,1], self.slip[pIndex,2])
 
             # Write the string to file
-            fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
+            if add_slip is None:
+                fout.write('> {} {} \n'.format(string, parameter))
+            else:
+                fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
 
             # Write the 3 patch corners (the order is to be GMT friendly)
             p = self.patchll[pIndex]

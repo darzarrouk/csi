@@ -19,6 +19,7 @@ import os
 # Personals
 from .insarrates import insarrates
 from .cosicorrrates import cosicorrrates
+from .imagecovariance import imagecovariance as imcov
 
 class imagedownsampling(object):
 
@@ -952,6 +953,70 @@ class imagedownsampling(object):
         # All done
         return
     
+    def buildDownsampledCd(self, mu, lam, function='exp'):
+        '''
+        Builds the covariance matrix by weihgting following the downsampling scheme
+        Args:   
+            * mu        : Autocovariance
+            * lam       : Characteristic distance
+            * function  : 'exp'   --> C = mu**2 exp(-d/lam)
+                          'gauss' --> C = mu**2 exp(-d**2/2lam**2)
+        '''
+
+        assert self.image.dtype=='insarrates', 'Not implemented for cosicorrates, too lazy.... Sorry.... Later....'
+
+        # How many samples
+        nSamples = self.newimage.lon.shape[0]
+
+        # Create Array
+        Cd = np.zeros((nSamples, nSamples))
+
+        # Create the whole geometry
+        PIXXY = np.vstack((self.image.x, self.image.y)).T
+
+        # Iterate
+        for i in range(nSamples):
+            for j in range(i, nSamples):
+                
+                # Get blocks
+                iBlock = self.blocks[i]
+                jBlock = self.blocks[j]
+                    
+                # Get the pixels concerned
+                iPath = path.Path(iBlock, closed=False)
+                jPath = path.Path(jBlock, closed=False)
+                ii = iPath.contains_points(PIXXY)
+                jj = jPath.contains_points(PIXXY)
+                
+                # How many pixels
+                iSamples = len(np.flatnonzero(ii))
+                jSamples = len(np.flatnonzero(jj))
+
+                # Create 2 newimages
+                Image = insarrates('Image', utmzone=self.utmzone, verbose=False)
+
+                # Fill them
+                Image.x = np.hstack((self.image.x[ii], self.image.x[jj]))
+                Image.y = np.hstack((self.image.y[ii], self.image.y[jj]))
+
+                # Create a covariance object
+                Cov = imcov('Block i and j', Image, verbose=False)
+
+                # Set sigmas
+                Cov.datasets['Block i and j']['Sigma'] = mu
+                Cov.datasets['Block i and j']['Lambda'] = lam
+                Cov.datasets['Block i and j']['function'] = function
+
+                # Compute local covariances and take only the covariance part
+                localCd = Cov.buildCovarianceMatrix(Image, 'Block i and j')[:iSamples,jSamples:]
+
+                # Average
+                Cd[i,j] = np.sum(localCd)/(iSamples*jSamples)
+                Cd[j,i] = np.sum(localCd)/(iSamples*jSamples)
+
+        # All done
+        return Cd
+
     def readDownsamplingScheme(self, prefix):
         '''
         Reads a downsampling scheme from a rsp file.
