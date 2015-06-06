@@ -1763,9 +1763,14 @@ class gpsrates(SourceInv):
 
         # Estimate the roation pole coordinates and the velocity
         self.elat,self.elon,self.omega = eu.gps2euler(lat, lon, np.zeros(lon.shape), vel[:,0], vel[:,1])
+        
+        # In degrees
+        self.elat *= 180./np.pi
+        self.elon *= 180./np.pi
+        self.omega *= 180./np.pi
 
         # Remove the rotation
-        self.remove_rotation(self.elon, self.elat, self.omega)
+        self.remove_rotation(self.elon*np.pi/180., self.elat*np.pi/180., self.omega*np.pi/180.)
 
         # All done
         return
