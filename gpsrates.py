@@ -1154,11 +1154,12 @@ class gpsrates(SourceInv):
         # All done
         return
 
-    def reference(self, station):
+    def reference(self, station, refSynth=False):
         '''
         References the velocities to a single station.
         Args:
             * station   : name of the station or list of station names.
+            * refSynth  : Apply referencing to synthetics as well (default=False)
         '''
     
         if station.__class__ is str:
@@ -1168,6 +1169,10 @@ class gpsrates(SourceInv):
            
             # Case station missing
             assert len(u)>0, 'This station is not part of your network'
+
+            # synth?
+            if refSynth:
+                self.synth = self.synth - self.vel_enu[u,:]
 
             # Reference
             self.vel_enu = self.vel_enu - self.vel_enu[u,:]
@@ -1188,6 +1193,12 @@ class gpsrates(SourceInv):
             self.vel_enu[:,0] = self.vel_enu[:,0] - mve
             self.vel_enu[:,1] = self.vel_enu[:,1] - mvn
             self.vel_enu[:,2] = self.vel_enu[:,2] - mvu
+
+            # Synth?
+            if refSynth:
+                self.synth[:,0] -= mve
+                self.synth[:,1] -= mvn
+                self.synth[:,2] -= mvu
 
         # All done
         return
