@@ -640,14 +640,10 @@ class TriangularTents(TriangularPatches):
         Gss = np.multiply(-1.0*Gss, Sbr)
         Gds = np.multiply(Gds, Dbr)
 
-        # Set GFs
-        self.G[data.name]['strikeslip'] = Gss
-        self.G[data.name]['dipslip'] = Gds
-
         # All done
-        return 
+        return Gss, Gds
 
-    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, vertical=True, verbose=True):
+    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, vertical=True, verbose=True, keepRotatedGFs=True):
         '''
             For the data set data, computes the Green's Function for coupling, 
             using the formula described in Francisco Ortega's PhD, pages 106 to 108.
@@ -664,6 +660,7 @@ class TriangularTents(TriangularPatches):
                                         shape = (Number of fault patches, 2). 
             * initializeCoupling    : Do you initialize the coupling vector in fault (True/False)
             * vertical              : Use the verticals?
+            * keepRotatedGFs        : Store the dip and strike rotated GFs?
         '''
 
         # 0. Initialize?
@@ -675,9 +672,7 @@ class TriangularTents(TriangularPatches):
         self.G[data.name] = G
 
         # 2. Rotate these green's functions (this is the rotation matrix for the node based GFs)
-        self.rotateGFs(data, convergence)
-        bigGss = self.G[data.name]['strikeslip']
-        bigGds = self.G[data.name]['dipslip']
+        bigGss, bigGds = self.rotateGFs(data, convergence)
 
         # 3. Compute the coupling GFs
         bigGc = -1.0*(bigGss + bigGds)
@@ -695,9 +690,10 @@ class TriangularTents(TriangularPatches):
         Gds = np.array(Gds).T
 
         # 6. Set the GFs
-        G = {'coupling': Gc, 
-             'strikeslip': Gss,
-             'dipslip': Gds}
+        G = {'coupling': Gc}
+        if keepRotatedGFs:
+             G['strikeslip'] = Gss
+             G['dipslip'] = Gds
         data.setGFsInFault(self, G, vertical=vertical)
 
         # All done

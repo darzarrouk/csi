@@ -1401,14 +1401,10 @@ class Fault(SourceInv):
         Gss = np.multiply(-1.0*Gss, Sbr)
         Gds = np.multiply(Gds, Dbr)
 
-        # Set GFs
-        self.G[data.name]['strikeslip'] = Gss
-        self.G[data.name]['dipslip'] = Gds
-
         # All done
-        return 
+        return Gss, Gds
 
-    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False):
+    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False, keepRotatedGFs=True):
         '''
             For the data set data, computes the Green's Function for coupling, using the formula
             described in Francisco Ortega's PhD, pages 106 to 108.
@@ -1425,6 +1421,7 @@ class Fault(SourceInv):
             * initializeCoupling    : Initialize coupling?
             * method                : Green's function method
             * vertical              : Use the vertical displacements?
+            * keepRotatedGFs        : Store the dip and strike rotated GFs?
         '''
         
         assert self.patchType!='triangletent', 'This function is not for {} type of fault'.format(self.patchType)
@@ -1433,9 +1430,7 @@ class Fault(SourceInv):
         self.buildGFs(data, method=method, slipdir='sd', vertical=vertical)
 
         # Rotates the Greens' functions
-        self.rotateGFs(data, convergence)
-        Gss = self.G[data.name]['strikeslip']
-        Gds = self.G[data.name]['dipslip']
+        Gss, Gds = self.rotateGFs(data, convergence)
 
         # Multiply and sum
         Gc = -1.0*(Gss + Gds)
@@ -1443,6 +1438,9 @@ class Fault(SourceInv):
 
         # Store those new GFs
         self.G[data.name]['coupling'] = Gc
+        if keepRotatedGFs:
+            self.G[data.name]['dipslip'] = Gds
+            self.G[data.name]['strikeslip'] = Gss
 
         # Initialize a coupling vector
         if initializeCoupling:
