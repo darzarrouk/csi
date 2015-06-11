@@ -585,21 +585,21 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-    def rotateGFs(self, data, convergence):
+    def rotateGFs(self, G, convergence):
         '''
             For the data set data, returns the rotation operator so that dip slip motion is aligned with
         the convergence vector.
             These Greens' functions are stored in self.G or returned, given arguments.
 
         Args:
-            * data          : Name of the data set.
+            * G             : Dictionarry of strike and dip slip green's functions
             * convergence   : Convergence vector, or list/array of convergence vector with
                                 shape = (Number of fault patches, 2). 
         '''
         
         # Get the Green's functions
-        Gss = self.G[data.name]['strikeslip']
-        Gds = self.G[data.name]['dipslip']
+        Gss = G['strikeslip']
+        Gds = G['dipslip']
 
         # Number of parameters
         nSlip = Gss.shape[1]
@@ -637,11 +637,11 @@ class TriangularTents(TriangularPatches):
         Dbr = (self.convergence*dipVec).sum(axis=1)
 
         # Rotate the Green's functions
-        Gss = np.multiply(-1.0*Gss, Sbr)
-        Gds = np.multiply(Gds, Dbr)
+        bigGss = np.multiply(-1.0*Gss, Sbr)
+        bigGds = np.multiply(Gds, Dbr)
 
         # All done
-        return Gss, Gds
+        return bigGss, bigGds
 
     def computeCouplingGFs(self, data, convergence, initializeCoupling=True, vertical=True, verbose=True, keepRotatedGFs=True):
         '''
@@ -669,10 +669,9 @@ class TriangularTents(TriangularPatches):
 
         # 1. Compute the Green's function by keeping triangles separated
         G = self.edksGFs(data, vertical=vertical, slipdir='sd', verbose=verbose, TentCouplingCase=True)
-        self.G[data.name] = G
 
         # 2. Rotate these green's functions (this is the rotation matrix for the node based GFs)
-        bigGss, bigGds = self.rotateGFs(data, convergence)
+        bigGss, bigGds = self.rotateGFs(G, convergence)
 
         # 3. Compute the coupling GFs
         bigGc = -1.0*(bigGss + bigGds)

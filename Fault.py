@@ -975,8 +975,7 @@ class Fault(SourceInv):
             strike = strike*180./np.pi
             dip = dip*180./np.pi
             # Keep track?
-            if self.keepTrackOfSources:
-                self.edksSources = [Ids, xs, ys, zs, strike, dip, Areas]
+            self.edksSources = [Ids, xs, ys, zs, strike, dip, Areas]
 
         # Get the slip vector
         if self.patchType in ('triangle', 'rectangle'):

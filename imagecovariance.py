@@ -506,7 +506,17 @@ class imagecovariance(object):
             plt.figure(figure+1)
             plt.clf()
             plt.ion()
-            self.image.plot(figure=figure+1)
+            self.image.plot(figure=figure+1, show=False)
+            if hasattr(self, 'selectedZones'):
+                for zone in self.selectedZones:
+                    x = [zone[0], zone[0], zone[1], zone[1], zone[0]]
+                    y = [zone[2], zone[3], zone[3], zone[2], zone[2]]
+                    self.image.fig.carte.plot(x, y, '-b', zorder=20)
+            if hasattr(self, 'maskedZones'):
+                for zone in self.selectedZones:
+                    x = [zone[0], zone[0], zone[1], zone[1], zone[0]]
+                    y = [zone[2], zone[3], zone[3], zone[2], zone[2]]
+                    self.image.fig.carte.plot(x, y, '-r', zorder=20)
             if savefig:
                 figname = 'Data_{}.png'.format(self.name.replace(' ','_'))
                 plt.savefig(figname)
