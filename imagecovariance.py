@@ -673,6 +673,7 @@ class imagecovariance(object):
 
         x = self.datasets[dname]['Distance']
         y = s0 - self.datasets[dname]['Semivariogram']
+        y[y<0.] = 0.
         return np.sqrt(np.mean( y/np.exp(-x/l0) ))
 
 
