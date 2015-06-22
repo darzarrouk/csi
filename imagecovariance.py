@@ -19,7 +19,9 @@ from .cosicorrrates import cosicorrrates
 # Some Usefull functions    
 def costFunction(m, t, function, data, weights):
     sil, sig, lam = m
-    print(sil, sig, lam, np.sum(np.sqrt(((data-function(t, sil, sig, lam))*weights)**2)))
+    # DEBUG
+    #print(sil, sig, lam, np.sum(np.sqrt(((data-function(t, sil, sig, lam))*weights)**2)))
+    # DEBUG
     return np.sum(np.sqrt(((data-function(t, sil, sig, lam))*weights)**2))
 
 def exp_fn(t,sil,sig,lam):
@@ -307,7 +309,7 @@ class imagecovariance(object):
         # All done
         return
 
-    def computeCovariance(self, function='exp', frac=0.4, every=1., distmax=50., rampEst=True, prior=None):
+    def computeCovariance(self, function='exp', frac=0.4, every=1., distmax=50., rampEst=True, prior=None, tol=1e-10):
         '''
         Computes the covariance functions.
         Args:
@@ -316,7 +318,8 @@ class imagecovariance(object):
             * distmax   : Truncate the covariance function.
             * every     : Binning of the covariance function.
             * rampEst   : estimate a ramp (default True).
-            * prior     : First guess for the covariance estimation [Sill, Lambda, Sigma]
+            * prior     : First guess for the covariance estimation [Sill, Sigma, Lambda]
+            * tol       : Tolerance for the fit
         '''
 
         # Compute the semivariograms
@@ -353,20 +356,25 @@ class imagecovariance(object):
             if prior is None:
                 # We need a very starting point
                 # Sill ~ np.mean(y at the end)
-                # Lambda ~ sum(x)/(6*N - sum(log(y)))
+                # Lambda ~ intersect between first slope and 0 axis
                 # Sigma ~ exp(1/2N * (sum(log(y)) + sum(x)/Lambda)
                 u = np.flatnonzero(y>0)
                 ly = np.log(y[u])
                 s0 = np.mean(y[-4:])
-                l0 = np.sum(x[u])/(6*u.shape[0] - np.sum(ly))
-                m0 = np.exp( 1/(2.*u.shape[0]) * (np.sum(ly) + np.sum(x[u])/l0))
-                mprior = [s0, l0, m0]
+                l0 = self._getl0(dname, s0)
+                m0 = self._getm0(dname, s0, l0)
+                mprior = [s0, m0, l0]
             else:
                 mprior = prior
 
+            if self.verbose:
+                print('Dataset {}:'.format(dname))
+                print('A prior values: Sill | Sigma | Lambda')
+                print('                 {:4f} | {:5f} | {:6f}'.format(mprior[0], mprior[1], mprior[2]))
+
             # Minimize
-            res = sp.minimize(costFunction, mprior, args=(x, func, y, weights), method='L-BFGS-B',
-                    bounds=[[0., np.inf], [0., np.inf], [0., np.inf]], tol=1e-7)
+            res = sp.minimize(costFunction, mprior, args=(x, func, y, weights), method='SLSQP',
+                    bounds=[[0., np.inf], [0., np.inf], [0., np.inf]], tol=tol)
             pars = res.x
 
             # Save parameters
@@ -598,6 +606,9 @@ class imagecovariance(object):
             # Increase 
             ii += 1
 
+        # Check
+        plt.ioff()
+
         # Save?
         if savefig:
             figname = '{}.png'.format(self.name.replace(' ','_'))
@@ -606,6 +617,9 @@ class imagecovariance(object):
         # Show me
         if show:
             plt.show()
+
+        # Close evrything
+        plt.close('all')
 
         # All done
         return
@@ -633,5 +647,33 @@ class imagecovariance(object):
 
         # All done
         return Cd
+
+    def _getl0(self, dname, s0):
+        '''
+        From a value of sill, estimates the intersect between the slope on the first
+        points and the 0 level.
+        Args:
+            * dname : Name of the dataset
+            * s0    : Estimate of sill
+        '''
+
+        x = self.datasets[dname]['Distance'][:4]
+        y = s0 - self.datasets[dname]['Semivariogram'][:4]
+        m = np.polyfit(x, y, 1)
+        return -m[1]/m[0]
+
+    def _getm0(self, dname, s0, l0):
+        '''
+        Given a sill value and a characteristic distance, returns a rough estimate of sigma.
+        Args:
+            * dname : Name of the dataset
+            * s0    : Estimate of sill
+            * l0    : Characteristic distance
+        '''
+
+        x = self.datasets[dname]['Distance']
+        y = s0 - self.datasets[dname]['Semivariogram']
+        return np.sqrt(np.mean( y/np.exp(-x/l0) ))
+
 
 #EOF
