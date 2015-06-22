@@ -13,6 +13,7 @@ import h5py
 # Personals
 from .SourceInv import SourceInv
 from . import okadafull as okada
+from . import csiutils as utils
 
 class stressfield(SourceInv):
 
@@ -62,6 +63,24 @@ class stressfield(SourceInv):
         self.lon = lon
         self.lat = lat
     
+        # All done
+        return
+
+    def setLonLatZ(self, lon, lat , z):
+        '''
+        Sets longitude, latitude and depth.
+        '''
+
+        # Set 
+        self.lon = lon
+        self.lat = lat
+        self.depth = z
+
+        # XY
+        x, y = self.ll2xy(lon, lat)
+        self.x = x
+        self.y = y
+
         # All done
         return
 
@@ -289,104 +308,23 @@ class stressfield(SourceInv):
             self.profiles = {}
 
         # Which value are we going to use
-        if data is 'trace':
-            val = self.trace
-        else:
+        try:
+            val = self.__getattribute__(data)
+        except:
             print('Keyword unknown. Please implement it...')
             return
 
         # Mask the data
-        i = np.where(self.mask.value.flatten()==1)
-        val[i] = np.nan
-
-        # Azimuth into radians
-        alpha = azimuth*np.pi/180.
+        if hasattr(self, 'mask'):
+            i = np.where(self.mask.value.flatten()==1)
+            val[i] = np.nan
 
         # Convert the lat/lon of the center into UTM.
         xc, yc = self.ll2xy(loncenter, latcenter)
 
-        # Copmute the across points of the profile
-        xa1 = xc - (width/2.)*np.cos(alpha)
-        ya1 = yc + (width/2.)*np.sin(alpha)
-        xa2 = xc + (width/2.)*np.cos(alpha)
-        ya2 = yc - (width/2.)*np.sin(alpha)
+        # Get the profile
+        Dalong, Dacros, Bol, boxll, xe1, ye1, xe2, ye2, lon, lat = utils.coord2prof(self, xc, yc, length, azimuth, width)
 
-        # Compute the endpoints of the profile
-        xe1 = xc + (length/2.)*np.sin(alpha)
-        ye1 = yc + (length/2.)*np.cos(alpha)
-        xe2 = xc - (length/2.)*np.sin(alpha)
-        ye2 = yc - (length/2.)*np.cos(alpha)
-
-        # Convert the endpoints
-        elon1, elat1 = self.xy2ll(xe1, ye1)
-        elon2, elat2 = self.xy2ll(xe2, ye2)
-
-        # Design a box in the UTM coordinate system.
-        x1 = xe1 - (width/2.)*np.cos(alpha)
-        y1 = ye1 + (width/2.)*np.sin(alpha)
-        x2 = xe1 + (width/2.)*np.cos(alpha)
-        y2 = ye1 - (width/2.)*np.sin(alpha)
-        x3 = xe2 + (width/2.)*np.cos(alpha)
-        y3 = ye2 - (width/2.)*np.sin(alpha)
-        x4 = xe2 - (width/2.)*np.cos(alpha)
-        y4 = ye2 + (width/2.)*np.sin(alpha)
-
-        # Convert the box into lon/lat for further things
-        lon1, lat1 = self.xy2ll(x1, y1)
-        lon2, lat2 = self.xy2ll(x2, y2)
-        lon3, lat3 = self.xy2ll(x3, y3)
-        lon4, lat4 = self.xy2ll(x4, y4)
-
-        # make the box 
-        box = []
-        box.append([x1, y1])
-        box.append([x2, y2])
-        box.append([x3, y3])
-        box.append([x4, y4])
-
-        # make latlon box
-        boxll = []
-        boxll.append([lon1, lat1])
-        boxll.append([lon2, lat2])
-        boxll.append([lon3, lat3])
-        boxll.append([lon4, lat4])
-
-        # Get the points in this box.
-        # 1. import shapely and path
-        import shapely.geometry as geom
-        import matplotlib.path as path
-
-        # 2. Create an array with the positions
-        STRXY = np.vstack((self.x, self.y)).T
-
-        # 3. Create a Box
-        rect = path.Path(box, closed=False)
-
-        # 3. Find those who are inside
-        Bol = rect.contains_points(STRXY)
-
-        # 4. Get these values
-        xg = self.x[Bol]
-        yg = self.y[Bol]
-        val = val[Bol]
-
-        # 5. Get the sign of the scalar product between the line and the point
-        vec = np.array([xe1-xc, ye1-yc])
-        sarxy = np.vstack((xg-xc, yg-yc)).T
-        sign = np.sign(np.dot(sarxy, vec))
-
-        # 6. Compute the distance (along, across profile) and get the velocity
-        # Create the list that will hold these values
-        Dacros = []; Dalong = []; 
-        # Build lines of the profile
-        Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
-        Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]])
-        # Build a multipoint
-        PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
-        # Loop on the points
-        for p in range(len(PP.geoms)):
-            Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
-            Dacros.append(Lalong.distance(PP.geoms[p]))
 
         # Store it in the profile list
         self.profiles[name] = {}
@@ -395,7 +333,8 @@ class stressfield(SourceInv):
         dic['Length'] = length
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
-        dic['data'] = val
+        dic['data'] = val[Bol]
+        dic['Depth'] = self.depth[Bol]
         dic['Distance'] = np.array(Dalong)
         dic['Normal Distance'] = np.array(Dacros)
         dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
@@ -563,12 +502,13 @@ class stressfield(SourceInv):
             ax.set_ylabel('Latitude')
 
         # Mask the data
-        i = np.where(self.mask.value.flatten()==0)
-        dplot = dplot[i]
-        x = self.x.flatten()[i]
-        y = self.y.flatten()[i]
-        lon = self.lon.flatten()[i]
-        lat = self.lat.flatten()[i]
+        if hasattr(self, 'mask'):
+            i = np.where(self.mask.value.flatten()==0)
+            dplot = dplot[i]
+            x = self.x.flatten()[i]
+            y = self.y.flatten()[i]
+            lon = self.lon.flatten()[i]
+            lat = self.lat.flatten()[i]
 
         # Get min and max
         MM = np.abs(dplot).max()

@@ -17,6 +17,11 @@ from .insarrates import insarrates
 from .cosicorrrates import cosicorrrates
 
 # Some Usefull functions    
+def costFunction(m, t, function, data, weights):
+    sil, sig, lam = m
+    print(sil, sig, lam, np.sum(np.sqrt(((data-function(t, sil, sig, lam))*weights)**2)))
+    return np.sum(np.sqrt(((data-function(t, sil, sig, lam))*weights)**2))
+
 def exp_fn(t,sil,sig,lam):
     return sil - (sig**2)*np.exp(-t/lam)
 
@@ -286,20 +291,23 @@ class imagecovariance(object):
             # Average
             distance = []
             semivariogram = []
+            std = []
             for i in range(len(bins)-1):
                 uu = np.flatnonzero(inds==i)
                 if len(uu)>0:
                     distance.append(bins[i] + (bins[i+1] - bins[i])/2.)
                     semivariogram.append(0.5*np.mean(dv[uu]))
+                    std.append(np.std(dv[uu]))
 
             # Store these guys
             data['Distance'] = np.array(distance)
             data['Semivariogram'] = np.array(semivariogram)
+            data['Semivariogram Std'] = np.array(std)
 
         # All done
         return
 
-    def computeCovariance(self, function='exp', frac=0.4, every=1., distmax=50., rampEst=True):
+    def computeCovariance(self, function='exp', frac=0.4, every=1., distmax=50., rampEst=True, prior=None):
         '''
         Computes the covariance functions.
         Args:
@@ -308,6 +316,7 @@ class imagecovariance(object):
             * distmax   : Truncate the covariance function.
             * every     : Binning of the covariance function.
             * rampEst   : estimate a ramp (default True).
+            * prior     : First guess for the covariance estimation [Sill, Lambda, Sigma]
         '''
 
         # Compute the semivariograms
@@ -324,34 +333,41 @@ class imagecovariance(object):
             data = self.datasets[dname]
 
             # Get the data
-            semivar = data['Semivariogram']
-            distance = data['Distance']
+            y = data['Semivariogram']
+            x = data['Distance']
+            error = data['Semivariogram Std']
+            weights = error/np.sum(error)
 
             # Save the type of function
             data['function'] = function
 
             # Fit that 
             if function is 'exp':
-                try:
-                    pars, cova = sp.curve_fit(exp_fn, distance, semivar)
-                except:
-                    try: 
-                        pars, cova = sp.curve_fit(exp_fn, distance, semivar, ftol=1e-5)
-                    except:
-                        print('No solution found for data sets {} of {}'.format(dname, self.name)) 
-                        pars = [np.nan, np.nan, np.nan]
+                func = exp_fn
             elif function is 'gauss':
-                try:
-                    pars, cova = sp.curve_fit(gauss_fn, distance, semivar)
-                except:
-                    try: 
-                        pars, cova = sp.curve_fit(gauss_fn, distance, semivar, ftol=1e-5)
-                    except:
-                        print('No solution found for data sets {} of {}'.format(dname, self.name)) 
-                        pars = [np.nan, np.nan, np.nan]
+                func = gauss_fn
             else:
                 print('Unknown function type..., must be exp or gauss')
                 sys.exit()
+
+            if prior is None:
+                # We need a very starting point
+                # Sill ~ np.mean(y at the end)
+                # Lambda ~ sum(x)/(6*N - sum(log(y)))
+                # Sigma ~ exp(1/2N * (sum(log(y)) + sum(x)/Lambda)
+                u = np.flatnonzero(y>0)
+                ly = np.log(y[u])
+                s0 = np.mean(y[-4:])
+                l0 = np.sum(x[u])/(6*u.shape[0] - np.sum(ly))
+                m0 = np.exp( 1/(2.*u.shape[0]) * (np.sum(ly) + np.sum(x[u])/l0))
+                mprior = [s0, l0, m0]
+            else:
+                mprior = prior
+
+            # Minimize
+            res = sp.minimize(costFunction, mprior, args=(x, func, y, weights), method='L-BFGS-B',
+                    bounds=[[0., np.inf], [0., np.inf], [0., np.inf]], tol=1e-7)
+            pars = res.x
 
             # Save parameters
             sill = pars[0]
@@ -369,7 +385,7 @@ class imagecovariance(object):
                 print('     Lambda :  {}'.format(lamb))
 
             # Compute the covariance function
-            data['Covariance'] = sill - semivar
+            data['Covariance'] = sill - y
 
         # All done
         return
@@ -493,7 +509,7 @@ class imagecovariance(object):
         # All done
         return
 
-    def plot(self, data='covariance', plotData=False, figure=1, savefig=False):
+    def plot(self, data='covariance', plotData=False, figure=1, savefig=False, show=True):
         '''
         Plots the covariance function.
         Args:
@@ -588,8 +604,8 @@ class imagecovariance(object):
             plt.savefig(figname)
 
         # Show me
-        plt.ioff()
-        plt.show()
+        if show:
+            plt.show()
 
         # All done
         return

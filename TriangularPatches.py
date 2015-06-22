@@ -705,7 +705,10 @@ class TriangularPatches(Fault):
         if self.slip is not None:
             self.slip = np.delete(self.slip, patch, axis=0)
             self.N_slip = len(self.slip)
-            self.numpatch -= 1
+            if hasattr(self, 'numpatch'):
+                self.numpatch -= 1
+            else:
+                self.numpatch = len(self.patch)
 
         # All done
         return
