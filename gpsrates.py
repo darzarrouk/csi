@@ -2017,9 +2017,9 @@ class gpsrates(SourceInv):
             filename = ''
             for a in self.name.split():
                 filename = filename+a+'_'
-            filename = outDir+filename+data+'.dat'
+            filename = outDir+'/'+filename+data+'.dat'
         else: 
-            filename = outDir+namefile
+            filename = outDir+'/'+namefile
         
         if self.verbose:        
             print ("Write {} set {} to file {}".format(data, self.name, filename))

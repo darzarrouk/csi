@@ -171,6 +171,9 @@ class multifaultsolve(object):
             # Where does this fault starts
             nfs = copy.deepcopy(ns)
 
+            # Store details
+            self.paramDescription[fault.name] = {}
+
             # Initialize the values
             ss = 'None'
             ds = 'None'
@@ -181,18 +184,22 @@ class multifaultsolve(object):
             if 's' in fault.slipdir:
                 ne += fault.slip.shape[0]
                 ss = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
+                self.paramDescription[fault.name]['Strike Slip'] = [ns, ne]
                 ns += fault.slip.shape[0]
             if 'd' in fault.slipdir:
                 ne += fault.slip.shape[0]
                 ds = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
+                self.paramDescription[fault.name]['Dip Slip'] = [ns, ne]
                 ns += fault.slip.shape[0]
             if 't' in fault.slipdir:
                 ne += fault.slip.shape[0]
                 ts = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
+                self.paramDescription[fault.name]['Tensile Slip'] = [ns, ne]
                 ns += fault.slip.shape[0]
             if 'c' in fault.slipdir:
                 ne += fault.slip.shape[0]
                 cp = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
+                self.paramDescription[fault.name]['Coupling'] = [ns, ne]
                 ns += fault.slip.shape[0]
 
             # How many slip parameters
@@ -205,6 +212,7 @@ class multifaultsolve(object):
             if no>0:
                 ne += no
                 op = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
+                self.paramDescription[fault.name]['Extra Parameters'] = [ns, ne]
                 ns += no
             else:
                 op = 'None'
@@ -212,13 +220,6 @@ class multifaultsolve(object):
             # print things
             print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
 
-            # Store details
-            self.paramDescription[fault.name] = {}
-            self.paramDescription[fault.name]['Strike Slip'] = ss
-            self.paramDescription[fault.name]['Dip Slip'] = ds
-            self.paramDescription[fault.name]['Tensile Slip'] = ts
-            self.paramDescription[fault.name]['Coupling'] = cp
-            self.paramDescription[fault.name]['Extra Parameters'] = op
 
         # Store the number of slip parameters
         self.nSlip = nSlip

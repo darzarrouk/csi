@@ -286,7 +286,7 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', increments=None, nSamples=None):
+    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', increments=None, nSamples=None, outDir='./'):
         '''
         Writes the values of slip in two grd files:
                 -> z_{filename}
@@ -307,15 +307,15 @@ class TriangularTents(TriangularPatches):
         import scipy.interpolate as sciint
 
         # Get the sources
-        gp = geoplot(figure=np.random.randint(1000))
+        gp = geoplot(figure=None)
         lon, lat, z, s = gp.faultTents(self, slip=slip, method='scatter',
                                             npoints=npoints)
         del gp
 
         # write 2 grd
-        utils.write2netCDF('z_{}'.format(filename), 
+        utils.write2netCDF('{}/z_{}'.format(outDir, filename), 
                 lon, lat, -1.0*z, increments=increments, nSamples=nSamples)
-        utils.write2netCDF('{}_{}'.format(slip, filename),
+        utils.write2netCDF('{}/{}_{}'.format(outDir, slip, filename),
                 lon, lat, s, increments=increments, nSamples=nSamples)
 
         # All done
