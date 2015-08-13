@@ -9,7 +9,9 @@ except:
 #----------------------------------------------------------------
 # A routine to write netcdf files
 
-def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='CSI product', name='z', scale=1.0, offset=0.0, xyunits=['Lon', 'Lat'], units='None', interpolation=True, verbose=True):
+def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, 
+        title='CSI product', name='z', scale=1.0, offset=0.0, mask=None,
+        xyunits=['Lon', 'Lat'], units='None', interpolation=True, verbose=True):
     '''
     Creates a netCDF file  with the arrays in Z. 
     Z can be list of array or an array, the size of lon.
@@ -20,6 +22,8 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='C
         * lon      -> 1D Array of lon values
         * lat      -> 1D Array of lat values
         * z        -> 2D slice to be saved
+        * mask     -> if not None, must be a 2d-array of a polynome to mask 
+                      what is outside of it
    
     .. Kwargs:
                
@@ -101,6 +105,27 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, title='C
     else:
         # Get values
         oZ = z
+
+    # Masking?
+    if mask is not None:
+        
+        # Import matplotlib.path
+        import matplotlib.path as path
+
+        # Create the path
+        poly = path.Path([[lo, la] for lo, la in zip(olon.flatten(), olat.flatten())], 
+                closed=False)
+
+        # Create the list of points
+        xy = np.vstack((olon.flatten(), olat.flatten())).T
+
+        # Find those outside
+        bol = ~poly.contains_points(xy)
+
+        # Mask those out
+        oZ = oZ.flatten()
+        oZ[bol] = np.nan
+        oZ = oZ.reshape(olon.shape)
 
     # Range
     zmin = np.nanmin(oZ)
