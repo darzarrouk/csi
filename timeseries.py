@@ -157,14 +157,14 @@ class timeseries:
         # Find the index
         u = 0
         t = self.time[u]
-        while t<time:
-            u += 1
+        while t<time and u<self.time.shape[0]:
             t = self.time[u]
+            u += 1
 
         # insert
-        self.time.insert(u, time)
+        self.time = np.insert(self.time, u, time)
         self.value = np.insert(self.value, u, value)
-        self.std = np.insert(self.std, u, std)
+        self.error = np.insert(self.error, u, std)
         
         # All done
         return

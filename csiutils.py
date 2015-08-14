@@ -23,7 +23,8 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
         * lat      -> 1D Array of lat values
         * z        -> 2D slice to be saved
         * mask     -> if not None, must be a 2d-array of a polynome to mask 
-                      what is outside of it
+                      what is outside of it. This option is really long, so I don't 
+                      use it...
    
     .. Kwargs:
                
@@ -119,7 +120,7 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
         # Create the list of points
         xy = np.vstack((olon.flatten(), olat.flatten())).T
 
-        # Find those outside
+        # Findthose outside
         bol = ~poly.contains_points(xy)
 
         # Mask those out
