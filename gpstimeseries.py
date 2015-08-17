@@ -228,6 +228,28 @@ class gpstimeseries:
         # All done
         return
 
+    def fitTidalConstituents(self, steps=None, linear=False, tZero=dt.datetime(2000, 1, 1), 
+            chunks=None, cossin=False, constituents='all'):
+        '''
+        Fits tidal constituents on the time series.
+        Args:
+            * steps     : list of datetime instances to add step functions in the estimation process.
+            * linear    : estimate a linear trend.
+            * tZero     : origin time (datetime instance).
+            * chunks    : List [ [start1, end1], [start2, end2]] where the fit is performed.
+        '''
+
+        # Do it for each time series
+        self.north.fitTidalConstituents(steps=steps, linear=linear, tZero=tZero, 
+                chunks=chunks, cossin=cossin, constituents=constituents)
+        self.east.fitTidalConstituents(steps=steps, linear=linear, tZero=tZero, 
+                chunks=chunks, cossin=cossin, constituents=constituents)
+        self.up.fitTidalConstituents(steps=steps, linear=linear, tZero=tZero, 
+                chunks=chunks, cossin=cossin, constituents=constituents)
+
+        # All done
+        return
+
     def getOffset(self, date1, date2, nodate=np.nan, data='data'):
         '''
         Get the offset between date1 and date2.
@@ -292,14 +314,19 @@ class gpstimeseries:
         # All done
         return
 
-    def plot(self, figure=1, styles=['.r'], show=True):
+    def plot(self, figure=1, styles=['.r'], show=True, data='data'):
         '''
         Plots the time series.
         Args:
             figure  :   Figure id number (default=1)
             styles  :   List of styles (default=['.r'])
             show    :   Show to me (default=True)
+            data    :   What do you show (data, synth)
         '''
+
+        # list 
+        if type(data) is not list:
+            data = [data]
 
         # Create a figure
         fig = plt.figure(figure)
@@ -309,11 +336,10 @@ class gpstimeseries:
         axeast = fig.add_subplot(312)
         axup = fig.add_subplot(313)
 
-        # Plot ts
-        for style in styles:
-            axnorth.plot(self.time, self.north.value, style)
-            axeast.plot(self.time, self.east.value, style)
-            axup.plot(self.time, self.up.value, style)
+        # Plot
+        self.north.plot(figure=fig, subplot=axnorth, styles=styles, data=data, show=False)
+        self.east.plot(figure=fig, subplot=axeast, styles=styles, data=data, show=False)
+        self.up.plot(figure=fig, subplot=axup, styles=styles, data=data, show=False)
 
         # show
         if show:
@@ -321,6 +347,7 @@ class gpstimeseries:
 
         # All done
         return
+
 
 
 #EOF
