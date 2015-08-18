@@ -15,13 +15,14 @@ import sys
 
 class tidalfit(object):
 
-    def __init__(self, constituents='all', linear=False, steps=None, verbose=True):
+    def __init__(self, constituents='all', linear=False, steps=None, cossin=False, verbose=True):
         '''
         Initialize a tidalfit object.
         Args:
             * constituents  : List of constituents to use. Can be 'all'.
             * linear        : Include a linear trend (default is False).
             * steps         : List of datetime instances to add step functions in the fit.
+            * cossin        : Just add a cos and sin term to estimate
         '''
         
         # print
@@ -63,6 +64,11 @@ class tidalfit(object):
             if constituents in ('All', 'all', 'ALL'):
                 constituents = self.tidePeriodDict.keys()
         self.constituents = constituents
+    
+        # Constituents
+        if cossin:
+            self.constituents.append('cossin')
+            self.tidePeriodDict['cossin'] = 1.0
 
         # Store things
         self.steps = steps
@@ -226,7 +232,8 @@ class tidalfit(object):
         # All done
         return
 
-    def predict(self, timeseries, constituents='all', linear=False, steps=True, derivative=False):
+    def predict(self, timeseries, constituents='all', linear=False, steps=True, cossin=False,
+            derivative=False):
         '''
         Given the results of the fit, this routine predicts the time series.
         Args:
@@ -234,9 +241,18 @@ class tidalfit(object):
             * constituents  : List of constituents (default: 'all')
             * linear        : Include the linear trend (default: False).
             * steps         : Include the steps (default: False).
+            * cossin        : Add a simple cos+sin term
             * derivative    : If True, stores results in timeseries.deriv, 
                               else, stores results in timeseries.synth
         '''
+
+        # If cossin
+        if cossin:
+            if type(constituents) is list:
+                if 'cossin' not in constituents:
+                    constituents += ['cossin']
+            else:
+                constituents = [constituents, 'cossin']
 
         # Build G
         if steps:

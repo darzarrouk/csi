@@ -360,6 +360,8 @@ class gpsrates(SourceInv):
         vel = values[Bol,:]
         err = self.err_enu[Bol,:]
         names = self.station[Bol]
+        if hasattr(self, 'vel_los'):
+            vel_los = self.vel_los[Bol]
 
         # 5. Get the sign of the scalar product between the line and the point
         vec = np.array([xe1-xc, ye1-yc])
@@ -419,6 +421,8 @@ class gpsrates(SourceInv):
         dic['EndPointsLL'] = [[lone1, late1],
                               [lone2, late2]]
         dic['Vectors'] = [vec1, vec2]
+        if hasattr(self, 'vel_los'):
+            dic['LOS Velocity'] = vel_los
     
         # all done
         return
@@ -2013,9 +2017,9 @@ class gpsrates(SourceInv):
             filename = ''
             for a in self.name.split():
                 filename = filename+a+'_'
-            filename = outDir+filename+data+'.dat'
+            filename = outDir+'/'+filename+data+'.dat'
         else: 
-            filename = outDir+namefile
+            filename = outDir+'/'+namefile
         
         if self.verbose:        
             print ("Write {} set {} to file {}".format(data, self.name, filename))

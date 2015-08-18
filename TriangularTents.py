@@ -286,7 +286,7 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', increments=None, nSamples=None):
+    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', increments=None, nSamples=None, outDir='./', mask=False):
         '''
         Writes the values of slip in two grd files:
                 -> z_{filename}
@@ -298,6 +298,7 @@ class TriangularTents(TriangularPatches):
             * dlon          : Longitude increment of the output file
             * dlat          : Latitude increment of the output file
             * slip          : Slip value to store.
+            * mask          : If true,builds a mask based on the outter boundary of the fault.
         '''
     
         # Assert
@@ -307,16 +308,23 @@ class TriangularTents(TriangularPatches):
         import scipy.interpolate as sciint
 
         # Get the sources
-        gp = geoplot(figure=np.random.randint(1000))
+        gp = geoplot(figure=None)
         lon, lat, z, s = gp.faultTents(self, slip=slip, method='scatter',
                                             npoints=npoints)
+        gp.close()
         del gp
 
+        # Mask?
+        if mask:
+            mask = self._getFaultContour()
+        else:
+            mask = None
+
         # write 2 grd
-        utils.write2netCDF('z_{}'.format(filename), 
-                lon, lat, -1.0*z, increments=increments, nSamples=nSamples)
-        utils.write2netCDF('{}_{}'.format(slip, filename),
-                lon, lat, s, increments=increments, nSamples=nSamples)
+        utils.write2netCDF('{}/z_{}'.format(outDir, filename), 
+                lon, lat, -1.0*z, increments=increments, nSamples=nSamples, mask=mask)
+        utils.write2netCDF('{}/{}_{}'.format(outDir, slip, filename),
+                lon, lat, s, increments=increments, nSamples=nSamples, mask=mask)
 
         # All done
         return
@@ -1278,5 +1286,90 @@ class TriangularTents(TriangularPatches):
 
         # All Done
         return Slip
+
+    def _getFaultContour(self):
+        '''
+        Returns the outer-edge of the fault.
+        '''
+
+        # Check
+        if not hasattr(self, 'adjacentTents'):
+            self.buildTentAdjacencyMap()
+
+        # Initiate a list of points
+        contour = []
+
+        # Get the lon, lat and depth
+        lon = np.array([t[0] for t in self.tentll])
+        lat = np.array([t[1] for t in self.tentll])
+        depth = np.array([t[2] for t in self.tentll])
+
+        # Take the first point as the shallowest
+        uu = np.argmin(depth)
+        ustart = copy.deepcopy(uu)
+        contour.append([lon[uu], lat[uu], depth[uu], uu])
+
+        # Since we have taken the shallowest point as a start, the second point probably is
+        # as shallow or very close (and there is no such thing as a horizontal fault) 
+        # This is a cheap way, but it should work 99% of the time
+        adj = self.adjacentTents[uu]
+        ii = np.argmin(depth[adj]-depth[uu])
+        uu = adj[ii]
+        contour.append([lon[uu], lat[uu], depth[uu], uu])
+
+        # Follow the edge until we find the same point
+        while uu!=ustart:
+
+            # Get the position of the last 2 points
+            lon2, lat2, d2, u2 = contour[-1]
+            lon1, lat1, d1, u1 = contour[-2]
+            
+            # In XY plane
+            x1, y1 = self.tent[u1][:2]
+            x2, y2 = self.tent[u2][:2]
+
+            # Compute the vector
+            vec = np.array([x2-x1, y2-y1])
+            nvec = np.linalg.norm(vec)
+
+            # Get the adjacent tents
+            adj = copy.deepcopy(self.adjacentTents[u2])
+
+            # Remove the point we had before
+            adj.remove(u1)
+
+            # Compute the vectors
+            vecs = [np.array([x2-self.tent[a][0], y2-self.tent[a][1]]) for a in adj]
+
+            # Compute the scalar product and get the angle
+            angles = []
+            for v in vecs:
+                angle = np.arccos(np.dot(vec,v)/(np.linalg.norm(v)*nvec))
+                vprod = np.cross(vec, v)
+                if vprod<0.:
+                    angle = 360. - angle
+                angles.append(angle)
+
+            # test 
+            #plt.plot(lon, lat, '.k', markersize=10, zorder=0)
+            #plt.plot([c[0] for c in contour], [c[1] for c in contour], '-r', linewidth=2, zorder=1)
+            #plt.scatter(lon[adj], lat[adj], s=50, c=np.array(angles)*180./np.pi, linewidth=0.1, zorder=2)
+            #plt.colorbar()
+            #plt.show()
+
+            # Get the largest angle
+            uu = adj[np.argmax(angles)]
+
+            # Append
+            contour.append([lon[uu], lat[uu], depth[uu], uu])
+
+        # Remove the last point because we already have it
+        contour.pop()
+
+        # All done
+        return contour
+
+       
+
 
 #EOF

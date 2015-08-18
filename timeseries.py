@@ -157,14 +157,14 @@ class timeseries:
         # Find the index
         u = 0
         t = self.time[u]
-        while t<time:
-            u += 1
+        while t<time and u<self.time.shape[0]:
             t = self.time[u]
+            u += 1
 
         # insert
-        self.time.insert(u, time)
+        self.time = np.insert(self.time, u, time)
         self.value = np.insert(self.value, u, value)
-        self.std = np.insert(self.std, u, std)
+        self.error = np.insert(self.error, u, std)
         
         # All done
         return
@@ -279,7 +279,7 @@ class timeseries:
         # All Done
         return
     
-    def fitTidalConstituent(self, steps=None, linear=False, tZero=dt.datetime(2000, 1, 1), chunks=None):
+    def fitTidalConstituents(self, steps=None, linear=False, tZero=dt.datetime(2000, 1, 1), chunks=None, cossin=False, constituents='all'):
         '''
         Fits tidal constituents on the time series.
         Args:
@@ -290,7 +290,7 @@ class timeseries:
         '''
 
         # Initialize a tidalfit
-        tf = tidalfit(constituents='all', linear=linear, steps=steps, tZero=tZero)
+        tf = tidalfit(constituents=constituents, linear=linear, steps=steps, cossin=cossin)
 
         # Fit the constituents
         tf.doFit(self, tZero=tZero, chunks=chunks)
@@ -298,7 +298,9 @@ class timeseries:
         # Predict the time series
         if steps is not None:
             sT = True
-        tf.predict(self,constituents='all', linear=linear, steps=sT)
+        else:
+            sT = False
+        tf.predict(self,constituents=constituents, linear=linear, steps=sT, cossin=cossin)
 
         # All done
         return
@@ -392,7 +394,7 @@ class timeseries:
         # All done
         return indexes
 
-    def plot(self, figure=1, styles=['.r'], show=True, data='data'):
+    def plot(self, figure=1, styles=['.r'], show=True, data='data', subplot=None):
         '''
         Plots the time series.
         Args:
@@ -400,27 +402,43 @@ class timeseries:
             styles  :   List of styles (default=['.r'])
             show    :   Show to me (default=True)
             data    :   can be 'data', 'derivative', 'synth'
+                        or a list of those
         '''
 
         # Get values
-        if data in ('data'):
-            v = self.value
-        elif data in ('derivative'):
-            v = self.derivative
-        elif data in ('synth'):
-            v = self.synth
-        else:
-            print('Unknown component to plot')
-            return
+        if type(data) is str:
+            data = [data]
+
+        # iterate
+        values = []
+        for d in data:
+            if d in ('data'):
+                v = self.value
+            elif d in ('derivative'):
+                v = self.derivative
+            elif d in ('synth'):
+                v = self.synth
+            elif d in ('res'):
+                v = self.value-self.synth
+            else:
+                print('Unknown component to plot')
+                return
+            values.append(v)
 
         # Create a figure
-        fig = plt.figure(figure)
+        if (figure=='new') or type(figure) is int:
+            fig = plt.figure(figure)
+        else:
+            fig = figure
 
         # Create axes
-        ax = fig.add_subplot(111)
+        if subplot is not None:
+            ax = subplot
+        else:
+            ax = fig.add_subplot(111)
 
         # Plot ts
-        for style in styles:
+        for v,style in zip(values, styles):
             ax.plot(self.time, v, style)
 
         # show
@@ -438,6 +456,8 @@ class timeseries:
         self.time = self.time[u]
         self.value = self.value[u]
         self.error = self.error[u]
+        if hasattr(self, 'synth'):
+            self.synth = self.synth[u]
 
         # All done
         return

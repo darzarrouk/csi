@@ -10,6 +10,9 @@ import datetime as dt
 import matplotlib.pyplot as plt
 import sys
 
+# Personal
+from .timeseries import timeseries
+
 class gpstimeseries:
 
     def __init__(self, name, utmzone='10', verbose=True):
@@ -60,6 +63,60 @@ class gpstimeseries:
         self.lat = lat
 
         # all done
+        return
+
+    def read_from_JPL(self, filename):
+        '''
+        Reads the time series from a file which has been sent from JPL.
+        Format is a bit awkward...
+        '''
+
+        # Open, read, close file
+        fin = open(filename, 'r')
+        Lines = fin.readlines() 
+        fin.close()
+
+        # Create values
+        time = []
+        east = []; north = []; up = []
+        stdeast = []; stdnorth = []; stdup = []
+
+        # Read these
+        for line in Lines:
+            values = line.split()
+            time.append(dt.datetime(int(values[11]), 
+                                    int(values[12]),
+                                    int(values[13]),
+                                    int(values[14]),
+                                    int(values[15]),
+                                    int(values[16])))
+            east.append(float(values[1]))
+            north.append(float(values[2]))
+            up.append(float(values[3]))
+            stdeast.append(float(values[4]))
+            stdnorth.append(float(values[5]))
+            stdup.append(float(values[6]))
+
+        # Initiate some timeseries
+        self.north = timeseries('North', utmzone=self.utmzone)
+        self.east = timeseries('East', utmzone=self.utmzone)
+        self.up = timeseries('Up', utmzone=self.utmzone)
+
+        # Set time
+        self.time = np.array(time)
+        self.north.time = self.time
+        self.east.time = self.time
+        self.up.time = self.time
+
+        # Set values
+        self.north.value = np.array(north)
+        self.north.error = np.array(stdnorth)
+        self.east.value = np.array(east)
+        self.east.error = np.array(stdeast)
+        self.up.value = np.array(up)
+        self.up.error = np.array(stdup)
+
+        # All done
         return
 
     def initializeTimeSeries(self, start, end, interval=1):
@@ -114,15 +171,41 @@ class gpstimeseries:
         time_step = np.int(np.floor(interval * 24 * 60 * 60))
         self.time = [st + dt.timedelta(0, t) for t in range(0, delta_sec, time_step)]
 
-        # Initialize position vectors
-        self.north = np.zeros(len(self.time))
-        self.east = np.zeros(len(self.time))
-        self.up = np.zeros(len(self.time))
+        # Initialize timeseries instances
+        self.north = timeseries('North', utmzone=self.utmzone)
+        self.east = timeseries('East', utmzone=self.utmzone)
+        self.up = timeseries('Up', utmzone=self.utmzone)
+
+        # Time
+        self.north.time = self.time
+        self.east.time = self.time
+        self.up.time = self.time
+
+        # Values
+        self.north.value = np.zeros(self.time.shape)
+        self.east.value = np.zeros(self.time.shape)
+        self.up.value = np.zeros(self.time.shape)
 
         # Initialize uncertainties
-        self.std_north = np.zeros(len(self.time))
-        self.std_east = np.zeros(len(self.time))
-        self.std_up = np.zeros(len(self.time))
+        self.north.error = np.zeros(len(self.time))
+        self.east.error = np.zeros(len(self.time))
+        self.up.error = np.zeros(len(self.time))
+
+        # All done
+        return
+
+    def trimTime(self, start, end=dt.datetime(2100,1,1)):
+        '''
+        Keeps the epochs between start and end
+        '''
+        
+        # Trim
+        self.north.trimTime(start, end=end)
+        self.east.trimTime(start, end=end)
+        self.up.trimTime(start, end=end)
+
+        # Fix time
+        self.time = self.up.time
 
         # All done
         return
@@ -134,22 +217,36 @@ class gpstimeseries:
         if east, north and up values are not provided, 0.0 is used.
         '''
 
-        # Find the index
-        u = 0
-        t = self.time[u]
-        while t<time:
-            u += 1
-            t = self.time[u]
-
         # insert
-        self.time.insert(u, time)
-        self.east = np.insert(self.east, u, east)
-        self.north = np.insert(self.north, u, north)
-        self.up = np.insert(self.up, u, up)
-        self.std_east = np.insert(self.std_east, u, std_east)
-        self.std_north = np.insert(self.std_north, u, std_north)
-        self.std_up = np.insert(self.std_up, u, std_up)
-        
+        self.east.addPointInTime(time, value=east, std=std_east)
+        self.north.addPointInTime(time, value=north, std=std_north)
+        self.up.addPointInTime(time, value=up, std=std_up)
+ 
+        # Time vector
+        self.time = self.up.time
+
+        # All done
+        return
+
+    def fitTidalConstituents(self, steps=None, linear=False, tZero=dt.datetime(2000, 1, 1), 
+            chunks=None, cossin=False, constituents='all'):
+        '''
+        Fits tidal constituents on the time series.
+        Args:
+            * steps     : list of datetime instances to add step functions in the estimation process.
+            * linear    : estimate a linear trend.
+            * tZero     : origin time (datetime instance).
+            * chunks    : List [ [start1, end1], [start2, end2]] where the fit is performed.
+        '''
+
+        # Do it for each time series
+        self.north.fitTidalConstituents(steps=steps, linear=linear, tZero=tZero, 
+                chunks=chunks, cossin=cossin, constituents=constituents)
+        self.east.fitTidalConstituents(steps=steps, linear=linear, tZero=tZero, 
+                chunks=chunks, cossin=cossin, constituents=constituents)
+        self.up.fitTidalConstituents(steps=steps, linear=linear, tZero=tZero, 
+                chunks=chunks, cossin=cossin, constituents=constituents)
+
         # All done
         return
 
@@ -163,28 +260,13 @@ class gpstimeseries:
             data        : can be 'data' or 'std'
         '''
 
-        # Get the indexes
-        u1 = np.flatnonzero(np.array(self.time)==date1)
-        u2 = np.flatnonzero(np.array(self.time)==date2)
-
-        # Check
-        if len(u1)==0:
-            return nodate, nodate, nodate
-        if len(u2)==0:
-            return nodate, nodate, nodate
-
-        # Select 
-        if data in ('data'):
-            east = self.east
-            north = self.north
-            up = self.up
-        elif data in ('std'):
-            east = self.std_east
-            north = self.std_north
-            up = self.std_up
+        # Get offsets
+        east = self.east.getOffset(date1, date2, nodate=nodate, data=data)
+        north = self.north.getOffset(date1, date2, nodate=nodate, data=data)
+        up = self.up.getOffset(date1, date2, nodate=nodate, data=data)
 
         # all done
-        return east[u2]-east[u1], north[u2]-north[u1], up[u2]-up[u1]
+        return east, north, up
 
     def write2file(self, outfile, steplike=False):
         '''
@@ -201,29 +283,29 @@ class gpstimeseries:
         # Loop over the dates
         for i in range(len(self.time)-1):
             t = self.time[i].isoformat()
-            e = self.east[i]
-            n = self.north[i]
-            u = self.up[i]
-            es = self.std_east[i]
-            ns = self.std_north[i]
-            us = self.std_up[i]
+            e = self.east.value[i]
+            n = self.north.value[i]
+            u = self.up.value[i]
+            es = self.east.value[i]
+            ns = self.north.value[i]
+            us = self.up.value[i]
             fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
             if steplike:
-                e = self.east[i+1]
-                n = self.north[i+1]
-                u = self.up[i+1]
-                es = self.std_east[i+1]
-                ns = self.std_north[i+1]
-                us = self.std_up[i+1]
+                e = self.east.value[i+1]
+                n = self.north.value[i+1]
+                u = self.up.value[i+1]
+                es = self.east.error[i+1]
+                ns = self.north.error[i+1]
+                us = self.up.error[i+1]
                 fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
 
         t = self.time[i].isoformat()
-        e = self.east[i]
-        n = self.north[i]
-        u = self.up[i]
-        es = self.std_east[i]
-        ns = self.std_north[i]
-        us = self.std_up[i]
+        e = self.east.value[i]
+        n = self.north.value[i]
+        u = self.up.value[i]
+        es = self.east.error[i]
+        ns = self.north.error[i]
+        us = self.up.error[i]
         fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
 
         # Done 
@@ -232,14 +314,19 @@ class gpstimeseries:
         # All done
         return
 
-    def plot(self, figure=1, styles=['.r'], show=True):
+    def plot(self, figure=1, styles=['.r'], show=True, data='data'):
         '''
         Plots the time series.
         Args:
             figure  :   Figure id number (default=1)
             styles  :   List of styles (default=['.r'])
             show    :   Show to me (default=True)
+            data    :   What do you show (data, synth)
         '''
+
+        # list 
+        if type(data) is not list:
+            data = [data]
 
         # Create a figure
         fig = plt.figure(figure)
@@ -249,11 +336,10 @@ class gpstimeseries:
         axeast = fig.add_subplot(312)
         axup = fig.add_subplot(313)
 
-        # Plot ts
-        for style in styles:
-            axnorth.plot(self.time, self.north, style)
-            axeast.plot(self.time, self.east, style)
-            axup.plot(self.time, self.up, style)
+        # Plot
+        self.north.plot(figure=fig, subplot=axnorth, styles=styles, data=data, show=False)
+        self.east.plot(figure=fig, subplot=axeast, styles=styles, data=data, show=False)
+        self.up.plot(figure=fig, subplot=axup, styles=styles, data=data, show=False)
 
         # show
         if show:
@@ -261,6 +347,7 @@ class gpstimeseries:
 
         # All done
         return
+
 
 
 #EOF

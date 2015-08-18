@@ -79,6 +79,18 @@ class geodeticplot(object):
         # All done
         return
 
+    def close(self):
+        '''
+        Closes all the figures
+        '''
+
+        # Figure 1
+        plt.close(self.fig1)
+        plt.close(self.fig2)
+
+        # All done
+        return
+
     def show(self, mapaxis=None, triDaxis=None, showFig=['fault', 'map'], fitOnBox=True):
         '''
         Show to screen
