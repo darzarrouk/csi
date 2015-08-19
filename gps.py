@@ -16,8 +16,9 @@ import sys
 from .SourceInv import SourceInv
 from .gpstimeseries import gpstimeseries
 from .geodeticplot import geodeticplot as geoplot
+from . import csiutils as utils
 
-class gpsrates(SourceInv):
+class gps(SourceInv):
 
     def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
         '''
@@ -28,10 +29,10 @@ class gpsrates(SourceInv):
         '''
 
         # Base class init
-        super(gpsrates,self).__init__(name,utmzone,ellps) 
+        super(gps,self).__init__(name,utmzone,ellps) 
         
         # Set things
-        self.dtype = 'gpsrates'
+        self.dtype = 'gps'
  
         # print
         if verbose:
@@ -176,7 +177,7 @@ class gpsrates(SourceInv):
 
     def getSubNetwork(self, name, stations):
         '''
-        Given a list of station names, returns the corresponding gpsrates object.
+        Given a list of station names, returns the corresponding gps object.
         Args:
             * name      : Name of the returned gps object
             * stations  : List of station names.
@@ -191,24 +192,24 @@ class gpsrates(SourceInv):
         # Get lon lat velocities and errors values for each stations
         for station in stations:
             assert station in self.station, 'Site {} not in {} GPS object'.format(station,
-                    gps.name)
+                    self.name)
             Lon.append(self.lon[station==self.station])
             Lat.append(self.lat[station==self.station])
             Vel.append(self.getvelo(station))
             Err.append(self.geterr(station))
 
         # Create the object
-        gps = gpsrates(name, utmzone=self.utmzone, verbose=self.verbose)
+        gpsNew = gps(name, utmzone=self.utmzone, verbose=self.verbose)
 
         # Set Stations
-        gps.setStat(stations, Lon, Lat)
+        gpsNew.setStat(stations, Lon, Lat)
 
         # Set Velocity and Error
-        gps.vel_enu = np.array(Vel)
-        gps.err_enu = np.array(Err)
+        gpsNew.vel_enu = np.array(Vel)
+        gpsNew.err_enu = np.array(Err)
 
         # all done
-        return gps
+        return gpsNew
 
     def buildCd(self, direction='en'):
         '''
@@ -288,112 +289,50 @@ class gpsrates(SourceInv):
             values = self.synth
             self.profiles[name]['data type'] = 'synth'
 
-        # Azimuth into radians
-        alpha = azimuth*np.pi/180.
-
         # Convert the lat/lon of the center into UTM.
         xc, yc = self.ll2xy(loncenter, latcenter)
 
-        # Copmute the across points of the profile
-        xa1 = xc - (width/2.)*np.cos(alpha)
-        ya1 = yc + (width/2.)*np.sin(alpha)
-        xa2 = xc + (width/2.)*np.cos(alpha)
-        ya2 = yc - (width/2.)*np.sin(alpha)
-
-        # Compute the endpoints of the profile
-        xe1 = xc + (length/2.)*np.sin(alpha)
-        ye1 = yc + (length/2.)*np.cos(alpha)
-        xe2 = xc - (length/2.)*np.sin(alpha)
-        ye2 = yc - (length/2.)*np.cos(alpha)
-
-        # Convert the endpoints
-        elon1, elat1 = self.xy2ll(xe1, ye1)
-        elon2, elat2 = self.xy2ll(xe2, ye2)
-
-        # Design a box in the UTM coordinate system.
-        x1 = xe1 - (width/2.)*np.cos(alpha)
-        y1 = ye1 + (width/2.)*np.sin(alpha)
-        x2 = xe1 + (width/2.)*np.cos(alpha)
-        y2 = ye1 - (width/2.)*np.sin(alpha)
-        x3 = xe2 + (width/2.)*np.cos(alpha) 
-        y3 = ye2 - (width/2.)*np.sin(alpha) 
-        x4 = xe2 - (width/2.)*np.cos(alpha) 
-        y4 = ye2 + (width/2.)*np.sin(alpha)
-        
-        # Convert the box into lon/lat for further things
-        lon1, lat1 = self.xy2ll(x1, y1)
-        lon2, lat2 = self.xy2ll(x2, y2)
-        lon3, lat3 = self.xy2ll(x3, y3)
-        lon4, lat4 = self.xy2ll(x4, y4)
-
-        # make the box 
-        box = []
-        box.append([x1, y1])
-        box.append([x2, y2])
-        box.append([x3, y3])
-        box.append([x4, y4])
-
-        # make latlon box
-        boxll = []
-        boxll.append([lon1, lat1]) 
-        boxll.append([lon2, lat2])
-        boxll.append([lon3, lat3])
-        boxll.append([lon4, lat4])
-
-        # Get the GPSs in this box.
-        # Import shapely and path
-        import shapely.geometry as geom
-        import matplotlib.path as path
-        
-        # 1. Create an array with the GPS positions
-        GPSXY = np.vstack((self.x, self.y)).T
-
-        # 2. Create a box
-        rect = path.Path(box, closed=False)
-        
-        # 3. Find those who are inside
-        Bol = rect.contains_points(GPSXY)
+        # Get the profile
+        Dalong, Dacros, Bol, boxll, box, xe1, ye1, xe2, ye2, lon, lat = \
+                utils.coord2prof(self, xc, yc, length, azimuth, width, minNum=1)
 
         # 4. Get these GPS
-        xg = self.x[Bol]
-        yg = self.y[Bol]
         vel = values[Bol,:]
         err = self.err_enu[Bol,:]
         names = self.station[Bol]
         if hasattr(self, 'vel_los'):
             vel_los = self.vel_los[Bol]
 
-        # 5. Get the sign of the scalar product between the line and the point
-        vec = np.array([xe1-xc, ye1-yc])
-        gpsxy = np.vstack((xg-xc, yg-yc)).T
-        sign = np.sign(np.dot(gpsxy, vec))
+        # Create the lists that will hold these values
+        Vacros = []; Valong = []; Vup = []; Eacros = []; Ealong = []; Eup = []
 
-        # 6. Compute the distance (along, across profile) and the velocity (normal/along profile)
-        # Create the list that will hold these values
-        Dacros = []; Dalong = []; Vacros = []; Valong = []; Vup = []; Eacros = []; Ealong = []; Eup = []
-        # Build a line object
-        Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
-        Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]])
-        # Build a multipoint
-        PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
+        # Get some numbers
+        x1, y1 = box[0]
+        x2, y2 = box[1]
+        x3, y3 = box[2]
+        x4, y4 = box[3]
+
         # Create vectors
-        vec1 = vec/np.sqrt(vec[0]**2 + vec[1]**2)
-        vec2 = np.array([xa1-xc, ya1-yc]); vec2 /= np.sqrt(vec2[0]**2 + vec2[1]**2)
+        vec1 = np.array([x2-xe1, y2-y1])
+        vec1 = vec1/np.sqrt( vec1[0]**2 + vec1[1]**2 )
+        vec2 = np.array([x4-x1, y4-y1])
+        vec2 = vec2/np.sqrt( vec2[0]**2 + vec2[1]**2 )
         ang1 = np.arctan2(vec1[1], vec1[0])
         ang2 = np.arctan2(vec2[1], vec2[0])
+
         # Loop on the points
-        for p in range(len(PP.geoms)):
-            # Distances
-            Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
-            Dacros.append(Lalong.distance(PP.geoms[p]))
+        for p in range(vel.shape[0]):
+
             # Project velocities
             Vacros.append(np.dot(vec2,vel[p,0:2]))
             Valong.append(np.dot(vec1,vel[p,0:2]))
             # Get errors (along the ellipse)
-            x = err[p,0]*err[p,1] * np.sqrt( 1. / (err[p,1]**2 + (err[p,0]*np.tan(ang2))**2) )
+            x = err[p,0]*err[p,1] \
+                    * np.sqrt( 1. / (err[p,1]**2 + (err[p,0]*np.tan(ang2))**2) )
             y = x * np.tan(ang2)
             Eacros.append(np.sqrt(x**2 + y**2))
-            x = err[p,0]*err[p,1] * np.sqrt( 1. / (err[p,1]**2 + (err[p,0]*np.tan(ang1))**2) )
+            x = err[p,0]*err[p,1] \
+                    * np.sqrt( 1. / (err[p,1]**2 + (err[p,0]*np.tan(ang1))**2) )
             y = x * np.tan(ang1)
             Ealong.append(np.sqrt(x**2 + y**2))
             # Up direction
@@ -479,7 +418,7 @@ class gpsrates(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None, show=True):
+    def plotprofile(self, name, legendscale=10., fault=None):
         '''
         Plot profile.
         Args:
@@ -487,52 +426,37 @@ class gpsrates(SourceInv):
             * legendscale: Length of the legend arrow.
         '''
 
-        # open a figure
-        fig = plt.figure()
-        carte = fig.add_subplot(121)
-        prof = fig.add_subplot(122)
-
-        # plot the GPS stations on the map
-        if self.profiles[name]['data type'] is 'data':
-            east = self.vel_enu[:,0]
-            north = self.vel_enu[:,1]
-        elif self.profiles[name]['data type'] is 'synth':
-            east = self.synth[:,0]
-            north = self.synth[:,1]
-        p = carte.quiver(self.x, self.y, east, north, width=0.0025, color='k')
-        carte.quiverkey(p, 0.1, 0.9, legendscale, "{}".format(legendscale), coordinates='axes', color='k')
+        # Plo the map
+        self.plot(faults=fault, figure=None, show=False, legendscale=legendscale)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
         bb = np.zeros((5, 2))
         for i in range(4):
-            x, y = self.ll2xy(b[i,0], b[i,1])
+            x, y = b[i,:]
+            if x<0.:
+                x += 360.
             bb[i,0] = x
             bb[i,1] = y
         bb[4,0] = bb[0,0]
         bb[4,1] = bb[0,1]
-        carte.plot(bb[:,0], bb[:,1], '.k')
-        carte.plot(bb[:,0], bb[:,1], '-k')
+        self.fig.carte.plot(bb[:,0], bb[:,1], '.k', zorder=40)
+        self.fig.carte.plot(bb[:,0], bb[:,1], '-k', zorder=40)
+
+        # open a figure
+        fig = plt.figure()
+        prof = fig.add_subplot(111)
 
         # plot the profile
         x = self.profiles[name]['Distance']
         y = self.profiles[name]['Parallel Velocity']
         ey = self.profiles[name]['Parallel Error']
-        p = prof.errorbar(x, y, yerr=ey, label='Fault parallel velocity', marker='.', linestyle='')
+        p = prof.errorbar(x, y, yerr=ey, 
+                label='Fault parallel velocity', marker='.', linestyle='')
         y = self.profiles[name]['Normal Velocity']
         ey = self.profiles[name]['Normal Error']
-        q = prof.errorbar(x, y, yerr=ey, label='Fault normal velocity', marker='.', linestyle='')
-
-        # Plot the center of the profile
-        lonc, latc = self.profiles[name]['Center']
-        xc, yc = self.putm(lonc, latc)
-        xc /= 1000.; yc /= 1000.
-        carte.plot(xc, yc, '.r', markersize=20)
-
-        # Plot the central line of the profile
-        xe1, ye1 = self.profiles[name]['EndPoints'][0]
-        xe2, ye2 = self.profiles[name]['EndPoints'][1]
-        carte.plot([xe1, xe2], [ye1, ye2], '--k')
+        q = prof.errorbar(x, y, yerr=ey, 
+                label='Fault normal velocity', marker='.', linestyle='')
 
         # If a fault is here, plot it
         if fault is not None:
@@ -541,7 +465,6 @@ class gpsrates(SourceInv):
                 fault = [fault]
             # Loop on the faults
             for f in fault:
-                carte.plot(f.xf, f.yf, '-')
                 # Get the distance
                 d = self.intersectProfileFault(name, f)
                 if d is not None:
@@ -551,12 +474,8 @@ class gpsrates(SourceInv):
         # plot the legend
         prof.legend()
 
-        # axis of the map
-        carte.axis('equal')
-
         # Show to screen 
-        if show:
-            plt.show()
+        self.fig.show(showFig=['map'])
 
         # All done
         return
@@ -1639,7 +1558,7 @@ class gpsrates(SourceInv):
             # Print stuff
             print('--------------------------------------------------')
             print('--------------------------------------------------')
-            print('Removing the estimated Strain Tensor from the gpsrates {}'.format(self.name)) 
+            print('Removing the estimated Strain Tensor from the gps {}'.format(self.name)) 
             print('Note: Extension is negative...')
             print('Note: ClockWise Rotation is positive...')
             print('Note: There might be a scaling factor to apply to get the things right.')
@@ -1722,7 +1641,7 @@ class gpsrates(SourceInv):
             Hvec = fault.polysol[self.name]
             Nh = Hvec.shape[0]
             self.HelmertParameters = Hvec
-            print('Removing a {} parameters Helmert Tranform from the gpsrates {}'.format(Nh, self.name))
+            print('Removing a {} parameters Helmert Tranform from the gps {}'.format(Nh, self.name))
             print('Parameters: {}'.format(tuple(Hvec[i] for i in range(Nh))))
 
         # All done
@@ -2153,7 +2072,7 @@ class gpsrates(SourceInv):
         assert hasattr(sismo, 'faults'), '{} object (seismiclocation class) needs a list of faults. Please run Cmt2Dislocation...'.format(sismo.name)
             
         # Check self
-        assert hasattr(self, 'timeseries'), '{} object (gpsrates class) needs a timeseries list. Please run initializeTimeSeries...'.format(self.name)
+        assert hasattr(self, 'timeseries'), '{} object (gps class) needs a timeseries list. Please run initializeTimeSeries...'.format(self.name)
 
         # Re-set the time series
         for station in self.station:
@@ -2411,7 +2330,10 @@ class gpsrates(SourceInv):
             fig.gps_projected(self, colorbar=True)
 
         # Plot GPS velocities
-        fig.gpsvelocities(self, data=data, name=name, legendscale=legendscale, scale=scale, color=color)
+        fig.gpsdata(self, data=data, name=name, legendscale=legendscale, scale=scale, color=color)
+
+        # Save fig
+        self.fig = fig
 
         # Show
         if show:

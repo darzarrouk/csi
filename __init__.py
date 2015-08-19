@@ -29,11 +29,11 @@ from .RectangularPatchesKin import RectangularPatchesKin
 from .planarfaultkinematic import planarfaultkinematic
 
 ## Data
-from .gpsrates import gpsrates
+from .gps import gps
 from .multigps import multigps
-from .insarrates import insarrates
+from .insar import insar
 from .multifaultsolve import multifaultsolve
-from .cosicorrrates import cosicorrrates
+from .opticorr import opticorr
 from .creepmeters import creepmeters
 from .seismic import seismic
 from .tsunami import tsunami

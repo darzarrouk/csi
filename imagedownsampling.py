@@ -17,8 +17,8 @@ import sys
 import os
 
 # Personals
-from .insarrates import insarrates
-from .cosicorrrates import cosicorrrates
+from .insar import insar
+from .opticorr import opticorr
 from .imagecovariance import imagecovariance as imcov
 
 class imagedownsampling(object):
@@ -60,7 +60,7 @@ class imagedownsampling(object):
         self.image = image
 
         # Incidence and heading need to be defined if already defined
-        if self.datatype is 'insarrates':
+        if self.datatype is 'insar':
             if hasattr(self.image, 'heading'):
                 self.heading = self.image.heading
             if hasattr(self.image, 'incidence'):
@@ -171,21 +171,21 @@ class imagedownsampling(object):
         '''
 
         # Create the new image object
-        if self.datatype is 'insarrates':
-            newimage = insarrates('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
-        elif self.datatype is 'cosicorrrates':
-            newimage = cosicorrrates('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
+        if self.datatype is 'insar':
+            newimage = insar('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
+        elif self.datatype is 'opticorr':
+            newimage = opticorr('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
 
         # Get the blocks 
         blocks = self.blocks
         blocksll = self.blocksll
 
         # Create the variables
-        if self.datatype is 'insarrates':
+        if self.datatype is 'insar':
             newimage.vel = []
             newimage.err = []
             newimage.los = []
-        elif self.datatype is 'cosicorrrates':
+        elif self.datatype is 'opticorr':
             newimage.east = []
             newimage.north = []
             newimage.err_east = []
@@ -221,13 +221,13 @@ class imagedownsampling(object):
             if (coveredarea/blockarea >= self.tolerance):
                 # Get Mean, Std, x, y, ...
                 wgt = len(np.flatnonzero(ii))
-                if self.datatype is 'insarrates':
+                if self.datatype is 'insar':
                     vel = np.mean(self.image.vel[ii])
                     err = np.std(self.image.vel[ii])
                     los0 = np.mean(self.image.los[ii,0])
                     los1 = np.mean(self.image.los[ii,1])
                     los2 = np.mean(self.image.los[ii,2])
-                elif self.datatype is 'cosicorrrates':
+                elif self.datatype is 'opticorr':
                     east = np.mean(self.image.east[ii])
                     north = np.mean(self.image.north[ii])
                     err_east = np.std(self.image.east[ii])
@@ -236,11 +236,11 @@ class imagedownsampling(object):
                 y = np.mean(self.image.y[ii])
                 lon, lat = self.xy2ll(x, y)
                 # Store that
-                if self.datatype is 'insarrates':
+                if self.datatype is 'insar':
                     newimage.vel.append(vel)
                     newimage.err.append(err)
                     newimage.los.append([los0, los1, los2])
-                elif self.datatype is 'cosicorrrates':
+                elif self.datatype is 'opticorr':
                     newimage.east.append(east)
                     newimage.north.append(north)
                     newimage.err_east.append(err_east)
@@ -257,11 +257,11 @@ class imagedownsampling(object):
         self.trashblocks(blocks_to_remove)
 
         # Convert
-        if self.datatype is 'insarrates':
+        if self.datatype is 'insar':
             newimage.vel = np.array(newimage.vel)
             newimage.err = np.array(newimage.err)
             newimage.los = np.array(newimage.los)
-        elif self.datatype is 'cosicorrrates':
+        elif self.datatype is 'opticorr':
             newimage.east = np.array(newimage.east)
             newimage.north = np.array(newimage.north)
             newimage.err_east = np.array(newimage.err_east)
@@ -465,10 +465,10 @@ class imagedownsampling(object):
                     blockarea = self.getblockarea(block)
                     coveredarea = np.flatnonzero(ii).shape[0]*self.pixelArea
                     if (coveredarea/blockarea >= self.tolerance):
-                        if self.datatype is 'insarrates':
+                        if self.datatype is 'insar':
                             vel = np.mean(self.image.vel[ii])
                             means.append(vel)
-                        elif self.datatype is 'cosicorrrates':
+                        elif self.datatype is 'opticorr':
                             east = np.mean(self.image.east[ii])
                             north = np.mean(self.image.north[ii])
                             means.append(np.sqrt(east**2+north**2))
@@ -602,7 +602,7 @@ class imagedownsampling(object):
             print ("Downsampling Iterations")
 
         # Check if vertical is set properly
-        if not vertical and self.datatype is 'insarrates': 
+        if not vertical and self.datatype is 'insar': 
             print("----------------------------------")
             print("----------------------------------")
             print(" Watch Out!!!!")
@@ -687,7 +687,7 @@ class imagedownsampling(object):
         '''
 
         # Check if vertical is set properly
-        if not vertical and self.datatype is 'insarrates': 
+        if not vertical and self.datatype is 'insar': 
             print("----------------------------------")
             print("----------------------------------")
             print(" Watch Out!!!!")
@@ -712,14 +712,14 @@ class imagedownsampling(object):
 
         # Compute the data resolution matrix
         Npar = G.shape[1]
-        if self.datatype is 'cosicorrrates':
+        if self.datatype is 'opticorr':
             Ndat = G.shape[0]/2 
         Ginv = np.dot(np.linalg.inv(np.dot(G.T,G)+ damping*np.eye(Npar)),G.T)
         Rd = np.dot(G, Ginv)
         self.Rd = np.diag(Rd).copy()
 
         # If we are dealing with cosicorr data, the diagonal is twice as long as the umber of blocks
-        if self.datatype is 'cosicorrrates':
+        if self.datatype is 'opticorr':
             self.Rd = np.sqrt( self.Rd[:Ndat]**2 + self.Rd[-Ndat:]**2 )
 
         # All done
@@ -774,7 +774,7 @@ class imagedownsampling(object):
             * figure    : Figure ID.
             * Norm      : [colormin, colormax]
             * ref       : Can be 'utm' or 'lonlat'.
-            * data2plot : used if datatype is cosicorrrates: can be north or east.
+            * data2plot : used if datatype is opticorr: can be north or east.
         '''
 
         # Create the figure
@@ -800,9 +800,9 @@ class imagedownsampling(object):
         downsampled = self.newimage
 
         # Get what should be plotted
-        if self.datatype is 'insarrates':
+        if self.datatype is 'insar':
             data = original.vel
-        elif self.datatype is 'cosicorrrates':
+        elif self.datatype is 'opticorr':
             if data2plot is 'north':
                 data = original.north
             elif data2plot is 'east':
@@ -840,9 +840,9 @@ class imagedownsampling(object):
         import matplotlib.collections as colls
 
         # Get downsampled data
-        if self.datatype is 'insarrates':
+        if self.datatype is 'insar':
             downdata = downsampled.vel
-        elif self.datatype is 'cosicorrrates':
+        elif self.datatype is 'opticorr':
             if data2plot is 'north':
                 downdata = downsampled.north
             elif data2plot is 'east':
@@ -963,7 +963,7 @@ class imagedownsampling(object):
                           'gauss' --> C = mu**2 exp(-d**2/2lam**2)
         '''
 
-        assert self.image.dtype=='insarrates', 'Not implemented for cosicorrates, too lazy.... Sorry.... Later....'
+        assert self.image.dtype=='insar', 'Not implemented for cosicorrates, too lazy.... Sorry.... Later....'
 
         # How many samples
         nSamples = self.newimage.lon.shape[0]
@@ -993,7 +993,7 @@ class imagedownsampling(object):
                 jSamples = len(np.flatnonzero(jj))
 
                 # Create 2 newimages
-                Image = insarrates('Image', utmzone=self.utmzone, verbose=False)
+                Image = insar('Image', utmzone=self.utmzone, verbose=False)
 
                 # Fill them
                 Image.x = np.hstack((self.image.x[ii], self.image.x[jj]))
@@ -1074,9 +1074,9 @@ class imagedownsampling(object):
             frsp = open(prefix+'.rsp', 'w')
 
         # Write the header
-        if self.datatype is 'insarrates':
+        if self.datatype is 'insar':
             ftxt.write('Number xind yind east north data err wgt Elos Nlos Ulos\n')
-        elif self.datatype is 'cosicorrrates':
+        elif self.datatype is 'opticorr':
             ftxt.write('Number Lon Lat East North EastErr NorthErr \n') 
         ftxt.write('********************************************************\n')
         if rsp:
@@ -1092,7 +1092,7 @@ class imagedownsampling(object):
             y = int(self.newimage.y[i])
             lon = self.newimage.lon[i]
             lat = self.newimage.lat[i]
-            if self.datatype is 'insarrates':
+            if self.datatype is 'insar':
                 vel = self.newimage.vel[i]
                 err = self.newimage.err[i]
                 elos = self.newimage.los[i,0]
@@ -1100,7 +1100,7 @@ class imagedownsampling(object):
                 ulos = self.newimage.los[i,2]
                 strg = '{:4d} {:4d} {:4d} {:3.6f} {:3.6f} {} {} {} {} {} {}\n'\
                     .format(i, x, y, lon, lat, vel, err, wgt, elos, nlos, ulos) 
-            elif self.datatype is 'cosicorrrates':
+            elif self.datatype is 'opticorr':
                 east = self.newimage.east[i]
                 north = self.newimage.north[i]
                 err_east = self.newimage.err_east[i]

@@ -501,8 +501,8 @@ class verticalfault(RectangularPatches):
         for data in datas:
 
             # Check something
-            if data.dtype not in ('gpsrates', 'multigps'):
-                print('This has not been implemented for other data set than gpsrates')
+            if data.dtype not in ('gps', 'multigps'):
+                print('This has not been implemented for other data set than gps and multigps')
                 return
 
             # Get the GFs, the data and the data covariance

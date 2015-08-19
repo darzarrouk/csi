@@ -160,7 +160,7 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
 #----------------------------------------------------------------
 # A routine to extract a profile
 
-def coord2prof(csiobject, xc, yc, length, azimuth, width):
+def coord2prof(csiobject, xc, yc, length, azimuth, width, minNum=5):
     '''
     Routine returning the profile
     Args:
@@ -250,34 +250,31 @@ def coord2prof(csiobject, xc, yc, length, azimuth, width):
     lat = csiobject.lat[Bol]
 
     # Check if lengths are ok
-    if len(xg) > 5:
+    assert len(xg)>minNum, 'Not enough points to make a worthy profile'
 
-        # 5. Get the sign of the scalar product between the line and the point
-        vec = np.array([xe1-xc, ye1-yc])
-        xy = np.vstack((xg-xc, yg-yc)).T
-        sign = np.sign(np.dot(xy, vec))
+    # 5. Get the sign of the scalar product between the line and the point
+    vec = np.array([xe1-xc, ye1-yc])
+    xy = np.vstack((xg-xc, yg-yc)).T
+    sign = np.sign(np.dot(xy, vec))
 
-        # 6. Compute the distance (along, across profile) and get the velocity
-        # Create the list that will hold these values
-        Dacros = []; Dalong = []
-        # Build lines of the profile
-        Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
-        Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]])
-        # Build a multipoint
-        PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
-        # Loop on the points
-        for p in range(len(PP.geoms)):
-            Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
-            Dacros.append(Lalong.distance(PP.geoms[p]))
-    else:
-        print('Not enough points to make a decent profile...')
-        return
+    # 6. Compute the distance (along, across profile) and get the velocity
+    # Create the list that will hold these values
+    Dacros = []; Dalong = []
+    # Build lines of the profile
+    Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
+    Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]])
+    # Build a multipoint
+    PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
+    # Loop on the points
+    for p in range(len(PP.geoms)):
+        Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
+        Dacros.append(Lalong.distance(PP.geoms[p]))
 
     Dalong = np.array(Dalong)
     Dacros = np.array(Dacros)
 
     # All done
-    return Dalong, Dacros, Bol, boxll, xe1, ye1, xe2, ye2, lon, lat
+    return Dalong, Dacros, Bol, boxll, box, xe1, ye1, xe2, ye2, lon, lat
 
 #----------------------------------------------------------------
 #----------------------------------------------------------------

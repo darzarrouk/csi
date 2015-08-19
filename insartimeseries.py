@@ -17,9 +17,9 @@ import copy
 
 # Personals
 from .SourceInv import SourceInv
-from .insarrates import insarrates
+from .insar import insar
 
-class insartimeseries(insarrates):
+class insartimeseries(insar):
 
     def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
         '''
@@ -92,7 +92,7 @@ class insartimeseries(insarrates):
 
         # Set the elevation if provided
         if elevation is not None:
-            self.elevation = insarrates('Elevation', utmzone=self.utmzone, verbose=False)
+            self.elevation = insar('Elevation', utmzone=self.utmzone, verbose=False)
             self.elevation.read_from_binary(elevation, lon, lat, incidence=None, heading=None, remove_nan=False, remove_zeros=False)
             self.z = self.elevation.vel
 
@@ -101,7 +101,7 @@ class insartimeseries(insarrates):
 
         # Create an insarrate instance for each step
         for date in self.dates:
-            sar = insarrates(date.isoformat(), utmzone=self.utmzone, verbose=False)
+            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False)
             sar.read_from_binary(np.zeros((nSamples,)), lon, lat, incidence=incidence, heading=heading, dtype=dtype, remove_nan=False, remove_zeros=False)
             self.timeseries.append(sar)
 
@@ -220,7 +220,7 @@ class insartimeseries(insarrates):
 
         # Elevation
         if zfile is not None:
-            self.elevation = insarrates('Elevation', utmzone=self.utmzone, verbose=False)
+            self.elevation = insar('Elevation', utmzone=self.utmzone, verbose=False)
             self.elevation.read_from_binary(zfile, lonfile, latfile, 
                     incidence=None, heading=None, remove_nan=False, remove_zeros=False)
             self.z = self.elevation.vel
@@ -246,7 +246,7 @@ class insartimeseries(insarrates):
                 dat *= mask
 
             # Create an insar object
-            sar = insarrates(date.isoformat(), utmzone=self.utmzone, verbose=False)
+            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False)
 
             # Put thing in the insarrate object
             sar.vel = dat.flatten()
@@ -272,7 +272,7 @@ class insartimeseries(insarrates):
         if readVel is not None:
             u = np.flatnonzero(self.h5in['mName'][:]==readVel)
             if len(u)==1:
-                self.param = insarrates('Parameter {}'.format(readVel), utmzone=self.utmzone, 
+                self.param = insar('Parameter {}'.format(readVel), utmzone=self.utmzone, 
                         verbose=False)
                 self.param.vel = h5in['parms'][:,:,u[0]].flatten()
                 self.param.lon = self.lon
@@ -385,7 +385,7 @@ class insartimeseries(insarrates):
     def getProfiles(self, prefix, loncenter, latcenter, length, azimuth, width, verbose=False):
         '''
         Get a profile for each time step
-        for Arguments, check in insarrates getprofile
+        for Arguments, check in insar getprofile
         '''
 
         if verbose:
@@ -553,7 +553,7 @@ class insartimeseries(insarrates):
 
     def cleanProfiles(self, prefix, xlim=None, zlim=None, verbose=False):
         '''
-        Wrapper around cleanProfile of insarrates.
+        Wrapper around cleanProfile of insar.
         '''
 
         if verbose:
@@ -667,14 +667,14 @@ class insartimeseries(insarrates):
     def write2GRDs(self, prefix, interp=100, cmd='surface', oversample=1, tension=None, verbose=False, useGMT=False):
         '''
         Write all the dates to GRD files.
-        For arg description, see insarrates.write2grd
+        For arg description, see insar.write2grd
         '''
 
         # print stuffs
         if verbose:
             print('Writing each time step to a GRD file')
 
-        # Simply iterate over the insarrates
+        # Simply iterate over the insar
         i = 1
         for sar, date in zip(self.timeseries, self.dates):
 
@@ -687,7 +687,7 @@ class insartimeseries(insarrates):
                 sys.stdout.write('\r {:3d} / {:3d}    Writing to file {}'.format(i, len(self.dates), filename))
                 sys.stdout.flush()
 
-            # Use the insarrates routine to write the GRD
+            # Use the insar routine to write the GRD
             sar.write2grd(filename, oversample=oversample, interp=interp, cmd=cmd, useGMT=useGMT)
 
             # counter

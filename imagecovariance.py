@@ -13,8 +13,8 @@ import sys
 import copy
 
 # Personals
-from .insarrates import insarrates
-from .cosicorrrates import cosicorrrates
+from .insar import insar
+from .opticorr import opticorr
 
 # Some Usefull functions    
 def costFunction(m, t, function, data, weights):
@@ -74,14 +74,14 @@ class imagecovariance(object):
 
         # Iterate and save the datasets to consider
         self.datasets = {}
-        if self.datatype is 'insarrates':
+        if self.datatype is 'insar':
             dname = '{}'.format(self.name)
             self.datasets[dname] = {'x': self.image.x,
                                     'y': self.image.y,
                                     'lon': self.image.lon,
                                     'lat': self.image.lat,
                                     'data': self.image.vel}
-        elif self.datatype is 'cosicorrrates':
+        elif self.datatype is 'opticorr':
             dname = '{} East'.format(self.name)
             self.datasets[dname] = {'x': self.image.x,
                                     'y': self.image.y,
@@ -401,9 +401,9 @@ class imagecovariance(object):
     def buildCovarianceMatrix(self, image, dname, write2file=None):
         '''
         Uses the fitted covariance parameters to build a covariance matrix for the dataset
-        image of type insarrates or cosicorrrates.
+        image of type insar or opticorr.
         Args:
-            * image     : dataset of type cosicorrrates or insarrates.
+            * image     : dataset of type opticorr or insar.
             * dname     : Name of the covariance estimator.
                           if image is cosicorrates, the datasets used are "dname East" and "dname North".
             * write2file: Write to a binary file (np.float32).
@@ -414,7 +414,7 @@ class imagecovariance(object):
         y = image.y
 
         # Case 1: InSAR
-        if image.dtype is 'insarrates':
+        if image.dtype is 'insar':
 
             # Get the Parameters
             assert 'Sigma' in self.datasets[dname].keys(), 'Need to estimate the covariance function first: {}'.format(dname)
@@ -426,7 +426,7 @@ class imagecovariance(object):
             Cd = self._buildcov(sigma, lamb, function, x, y)
 
         # Case 2: Cosicorr
-        elif image.dtype is 'cosicorrrates':
+        elif image.dtype is 'opticorr':
             
             # Create the two names
             dnameEast = dname+' East'

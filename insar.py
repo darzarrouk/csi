@@ -18,7 +18,7 @@ from .SourceInv import SourceInv
 from .geodeticplot import geodeticplot as geoplot
 from . import csiutils as utils
 
-class insarrates(SourceInv):
+class insar(SourceInv):
 
     def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
         '''
@@ -29,10 +29,10 @@ class insarrates(SourceInv):
         '''
 
         # Base class init
-        super(insarrates,self).__init__(name,utmzone,ellps) 
+        super(insar,self).__init__(name,utmzone,ellps) 
 
         # Initialize the data set
-        self.dtype = 'insarrates'
+        self.dtype = 'insar'
 
         if verbose:
             print ("---------------------------------")
@@ -1083,8 +1083,23 @@ class insarrates(SourceInv):
         xc, yc = self.ll2xy(loncenter, latcenter)
 
         # Get the profile
-        Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth, los, lon, lat = self.coord2prof(
-                xc, yc, length, azimuth, width)
+        Dalong, Dacros, Bol, boxll, box, xe1, ye1, xe2, ye2, \
+                lon, lat = utils.coord2prof(self, xc, yc, length, azimuth, width)
+
+        # Get values
+        vel = self.vel[Bol]
+        if self.synth is not None:
+            synth = self.synth[Bol]
+        else:
+            synth = None
+        if self.err is not None:
+            err = self.err[Bol]
+        else:
+            err = None
+        if self.los is not None:
+            los = self.los[Bol]
+        else:
+            los = None
 
         # Store it in the profile list
         self.profiles[name] = {}
@@ -1321,176 +1336,6 @@ class insarrates(SourceInv):
         # All done
         return uu
 
-    def coord2prof(self, xc, yc, length, azimuth, width, plot=False):
-        '''
-        Routine returning the profile
-        Args:
-            * xc                : X pos of center
-            * yc                : Y pos of center
-            * length            : length of the profile.
-            * azimuth           : azimuth of the profile.
-            * width             : width of the profile.
-            * plot              : if true, makes a small plot
-        Returns:
-            dis                 : Distance from the center
-            vel                 : values
-            err                 : errors
-            norm                : distance perpendicular to profile
-            boxll               : lon lat coordinates of the profile box used
-            xe1, ye1            : coordinates (UTM) of the profile endpoint
-            xe2, ye2            : coordinates (UTM) of the profile endpoint
-            los                 : List of los vectors for each point of the profile
-        '''
-
-        # Azimuth into radians
-        alpha = azimuth*np.pi/180.
-
-        # Copmute the across points of the profile
-        xa1 = xc - (width/2.)*np.cos(alpha)
-        ya1 = yc + (width/2.)*np.sin(alpha)
-        xa2 = xc + (width/2.)*np.cos(alpha)
-        ya2 = yc - (width/2.)*np.sin(alpha)
-
-        # Compute the endpoints of the profile
-        xe1 = xc + (length/2.)*np.sin(alpha)
-        ye1 = yc + (length/2.)*np.cos(alpha)
-        xe2 = xc - (length/2.)*np.sin(alpha)
-        ye2 = yc - (length/2.)*np.cos(alpha)
-
-        # Convert the endpoints
-        elon1, elat1 = self.xy2ll(xe1, ye1)
-        elon2, elat2 = self.xy2ll(xe2, ye2)
-
-        # Design a box in the UTM coordinate system.
-        x1 = xe1 - (width/2.)*np.cos(alpha)
-        y1 = ye1 + (width/2.)*np.sin(alpha)
-        x2 = xe1 + (width/2.)*np.cos(alpha)
-        y2 = ye1 - (width/2.)*np.sin(alpha)
-        x3 = xe2 + (width/2.)*np.cos(alpha)
-        y3 = ye2 - (width/2.)*np.sin(alpha)
-        x4 = xe2 - (width/2.)*np.cos(alpha)
-        y4 = ye2 + (width/2.)*np.sin(alpha)
-
-        # Convert the box into lon/lat for further things
-        lon1, lat1 = self.xy2ll(x1, y1)
-        lon2, lat2 = self.xy2ll(x2, y2)
-        lon3, lat3 = self.xy2ll(x3, y3)
-        lon4, lat4 = self.xy2ll(x4, y4)
-
-        # make the box
-        box = []
-        box.append([x1, y1])
-        box.append([x2, y2])
-        box.append([x3, y3])
-        box.append([x4, y4])
-
-        # make latlon box
-        boxll = []
-        boxll.append([lon1, lat1])
-        boxll.append([lon2, lat2])
-        boxll.append([lon3, lat3])
-        boxll.append([lon4, lat4])
-
-        # Get the InSAR points in this box.
-        # 1. import shapely and nxutils
-        import matplotlib.path as path
-        import shapely.geometry as geom
-
-        # 2. Create an array with the InSAR positions
-        SARXY = np.vstack((self.x, self.y)).T
-
-        # 3. Create a box
-        rect = path.Path(box, closed=False)
-
-        # 4. Find those who are inside
-        Bol = rect.contains_points(SARXY)
-
-        # 4. Get these values
-        xg = self.x[Bol]
-        yg = self.y[Bol]
-        lon = self.lon[Bol]
-        lat = self.lat[Bol]
-        vel = self.vel[Bol]
-        if self.synth is not None:
-            synth = self.synth[Bol]
-        else:
-            synth = None
-        if self.err is not None:
-            err = self.err[Bol]
-        else:
-            err = None
-        if self.los is not None:
-            los = self.los[Bol]
-        else:
-            los = None
-
-        # Check if lengths are ok
-        if len(xg) > 5:
-
-            # 5. Get the sign of the scalar product between the line and the point
-            vec = np.array([xe1-xc, ye1-yc])
-            sarxy = np.vstack((xg-xc, yg-yc)).T
-            sign = np.sign(np.dot(sarxy, vec))
-
-            # 6. Compute the distance (along, across profile) and get the velocity
-            # Create the list that will hold these values
-            Dacros = []; Dalong = []; V = []; E = []
-            # Build lines of the profile
-            Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
-            Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]])
-            # Build a multipoint
-            PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
-            # Loop on the points
-            for p in range(len(PP.geoms)):
-                Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
-                Dacros.append(Lalong.distance(PP.geoms[p]))
-
-        else:
-            Dalong = vel
-            Dacros = vel
-
-        Dalong = np.array(Dalong)
-        Dacros = np.array(Dacros)
-
-        # Toss out nans
-        jj = np.flatnonzero(np.isfinite(vel)).tolist()
-        vel = vel[jj]
-        lon = lon[jj]
-        lat = lat[jj]
-        Dalong = Dalong[jj]
-        Dacros = Dacros[jj]
-        if los is not None:
-            los = los[jj]
-        if err is not None:
-            err = err[jj]
-        if synth is not None:
-            synth = synth[jj]
-
-        if plot:
-            plt.figure(1234)
-            plt.clf()
-            plt.subplot(121)
-            import matplotlib.cm as cmx
-            import matplotlib.colors as colors
-            cmap = plt.get_cmap('jet')
-            cNorm = colors.Normalize(vmin=self.vel.min(), vmax=self.vel.max())
-            scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
-            scalarMap.set_array(self.vel)
-            plt.scatter(self.x, self.y, s=10, c=self.vel, cmap=cmap, linewidths=0.0)
-            xb = [box[i][0] for i in range(4)]
-            yb = [box[i][1] for i in range(4)]
-            plt.plot(xb,yb,'.k')
-            xb.append(xb[0])
-            yb.append(yb[0])
-            plt.plot(xb, yb, '-k')
-            plt.colorbar(orientation='horizontal', shrink=0.6)
-            plt.subplot(122)
-            plt.plot(Dalong, vel, '.b')
-            plt.show()
-
-        # All done
-        return Dalong, vel, err, Dacros, boxll, xe1, ye1, xe2, ye2, synth, los, lon, lat
-
     def curve2prof(self, xl, yl, width, widthDir):
         '''
         Routine returning the profile along a curve.
@@ -1658,8 +1503,10 @@ class insarrates(SourceInv):
             if np.isfinite(Az):
 
                 # Get the profile
-                dis, vel, err, norm = self.coord2prof(xp, yp, length, pAz,
-                        width, plot=False)[0:4]
+                norm, dis, Bol = utils.coord2prof(xp, yp, 
+                        length, pAz, width)[0:3]
+                vel = self.vel[Bol]
+                err = self.err[Bol]
 
                 # Keep only the non NaN values
                 pts = np.flatnonzero(np.isfinite(vel))
@@ -1849,9 +1696,7 @@ class insarrates(SourceInv):
 
         # Check the profile
         x = self.profiles[name]['Distance']
-        if len(x)<5.:
-            print('Not enough points to plot the profile')
-            return
+        assert len(x)>5, 'There is less than 5 points in your profile...'
 
         # Plot the insar
         self.plot(faults=fault, norm=norm, show=False)

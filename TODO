@@ -1,6 +1,3 @@
 . Verify the computeEquivPatch routine. It behaves weird for the Himalaya case...
 . Add uncertainties on the covariance plots (standard deviations, for instance)
 . Incorporate EDKS correctly in csi (stop writing stuff and pass arrays)
-. Make sure parameters are positive in imagecovariance
-. Write a profile factory so that each object does not have its own routine
-

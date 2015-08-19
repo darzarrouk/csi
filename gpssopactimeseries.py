@@ -7,8 +7,6 @@ Written by R. Jolivet, April 2013.
 import numpy as np
 import pyproj as pp
 import datetime as dt
-#import sopac as sopac
-#import .gpsstation as gpssta
 import sys
 
 class gpstimeseries:
@@ -388,11 +386,11 @@ class gpstimeseries:
         # All done
         return
 
-    def substitute_errors(self, gpsrates):
+    def substitute_errors(self, gps):
         '''
-        Takes the errors of a gpsrates object and substitute these to the errors in place.
+        Takes the errors of a gps object and substitute these to the errors in place.
         Args:
-            * gpsrates      : gpsrates object with errors OK.
+            * gps      : gps object with errors OK.
         '''
 
         for sta in self.station:
@@ -409,13 +407,13 @@ class gpstimeseries:
             velo = stn.velo
 
             # Modify the errors
-            i = np.flatnonzero(gpsrates.station == stn.name)
+            i = np.flatnonzero(gps.station == stn.name)
             if len(i)>0:
                 i = i[0]
                 # Get the values
-                err_e = gpsrates.err_enu[i, 0]
-                err_n = gpsrates.err_enu[i, 1]
-                err_u = gpsrates.err_enu[i, 2]
+                err_e = gps.err_enu[i, 0]
+                err_n = gps.err_enu[i, 1]
+                err_u = gps.err_enu[i, 2]
                 # Store those
                 n = len(velo['east'])
                 for i in range(n):
