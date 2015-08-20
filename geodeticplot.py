@@ -462,8 +462,8 @@ class geodeticplot(object):
             self.faille.add_collection3d(rect)
 
         # Reset x- and y-lims 
-        self.faille.set_xlim(self.carte.ax.get_xlim())
-        self.faille.set_ylim(self.carte.ax.get_ylim())
+        self.faille.set_xlim([self.lonmin,self.lonmax])
+        self.faille.set_ylim([self.latmin,self.latmax])
 
         # If 2d.
         if plot_on_2d:
