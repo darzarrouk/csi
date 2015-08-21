@@ -181,6 +181,7 @@ class multigps(gps):
         # Loop over the subnetworks
         lst_east = 0
         lst_north = self.station.shape[0]
+        lst_up = 2*self.station.shape[0]
         for trans, gp in zip(subTrans, self.gpsobjects):
             # Get the transform
             Sorb = gp.getTransformEstimator(trans)
@@ -191,7 +192,11 @@ class multigps(gps):
                 led_north = lst_north + gp.station.shape[0]
                 # Put it where it should be 
                 orb[lst_east:led_east, cst:ced] = Sorb[:gp.station.shape[0],:]
-                orb[lst_north:led_north, cst:ced] = Sorb[gp.station.shape[0]:,:]
+                orb[lst_north:led_north, cst:ced] = Sorb[gp.station.shape[0]:2*gp.station.shape[0],:]
+                # Deal with verticals if needed
+                if self.obs_per_station==3:
+                    led_up = lst_up + gp.station.shape[0]
+                    orb[lst_up:led_up, cst:ced] = Sorb[2*gp.station.shape[0]:,:]
                 # Update column
                 cst += Sorb.shape[1]
             # update lines

@@ -727,7 +727,7 @@ class geodeticplot(object):
         # All don
         return
 
-    def gpsdata(self, gps, data=['data'], color=['k'], scale=None, legendscale=10., linewidths=.1, name=False, zorder=5):
+    def gps(self, gps, data=['data'], color=['k'], scale=None, legendscale=10., linewidths=.1, name=False, zorder=5):
         '''
         Args:
             * gps           : gps object from gps.
