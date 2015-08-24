@@ -2330,7 +2330,7 @@ class gps(SourceInv):
             fig.gps_projected(self, colorbar=True)
 
         # Plot GPS velocities
-        fig.gpsdata(self, data=data, name=name, legendscale=legendscale, scale=scale, color=color)
+        fig.gps(self, data=data, name=name, legendscale=legendscale, scale=scale, color=color)
 
         # Save fig
         self.fig = fig
