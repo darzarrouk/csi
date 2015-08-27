@@ -1163,7 +1163,7 @@ class TriangularTents(TriangularPatches):
 
     def plot(self, figure=134, slip='total', equiv=False, 
              show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
-             method='scatter', npoints=10,
+             method='scatter', npoints=10, colorbar=True,
              drawCoastlines=True, expand=0.2):
         '''
         Plot the available elements of the fault.
@@ -1174,13 +1174,24 @@ class TriangularTents(TriangularPatches):
         '''
 
         # Get lons lats
-        lon = np.unique([p[:,0] for p in self.patchll])
-        lon[lon<0.] += 360.
-        lat = np.unique([p[:,1] for p in self.patchll])
-        lonmin = lon.min()-expand
-        lonmax = lon.max()+expand
-        latmin = lat.min()-expand
-        latmax = lat.max()+expand
+        lonmin = np.min([p[:,0] for p in self.patchll])-expand
+	
+        if lonmin<0: 
+		    lonmin += 360
+        lonmax = np.max([p[:,0] for p in self.patchll])+expand
+        if lonmax<0:
+            lonmax+= 360
+        latmin = np.min([p[:,1] for p in self.patchll])-expand
+        latmax = np.max([p[:,1] for p in self.patchll])+expand
+
+
+        # lon = np.unique([p[:,0] for p in self.patchll])
+        # lon[lon<0.] += 360.
+        # lat = np.unique([p[:,1] for p in self.patchll])
+        # lonmin = lon.min()-expand
+        # lonmax = lon.max()+expand
+        # latmin = lat.min()-expand
+        # latmax = lat.max()+expand
 
         # Create a figure
         fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
@@ -1190,7 +1201,7 @@ class TriangularTents(TriangularPatches):
             fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
 
         # Draw the fault
-        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=True, 
+        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=colorbar, 
                 plot_on_2d=plot_on_2d, npoints=npoints,
                 method=method)
 

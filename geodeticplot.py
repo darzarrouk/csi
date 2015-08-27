@@ -561,7 +561,7 @@ class geodeticplot(object):
             verts = [vertices_ll[f] for f in face]
             x = [v[0] for v in verts]
             y = [v[1] for v in verts]
-            z = [-1.0*v[2] for v in verts]
+            z = [-1.0*v[2]*0.001 for v in verts]
             x.append(x[0]); y.append(y[0]); z.append(z[0])
             x = np.array(x); x[x<0.] += 360.
             self.faille.plot3D(x, y, z, '-', color='gray', linewidth=1)

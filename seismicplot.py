@@ -25,7 +25,8 @@ class seismicplot(geodeticplot):
         '''
 
         # Base class init
-        super(seismicplot,self).__init__(figure,ref,pbaspect)        
+        projection = 'cyl'      
+        super(seismicplot,self).__init__(figure,pbaspect,projection)
         
     def faultPatchesGrid(self, fault, slip='strikeslip', Norm=None, colorbar=True, 
                          plot_on_2d=False, revmap=False, data=None, plotgrid=True):

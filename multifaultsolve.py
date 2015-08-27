@@ -135,6 +135,32 @@ class multifaultsolve(object):
         # All done
         return
 
+    def OrganizeGBySlipmode(self):
+
+        '''
+        Organize G by slip mode instead of fault segment
+        Return the new G matrix.
+
+        '''
+
+        assert len(self.faults) !=1, 'You have only one fault, why would you want to do that?'
+        assert self.ready, 'You need to assemble the GFs before'
+
+        info = self.paramDescription
+
+        Gtemp = np.zeros((self.G.shape))
+
+        N = 0
+        slipmode = ['Strike Slip', 'Dip Slip', 'Tensile Slip', 'Coupling', 'Extra Parameters']
+        for mode in slipmode:
+            for fault in self.faults:
+                if info[fault.name][mode].replace(' ','') != 'None':
+                    ib = int(info[fault.name][mode].replace(' ','').partition('-')[0])
+                    ie = int(info[fault.name][mode].replace(' ','').partition('-')[2])
+                    Gtemp[:,N:N+ie-ib] = self.G[:,ib:ie]
+                    N += ie-ib
+
+        return Gtemp
 
     def sensitivity(self):
         '''
@@ -171,9 +197,6 @@ class multifaultsolve(object):
             # Where does this fault starts
             nfs = copy.deepcopy(ns)
 
-            # Store details
-            self.paramDescription[fault.name] = {}
-
             # Initialize the values
             ss = 'None'
             ds = 'None'
@@ -184,22 +207,18 @@ class multifaultsolve(object):
             if 's' in fault.slipdir:
                 ne += fault.slip.shape[0]
                 ss = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
-                self.paramDescription[fault.name]['Strike Slip'] = [ns, ne]
                 ns += fault.slip.shape[0]
             if 'd' in fault.slipdir:
                 ne += fault.slip.shape[0]
                 ds = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
-                self.paramDescription[fault.name]['Dip Slip'] = [ns, ne]
                 ns += fault.slip.shape[0]
             if 't' in fault.slipdir:
                 ne += fault.slip.shape[0]
                 ts = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
-                self.paramDescription[fault.name]['Tensile Slip'] = [ns, ne]
                 ns += fault.slip.shape[0]
             if 'c' in fault.slipdir:
                 ne += fault.slip.shape[0]
                 cp = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
-                self.paramDescription[fault.name]['Coupling'] = [ns, ne]
                 ns += fault.slip.shape[0]
 
             # How many slip parameters
@@ -212,7 +231,6 @@ class multifaultsolve(object):
             if no>0:
                 ne += no
                 op = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
-                self.paramDescription[fault.name]['Extra Parameters'] = [ns, ne]
                 ns += no
             else:
                 op = 'None'
@@ -220,6 +238,13 @@ class multifaultsolve(object):
             # print things
             print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
 
+            # Store details
+            self.paramDescription[fault.name] = {}
+            self.paramDescription[fault.name]['Strike Slip'] = ss
+            self.paramDescription[fault.name]['Dip Slip'] = ds
+            self.paramDescription[fault.name]['Tensile Slip'] = ts
+            self.paramDescription[fault.name]['Coupling'] = cp
+            self.paramDescription[fault.name]['Extra Parameters'] = op
 
         # Store the number of slip parameters
         self.nSlip = nSlip
@@ -1107,6 +1132,142 @@ class multifaultsolve(object):
         # All done
         return
 
+
+    def writeAltarPriors(self, priors, params, modelName, files=['static.data.txt','static.Cd.txt','static.gf.txt'], prefix= 'model', chains = 2048):
+
+        '''
+        Writes the cfg file containing the priors to be used by altar.
+        Args:
+            * priors	    : type of prior and corresponding parameters for each slip mode
+			      ex: prior['Strike Slip']='gaussian' & prior['Dip Slip']='uniform'        
+	        * params	    : Parameters associated with each type of prior
+			        - params['gaussian']=[[center,sigma]]
+			        - params['uniform']=[[low,high]]
+            * modelName     : Name of the model
+            * files         : Names of problem files 
+            * prefix        : Prefix of problem
+            * chains        : Number of chains.
+
+        ONLY works with gaussian and uniform prior
+        And as if it was not bad enough, initial and run priors are the same.
+        '''
+
+        parDescr = self.paramDescription
+
+        # Open the file and print the first lines
+        fout = open(prefix+'.cfg', 'w')
+        fout.write('; -*- ini -*- \n')
+        fout.write('; ex: set syntax=dosini: \n')
+        fout.write('; \n')
+        fout.write('; Generated with CSI \n')
+        fout.write('; \n')
+        fout.write(' \n')
+
+        # Number of chains and number of parameters
+        fout.write(' \n')
+        fout.write("Ns = {} \n".format(chains))
+        fout.write("Nparam = {} \n".format(self.Np))
+        fout.write(' \n')
+
+        # Write init priors
+        fout.write('; Priors \n')
+        fout.write('; Init Priors \n')      
+        k = 0
+        init_priors = []
+        init_cudapriors = []
+        for fault in self.faults:
+            for slipmode in ['Strike Slip', 'Dip Slip', 'Tensile Slip', 'Extra Parameters']:
+                if parDescr[fault.name][slipmode].replace(' ','') != 'None':
+                    fout.write("; {} parameters of {} fault segment\n".format(slipmode,fault.name))
+                    fout.write("[ init_prior_{} ]\n".format(k))
+                
+                    ind = parDescr[fault.name][slipmode].replace(' ','').partition('-')
+                    idx_begin = int(ind[0])
+                    idx_end = int(ind[2])
+                    fout.write("idx_begin = {}\n".format(idx_begin))
+                    fout.write("idx_end = {}\n".format(idx_end))
+                    
+                    if priors[slipmode] == 'gaussian':
+                        fout.write("center = {}\n".format(params['gaussian'][0]))
+                        fout.write("sigma = {}\n".format(params['gaussian'][1]))
+                        fout.write(' \n')
+                        init_priors.append("altar.priors.gaussian.Gaussian#init_prior_{}".format(k))
+                        init_cudapriors.append("altar.priors.gaussian.cudaGaussian#init_prior_{}".format(k))
+                        
+                    else:
+                        fout.write("low = {}\n".format(params['uniform'][0]))
+                        fout.write("high = {}\n".format(params['uniform'][1]))
+                        fout.write(' \n')
+                        init_priors.append("altar.priors.uniform.Uniform#init_prior_{}".format(k))
+                        init_cudapriors.append("altar.priors.uniform.cudaUniform#init_prior_{}".format(k))
+                        
+                    k +=1                
+    
+                else:
+                    continue
+
+
+        # Write run priors
+        fout.write('; Run Priors \n')
+        k = 0
+        run_priors = []
+        run_cudapriors = []
+        for fault in self.faults:
+            for slipmode in ['Strike Slip', 'Dip Slip', 'Tensile Slip', 'Extra Parameters']:
+                if parDescr[fault.name][slipmode].replace(' ','') != 'None':
+                    fout.write("; {} parameters of {} fault segment\n".format(slipmode,fault.name))
+                    fout.write("[ run_prior_{} ]\n".format(k))
+                
+                    ind = parDescr[fault.name][slipmode].replace(' ','').partition('-')
+                    idx_begin = int(ind[0])
+                    idx_end = int(ind[2])
+                    fout.write("idx_begin = {}\n".format(idx_begin))
+                    fout.write("idx_end = {}\n".format(idx_end))
+                    
+                    if priors[slipmode] == 'gaussian':
+                        fout.write("center = {}\n".format(params['gaussian'][0]))
+                        fout.write("sigma = {}\n".format(params['gaussian'][1]))
+                        fout.write(' \n')
+                        run_priors.append("altar.priors.gaussian.Gaussian#run_prior_{}".format(k))       
+                        run_cudapriors.append("altar.priors.gaussian.cudaGaussian#run_prior_{}".format(k))                        
+                                         
+                    else:
+                        fout.write("low = {}\n".format(params['uniform'][0]))
+                        fout.write("high = {}\n".format(params['uniform'][1]))
+                        fout.write(' \n')
+                        run_priors.append("altar.priors.uniform.Uniform#run_prior_{}".format(k))
+                        run_cudapriors.append("altar.priors.uniform.cudaUniform#run_prior_{}".format(k))                        
+                                                
+                    k +=1                
+    
+                else:
+                    continue
+
+        # Write models parameters
+        fout.write("; Models\n")
+        fout.write("[ {} ]\n".format(modelName))
+        fout.write("parameters = {Nparam}\n")
+        fout.write("observations = {}\n".format(self.Nd))
+        fout.write("data_file = {{modelDir}}/{}\n".format(files[0]))
+        fout.write("Cd_file = {{modelDir}}/{}\n".format(files[1]))
+        fout.write("gf_file = {{modelDir}}/{}\n".format(files[2]))
+        fout.write("\n")
+    
+        # Write Problem
+        fout.write("; Problems\n")
+        fout.write("[ altar.problem.Problem # problem ] ; if problem is a Problem\n")
+        fout.write("init_priors = {}\n".format(','.join(init_priors)))
+        fout.write("run_priors = {}\n".format(','.join(run_priors)))
+        fout.write("models = altar.models.linear.Linear#{}\n".format(modelName))
+
+        fout.write("\n")
+        fout.write("[ altar.problem.cudaProblem # problem ] ; if problem is a cudaProblem\n")
+        fout.write("init_priors = {}\n".format(','.join(init_cudapriors)))
+        fout.write("run_priors = {}\n".format(','.join(run_cudapriors)))
+        fout.write("models = altar.models.linear.cudaLinear#{}\n".format(modelName))        
+        
+        # All done
+        return
 
     def writePatchAreasFile(self, outfile='PatchAreas.dat', dtype='d',
                             npadStart=None, npadEnd=None):
