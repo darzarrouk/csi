@@ -23,7 +23,6 @@ class multifaultsolve(object):
             * name          : Name of the project.
             * faults        : List of faults from verticalfault.
         '''
-
         print ("---------------------------------")
         print ("---------------------------------")
         print ("Initializing solver object")
@@ -55,7 +54,7 @@ class multifaultsolve(object):
                 self.ready = False
                 print("d has not been assembled in fault structure {}".format(fault.name))
 
-        # Check that the sizes of the data vectors are consistent
+        # Check that the sizes of the data vectors are consistent        
         self.d = faults[0].dassembled
         for fault in faults:
             if (fault.dassembled != self.d).all():
@@ -164,13 +163,13 @@ class multifaultsolve(object):
 
     def sensitivity(self):
         '''
-        Calculates sqrt(diag(G^t Cd^-1 G))
+        Calculates log(sqrt(diag(G^t Cd^-1 G)))
         '''
         # Import things
         import scipy.linalg as scilin
         # Invert Cd
         iCd = scilin.inv(self.Cd)
-        s = np.diag(np.dot(self.G.T,np.dot(iCd,self.G)))
+        s = np.log(np.diag(np.dot(self.G.T,np.dot(iCd,self.G))))
 
         # All done
         return s
