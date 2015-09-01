@@ -1,3 +1,4 @@
+. Add Custom for Opticor object
 . Verify the computeEquivPatch routine. It behaves weird for the Himalaya case...
 . Add uncertainties on the covariance plots (standard deviations, for instance)
 . Incorporate EDKS correctly in csi (stop writing stuff and pass arrays)

@@ -28,7 +28,7 @@ class geodeticplot(object):
                  projection='cyl',
                  lonmin=None, latmin=None, lonmax=None, latmax=None,
                  resolution='i',
-                 figSize=[None,None]):
+                 figsize=[None,None]):
         '''
         Args:
             * figure        : Number of the figure.
@@ -48,13 +48,13 @@ class geodeticplot(object):
         self.latmax = latmax
 
         # Open a figure
-        fig1 = plt.figure(figure, figsize=figSize[0])
+        fig1 = plt.figure(figure, figsize=figsize[0])
         faille = fig1.add_subplot(111, projection='3d')
         if figure is None:
             nextFig = np.max(plt.get_fignums())+1
         else:
             nextFig=figure+1
-        fig2  = plt.figure(nextFig, figsize=figSize[1])
+        fig2  = plt.figure(nextFig, figsize=figsize[1])
         ax = fig2.add_subplot(111)
         carte = basemap.Basemap(projection=projection,
                                 llcrnrlon=lonmin, 

@@ -850,7 +850,22 @@ class insar(SourceInv):
         # All done
         return
 
-    def removePoly(self, fault, verbose=False):
+    def computeCustom(self, fault):
+        '''
+        Computes the displacements associated with the custom green's functions.
+        '''
+
+        # Get GFs and parameters
+        G = fault.G[self.name]['custom']
+        custom = fault.custom
+
+        # Compute
+        self.custompred = np.dot(G,custom)
+
+        # All done
+        return
+
+    def removePoly(self, fault, verbose=False, custom=False):
         '''
         Removes a polynomial from the parameters that are in a fault.
         '''
@@ -868,20 +883,25 @@ class insar(SourceInv):
         # Correct
         self.vel -= self.orbit
 
+        # Correct Custom
+        if custom:
+            self.computeCustom(fault)
+            self.vel -= self.custompred
+
         # All done
         return
 
-    def removeTransformation(self, fault, verbose=False):
+    def removeTransformation(self, fault, verbose=False, custom=False):
         '''
         Wrapper of removePoly to ensure consistency between data sets.
         '''
 
-        self.removePoly(fault, verbose=verbose)
+        self.removePoly(fault, verbose=verbose, custom=custom)
 
         # All done
         return
 
-    def removeSynth(self, faults, direction='sd', poly=None, vertical=True):
+    def removeSynth(self, faults, direction='sd', poly=None, vertical=True, custom=False):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
         Args:
@@ -889,10 +909,11 @@ class insar(SourceInv):
             * direction     : Direction of slip to use.
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
+            * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
         '''
 
         # Build synthetics
-        self.buildsynth(faults, direction=direction, poly=poly)
+        self.buildsynth(faults, direction=direction, poly=poly, custom=custom)
 
         # Correct
         self.vel -= self.synth
@@ -900,7 +921,7 @@ class insar(SourceInv):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', poly=None, vertical=True):
+    def buildsynth(self, faults, direction='sd', poly=None, vertical=True, custom=False):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
@@ -908,6 +929,7 @@ class insar(SourceInv):
             * direction     : Direction of slip to use.
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
+            * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
         '''
 
         # Check list
@@ -945,6 +967,12 @@ class insar(SourceInv):
                 Gc = G['coupling']
                 Sc = fault.coupling
                 losdc_synth = np.dot(Gc,Sc)
+                self.synth += losdc_synth
+
+            if custom:
+                Gc = G['custom']
+                Sc = fault.custom
+                losdc_synth = np.dot(Gc, Sc)
                 self.synth += losdc_synth
 
             if poly is not None:
@@ -1901,7 +1929,7 @@ class insar(SourceInv):
             if type(gps) is not list:
                 gps = [gps]
             for g in gps:
-                fig.gpsvelocities(g)
+                fig.gps(g)
 
         # Plot the decimation process, if asked
         if decim:

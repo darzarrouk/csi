@@ -817,6 +817,28 @@ class Fault(SourceInv):
         # All done
         return G
 
+    def setCustomGFs(self, data, G):
+        '''
+        Sets a custom GF matrix in the G dictionary.
+        Args:
+            * data          : Appropriate entry in the dictionary
+            * G             : Green's function matrix
+        '''
+
+        # Check
+        if not hasattr(self, 'G'):
+            self.G = {}
+
+        # Check
+        if not data.name in self.G.keys():
+            self.G[data.name] = {}
+
+        # Set 
+        self.G[data.name]['custom'] = G
+
+        # All done
+        return
+
     def writePointSources2Pickle(self, filename):
         '''
         Writes the point sources to a file.
@@ -1121,7 +1143,7 @@ class Fault(SourceInv):
         return G
 
     def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None, coupling=None,
-                       vertical=False, dtype='d'):
+                       custom=None, vertical=False, dtype='d'):
         '''
         Sets the Green's functions from binary files. Be carefull, these have to be in the
         good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and
@@ -1172,6 +1194,10 @@ class Fault(SourceInv):
 
         # The dataset sets the Green's functions itself
         data.setGFsInFault(self, G, vertical=vertical)
+
+        # If custom
+        if custom is not None:
+            self.setCustomGFs(data, custom)
 
         # all done
         return
@@ -1491,7 +1517,7 @@ class Fault(SourceInv):
         # All done
         return
 
-    def assembleGFs(self, datas, polys=None, slipdir='sd', verbose=True):
+    def assembleGFs(self, datas, polys=None, slipdir='sd', verbose=True, custom=False):
         '''
         Assemble the Green's functions that have been built using build GFs.
         This routine spits out the General G and the corresponding data vector d.
@@ -1514,12 +1540,13 @@ class Fault(SourceInv):
                               'strainnotranslation' -> Estimates the strain tensor + rotation
                               'translation'         -> Estimates the translation
                               'translationrotation  -> Estimates the translation + rotation
-            
-            * slipdir       : directions of slip to include. can be any combination of s,d,t or c
+
+            * slipdir       : directions of slip to include. can be any combination of s, d, t, c or x 
                               s: strike slip
                               d: dip slip
                               t: tensile
                               c: coupling
+            * custom        : If True, Gets the additional Green's function from the dictionary under the
         '''
 
         # print
@@ -1580,6 +1607,14 @@ class Fault(SourceInv):
         # Save extra Parameters
         self.TransformationParameters = Npo
 
+        # Custom?
+        if custom:
+            Npc = self.G[data.name]['custom'].shape[1]
+            Np += Npc
+            self.NumberCustom = Npc
+        else:
+            Npc = 0
+
         # Get the number of data
         Nd = 0
         for data in datas:
@@ -1604,7 +1639,7 @@ class Fault(SourceInv):
 
         # loop over the datasets
         el = 0
-        polstart = Nps
+        polstart = Nps + Npc
         for data in datas:
 
             # Keep data name
@@ -1623,11 +1658,17 @@ class Fault(SourceInv):
             # Fill Glocal
             ec = 0
             for sp in sliplist:
-                Glocal[:,ec:ec+self.N_slip] = self.G[data.name][sp]
-                ec += self.N_slip
+                Nclocal = self.G[data.name][sp].shape[1] 
+                Glocal[:,ec:ec+Nclocal] = self.G[data.name][sp]
+                ec += Nclocal
 
             # Put Glocal into the big G
             G[el:el+Ndlocal,0:Nps] = Glocal
+
+            # Custom
+            if custom:
+                G[el:el+Ndlocal,Nps:Nps+Npc] = self.G[data.name]['custom']
+                ec += Nclocal
 
             # Polynomes and strain
             if self.poly[data.name] is not None:

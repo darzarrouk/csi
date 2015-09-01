@@ -23,7 +23,7 @@ from .imagecovariance import imagecovariance as imcov
 
 class imagedownsampling(object):
 
-    def __init__(self, name, image, faults, verbose=True):
+    def __init__(self, name, image, faults=None, verbose=True):
         '''
         Args:
             * name      : Name of the downsampler.
@@ -50,11 +50,12 @@ class imagedownsampling(object):
 
         # Check if the faults are in the same utm zone
         self.faults = []
-        if type(faults) is not list:
-            faults = [faults]
-        for fault in faults:
-            assert (fault.utmzone==self.utmzone), 'Fault {} not in utm zone #{}'.format(fault.name, self.utmzone)
-            self.faults.append(fault)
+        if faults is not None:
+            if type(faults) is not list:
+                faults = [faults]
+            for fault in faults:
+                assert (fault.utmzone==self.utmzone), 'Fault {} not in utm zone #{}'.format(fault.name, self.utmzone)
+                self.faults.append(fault)
 
         # Save the image
         self.image = image
@@ -278,6 +279,24 @@ class imagedownsampling(object):
         # plot y/n
         if plot:
             self.plotDownsampled(decimorig=decimorig)
+
+        # All done
+        return
+
+    def downsampleFromSampler(self, sampler, plot=False, decimorig=10):
+        '''
+        From the downsampling scheme in a previous sampler, downsamples the image.
+        Args:
+            * sampler       : Sampler which has a blocks instance.
+            * plot          : Plot the downsampled data (True/False)
+            * decimorig     : Stupid decimation factor for lighter plotting.
+        '''
+
+        # set the downsampling scheme
+        self.setDownsamplingScheme(sampler)
+
+        # Downsample
+        self.downsample(plot=plot, decimorig=decimorig)
 
         # All done
         return
@@ -1016,6 +1035,21 @@ class imagedownsampling(object):
 
         # All done
         return Cd
+
+    def setDownsamplingScheme(self, sampler):
+        '''
+        From an imagedownsampling object, sets the downsampling scheme.
+        '''
+
+        # Check if it has bocks
+        assert hasattr(sampler, 'blocks'), 'imagedownsampling instance {} needs to have blocks'.format(sampler.name)
+
+        # set the blocks
+        self.tolerance = sampler.tolerance
+        self.setBlocks(sampler.blocks)
+
+        # All done
+        return
 
     def readDownsamplingScheme(self, prefix):
         '''
