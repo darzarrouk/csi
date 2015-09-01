@@ -781,17 +781,18 @@ class opticorr(SourceInv):
         
 
 
-    def removeSynth(self, faults, direction='sd', poly=None, vertical=False):
+    def removeSynth(self, faults, direction='sd', poly=None, vertical=False, custom=False):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
         Args:
             * faults        : List of faults.
             * direction     : Direction of slip to use.
             * include_poly  : if a polynomial function has been estimated, include it.
+            * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
         '''
 
         # Build synthetics
-        self.buildsynth(faults, direction=direction, poly=poly)
+        self.buildsynth(faults, direction=direction, poly=poly, custom=False)
 
         # Correct
         self.east -= self.east_synth
@@ -800,13 +801,14 @@ class opticorr(SourceInv):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', poly=None, vertical=False):
+    def buildsynth(self, faults, direction='sd', poly=None, vertical=False, custom=False):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
             * faults        : List of faults.
             * direction     : Direction of slip to use.
             * include_poly  : if a polynomial function has been estimated, include it.
+            * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
         '''
 
         # Number of data points
@@ -849,7 +851,16 @@ class opticorr(SourceInv):
                     self.up_synth += st_synth[2*Nd:]
             if ('c' in direction) and ('coupling' in G.keys()):
                 Gc = G['coupling']
-                Sc = fault.slip[:,0]
+                Sc = fault.coupling
+                dc_synth = np.dot(Gc, Sc)
+                self.east_synth += dc_synth[:Nd]
+                self.north_synth += dc_synth[Nd:2*Nd]
+                if vertical:
+                    self.up_synth += dc_synth[2*Nd:]
+
+            if custom:
+                Gc = G['custom']
+                Sc = fault.custom
                 dc_synth = np.dot(Gc, Sc)
                 self.east_synth += dc_synth[:Nd]
                 self.north_synth += dc_synth[Nd:2*Nd]
@@ -1322,7 +1333,7 @@ class opticorr(SourceInv):
             if type(gps) is not list:
                 gps = [gps]
             for g in gps:
-                fig.gpsvelocities(g)
+                fig.gps(g)
 
         # Plot the decimation process, if asked
         if decim:

@@ -95,6 +95,42 @@ class gps(SourceInv):
         # All done
         return
     
+    def combineNetworks(self, gpsdata, newNetworkName='Combined Network'):
+        '''
+        Combine networks into the current network.
+        Args:
+            * gpsdata           : List of gps instances.
+            * newNetworkName    : Name of the returned network
+        '''
+
+        # Create lists
+        lon = []
+        lat = []
+        name = []
+        vel = []
+        err = []
+
+        # Iterate to get name, lon, lat
+        for gp in gpsdata:
+            lon += gp.lon.tolist()
+            lat += gp.lat.tolist()
+            name += gp.station.tolist()
+            vel += gp.vel_enu.tolist()
+            err += gp.err_enu.tolist()
+
+        # Create a new instance
+        gp = gps(newNetworkName, utmzone=self.utmzone, verbose=self.verbose)
+
+        # Fill it
+        gp.setStat(np.array(name), np.array(lon), np.array(lat))
+
+        # Set displacements and errors
+        gp.vel_enu = np.array(vel)
+        gp.err_enu = np.array(err)
+
+        # All done
+        return gp
+
     def readStat(self,station_file,loc_format='LL'):
         '''
         Read simple station ascii file and populate station attributes
@@ -533,7 +569,7 @@ class gps(SourceInv):
     def read_from_en(self, velfile, factor=1., minerr=1., header=0):
         '''
         Reading velocities from a enu file:
-        Lon | Lat | e_vel | n_vel | e_err | n_err | StationName
+        StationName | Lon | Lat | e_vel | n_vel | e_err | n_err 
         Args:
             * velfile   : File containing the velocities.
             * factor    : multiplication factor for velocities
@@ -564,16 +600,16 @@ class gps(SourceInv):
             A = Vel[i].split()
             if 'nan' not in A:
 
-                self.station.append(A[6])
-                self.lon.append(np.float(A[0]))
-                self.lat.append(np.float(A[1]))
+                self.station.append(A[0])
+                self.lon.append(np.float(A[1]))
+                self.lat.append(np.float(A[2]))
 
-                east = np.float(A[2])
-                north = np.float(A[3])
+                east = np.float(A[3])
+                north = np.float(A[4])
                 self.vel_enu.append([east, north, 0.0])
 
-                east = np.float(A[4])
-                north = np.float(A[5])
+                east = np.float(A[5])
+                north = np.float(A[6])
                 up = 0.0
                 if east == 0.:
                     east = minerr
@@ -1301,7 +1337,7 @@ class gps(SourceInv):
         # All done
         return orb
 
-    def computeTransformation(self, fault, verbose=False):
+    def computeTransformation(self, fault, verbose=False, custom=False):
         '''
         Computes the transformation that is stored with a particular fault.
         Stores it in transformation.
@@ -1337,16 +1373,45 @@ class gps(SourceInv):
         if self.obs_per_station==3:
             self.transformation[:,2] = tmpsynth[2*no:]
 
+        # Compute custom
+        if custom:
+            self.computeCustom(fault)
+            self.transformation[:,0] += self.custompred[:,0]
+            self.transformation[:,1] += self.custompred[:,1]
+            if self.obs_per_station==3:
+                self.transformation[:,2] += self.custompred[:,2]
+
         # All done
         return
 
-    def removeTransformation(self, fault):
+    def computeCustom(self, fault):
+        '''
+        Computes the displacements associated with the custom green's functions.
+        '''
+
+        # Get GFs and parameters
+        G = fault.G[self.name]['custom']
+        custom = fault.custom
+
+        # Compute
+        self.custompred = np.dot(G,custom)
+        
+        # Reshape
+        if self.obs_per_station==3:
+            self.custompred = self.custompred.reshape((self.vel_enu.shape))
+        else: 
+            self.custompred = self.custompred.reshape((self.vel_enu.shape[0], 2))
+
+        # All done
+        return
+
+    def removeTransformation(self, fault, custom=False):
         '''
         Removes the transformation that is stored in a fault.
         '''
 
         # Compute the transformation
-        self.computeTransformation(fault)
+        self.computeTransformation(fault, custom=custom)
 
         # Do the correction
         self.vel_enu -= self.transformation
@@ -1765,17 +1830,18 @@ class gps(SourceInv):
         # All done
         return
 
-    def removeSynth(self, faults, direction='sd', poly=None):
+    def removeSynth(self, faults, direction='sd', poly=None, custom=False):
         '''
         Removes the synthetics from a slip model.
         Args:
             * faults        : list of faults to include.
             * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
-            * include_poly  : if a polynomial function has been estimated, include it.
+            * poly          : if a polynomial function has been estimated, include it.
+            * custom        : if some custom green's function was used, include it.
         '''
 
         # build the synthetics
-        self.buildsynth(faults, direction=direction, poly=poly)
+        self.buildsynth(faults, direction=direction, poly=poly, custom=custom)
 
         # Correct the data from the synthetics
         self.vel_enu -= self.synth
@@ -1783,13 +1849,14 @@ class gps(SourceInv):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', poly=None, vertical=True):
+    def buildsynth(self, faults, direction='sd', poly=None, vertical=True, custom=False):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
         Args:
             * faults        : list of faults to include.
             * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
             * include_poly  : if a polynomial function has been estimated, include it.
+            * custom        : if some custom green's function was used, include it.
         '''
 
         # Check list
@@ -1874,6 +1941,20 @@ class gps(SourceInv):
                 if vertical:
                     #if dc_synth.size > 2*Nd and east and north:
                     self.synth[:,2] += dc_synth[N:N+Nd]
+
+            if custom:
+                Gc = G['custom']
+                Sc = fault.custom
+                cu_synth = np.dot(G, Sc)
+                N = 0
+                if east:
+                    self.synth[:,0] += cu_synth[N:Nd]
+                    N += Nd
+                if north:
+                    self.synth[:,1] += cu_synth[N:N+Nd]
+                    N += Nd
+                if vertical:
+                    self.synth[:,2] += cu_synth[N:N+Nd]
 
             if poly == 'build' or poly == 'include':
                 if (self.name in fault.poly.keys()):
@@ -2330,7 +2411,7 @@ class gps(SourceInv):
             fig.gps_projected(self, colorbar=True)
 
         # Plot GPS velocities
-        fig.gpsdata(self, data=data, name=name, legendscale=legendscale, scale=scale, color=color)
+        fig.gps(self, data=data, name=name, legendscale=legendscale, scale=scale, color=color)
 
         # Save fig
         self.fig = fig
