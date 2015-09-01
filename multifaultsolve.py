@@ -169,7 +169,7 @@ class multifaultsolve(object):
         import scipy.linalg as scilin
         # Invert Cd
         iCd = scilin.inv(self.Cd)
-        s = np.log(np.diag(np.dot(self.G.T,np.dot(iCd,self.G))))
+        s = np.diag(np.dot(self.G.T,np.dot(iCd,self.G)))
 
         # All done
         return s
