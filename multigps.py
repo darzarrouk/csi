@@ -1,5 +1,5 @@
 ''' 
-A class that deals with multiple gps rates.
+A class that deals with multiple gps objects
 
 Written by R. Jolivet, May 2014.
 '''
@@ -13,10 +13,10 @@ import copy
 import sys
 
 # Personals
-from .gpsrates import gpsrates
+from .gps import gps
 from .gpstimeseries import gpstimeseries
 
-class multigps(gpsrates):
+class multigps(gps):
 
     def __init__(self, name, gpsobjects=None, utmzone='10', ellps='WGS84', obs_per_station=2):
         '''
@@ -48,16 +48,16 @@ class multigps(gpsrates):
 
         # Set objects
         if gpsobjects is not None:
-            self.setgpsrates(gpsobjects)
+            self.setgps(gpsobjects)
 
         # All done
         return
     
-    def setgpsrates(self, gpsobjects):
+    def setgps(self, gpsobjects):
         '''
-        Takes list of gpsrates and build a multi gps function.
+        Takes list of gps and build a multi gps function.
         Args:
-            * gpsobjects    : List of gpsrates objects.
+            * gpsobjects    : List of gps objects.
         '''
 
         # Get the list
@@ -65,8 +65,8 @@ class multigps(gpsrates):
 
         # Loop over the stations to get the number of stations 
         ns = 0
-        for gps in gpsobjects:
-            ns += gps.station.shape[0]
+        for gp in gpsobjects:
+            ns += gp.station.shape[0]
 
         # Get the factor
         self.factor = gpsobjects[0].factor
@@ -85,32 +85,32 @@ class multigps(gpsrates):
 
         # Loop over the gps objects to feed self
         ns = 0
-        for gps in gpsobjects:
+        for gp in gpsobjects:
             
             # Assert
-            assert gps.factor==self.factor, 'GPS object have a different factor: Object {}'.format(gps.name)
-            assert gps.utmzone==self.utmzone, 'UTM zone is not compatible: Object {}'.format(gps.utmzone)
+            assert gp.factor==self.factor, 'GPS object have a different factor: Object {}'.format(gp.name)
+            assert gp.utmzone==self.utmzone, 'UTM zone is not compatible: Object {}'.format(gp.utmzone)
 
             # Set starting and ending points
             st = ns
-            ed = ns + gps.station.shape[0]
+            ed = ns + gp.station.shape[0]
 
             # Get stations
-            self.station[st:ed] = gps.station
+            self.station[st:ed] = gp.station
 
             # Feed in 
-            self.lon[st:ed] = gps.lon
-            self.lat[st:ed] = gps.lat
-            self.x[st:ed] = gps.x
-            self.y[st:ed] = gps.y
-            self.vel_enu[st:ed,:] = gps.vel_enu
-            self.err_enu[st:ed,:] = gps.err_enu
+            self.lon[st:ed] = gp.lon
+            self.lat[st:ed] = gp.lat
+            self.x[st:ed] = gp.x
+            self.y[st:ed] = gp.y
+            self.vel_enu[st:ed,:] = gp.vel_enu
+            self.err_enu[st:ed,:] = gp.err_enu
 
             # Force number of observation per station
-            gps.obs_per_station = self.obs_per_station
+            gp.obs_per_station = self.obs_per_station
 
             # Update ns
-            ns += gps.station.shape[0]
+            ns += gp.station.shape[0]
 
         # All done
         return
@@ -136,8 +136,8 @@ class multigps(gpsrates):
         
         # Each subnetwork
         nSub = 0
-        for trans, gps in zip(subTrans, self.gpsobjects):
-            nSub += gps.getNumberOfTransformParameters(trans)
+        for trans, gp in zip(subTrans, self.gpsobjects):
+            nSub += gp.getNumberOfTransformParameters(trans)
 
         # Sum
         Npo = nSub + nMain
@@ -181,22 +181,27 @@ class multigps(gpsrates):
         # Loop over the subnetworks
         lst_east = 0
         lst_north = self.station.shape[0]
-        for trans, gps in zip(subTrans, self.gpsobjects):
+        lst_up = 2*self.station.shape[0]
+        for trans, gp in zip(subTrans, self.gpsobjects):
             # Get the transform
-            Sorb = gps.getTransformEstimator(trans)
+            Sorb = gp.getTransformEstimator(trans)
             if Sorb is not None:
                 # Set the indexes right
                 ced = cst + Sorb.shape[1]
-                led_east = lst_east + gps.station.shape[0]
-                led_north = lst_north + gps.station.shape[0]
+                led_east = lst_east + gp.station.shape[0]
+                led_north = lst_north + gp.station.shape[0]
                 # Put it where it should be 
-                orb[lst_east:led_east, cst:ced] = Sorb[:gps.station.shape[0],:]
-                orb[lst_north:led_north, cst:ced] = Sorb[gps.station.shape[0]:,:]
+                orb[lst_east:led_east, cst:ced] = Sorb[:gp.station.shape[0],:]
+                orb[lst_north:led_north, cst:ced] = Sorb[gp.station.shape[0]:2*gp.station.shape[0],:]
+                # Deal with verticals if needed
+                if self.obs_per_station==3:
+                    led_up = lst_up + gp.station.shape[0]
+                    orb[lst_up:led_up, cst:ced] = Sorb[2*gp.station.shape[0]:,:]
                 # Update column
                 cst += Sorb.shape[1]
             # update lines
-            lst_east += gps.station.shape[0]
-            lst_north += gps.station.shape[0]
+            lst_east += gp.station.shape[0]
+            lst_north += gp.station.shape[0]
 
         # All done
         return orb
@@ -228,15 +233,15 @@ class multigps(gpsrates):
         st = self.getNumberOfTransformParameters([mainTrans,[None for i in range(len(subTrans))]])
 
         # Loop over the transformations
-        for trans, gps in zip(subTrans, self.gpsobjects):
+        for trans, gp in zip(subTrans, self.gpsobjects):
             
             # Put the transform in the fault
-            fault.poly[gps.name] = trans
+            fault.poly[gp.name] = trans
 
             # Put the solution in the fault
-            nP = gps.getNumberOfTransformParameters(trans)     
+            nP = gp.getNumberOfTransformParameters(trans)     
             ed = st + nP
-            fault.polysol[gps.name] = Tvec[st:ed]
+            fault.polysol[gp.name] = Tvec[st:ed]
 
             # Edit st
             st += nP

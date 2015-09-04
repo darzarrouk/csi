@@ -646,7 +646,7 @@ class Fault(SourceInv):
         '''
         Builds the Green's function matrix based on the discretized fault.
         Args:
-            * data      : data object from gpsrates or insarrates.
+            * data      : data object from gps or insar.
             * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
             * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
             * method    : Can be okada (Okada, 1982) (rectangular patches only)
@@ -680,7 +680,7 @@ class Fault(SourceInv):
             print('Greens functions computation method: {}'.format(method))
 
         # Data type check
-        if data.dtype == 'insarrates':
+        if data.dtype == 'insar':
             if not vertical:
                 print('---------------------------------')
                 print('---------------------------------')
@@ -713,7 +713,7 @@ class Fault(SourceInv):
         If your patches are rectangular, Okada's formulation is used (Okada, 1982)
         If your patches are triangular, Meade's formulation is used (Meade, 2007)
         Args:
-            * data      : data object from gpsrates or insarrates.
+            * data      : data object from gps or insar.
             * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
             * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
         '''
@@ -763,14 +763,14 @@ class Fault(SourceInv):
                 op = op[:,0:2]
 
             # Organize the response
-            if data.dtype in ['gpsrates', 'cosicorrrates', 'multigps']:
+            if data.dtype in ['gps', 'opticorr', 'multigps']:
                 # If GPS type, construct a flat vector with east displacements first, then
                 # north, then vertical
                 ss = ss.T.flatten()
                 ds = ds.T.flatten()
                 op = op.T.flatten()
 
-            elif data.dtype == 'insarrates':
+            elif data.dtype == 'insar':
                 # If InSAR, do the dot product with the los
                 ss_los = []
                 ds_los = []
@@ -816,6 +816,28 @@ class Fault(SourceInv):
 
         # All done
         return G
+
+    def setCustomGFs(self, data, G):
+        '''
+        Sets a custom GF matrix in the G dictionary.
+        Args:
+            * data          : Appropriate entry in the dictionary
+            * G             : Green's function matrix
+        '''
+
+        # Check
+        if not hasattr(self, 'G'):
+            self.G = {}
+
+        # Check
+        if not data.name in self.G.keys():
+            self.G[data.name] = {}
+
+        # Set 
+        self.G[data.name]['custom'] = G
+
+        # All done
+        return
 
     def writePointSources2Pickle(self, filename):
         '''
@@ -894,7 +916,7 @@ class Fault(SourceInv):
         self.sourceNumber   : Number of sources per patches.
         self.sourceArea     : Maximum Area of the sources.
         Args:
-            * data              : data object from gpsrates or insarrates.
+            * data              : data object from gps or insar.
             * vertical          : if True, will produce green's functions for the vertical displacements in a gps object.
             * slipdir           : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile).
             * TentCouplingCase  : Set to True when computing the coupling green's function for a Node based fault.
@@ -1069,7 +1091,7 @@ class Fault(SourceInv):
             Nparm = self.slip.shape[0]
 
         # Check format
-        if data.dtype in ['gpsrates', 'cosicorrrates', 'multigps']:
+        if data.dtype in ['gps', 'opticorr', 'multigps']:
             # Flat arrays with e, then n, then u (optional)
             if 's' in slipdir:
                 Gss = Gss.reshape((Ndata, Nparm))
@@ -1077,7 +1099,7 @@ class Fault(SourceInv):
                 Gds = Gds.reshape((Ndata, Nparm))
             if 't' in slipdir:
                 Gts = Gts.reshape((Ndata, Nparm))
-        elif data.dtype == 'insarrates':
+        elif data.dtype == 'insar':
             # If InSAR, do the dot product with the los
             if 's' in slipdir:
                 Gss_los = []
@@ -1121,13 +1143,13 @@ class Fault(SourceInv):
         return G
 
     def setGFsFromFile(self, data, strikeslip=None, dipslip=None, tensile=None, coupling=None,
-                       vertical=False, dtype='d'):
+                       custom=None, vertical=False, dtype='d'):
         '''
         Sets the Green's functions from binary files. Be carefull, these have to be in the
         good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and
         if insar, GF are projected already)
         Args:
-            * data          : Data structure from gpsrates or insarrates.
+            * data          : Data structure from gps or insar.
             * strikeslip    : File containing the Green's functions for strikeslip displacements.
             * dipslip       : File containing the Green's functions for dipslip displacements.
             * tensile       : File containing the Green's functions for tensile displacements.
@@ -1173,6 +1195,10 @@ class Fault(SourceInv):
         # The dataset sets the Green's functions itself
         data.setGFsInFault(self, G, vertical=vertical)
 
+        # If custom
+        if custom is not None:
+            self.setCustomGFs(data, custom)
+
         # all done
         return
 
@@ -1181,7 +1207,7 @@ class Fault(SourceInv):
         '''
         Stores the input Green's functions matrices into the fault structure.
         Args:
-            * data          : Data structure from gpsrates or insarrates.
+            * data          : Data structure from gps or insar.
             * strikeslip    : List of matrices of the Strikeslip Green's functions, ordered E, N, U
             * dipslip       : List of matrices of the dipslip Green's functions, ordered E, N, U
             * tensile       : List of matrices of the tensile Green's functions, ordered E, N, U
@@ -1190,9 +1216,9 @@ class Fault(SourceInv):
         '''
 
         # Get the number of data per point
-        if data.dtype == 'insarrates' or data.dtype == 'tsunami':
+        if data.dtype == 'insar' or data.dtype == 'tsunami':
             data.obs_per_station = 1
-        elif data.dtype in ('gpsrates', 'multigps'):
+        elif data.dtype in ('gps', 'multigps'):
             data.obs_per_station = 0
             # Check components
             if not np.isnan(data.vel_enu[:,0]).any():
@@ -1203,7 +1229,7 @@ class Fault(SourceInv):
                 if np.isnan(data.vel_enu[:,2]).any():
                     raise ValueError('Vertical can only be true if all stations have vertical components')
                 data.obs_per_station += 1
-        elif data.dtype == 'cosicorrrates':
+        elif data.dtype == 'opticorr':
             data.obs_per_station = 2
             if vertical:
                 data.obs_per_station += 1
@@ -1215,19 +1241,19 @@ class Fault(SourceInv):
 
         # Initializes the data vector
         if not synthetic:
-            if data.dtype == 'insarrates':
+            if data.dtype == 'insar':
                 self.d[data.name] = data.vel
                 vertical = True # Always true for InSAR
             elif data.dtype == 'tsunami':
                 self.d[data.name] = data.d
                 vertical = True
-            elif data.dtype in ('gpsrates', 'multigps'):
+            elif data.dtype in ('gps', 'multigps'):
                 if vertical:
                     self.d[data.name] = data.vel_enu.T.flatten()
                 else:
                     self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
                 self.d[data.name]=self.d[data.name][-np.isnan(self.d[data.name])]
-            elif data.dtype == 'cosicorrrates':
+            elif data.dtype == 'opticorr':
                 self.d[data.name] = np.hstack((data.east.T.flatten(),
                                                data.north.T.flatten()))
                 if vertical:
@@ -1452,7 +1478,7 @@ class Fault(SourceInv):
         '''
         Assembles the data vector corresponding to the stored green's functions.
         Args:
-            * datas         : list of the data object involved (from gpsrates and insarrates).
+            * datas         : list of the data object involved (from gps and insar).
         '''
 
         # print
@@ -1491,12 +1517,12 @@ class Fault(SourceInv):
         # All done
         return
 
-    def assembleGFs(self, datas, polys=None, slipdir='sd', verbose=True):
+    def assembleGFs(self, datas, polys=None, slipdir='sd', verbose=True, custom=False):
         '''
         Assemble the Green's functions that have been built using build GFs.
         This routine spits out the General G and the corresponding data vector d.
         Args:
-            * datas         : data sets to use as inputs (from gpsrates and insarrates).
+            * datas         : data sets to use as inputs (from gps and insar).
             
             * polys         : None -> nothing additional is estimated
 
@@ -1514,12 +1540,13 @@ class Fault(SourceInv):
                               'strainnotranslation' -> Estimates the strain tensor + rotation
                               'translation'         -> Estimates the translation
                               'translationrotation  -> Estimates the translation + rotation
-            
-            * slipdir       : directions of slip to include. can be any combination of s,d,t or c
+
+            * slipdir       : directions of slip to include. can be any combination of s, d, t, c or x 
                               s: strike slip
                               d: dip slip
                               t: tensile
                               c: coupling
+            * custom        : If True, Gets the additional Green's function from the dictionary under the
         '''
 
         # print
@@ -1580,6 +1607,14 @@ class Fault(SourceInv):
         # Save extra Parameters
         self.TransformationParameters = Npo
 
+        # Custom?
+        if custom:
+            Npc = self.G[data.name]['custom'].shape[1]
+            Np += Npc
+            self.NumberCustom = Npc
+        else:
+            Npc = 0
+
         # Get the number of data
         Nd = 0
         for data in datas:
@@ -1604,7 +1639,7 @@ class Fault(SourceInv):
 
         # loop over the datasets
         el = 0
-        polstart = Nps
+        polstart = Nps + Npc
         for data in datas:
 
             # Keep data name
@@ -1623,19 +1658,25 @@ class Fault(SourceInv):
             # Fill Glocal
             ec = 0
             for sp in sliplist:
-                Glocal[:,ec:ec+self.N_slip] = self.G[data.name][sp]
-                ec += self.N_slip
+                Nclocal = self.G[data.name][sp].shape[1] 
+                Glocal[:,ec:ec+Nclocal] = self.G[data.name][sp]
+                ec += Nclocal
 
             # Put Glocal into the big G
             G[el:el+Ndlocal,0:Nps] = Glocal
+
+            # Custom
+            if custom:
+                G[el:el+Ndlocal,Nps:Nps+Npc] = self.G[data.name]['custom']
+                ec += Nclocal
 
             # Polynomes and strain
             if self.poly[data.name] is not None:
 
                 # Build the polynomial function
-                if data.dtype in ('gpsrates', 'multigps'):
+                if data.dtype in ('gps', 'multigps'):
                     orb = data.getTransformEstimator(self.poly[data.name]) 
-                elif data.dtype in ('insarrates', 'cosicorrrates'):
+                elif data.dtype in ('insar', 'opticorr'):
                     orb = data.getPolyEstimator(self.poly[data.name])
 
                 # Number of columns

@@ -18,7 +18,7 @@ import os
 # Personals
 from .Fault import Fault
 from .geodeticplot import geodeticplot as geoplot
-
+from .gps import gps as gpsclass
 
 class TriangularPatches(Fault):
 
@@ -169,6 +169,42 @@ class TriangularPatches(Fault):
         # All done
         return
 
+    def setVerticesFromPatches(self):
+        '''
+        Takes the patches and constructs a list of Vertices and Faces
+        '''
+
+        # Get patches
+        patches = self.patch
+
+        # Create lists
+        vertices = []
+        faces = []
+
+        # Iterate to build vertices
+        for patch in patches:
+            for vertex in patch.tolist():
+                if vertex not in vertices:
+                    vertices.append(vertex)
+
+        # Iterate to build Faces
+        for patch in patches:
+            face = []
+            for vertex in patch.tolist():
+                uu = np.flatnonzero(np.array([vertex==v for v in vertices]))[0]
+                face.append(uu)
+            faces.append(face)
+
+        # Set them
+        self.Vertices = np.array(vertices)
+        self.Faces = np.array(faces)
+
+        # 2 lon lat
+        self.vertices2ll()
+
+        # All done
+        return
+    
     def patches2triangles(self, fault, numberOfTriangles=4):
         '''
         Takes a fault with rectangular patches and splits them into triangles to 
@@ -267,6 +303,122 @@ class TriangularPatches(Fault):
         # Set depth
         self.depth = np.max([v[2] for v in self.Vertices])
         self.z_patches = np.linspace(self.depth, 0.0, 5)
+
+        # All done
+        return
+
+    def readPatchesFromFile(self, filename, readpatchindex=True, 
+                            donotreadslip=False, inputCoordinates='lonlat'):
+        """
+        Reads patches from a GMT formatted file.
+        Args:
+            * filename          : Name of the file
+            * inputCoordinates  : Default is 'lonlat'. Can be 'utm'
+            * readpatchindex    : Default True.
+            * donotreadslip     : Default is False. If True, does not read the slip
+            * inputCoordinates  : Default is 'lonlat', can be 'xyz'
+        """
+
+        # create the lists
+        self.patch = []
+        self.patchll = []
+        if readpatchindex:
+            self.index_parameter = []
+        if not donotreadslip:
+            Slip = []
+
+        # open the files
+        fin = open(filename, 'r') 
+        
+        # read all the lines
+        A = fin.readlines()
+
+        # depth
+        D = 0.0
+        d = 10000.
+
+        # Loop over the file
+        i = 0
+        while i<len(A):
+            
+            # Assert it works
+            assert A[i].split()[0] is '>', 'Not a patch, reformat your file...'
+            # Get the Patch Id
+            if readpatchindex:
+                self.index_parameter.append([np.int(A[i].split()[3]),np.int(A[i].split()[4]),np.int(A[i].split()[5])])
+            # Get the slip value
+            if not donotreadslip:
+                if len(A[i].split())>7:
+                    slip = np.array([np.float(A[i].split()[7]), np.float(A[i].split()[8]), np.float(A[i].split()[9])])
+                else:
+                    slip = np.array([0.0, 0.0, 0.0])
+                Slip.append(slip)
+            # get the values
+            if inputCoordinates in ('lonlat'):
+                lon1, lat1, z1 = A[i+1].split()
+                lon2, lat2, z2 = A[i+2].split()
+                lon3, lat3, z3 = A[i+3].split()
+                # Pass as floating point
+                lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1)
+                lon2 = float(lon2); lat2 = float(lat2); z2 = float(z2)
+                lon3 = float(lon3); lat3 = float(lat3); z3 = float(z3)
+                # translate to utm
+                x1, y1 = self.ll2xy(lon1, lat1)
+                x2, y2 = self.ll2xy(lon2, lat2)
+                x3, y3 = self.ll2xy(lon3, lat3)
+            elif inputCoordinates in ('xyz'):
+                x1, y1, z1 = A[i+1].split()
+                x2, y2, z2 = A[i+2].split()
+                x3, y3, z3 = A[i+3].split()
+                # Pass as floating point
+                x1 = float(x1); y1 = float(y1); z1 = float(z1)
+                x2 = float(x2); y2 = float(y2); z2 = float(z2)
+                x3 = float(x3); y3 = float(y3); z3 = float(z3)
+                # translate to utm
+                lon1, lat1 = self.xy2ll(x1, y1)
+                lon2, lat2 = self.xy2ll(x2, y2)
+                lon3, lat3 = self.xy2ll(x3, y3)
+            # Depth
+            mm = min([float(z1), float(z2), float(z3)])
+            if D<mm:
+                D=mm
+            if d>mm:
+                d=mm
+            # Set points
+            p1 = [x1, y1, z1]; p1ll = [lon1, lat1, z1]
+            p2 = [x2, y2, z2]; p2ll = [lon2, lat2, z2]
+            p3 = [x3, y3, z3]; p3ll = [lon3, lat3, z3]
+            # Store these
+            p = [p1, p2, p3]
+            pll = [p1ll, p2ll, p3ll]
+            p = np.array(p)
+            pll = np.array(pll)
+            # Store these in the lists
+            self.patch.append(p)
+            self.patchll.append(pll)
+            # increase i
+            i += 4
+
+        # Close the file
+        fin.close()
+
+        # depth
+        self.depth = D
+        self.top = d
+        self.z_patches = np.linspace(0,D,5)
+        self.factor_depth = 1.
+
+        # Patches 2 vertices
+        self.setVerticesFromPatches()
+        self.numpatch = self.Faces.shape[0]
+
+        # Translate slip to np.array
+        if not donotreadslip:
+            self.initializeslip(values=np.array(Slip))
+        else:
+            self.initializeslip()
+        if readpatchindex:
+            self.index_parameter = np.array(self.index_parameter)
 
         # All done
         return
@@ -1002,7 +1154,7 @@ class TriangularPatches(Fault):
         using a homogeneous half-space.
 
         Args:
-            * data          : data object from gpsrates or insarrates.
+            * data          : data object from gps or insar.
             * patch         : number of the patch that slips
             * slip          : if a number is given, that is the amount of slip along strike.
                               if three numbers are given, that is the amount of slip along strike,
@@ -1211,8 +1363,7 @@ class TriangularPatches(Fault):
             raise NotImplementedError('Only works for len(slip)==len(patch)')
 
         # create a fake gps object
-        from .gpsrates import gpsrates
-        self.sim = gpsrates('simulation', utmzone=self.utmzone)
+        self.sim = gpsclass('simulation', utmzone=self.utmzone)
 
         # Create a lon lat grid
         if lonlat is None:
@@ -1909,7 +2060,7 @@ class TriangularPatches(Fault):
 #        then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
 #        If amax is specified, the minimum size is fixed.
 #        Args:
-#            * data          : Data object from gpsrates or insarrates.
+#            * data          : Data object from gps or insar.
 #            * edksfilename  : Name of the file containing the kernels
 #            * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle (default=None)
 #            * plot          : Activates plotting (default=False)
@@ -1934,7 +2085,7 @@ class TriangularPatches(Fault):
 #        datname,ReceiverFile = data.writeEDKSdata()
 #
 #        # Assign some EDKS parameters
-#        if data.dtype is 'insarrates':
+#        if data.dtype is 'insar':
 #            useRecvDir = True # True for InSAR, uses LOS information
 #        else:
 #            useRecvDir = False # False for GPS, uses ENU displacements

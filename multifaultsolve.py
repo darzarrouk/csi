@@ -304,7 +304,7 @@ class multifaultsolve(object):
         if 'd' in fault.slipdir:
             fault.index_parameter[:,1] = range(st, st+fault.slip.shape[0])
             st += fault.slip.shape[0]
-        if 'u' in fault.slipdir:
+        if 't' in fault.slipdir:
             fault.index_parameter[:,2] = range(st, st+fault.slip.shape[0])
 
         # All done
@@ -352,6 +352,12 @@ class multifaultsolve(object):
                 se = st + fault.slip.shape[0]
                 fault.coupling = fault.mpost[st:se]
                 st += fault.slip.shape[0]
+
+            # check
+            if hasattr(fault, 'NumberCustom'):
+                se = st + fault.NumberCustom
+                fault.custom = self.mpost[st:se]
+                st += fault.NumberCustom
 
             # Get the polynomial/orbital/helmert values if they exist
             fault.polysol = {}

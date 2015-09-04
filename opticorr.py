@@ -13,9 +13,10 @@ import scipy.spatial.distance as scidis
 
 # Personals
 from .SourceInv import SourceInv
+from .geodeticplot import geodeticplot as geoplot
 from . import csiutils as utils
 
-class cosicorrrates(SourceInv):
+class opticorr(SourceInv):
 
     def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
         '''
@@ -26,10 +27,10 @@ class cosicorrrates(SourceInv):
         '''
 
         # Base class init
-        super(cosicorrrates,self).__init__(name,utmzone,ellps) 
+        super(opticorr,self).__init__(name,utmzone,ellps) 
 
         # Initialize the data set 
-        self.dtype = 'cosicorrrates'
+        self.dtype = 'opticorr'
 
         self.verbose = verbose
         if self.verbose:
@@ -414,7 +415,7 @@ class cosicorrrates(SourceInv):
                 err_north = None
 
             # Create a new cosicorr object
-            cosi = cosicorrrates('{} #{}'.format(self.name, iR), utmzone=self.utmzone)
+            cosi = opticorr('{} #{}'.format(self.name, iR), utmzone=self.utmzone)
 
             # Put the values in there
             cosi.read_from_binary(east, north, lon, lat, err_east=err_east, err_north=err_north, remove_nan=True)
@@ -780,17 +781,18 @@ class cosicorrrates(SourceInv):
         
 
 
-    def removeSynth(self, faults, direction='sd', poly=None, vertical=False):
+    def removeSynth(self, faults, direction='sd', poly=None, vertical=False, custom=False):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
         Args:
             * faults        : List of faults.
             * direction     : Direction of slip to use.
             * include_poly  : if a polynomial function has been estimated, include it.
+            * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
         '''
 
         # Build synthetics
-        self.buildsynth(faults, direction=direction, poly=poly)
+        self.buildsynth(faults, direction=direction, poly=poly, custom=False)
 
         # Correct
         self.east -= self.east_synth
@@ -799,13 +801,14 @@ class cosicorrrates(SourceInv):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', poly=None, vertical=False):
+    def buildsynth(self, faults, direction='sd', poly=None, vertical=False, custom=False):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
             * faults        : List of faults.
             * direction     : Direction of slip to use.
             * include_poly  : if a polynomial function has been estimated, include it.
+            * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
         '''
 
         # Number of data points
@@ -848,7 +851,16 @@ class cosicorrrates(SourceInv):
                     self.up_synth += st_synth[2*Nd:]
             if ('c' in direction) and ('coupling' in G.keys()):
                 Gc = G['coupling']
-                Sc = fault.slip[:,0]
+                Sc = fault.coupling
+                dc_synth = np.dot(Gc, Sc)
+                self.east_synth += dc_synth[:Nd]
+                self.north_synth += dc_synth[Nd:2*Nd]
+                if vertical:
+                    self.up_synth += dc_synth[2*Nd:]
+
+            if custom:
+                Gc = G['custom']
+                Sc = fault.custom
                 dc_synth = np.dot(Gc, Sc)
                 self.east_synth += dc_synth[:Nd]
                 self.north_synth += dc_synth[Nd:2*Nd]
@@ -993,98 +1005,25 @@ class cosicorrrates(SourceInv):
         if not hasattr(self, 'profiles'):
             self.profiles = {}
 
-        # Azimuth into radians
-        alpha = azimuth*np.pi/180.
+        # Lon lat to x y
+        xc, yc = self.ll2xy(loncenter, latcenter)
 
-        # Convert the lat/lon of the center into UTM.
-        xc, yc = self.lonlat2xy(loncenter, latcenter)
+        # Get the profile
+        Dalong, Dacros, Bol, boxll, box, xe1, ye1, xe2, ye2, lon, lat = \
+                utils.coord2prof(self, xc, yc, length, azimuth, width)
 
-        # Copmute the across points of the profile
-        xa1 = xc - (width/2.)*np.cos(alpha)
-        ya1 = yc + (width/2.)*np.sin(alpha)
-        xa2 = xc + (width/2.)*np.cos(alpha)
-        ya2 = yc - (width/2.)*np.sin(alpha)
-
-        # Compute the endpoints of the profile
-        xe1 = xc + (length/2.)*np.sin(alpha)
-        ye1 = yc + (length/2.)*np.cos(alpha)
-        xe2 = xc - (length/2.)*np.sin(alpha)
-        ye2 = yc - (length/2.)*np.cos(alpha)
-
-        # Convert the endpoints
-        elon1, elat1 = self.xy2lonlat(xe1, ye1)
-        elon2, elat2 = self.xy2lonlat(xe2, ye2)
-
-        # Design a box in the UTM coordinate system.
-        x1 = xe1 - (width/2.)*np.cos(alpha)
-        y1 = ye1 + (width/2.)*np.sin(alpha)
-        x2 = xe1 + (width/2.)*np.cos(alpha)
-        y2 = ye1 - (width/2.)*np.sin(alpha)
-        x3 = xe2 + (width/2.)*np.cos(alpha)
-        y3 = ye2 - (width/2.)*np.sin(alpha)
-        x4 = xe2 - (width/2.)*np.cos(alpha)
-        y4 = ye2 + (width/2.)*np.sin(alpha)
-
-        # Convert the box into lon/lat for further things
-        lon1, lat1 = self.xy2lonlat(x1, y1)
-        lon2, lat2 = self.xy2lonlat(x2, y2)     
-        lon3, lat3 = self.xy2lonlat(x3, y3)
-        lon4, lat4 = self.xy2lonlat(x4, y4)
-
-        # make the box 
-        box = []
-        box.append([x1, y1])
-        box.append([x2, y2])
-        box.append([x3, y3])
-        box.append([x4, y4])
-
-        # make latlon box
-        boxll = []
-        boxll.append([lon1, lat1])
-        boxll.append([lon2, lat2])
-        boxll.append([lon3, lat3])
-        boxll.append([lon4, lat4])
-
-        # Get the points in this box.
-        # 1. import shapely and path
-        import shapely.geometry as geom
-        import matplotlib.path as path
-
-        # 2. Create an array with the points positions
-        COSIXY = np.vstack((self.x, self.y)).T
-
-        # 3. Create a box
-        rect = path.Path(box, closed=False)
-
-        # 4. Find those who are inside
-        Bol = rect.contains_points(COSIXY)
-
-        # 5. Get these values
-        xg = self.x[Bol]
-        yg = self.y[Bol]
+        # Get these values
         east = self.east[Bol]
         north = self.north[Bol]
 
-        # 6. Get the sign of the scalar product between the line and the point
-        vec = np.array([xe1-xc, ye1-yc])
-        cosixy = np.vstack((xg-xc, yg-yc)).T
-        sign = np.sign(np.dot(cosixy, vec))
-
-        # 7. Compute the distance (along, across profile) and get the velocity
-        # Create the list that will hold these values
-        Dacros = []; Dalong = []; V = []; E = []
-        # Build lines of the profile
-        Lalong = geom.LineString([[xe1, ye1], [xe2, ye2]])
-        Lacros = geom.LineString([[xa1, ya1], [xa2, ya2]]) 
-        # Build a multipoint
-        PP = geom.MultiPoint(np.vstack((xg,yg)).T.tolist())
-        # Loop on the points
-        for p in range(len(PP.geoms)):
-            Dalong.append(Lacros.distance(PP.geoms[p])*sign[p])
-            Dacros.append(Lalong.distance(PP.geoms[p]))
+        # Get some numbers
+        x1, y1 = box[0]
+        x2, y2 = box[1]
+        x3, y3 = box[2]
+        x4, y4 = box[3]
 
         # 8. Compute the fault Normal/Parallel displacements
-        Vec1 = np.array([x2-x1, y2-y1])
+        Vec1 = np.array([x2-xe1, y2-y1])
         Vec1 = Vec1/np.sqrt( Vec1[0]**2 + Vec1[1]**2 )
         FPar = np.dot([[east[i], north[i]] for i in range(east.shape[0])], Vec1)
         Vec2 = np.array([x4-x1, y4-y1])
@@ -1172,60 +1111,43 @@ class cosicorrrates(SourceInv):
             * legendscale: Length of the legend arrow.
         '''
 
+        # Check the profile
+        xd = self.profiles[name]['Distance']
+        yn = self.profiles[name]['Fault Normal']
+        yp = self.profiles[name]['Fault Parallel']
+        assert len(xd)>5, 'There is less than 5 points in your profile...'
+
+        # Plot each data set and the box on top
+        self.fig = []
+        self.plot(data='dataEast', faults=fault, show=False)
+        self.fig[0].close(fig2close='fault')
+        self.fig[0].titlemap('East disp.')
+        self.plot(data='dataNorth', faults=fault, show=False)
+        self.fig[1].titlemap('North disp.')
+
+        # Plot the box
+        for fig in self.fig:
+            b = self.profiles[name]['Box']
+            bb = np.zeros((len(b)+1,2))
+            for i in range(len(b)):
+                x = b[i,0]
+                if x<0.:
+                    x += 360.
+                bb[i,0] = x
+                bb[i,1] = b[i,1]
+            bb[-1,0] = b[0,0]
+            bb[-1,1] = b[0,1]
+            fig.carte.plot(bb[:,0], bb[:,1], '-k', zorder=40)
+
         # open a figure
         fig = plt.figure()
-        carteEst = fig.add_subplot(221)
-        carteNord = fig.add_subplot(222)
-        prof = fig.add_subplot(212)
+        prof = fig.add_subplot(111)
 
-        # Get colors limits
-        vminE = np.nanmin(self.east)
-        vmaxE = np.nanmax(self.east)
-        vminN = np.nanmin(self.north)
-        vmaxN = np.nanmax(self.north)
-
-        # Prepare a color map for insar
-        import matplotlib.colors as colors
-        import matplotlib.cm as cmx
-        cmap = plt.get_cmap('jet')
-        cNormE = colors.Normalize(vmin=vminE, vmax=vmaxE)
-        scalarMapE = cmx.ScalarMappable(norm=cNormE, cmap=cmap)
-        cNormN = colors.Normalize(vmin=vminN, vmax=vmaxN)
-        scalarMapN = cmx.ScalarMappable(norm=cNormN, cmap=cmap)
-
-        # plot the InSAR Points on the Map
-        carteEst.scatter(self.x, self.y, s=10, c=self.east, cmap=cmap, vmin=vminE, 
-                vmax=vmaxE, linewidths=0.0)
-        scalarMapE.set_array(self.east)
-        plt.colorbar(scalarMapE, orientation='horizontal', shrink=0.5)
-        carteNord.scatter(self.x, self.y, s=10, c=self.north, cmap=cmap, vmin=vminN,
-                vmax=vmaxN, linewidth=0.0)
-        scalarMapN.set_array(self.north) 
-        plt.colorbar(scalarMapN,  orientation='horizontal', shrink=0.)
-
-        # plot the box on the map
-        b = self.profiles[name]['Box']
-        bb = np.zeros((5, 2))
-        for i in range(4):
-            x, y = self.lonlat2xy(b[i,0], b[i,1])
-            bb[i,0] = x
-            bb[i,1] = y
-        bb[4,0] = bb[0,0]
-        bb[4,1] = bb[0,1]
-        carteEst.plot(bb[:,0], bb[:,1], '.k')
-        carteEst.plot(bb[:,0], bb[:,1], '-k')
-        carteNord.plot(bb[:,0], bb[:,1], '.k')
-        carteNord.plot(bb[:,0], bb[:,1], '-k')
-
-        # plot the selected stations on the map
-        # Later
-
-        # plot the profile
-        x = self.profiles[name]['Distance']
-        Ep = self.profiles[name]['Fault Normal']
-        Np = self.profiles[name]['Fault Parallel']
-        pe = prof.plot(x, Ep, label='Fault Normal displacement', marker='.', color='r', linestyle='')
-        pn = prof.plot(x, Np, label='Fault Par. displacement', marker='.', color='b', linestyle='')
+        # Plot profiles
+        pe = prof.plot(xd, yn, label='Fault Normal displacement', 
+                marker='.', color='r', linestyle='')
+        pn = prof.plot(xd, yp, label='Fault Par. displacement', 
+                marker='.', color='b', linestyle='')
 
         # If a fault is here, plot it
         if fault is not None:
@@ -1234,8 +1156,6 @@ class cosicorrrates(SourceInv):
                 fault = [fault]
             # Loop on the faults
             for f in fault:
-                carteEst.plot(f.xf, f.yf, '-')
-                carteNord.plot(f.xf, f.yf, '-')
                 # Get the distance
                 d = self.intersectProfileFault(name, f)
                 if d is not None:
@@ -1246,12 +1166,8 @@ class cosicorrrates(SourceInv):
         legend = prof.legend()
         legend.draggable = True
 
-        # axis of the map
-        carteEst.axis('equal')
-        carteNord.axis('equal')
-
-        # Show to screen 
-        plt.show()
+        # Show
+        self.fig[1].show(showFig=['map'])
 
         # All done
         return
@@ -1374,7 +1290,7 @@ class cosicorrrates(SourceInv):
 
         # All done  
 
-    def plot(self, faults=None, figure=133, gps=None, decim=False, axis='equal', norm=None, data='total', show=True, drawCoastlines=True, expand=0.2):
+    def plot(self, faults=None, figure=None, gps=None, decim=False, axis='equal', norm=None, data='data', show=True, drawCoastlines=True, expand=0.2):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -1384,7 +1300,8 @@ class cosicorrrates(SourceInv):
             * figure    : number of the figure.
             * gps       : superpose a GPS dataset.
             * decim     : plot the insar following the decimation process of varres.
-            * data      : can be 'total', 'east', 'north', 'synth_east', synth_north'
+            * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast',
+                          'resEast', 'resNorth', 'data', 'synth' or 'res'
         '''
 
         # Get lons lats
@@ -1416,7 +1333,7 @@ class cosicorrrates(SourceInv):
             if type(gps) is not list:
                 gps = [gps]
             for g in gps:
-                fig.gpsvelocities(g)
+                fig.gps(g)
 
         # Plot the decimation process, if asked
         if decim:
@@ -1426,12 +1343,13 @@ class cosicorrrates(SourceInv):
         fig.cosicorr(self, norm=norm, colorbar=True, data=data, plotType='scatter')
 
         # Show
-        fig.show(showFig=['map'])
-
-
-        # Show
         if show:
-            plt.show()
+            fig.show(showFig=['map'])
+    
+        # Keep Figure
+        if not hasattr(self, 'fig'):
+            self.fig = []
+        self.fig.append(fig)
 
         # All done
         return

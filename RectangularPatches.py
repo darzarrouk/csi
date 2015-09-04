@@ -26,6 +26,7 @@ from .Fault import Fault
 from .stressfield import stressfield
 from . import okadafull
 from .geodeticplot import geodeticplot as geoplot
+from .gps import gps as gpsclass
 
 class RectangularPatches(Fault):
     
@@ -1425,7 +1426,7 @@ class RectangularPatches(Fault):
         Computes the surface displacement at the data location using okada.
 
         Args:
-            * data          : data object from gpsrates or insarrates.
+            * data          : data object from gps or insar.
             * patch         : number of the patch that slips
             * slip          : if a number is given, that is the amount of slip along strike
                               if three numbers are given, that is the amount of slip along strike, along dip and opening
@@ -1658,8 +1659,7 @@ class RectangularPatches(Fault):
         '''
 
         # create a fake gps object
-        from .gpsrates import gpsrates
-        self.sim = gpsrates('simulation', utmzone=self.utmzone)
+        self.sim = gpsclass('simulation', utmzone=self.utmzone)
 
         # Create a lon lat grid
         if lonlat is None:
@@ -2808,7 +2808,7 @@ class RectangularPatches(Fault):
         then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
         If amax is specified, the minimum size is fixed.
         Args:
-            * data          : Data object from gpsrates or insarrates.
+            * data          : Data object from gps or insar.
             * edksfilename  : Name of the file containing the kernels.
             * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle.
             * plot          : Activates plotting.
@@ -2847,7 +2847,7 @@ class RectangularPatches(Fault):
             datname = data.name
         ReceiverFile = 'edks_{}.idEN'.format(datname)
 
-        if data.dtype is 'insarrates':
+        if data.dtype is 'insar':
             useRecvDir = True # True for InSAR, uses LOS information
         else:
             useRecvDir = False # False for GPS, uses ENU displacements

@@ -160,7 +160,6 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-
     def deleteTents(self, tents):
         '''
         Deletes a list of tent (indices)
@@ -263,6 +262,28 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
+    def readPatchesFromFile(self, filename, readpatchindex=True, 
+                            donotreadslip=False, inputCoordinates='lonlat'):
+        """
+        Reads patches from a GMT formatted file.
+        Args:
+            * filename          : Name of the file
+            * inputCoordinates  : Default is 'lonlat'. Can be 'utm'
+            * readpatchindex    : Default True.
+            * donotreadslip     : Default is False. If True, does not read the slip
+            * inputCoordinates  : Default is 'lonlat', can be 'xyz'
+        """
+
+        # Run the method from the parent class
+        super(TriangularTents, self).readPatchesFromFile(filename,
+                readpatchindex=readpatchindex, donotreadslip=donotreadslip, 
+                inputCoordinates=inputCoordinates)
+
+        # Set up tent
+        self.vertices2tents()
+
+        # All done
+        return
 
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
         '''
@@ -403,7 +424,7 @@ class TriangularTents(TriangularPatches):
 
         # Shape
         if n is None:
-           self.N_slip = len(self.tent)
+           self.N_slip = len(self.Vertices)
         else:
             self.N_slip = n
 
@@ -1298,7 +1319,7 @@ class TriangularTents(TriangularPatches):
         # All Done
         return Slip
 
-    def _getFaultContour(self):
+    def _getFaultContour(self, takeAngle='max', check=False):
         '''
         Returns the outer-edge of the fault.
         '''
@@ -1362,14 +1383,20 @@ class TriangularTents(TriangularPatches):
                 angles.append(angle)
 
             # test 
-            #plt.plot(lon, lat, '.k', markersize=10, zorder=0)
-            #plt.plot([c[0] for c in contour], [c[1] for c in contour], '-r', linewidth=2, zorder=1)
-            #plt.scatter(lon[adj], lat[adj], s=50, c=np.array(angles)*180./np.pi, linewidth=0.1, zorder=2)
-            #plt.colorbar()
-            #plt.show()
+            if check:
+                plt.plot(lon, lat, '.k', markersize=10, zorder=0)
+                plt.plot([c[0] for c in contour], [c[1] for c in contour], '-r', 
+                        linewidth=2, zorder=1)
+                plt.scatter(lon[adj], lat[adj], s=50, 
+                        c=np.array(angles), linewidth=0.1, zorder=2)
+                plt.colorbar()
+                plt.show()
 
             # Get the largest angle
-            uu = adj[np.argmax(angles)]
+            if takeAngle in ('max'):
+                uu = adj[np.argmax(angles)]
+            elif takeAngle in ('min'):
+                uu =adj[np.argmin(angles)]
 
             # Append
             contour.append([lon[uu], lat[uu], depth[uu], uu])

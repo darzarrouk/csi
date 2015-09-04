@@ -1,5 +1,5 @@
 '''
-Class that plots the class verticalfault, gpsrates and insarrates in 3D.
+Class that plots the class verticalfault, gps and insar in 3D.
 
 Written by R. Jolivet and Z. Duputel, April 2013.
 '''
@@ -28,7 +28,7 @@ class geodeticplot(object):
                  projection='cyl',
                  lonmin=None, latmin=None, lonmax=None, latmax=None,
                  resolution='i',
-                 figSize=[None,None]):
+                 figsize=[None,None]):
         '''
         Args:
             * figure        : Number of the figure.
@@ -48,13 +48,13 @@ class geodeticplot(object):
         self.latmax = latmax
 
         # Open a figure
-        fig1 = plt.figure(figure, figsize=figSize[0])
+        fig1 = plt.figure(figure, figsize=figsize[0])
         faille = fig1.add_subplot(111, projection='3d')
         if figure is None:
             nextFig = np.max(plt.get_fignums())+1
         else:
             nextFig=figure+1
-        fig2  = plt.figure(nextFig, figsize=figSize[1])
+        fig2  = plt.figure(nextFig, figsize=figsize[1])
         ax = fig2.add_subplot(111)
         carte = basemap.Basemap(projection=projection,
                                 llcrnrlon=lonmin, 
@@ -79,14 +79,20 @@ class geodeticplot(object):
         # All done
         return
 
-    def close(self):
+    def close(self, fig2close=['map', 'fault']):
         '''
         Closes all the figures
         '''
 
+        # Check
+        if type(fig2close) is not list:
+            fig2close = [fig2close]
+
         # Figure 1
-        plt.close(self.fig1)
-        plt.close(self.fig2)
+        if 'fault' in fig2close:
+            plt.close(self.fig1)
+        if 'map' in fig2close:
+            plt.close(self.fig2)
 
         # All done
         return
@@ -173,7 +179,7 @@ class geodeticplot(object):
         Sets the title of the map.
         '''
 
-        self.carte.ax.set_title(titre)
+        self.carte.ax.set_title(titre, y=1.08)
 
         # All done
         return
@@ -183,7 +189,7 @@ class geodeticplot(object):
         Sets the title of the fault model.
         '''
 
-        self.faille.set_title(titre)
+        self.faille.set_title(titre, title=1.08)
 
         # All done
         return
@@ -721,10 +727,10 @@ class geodeticplot(object):
         # All don
         return
 
-    def gpsvelocities(self, gps, data=['data'], color=['k'], scale=None, legendscale=10., linewidths=.1, name=False, zorder=5):
+    def gps(self, gps, data=['data'], color=['k'], scale=None, legendscale=10., linewidths=.1, name=False, zorder=5):
         '''
         Args:
-            * gps           : gps object from gpsrates.
+            * gps           : gps object from gps.
             * data          : List of things to plot:
                               Can be any list of 'data', 'synth', 'res', 'strain', 'transformation'
             * color         : List of the colors of the gps velocity arrows.
@@ -866,7 +872,7 @@ class geodeticplot(object):
 
         return
 
-    def gps_projected(self, gps, norm=None, colorbar=True, zorder=4):
+    def gpsprojected(self, gps, norm=None, colorbar=True, zorder=4):
         '''
         Args:
             * gps       : gpsrate object
@@ -1004,7 +1010,7 @@ class geodeticplot(object):
                        decim=1, zorder=3):
         '''
         Args:
-            * insar     : insar object from insarrates.
+            * insar     : insar object from insar.
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
             * data      : plot either 'data' or 'synth' or 'res'.
@@ -1096,17 +1102,17 @@ class geodeticplot(object):
                 plotType='decimate', gmtCmap=None, decim=1, zorder=3):
         '''
         Args:
-            * insar     : insar object from insarrates.
+            * corr      : instance of the class cosicorr
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
             * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast',
-                          'resEast', or 'resNorth'
+                          'resEast', 'resNorth', 'data', 'synth' or 'res'
             * plotType  : plot either rectangular patches (decimate) or scatter (scatter)
             * decim     : decimation factor if plotType='scatter'
         '''
 
         # Assert
-        assert data in ('dataEast', 'dataNorth', 'synthEast', 'synthNorth', 'resEast', 'resNorth'), 'Data type to plot unknown'
+        assert data in ('dataEast', 'dataNorth', 'synthEast', 'synthNorth', 'resEast', 'resNorth', 'data', 'synth', 'res'), 'Data type to plot unknown'
 
         # Choose the data
         if data == 'dataEast':
@@ -1121,6 +1127,13 @@ class geodeticplot(object):
             d = corr.east - corr.east_synth
         elif data == 'resNorth':
             d = corr.north - corr.north_synth
+        elif data == 'data':
+            d = np.sqrt(corr.east**2+corr.north**2)
+        elif data == 'synth':
+            d = np.sqrt(corr.east_synth**2 + corr.north_synth**2)
+        elif data == 'res':
+            d = np.sqrt( (corr.east - corr.east_synth)**2 + \
+                    (corr.north - corr.north_synth)**2 )
 
         # Prepare the colorlimits
         if norm is None:
@@ -1180,7 +1193,7 @@ class geodeticplot(object):
         # plot colorbar
         if colorbar:
             scalarMap.set_array(d)
-            plt.colorbar(scalarMap)
+            plt.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
 
         # All done
         return

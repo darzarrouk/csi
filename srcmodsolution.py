@@ -16,6 +16,7 @@ import sys
 major, minor, micro, release, serial = sys.version_info
 if major==2:
     import okada4py as ok
+from .gps import gps as gpsclass
 
 class srcmodsolution(object):
 
@@ -992,7 +993,7 @@ class srcmodsolution(object):
         Computes the surface displacement at the data location using okada.
 
         Args:
-            * data          : data object from gpsrates or insarrates.
+            * data          : data object from gps or insar.
             * patch         : number of the patch that slips
             * slip          : if a number is given, that is the amount of slip along strike
                               if three numbers are given, that is the amount of slip along strike, along dip and opening
@@ -1045,7 +1046,7 @@ class srcmodsolution(object):
         '''
         Builds the Green's function matrix based on the discretized fault.
         Args:
-            * data      : data object from gpsrates or insarrates.
+            * data      : data object from gps or insar.
             * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
             * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
 
@@ -1056,10 +1057,10 @@ class srcmodsolution(object):
 
         # Get the number of data
         Nd = data.lon.shape[0]
-        if data.dtype is 'insarrates':
+        if data.dtype is 'insar':
             Ndt = Nd
             data.obs_per_station = 1
-        elif data.dtype is 'gpsrates':
+        elif data.dtype is 'gps':
             Ndt = data.lon.shape[0]*2
             data.obs_per_station = 2
             if vertical:
@@ -1082,10 +1083,10 @@ class srcmodsolution(object):
             G['tensile'] = np.zeros((Ndt, Np))
 
         # Initializes the data vector and the data covariance
-        if data.dtype is 'insarrates':
+        if data.dtype is 'insar':
             self.d[data.name] = data.vel
             vertical = True                 # In InSAR, you need to use the vertical, no matter what....
-        elif data.dtype is 'gpsrates':
+        elif data.dtype is 'gps':
             if vertical:
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
@@ -1124,11 +1125,11 @@ class srcmodsolution(object):
                 op = op[:,0:2]
 
             # Organize the response
-            if data.dtype is 'gpsrates':            # If GPS type, just put them in the good format
+            if data.dtype is 'gps':            # If GPS type, just put them in the good format
                 ss = ss.T.flatten()
                 ds = ds.T.flatten()
                 op = op.T.flatten()
-            elif data.dtype is 'insarrates':        # If InSAR, do the dot product with the los
+            elif data.dtype is 'insar':        # If InSAR, do the dot product with the los
                 ss_los = []
                 ds_los = []
                 op_los = []
@@ -1201,7 +1202,7 @@ class srcmodsolution(object):
         good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and
         if insar, GF are projected already)
         Args:
-            * data          : Data structure from gpsrates or insarrates.
+            * data          : Data structure from gps or insar.
             * strikeslip    : File containing the Green's functions for strikeslip displacements.
             * dipslip       : File containing the Green's functions for dipslip displacements.
             * tensile       : File containing the Green's functions for tensile displacements.
@@ -1234,7 +1235,7 @@ class srcmodsolution(object):
         datatype = data.dtype
 
         # Cut the Matrices following what data do we have and set the GFs
-        if datatype is 'gpsrates':
+        if datatype is 'gps':
 
             # Initialize
             GssE = None; GdsE = None; GtsE = None
@@ -1261,7 +1262,7 @@ class srcmodsolution(object):
             # set the GFs
             self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU], tensile=[GtsE, GtsN, GtsU], vertical=vertical)
 
-        elif datatype is 'insarrates':
+        elif datatype is 'insar':
 
             # Initialize
             GssLOS = None; GdsLOS = None; GtsLOS = None
@@ -1284,7 +1285,7 @@ class srcmodsolution(object):
         '''
         Stores the Green's functions matrices into the fault structure.
         Args:
-            * data          : Data structure from gpsrates or insarrates.
+            * data          : Data structure from gps or insar.
             * strikeslip    : List of matrices of the Strikeslip Green's functions, ordered E, N, U
             * dipslip       : List of matrices of the dipslip Green's functions, ordered E, N, U
             * tensile       : List of matrices of the tensile Green's functions, ordered E, N, U
@@ -1292,9 +1293,9 @@ class srcmodsolution(object):
         '''
 
         # Get the number of data per point
-        if data.dtype is 'insarrates':
+        if data.dtype is 'insar':
             data.obs_per_station = 1
-        elif data.dtype is 'gpsrates':
+        elif data.dtype is 'gps':
             data.obs_per_station = 2
             if vertical:
                 data.obs_per_station = 3
@@ -1305,10 +1306,10 @@ class srcmodsolution(object):
         G = self.G[data.name]
 
         # Initializes the data vector
-        if data.dtype is 'insarrates':
+        if data.dtype is 'insar':
             self.d[data.name] = data.vel
             vertical = True                 # In InSAR, you need to use the vertical, no matter what....
-        elif data.dtype is 'gpsrates':
+        elif data.dtype is 'gps':
             if vertical:
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
@@ -1411,7 +1412,7 @@ class srcmodsolution(object):
         Assemble the Green's functions that have been built using build GFs.
         This routine spits out the General G and the corresponding data vector d.
         Args:
-            * datas         : data sets to use as inputs (from gpsrates and insarrates).
+            * datas         : data sets to use as inputs (from gps and insar).
             * polys         : 0 -> nothing additional is estimated
                               1 -> estimate a constant offset
                               3 -> estimate z = ax + by + c
@@ -1438,20 +1439,20 @@ class srcmodsolution(object):
                 if polys.__class__ is not str:
                     self.poly[data.name] = polys*data.obs_per_station
                 else:
-                    if data.dtype is 'gpsrates':
+                    if data.dtype is 'gps':
                         self.poly[data.name] = polys
                     else:
-                        print('Data type must be gpsrates to implement a Helmert transform')
+                        print('Data type must be gps to implement a Helmert transform')
                         return
         elif polys.__class__ is list:
             for d in range(len(datas)):
                 if polys[d].__class__ is not str:
                     self.poly[datas[d].name] = polys[d]*datas[d].obs_per_station
                 else:
-                    if datas[d].dtype is 'gpsrates':
+                    if datas[d].dtype is 'gps':
                         self.poly[datas[d].name] = polys[d]
                     else:
-                        print('Data type must be gpsrates to implement a Helmert transform')
+                        print('Data type must be gps to implement a Helmert transform')
                         return
 
         # Get the number of parameters
@@ -1518,14 +1519,14 @@ class srcmodsolution(object):
             # Build the polynomial function
             if self.poly[data.name].__class__ is not str:
                 if self.poly[data.name] > 0:
-                    if data.dtype is 'gpsrates':
+                    if data.dtype is 'gps':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         nn = Ndlocal/data.obs_per_station
                         orb[:nn, 0] = 1.0
                         orb[nn:2*nn, 1] = 1.0
                         if data.obs_per_station == 3:
                             orb[2*nn:3*nn, 2] = 1.0
-                    elif data.dtype is 'insarrates':
+                    elif data.dtype is 'insar':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         orb[:] = 1.0
                         if self.poly[data.name] >= 3:
@@ -1565,7 +1566,7 @@ class srcmodsolution(object):
         '''
 
         # Check
-        assert (data.dtype is 'gpsrates')
+        assert (data.dtype is 'gps')
 
         # Get the number of stations
         ns = data.station.shape[0]
@@ -1635,7 +1636,7 @@ class srcmodsolution(object):
         '''
         Assembles the data vector corresponding to the stored green's functions.
         Args:
-            * datas         : list of the data object involved (from gpsrates and insarrates).
+            * datas         : list of the data object involved (from gps and insar).
         '''
 
         # print
@@ -1815,7 +1816,7 @@ class srcmodsolution(object):
         then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
         If amax is specified, the minimum size is fixed.
         Args:
-            * data          : Data object from gpsrates or insarrates.
+            * data          : Data object from gps or insar.
             * edksfilename  : Name of the file containing the kernels.
             * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle.
             * plot          : Activates plotting.
@@ -1837,7 +1838,7 @@ class srcmodsolution(object):
         # Create the variables
         RectanglePropFile = 'edks_{}.END'.format(self.name)
         ReceiverFile = 'edks_{}.idEN'.format(data.name)
-        if data.dtype is 'insarrates':
+        if data.dtype is 'insar':
             useRecvDir = True # True for InSAR, uses LOS information
         else:
             useRecvDir = False # False for GPS, uses ENU displacements
@@ -1968,8 +1969,7 @@ class srcmodsolution(object):
         '''
 
         # create a fake gps object
-        from .gpsrates import gpsrates
-        self.sim = gpsrates('simulation', utmzone=self.utmzone)
+        self.sim = gpsclass('simulation', utmzone=self.utmzone)
 
         # Create a lon lat grid
         if (box is None) and (disk is None) :
