@@ -676,17 +676,22 @@ class RectangularPatches(Fault):
                 D.append(depth)
                 
                 # Build a patch with that
-                x1 = xtl
-                y1 = ytl
-                z1 = depth + width
+                x1 = xtl + length*np.cos(strike) 
+                y1 = ytl + length*np.sin(strike)
+                z1 = depth
+                #z1 = depth + width
 
                 x2 = xtl 
                 y2 = ytl
                 z2 = depth
 
-                x3 = xtl + length*np.cos(strike) 
-                y3 = ytl + length*np.sin(strike)
-                z3 = depth
+                x3 = xtl  
+                y3 = ytl
+                z3 = depth + width
+                
+                #x3 = xtl + length*np.cos(strike) 
+                #y3 = ytl + length*np.sin(strike)
+                #z3 = depth
 
                 x4 = xtl + length*np.cos(strike)
                 y4 = ytl + length*np.sin(strike)
@@ -2378,13 +2383,25 @@ class RectangularPatches(Fault):
         '''
 
         # Get lons lats
-        lon = np.unique([p[:,0] for p in self.patchll])
-        lon[lon<0.] += 360.
-        lat = np.unique([p[:,1] for p in self.patchll])
-        lonmin = lon.min()-expand
-        lonmax = lon.max()+expand
-        latmin = lat.min()-expand
-        latmax = lat.max()+expand
+
+        lonmin = np.min([p[:,0] for p in self.patchll])-expand
+	
+        if lonmin<0: 
+		    lonmin += 360
+        lonmax = np.max([p[:,0] for p in self.patchll])+expand
+        if lonmax<0:
+            lonmax+= 360
+        latmin = np.min([p[:,1] for p in self.patchll])-expand
+        latmax = np.max([p[:,1] for p in self.patchll])+expand
+
+
+        #lon = np.unique([p[:,0] for p in self.patchll])
+        #lon[lon<0.] += 360.
+        #lat = np.unique([p[:,1] for p in self.patchll])
+        #lonmin = lon.min()-expand
+        #lonmax = lon.max()+expand
+        #latmin = lat.min()-expand
+        #latmax = lat.max()+expand
 
         # Create a figure
         fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)

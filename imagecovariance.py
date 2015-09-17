@@ -624,6 +624,36 @@ class imagecovariance(object):
         # All done
         return
 
+    def read_from_covfile(self,dname,filename):
+        '''
+        Read a file that was written by write2file()
+        Args :
+        * dname          : Name of the covariance estimator.
+        * filename       : file written with self.write2file()
+
+        '''
+
+        import re
+        import linecache
+
+        tmp = np.loadtxt(filename,comments='#')
+
+        l3 = linecache.getline(filename,3)
+        l4 = linecache.getline(filename,4)
+        l5 = linecache.getline(filename,5)
+
+        self.datasets[dname]['function'] = 'exp'
+        self.datasets[dname]['Sill'] = float(re.findall('\d+.\d+',l3)[0])
+        self.datasets[dname]['Sigma'] = float(re.findall('\d+.\d+',l4)[0])
+        self.datasets[dname]['Lambda'] = Lambda = float(re.findall('\d+.\d+',l5)[0])
+        self.datasets[dname]['Distance'] = tmp[:,0]
+        self.datasets[dname]['Semivariogram'] = tmp[:,1]
+        self.datasets[dname]['Covariance'] = tmp[:,2]
+
+        return
+
+
+
     def _buildcov(self, sigma, lamb, func, x, y):
         '''
         Returns a matrix of the covariance.
@@ -675,6 +705,5 @@ class imagecovariance(object):
         y = s0 - self.datasets[dname]['Semivariogram']
         y[y<0.] = 0.
         return np.sqrt(np.mean( y/np.exp(-x/l0) ))
-
 
 #EOF
