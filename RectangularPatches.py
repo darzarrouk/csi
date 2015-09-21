@@ -1369,7 +1369,7 @@ class RectangularPatches(Fault):
         # Get the strike assuming dipping to the east
         strike = np.arctan2( vs[0],vs[1] )
         if strike<0.:
-            strike+= 360.
+            strike+= np.pi
 
         # Set the dip
         dip = np.arcsin(vd/width )
