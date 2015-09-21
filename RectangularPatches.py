@@ -289,7 +289,7 @@ class RectangularPatches(Fault):
         # All done
         return p1, p2, p3, p4
 
-    def mergePatches(self, p1, p2):
+    def mergePatches(self, p1, p2, verbose=True):
         '''
         Merges 2 patches that have common corners.
         Args:
@@ -297,7 +297,8 @@ class RectangularPatches(Fault):
             * p2    : index of the patch #2.
         '''
 
-        print('Merging patches {} and {} into patch {}'.format(p1,p2,p1))
+        if verbose:
+            print('Merging patches {} and {} into patch {}'.format(p1,p2,p1))
 
         # Get the patches
         patch1 = self.patch[p1]
@@ -306,8 +307,8 @@ class RectangularPatches(Fault):
         patch2ll = self.patchll[p2]
 
         # Create the newpatches
-        newpatch = [[],[],[],[]] #np.zeros((4,3))
-        newpatchll = [[],[],[],[]] #np.zeros((4,3))
+        newpatch = np.zeros((4,3))
+        newpatchll = np.zeros((4,3))
 
         # determine which corners are in common, needs at least two
         if ((list(patch1[0])==list(patch2[3])) and (list(patch1[1])==list(patch2[2]))):     # patch2 is above patch1

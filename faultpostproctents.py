@@ -589,7 +589,7 @@ class faultpostproctents(object):
 
         # Get the profile
         xc, yc = self.ll2xy(lonc, latc)
-        xDis, yDis, BValues, boxll, xe1, ye1, xe2, ye2, lon, lat = utils.coord2prof(self, xc, yc, 
+        xDis, yDis, BValues, boxll, box, xe1, ye1, xe2, ye2, lon, lat = utils.coord2prof(self, xc, yc, 
                                                                                     length, 
                                                                                     azimuth, 
                                                                                     width)

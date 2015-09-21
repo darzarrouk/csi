@@ -567,7 +567,7 @@ class geodeticplot(object):
             verts = [vertices_ll[f] for f in face]
             x = [v[0] for v in verts]
             y = [v[1] for v in verts]
-            z = [-1.0*v[2]*0.001 for v in verts]
+            z = [-1.0*v[2] for v in verts]
             x.append(x[0]); y.append(y[0]); z.append(z[0])
             x = np.array(x); x[x<0.] += 360.
             self.faille.plot3D(x, y, z, '-', color='gray', linewidth=1)
@@ -805,7 +805,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def gpsverticals(self, gps, norm=None, colorbar=True, data=['data'], markersize=[10], linewidth=0.1, zorder=4, cmap='jet'):
+    def gpsverticals(self, gps, norm=None, colorbar=True, data=['data'], markersize=[50], linewidth=0.1, zorder=4, cmap='jet'):
         '''
         Scatter plot of the vertical displacement of the GPS.
         '''
@@ -816,7 +816,7 @@ class geodeticplot(object):
         if (type(markersize) is not list):
             markersize = [markersize]
         if len(markersize)==1 and len(data)>1:
-            markersize = [markersize[0] for d in data]
+            markersize = [markersize[0]*np.random.rand()*10. for d in data]
 
         # Get lon lat
         lon = gps.lon

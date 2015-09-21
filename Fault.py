@@ -947,7 +947,8 @@ class Fault(SourceInv):
             print('I give up...')
             sys.exit(1)
         else:
-            print('Kernels used: {}'.format(stratKernels))
+            if verbose:
+                print('Kernels used: {}'.format(stratKernels))
         
         # Check if we can find mention of the spacing between points
         if not hasattr(self, 'sourceSpacing') and not hasattr(self, 'sourceNumber')\
@@ -1031,7 +1032,7 @@ class Fault(SourceInv):
                                         strike, dip, np.zeros(dip.shape), slip, 
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1,
                                         xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                        cleanUp=True))
+                                        cleanUp=True, verbose=verbose))
             if verbose:
                 print('Summing sub-sources...')
             Gss = np.zeros((3, iGss.shape[1],np.unique(Ids).shape[0]))
@@ -1047,7 +1048,7 @@ class Fault(SourceInv):
                                         strike, dip, np.ones(dip.shape)*90.0, slip, 
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1,
                                         xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                        cleanUp=True))
+                                        cleanUp=True, verbose=verbose))
             if verbose:
                 print('Summing sub-sources...')
             Gds = np.zeros((3, iGds.shape[1], np.unique(Ids).shape[0]))
@@ -1064,7 +1065,7 @@ class Fault(SourceInv):
                                         strike, dip, np.zeros(dip.shape), slip,
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1, 
                                         xr, yr, stratKernels, prefix,
-                                        BIN_EDKS='EDKS_BIN', tensile=True))
+                                        BIN_EDKS='EDKS_BIN', tensile=True, verbose=verbose))
             if verbose:
                 print('Summing sub-sources...')
             Gts = np.zeros((3, iGts.shape[1], np.unique(Ids).shape[0]))

@@ -323,7 +323,7 @@ class stressfield(SourceInv):
         xc, yc = self.ll2xy(loncenter, latcenter)
 
         # Get the profile
-        Dalong, Dacros, Bol, boxll, xe1, ye1, xe2, ye2, lon, lat = utils.coord2prof(self, xc, yc, length, azimuth, width)
+        Dalong, Dacros, Bol, boxll, box, xe1, ye1, xe2, ye2, lon, lat = utils.coord2prof(self, xc, yc, length, azimuth, width)
 
 
         # Store it in the profile list

@@ -16,7 +16,7 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
                 xr, yr, edks,\
                 prefix, \
                 BIN_EDKS = 'EDKS_BIN',
-                cleanUp=True):
+                cleanUp=True, verbose=True):
     '''
     --- INPUT ---
     --- SOURCE INFO
@@ -105,7 +105,8 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
   
     # call sum_layered
     cmd = '{}/sum_layered {} {} {} {} {} {}'.format(BIN_EDKS, edks, prefix, nrec, Np, npw, npy)
-    print(cmd)
+    if verbose:
+        print(cmd)
     os.system(cmd)
      
     # read sum_layered output Greens function

@@ -2373,7 +2373,7 @@ class gps(SourceInv):
         return
 
     def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, 
-            plot_los=False, drawCoastlines=True, expand=0.2, show=True, 
+            plot_los=False, drawCoastlines=True, expand=0.2, show=True, vertical=False,
             data=['data'], color=['k']):
         '''
         Args:
@@ -2409,6 +2409,10 @@ class gps(SourceInv):
         # plot GPS along the LOS
         if plot_los:
             fig.gps_projected(self, colorbar=True)
+
+        # Plot verticals?
+        if vertical:
+            fig.gpsverticals(self, colorbar=True, data=data)
 
         # Plot GPS velocities
         fig.gps(self, data=data, name=name, legendscale=legendscale, scale=scale, color=color)

@@ -213,7 +213,7 @@ class planarfault(RectangularPatches):
 
 
     def buildPatchesVarResolution(self, lon, lat, dep, strike, dip, f_length, f_width, 
-                                  patch_lengths, patch_widths, interpolation='linear'):
+                                  patch_lengths, patch_widths, interpolation='linear', verbose=True):
         '''
         Builds a dipping fault.
         Args:
@@ -226,13 +226,14 @@ class planarfault(RectangularPatches):
         '''
         
         # Print
-        print("Building a dipping fault")
-        print("         Lat, Lon, Dep : {} deg, {} deg, {} km ".format(lat,lon,dep))
-        print("         Strike Angle    : {} degrees".format(strike))
-        print("         Dip Angle       : {} degrees".format(dip))
-        print("         Dip Direction   : {} degrees".format(strike+90.))
-        print("         Length          : {} km".format(f_length))
-        print("         Width           : {} km".format(f_width))
+        if verbose:
+            print("Building a dipping fault")
+            print("         Lat, Lon, Dep : {} deg, {} deg, {} km ".format(lat,lon,dep))
+            print("         Strike Angle    : {} degrees".format(strike))
+            print("         Dip Angle       : {} degrees".format(dip))
+            print("         Dip Direction   : {} degrees".format(strike+90.))
+            print("         Length          : {} km".format(f_length))
+            print("         Width           : {} km".format(f_width))
         
         # Initialize the structures
         self.patch = []        
