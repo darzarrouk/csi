@@ -1198,7 +1198,7 @@ class TriangularTents(TriangularPatches):
         lonmin = np.min([p[:,0] for p in self.patchll])-expand
 	
         if lonmin<0: 
-		    lonmin += 360
+            lonmin += 360
         lonmax = np.max([p[:,0] for p in self.patchll])+expand
         if lonmax<0:
             lonmax+= 360

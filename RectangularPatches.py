@@ -1372,7 +1372,7 @@ class RectangularPatches(Fault):
             strike+= 2*np.pi
 
         # Set the dip
-        dip = np.arcsin(vd/width )
+        dip = np.arcsin(vd[2]/width )
 
         # All done
         return x1, x2, x3, width, length, strike, dip
@@ -2394,7 +2394,7 @@ class RectangularPatches(Fault):
         lonmin = np.min([p[:,0] for p in self.patchll])-expand
 	
         if lonmin<0: 
-		    lonmin += 360
+            lonmin += 360
         lonmax = np.max([p[:,0] for p in self.patchll])+expand
         if lonmax<0:
             lonmax+= 360
