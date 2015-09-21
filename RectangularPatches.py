@@ -1339,7 +1339,7 @@ class RectangularPatches(Fault):
 
         # Get the four corners of the rectangle
         p1, p2, p3, p4 = patch
-
+        
         # Get the UL corner of the patch
         if center:
             x1, x2, x3 = self.getcenter(patch)
@@ -1348,25 +1348,31 @@ class RectangularPatches(Fault):
             x2 = p2[1]
             x3 = p2[2]        
 
-        # Get the patch width (this fault is vertical for now)
+        # Get the patch width 
         width = np.sqrt( (p4[0] - p1[0])**2 + (p4[1] - p1[1])**2 + (p4[2] - p1[2])**2 )   
 
         # Get the length
         length = np.sqrt( (p2[0] - p1[0])**2 + (p2[1] - p1[1])**2 )
 
-        # Get the strike assuming dipping to the east
-        strike = np.arctan2( (p2[0] - p1[0]),(p2[1] - p1[1]) )
+        # along strike vector
+        vs = p2-p1
 
-        # Change coordinates (origin at p1 and rotation by strike)
-        r_p1 = self.chCoordinates(p1,p1,strike) 
-        r_p4 = self.chCoordinates(p4,p1,strike) 
+        # along dip vector
+        vd = p4-p1
         
-        # If it dip to the west, change update strike
-        if r_p4[0] < 0.:
-            strike += np.pi
-        
+        # Find vector normal to the fault plane
+        vn = np.cross(vs,vd)
+
+        if vn[2]<0.: # Patch is numbered counter-clockwise
+            vs *= -1
+
+        # Get the strike assuming dipping to the east
+        strike = np.arctan2( vs[0],vs[1] )
+        if strike<0.:
+            strike+= 360.
+
         # Set the dip
-        dip = np.arcsin( (p4[2] - p1[2])/width )
+        dip = np.arcsin(vd/width )
 
         # All done
         return x1, x2, x3, width, length, strike, dip
