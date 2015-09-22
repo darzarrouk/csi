@@ -484,8 +484,14 @@ class RectangularPatches(Fault):
             # 1. Get the two top points
             pt1 = p[0]; x1, y1, z1 = pt1 
             pt2 = p[1]; x2, y2, z2 = pt2
-            # 2. Get the azimuth of this patch
-            az = np.arctan2(y2-y1, x2-x1)
+            # 2. Get the strike of this patch
+            vs = p2-p1
+            vd = p4-p1
+            assert vs[2]==0., "p1 and p2 must be located at the same depth"
+            vnz = vs[1]*vd[0]-vs[0]*vd[1]
+            if vnz<0.:
+                vs *= -1.
+            strike = np.arctan2( vs[0],vs[1] )            
             # 3. Get the dip of this patch 
             dip1 = np.arcsin((p4[2] - p1[2]) / np.sqrt((p1[0] - p4[0])**2 
                            + (p1[1] - p4[1])**2 + (p1[2] - p4[2])**2))
@@ -497,14 +503,14 @@ class RectangularPatches(Fault):
             wc = width * np.cos(dip)
             ws = width * np.sin(dip)
             halfPi = 0.5 * np.pi
-            x3 = x2 + wc * np.cos(az + halfPi)
-            y3 = y2 + wc * np.sin(az + halfPi)
+            x3 = x2 + wc * np.cos(strike)
+            y3 = y2 - wc * np.sin(strike)
             z3 = z2 + ws
-            x4 = x1 + wc * np.cos(az + halfPi)
-            y4 = y1 + wc * np.sin(az + halfPi)
+            x4 = x1 + wc * np.cos(strike)
+            y4 = y1 - wc * np.sin(strike)
             z4 = z1 + ws
             pt3 = [x3, y3, z3]
-            pt4 = [x4, y4, z4]
+            pt4 = [x4, y4, z4]            
             # set up the patch
             self.equivpatch.append(np.array([pt1, pt2, pt3, pt4]))
             # Deal with the lon lat
@@ -1356,14 +1362,15 @@ class RectangularPatches(Fault):
 
         # along strike vector
         vs = p2-p1
+        assert vs[2]==0., "p1 and p2 must be located at the same depth"
 
         # along dip vector
         vd = p4-p1
         
         # Find vector normal to the fault plane
-        vn = np.cross(vs,vd)
+        vnz = vs[1]*vd[0]-vs[0]*vd[1]
 
-        if vn[2]<0.: # Patch is numbered counter-clockwise
+        if vnz<0.: # Patch is numbered counter-clockwise
             vs *= -1
 
         # Get the strike assuming dipping to the east
