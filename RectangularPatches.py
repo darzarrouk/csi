@@ -1362,7 +1362,7 @@ class RectangularPatches(Fault):
 
         # along strike vector
         vs = p2-p1
-        assert vs[2]==0., "p1 and p2 must be located at the same depth"
+        assert np.round(vs[2],10)==0., "p1 and p2 must be located at the same depth"
 
         # along dip vector
         vd = p4-p1
