@@ -119,6 +119,57 @@ class gpstimeseries:
         # All done
         return
 
+    def read_from_caltech(self, filename):
+        '''
+        Reads the data from a time series file from CalTech (Avouac's group).
+        Time is in decimal year...
+        '''
+
+        # Open, read, close file
+        fin = open(filename, 'r')
+        Lines = fin.readlines() 
+        fin.close()
+
+        # Create values
+        time = []
+        east = []; north = []; up = []
+        stdeast = []; stdnorth = []; stdup = []
+
+        # Read these
+        for line in Lines:
+            values = line.split()
+            year = np.floor(float(values[0]))
+            doy = np.floor((np.floor(float(values[0]))-year)*365.24).astype(int)
+            time.append(dt.datetime(year, 1, 1).toordinal() + doy)
+            east.append(float(values[1]))
+            north.append(float(values[2]))
+            up.append(float(values[3]))
+            stdeast.append(float(values[4]))
+            stdnorth.append(float(values[5]))
+            stdup.append(float(values[6]))
+
+        # Initiate some timeseries
+        self.north = timeseries('North', utmzone=self.utmzone)
+        self.east = timeseries('East', utmzone=self.utmzone)
+        self.up = timeseries('Up', utmzone=self.utmzone)
+
+        # Set time
+        self.time = np.array(time)
+        self.north.time = self.time
+        self.east.time = self.time
+        self.up.time = self.time
+
+        # Set values
+        self.north.value = np.array(north)
+        self.north.error = np.array(stdnorth)
+        self.east.value = np.array(east)
+        self.east.error = np.array(stdeast)
+        self.up.value = np.array(up)
+        self.up.error = np.array(stdup)
+
+        # All done
+        return
+
     def initializeTimeSeries(self, start, end, interval=1):
         '''
         Initializes the time series by creating whatever is necessary.
