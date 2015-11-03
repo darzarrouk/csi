@@ -22,7 +22,7 @@ from .gps import gps as gpsclass
 
 class TriangularPatches(Fault):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True, lon0=None, lat0=None):
         '''
         Args:
             * name          : Name of the fault.
@@ -31,7 +31,7 @@ class TriangularPatches(Fault):
         '''
 
         # Base class init
-        super(TriangularPatches,self).__init__(name, utmzone, ellps, verbose=verbose)
+        super(TriangularPatches,self).__init__(name, utmzone=utmzone, ellps=ellps, lon0=lon0, lat0=lat0, verbose=verbose)
 
         # Specify the type of patch
         self.patchType = 'triangle'
@@ -1363,7 +1363,7 @@ class TriangularPatches(Fault):
             raise NotImplementedError('Only works for len(slip)==len(patch)')
 
         # create a fake gps object
-        self.sim = gpsclass('simulation', utmzone=self.utmzone)
+        self.sim = gpsclass('simulation', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0)
 
         # Create a lon lat grid
         if lonlat is None:

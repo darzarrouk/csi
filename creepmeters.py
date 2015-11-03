@@ -12,24 +12,30 @@ import os
 
 class creepmeters(object):
 
-    def __init__(self, name, utmzone='10'):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
         '''
         Args:
             * name          : Name of the Seismic dataset.
-            * utmzone       : UTM zone. Default is 10 (Western US).
+            * utmzone       : UTM zone. 
+
         '''
 
         # Initialize the data set 
-        self.name = name
-        self.utmzone = utmzone
         self.dtype = 'creepmeters'
 
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print (" Initialize Creepmeters data set {}".format(self.name))
+        # Print
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print (" Initialize Creepmeters data set {}".format(self.name))
+        self.verbose = verbose
 
-        # Initialize the UTM transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
+        # Base class init
+        super(creepmeters,self).__init__(name,
+                                         utmzone = utmzone,
+                                         ellps = ellps,
+                                         lon0 = lon0,
+                                         lat0 = lat0) 
 
         # Initialize some things
         self.data = {}

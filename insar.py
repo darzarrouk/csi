@@ -20,7 +20,7 @@ from . import csiutils as utils
 
 class insar(SourceInv):
 
-    def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True, lon0=None, lat0=None):
         '''
         Args:
             * name          : Name of the InSAR dataset.
@@ -29,7 +29,11 @@ class insar(SourceInv):
         '''
 
         # Base class init
-        super(insar,self).__init__(name,utmzone,ellps) 
+        super(insar,self).__init__(name,
+                                   utmzone=utmzone,
+                                   ellps=ellps,
+                                   lon0=lon0,
+                                   lat0=lat0) 
 
         # Initialize the data set
         self.dtype = 'insar'

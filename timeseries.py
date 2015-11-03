@@ -13,10 +13,11 @@ import sys
 
 # Personal
 from .tidalfit import tidalfit
+from .SourceInv import SourceInv
 
-class timeseries:
+class timeseries(SourceInv):
 
-    def __init__(self, name, utmzone='10', verbose=True):
+    def __init__(self, name, utmzone=None, verbose=True, lon0=None, lat0=None, ellps='WGS84'):
         '''
         Args:
             * name      : Name of the station.
@@ -25,20 +26,23 @@ class timeseries:
             * verbose   : Speak to me (default=True)
         '''
 
+        # base class ini
+        super(timeseries, self).__init__(name, 
+                                         utmzone=utmzone,
+                                         lon0=lon0, lat0=lat0,
+                                         ellps=ellps)
+
         # Set things
         self.name = name
         self.dtype = 'timeseries'
-        self.utmzone = utmzone
  
         # print
         if verbose:
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Initialize Time Series {}".format(self.name))
-
-        # Create a utm transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
-
+        self.verbose = verbose
+    
         # All done
         return
 

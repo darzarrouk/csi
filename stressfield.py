@@ -17,24 +17,28 @@ from . import csiutils as utils
 
 class stressfield(SourceInv):
 
-    def __init__(self, name, utmzone='10'):
+    def __init__(self, name, utmzone=None, lon0=None, lat0=None, ellps='WGS84', verbose=True):
         '''
         Args:
             * name          : Name of the StressField dataset.
             * utmzone       : UTM zone. Default is 10 (Western US).
         '''
 
+        # Base class init
+        super(stressfield, self).__init__(name,
+                                          utmzone=utmzone, 
+                                          lon0=lon0, lat0=lat0,
+                                          ellps=ellps)
+
         # Initialize the data set 
         self.name = name
-        self.utmzone = utmzone
         self.dtype = 'strainfield'
 
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initialize StressField data set {}".format(self.name))
-
-        # Initialize the UTM transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize StressField data set {}".format(self.name))
+        self.verbose=verbose
 
         # Initialize some things
         self.lon = None

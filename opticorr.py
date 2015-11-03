@@ -18,7 +18,7 @@ from . import csiutils as utils
 
 class opticorr(SourceInv):
 
-    def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True, lon0=None, lat0=None):
         '''
         Args:
             * name          : Name of the InSAR dataset.
@@ -27,7 +27,11 @@ class opticorr(SourceInv):
         '''
 
         # Base class init
-        super(opticorr,self).__init__(name,utmzone,ellps) 
+        super(opticorr,self).__init__(name,
+                                      utmzone=utmzone,
+                                      lon0=lon0,
+                                      lat0=lat0,
+                                      ellps=ellps) 
 
         # Initialize the data set 
         self.dtype = 'opticorr'
@@ -415,7 +419,7 @@ class opticorr(SourceInv):
                 err_north = None
 
             # Create a new cosicorr object
-            cosi = opticorr('{} #{}'.format(self.name, iR), utmzone=self.utmzone)
+            cosi = opticorr('{} #{}'.format(self.name, iR), utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
             # Put the values in there
             cosi.read_from_binary(east, north, lon, lat, err_east=err_east, err_north=err_north, remove_nan=True)

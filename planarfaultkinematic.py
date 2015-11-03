@@ -27,7 +27,7 @@ from .planarfault import planarfault
 
 class planarfaultkinematic(planarfault):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84'):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
         '''
         Args:
             * name      : Name of the fault.
@@ -39,7 +39,11 @@ class planarfaultkinematic(planarfault):
         '''
         
         # Parent class init
-        super(planarfaultkinematic,self).__init__(name,utmzone,ellps)
+        super(planarfaultkinematic,self).__init__(name,
+                                                  utmzone=utmzone,
+                                                  ellps=ellps,
+                                                  lon0=lon0,
+                                                  lat0=lat0)
 
         # Hypocenter coordinates
         self.hypo_x   = None

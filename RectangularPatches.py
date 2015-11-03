@@ -30,16 +30,22 @@ from .gps import gps as gpsclass
 
 class RectangularPatches(Fault):
     
-    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
         '''
         Args:
             * name          : Name of the fault.
             * utmzone   : UTM zone  (optional, default=None)
             * ellps     : ellipsoid (optional, default='WGS84')
+            * lon0,lat0 : Central longitude and latitude
         '''
         
         # Base class init
-        super(RectangularPatches,self).__init__(name,utmzone,ellps, verbose=verbose)
+        super(RectangularPatches,self).__init__(name,
+                                                utmzone=utmzone,
+                                                ellps=ellps, 
+                                                lon0=lon0,
+                                                lat0=lat0,
+                                                verbose=verbose)
 
         # Specify the type of patch
         self.patchType = 'rectangle'
@@ -1678,7 +1684,7 @@ class RectangularPatches(Fault):
         '''
 
         # create a fake gps object
-        self.sim = gpsclass('simulation', utmzone=self.utmzone)
+        self.sim = gpsclass('simulation', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0)
 
         # Create a lon lat grid
         if lonlat is None:
@@ -2265,7 +2271,7 @@ class RectangularPatches(Fault):
         nP = len(self.patch)
 
         # Create a stress object
-        stress = stressfield('Stress', utmzone=self.utmzone)
+        stress = stressfield('Stress', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0)
 
         # Compute the stress on the fault
         stress.Fault2Stress(self, factor=factor, mu=mu, nu=nu, slipdirection='sdt', stressonpatches=True)
@@ -2344,7 +2350,7 @@ class RectangularPatches(Fault):
         self.Normal = np.zeros((nP,))
 
         # Create a stress object 
-        stress = stressfield('Stress', utmzone=self.utmzone)
+        stress = stressfield('Stress', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0)
 
         # Loop on each fault patch
         for p in self.patch:

@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 class SourceInv(object):
     
-    def __init__(self,name,utmzone=None,ellps='WGS84'):
+    def __init__(self,name,utmzone=None,ellps='WGS84',lon0=None, lat0=None):
         '''
         Args:
             * name      : Instance Name 
@@ -24,8 +24,15 @@ class SourceInv(object):
         # Set the utm zone
         self.utmzone = utmzone
         self.ellps   = ellps
-        if utmzone is not None:
-            self.set_utmzone(utmzone, ellps)
+        self.lon0 = lon0
+        self.lat0 = lat0
+        self.set_utmzone(utmzone=utmzone, 
+                         ellps = ellps, 
+                         lon0 = lon0,
+                         lat0 = lat0)
+
+        # All done
+        return
 
     def ll2xy(self, lon, lat):
         '''
@@ -50,7 +57,7 @@ class SourceInv(object):
         # Transpose and return
         return self.putm(x*1000., y*1000., inverse=True)
 
-    def set_utmzone(self, utmzone, ellps='WGS84'):
+    def set_utmzone(self, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
         '''
         Set the utm zone of the fault.
 
@@ -58,9 +65,19 @@ class SourceInv(object):
             * utm           : UTM zone of the fault.
         '''
 
+        # Cases
+        if utmzone is not None:
+            self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps=ellps)
+        else:
+            assert lon0 is not None, 'Please specify a 0 longitude'
+            assert lat0 is not None, 'Please specify a 0 latitude'
+            string = '+proj=utm +lat_0={} +lon_0={} +ellps={}'.format(lat0, lon0, ellps)
+            self.putm = pp.Proj(string)
+
         # Set utmzone
         self.utmzone = utmzone
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps=ellps)
+        self.lon0 = lon0
+        self.lat0 = lat0
         
         # Set Geod
         self.geod = pp.Geod(ellps=ellps)

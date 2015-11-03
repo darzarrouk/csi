@@ -20,7 +20,7 @@ from . import csiutils as utils
 
 class gps(SourceInv):
 
-    def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
         '''
         Args:
             * name      : Name of the dataset.
@@ -29,7 +29,11 @@ class gps(SourceInv):
         '''
 
         # Base class init
-        super(gps,self).__init__(name,utmzone,ellps) 
+        super(gps,self).__init__(name,
+                                 utmzone = utmzone,
+                                 ellps = ellps,
+                                 lon0 = lon0,
+                                 lat0 = lat0) 
         
         # Set things
         self.dtype = 'gps'
@@ -119,7 +123,7 @@ class gps(SourceInv):
             err += gp.err_enu.tolist()
 
         # Create a new instance
-        gp = gps(newNetworkName, utmzone=self.utmzone, verbose=self.verbose)
+        gp = gps(newNetworkName, utmzone=self.utmzone, verbose=self.verbose, lon0=self.lon0, lat0=self.lat0)
 
         # Fill it
         gp.setStat(np.array(name), np.array(lon), np.array(lat))
@@ -235,7 +239,7 @@ class gps(SourceInv):
             Err.append(self.geterr(station))
 
         # Create the object
-        gpsNew = gps(name, utmzone=self.utmzone, verbose=self.verbose)
+        gpsNew = gps(name, utmzone=self.utmzone, verbose=self.verbose, lon0=self.lon0, lat0=self.lat0)
 
         # Set Stations
         gpsNew.setStat(stations, Lon, Lat)
@@ -488,11 +492,11 @@ class gps(SourceInv):
         y = self.profiles[name]['Parallel Velocity']
         ey = self.profiles[name]['Parallel Error']
         p = prof.errorbar(x, y, yerr=ey, 
-                label='Fault parallel velocity', marker='.', linestyle='')
+                label='Profile Parallel velocity', marker='.', linestyle='')
         y = self.profiles[name]['Normal Velocity']
         ey = self.profiles[name]['Normal Error']
         q = prof.errorbar(x, y, yerr=ey, 
-                label='Fault normal velocity', marker='.', linestyle='')
+                label='Profile Normal velocity', marker='.', linestyle='')
 
         # If a fault is here, plot it
         if fault is not None:
@@ -2134,7 +2138,7 @@ class gps(SourceInv):
         # Loop over the stations
         for station in self.station:
             
-            self.timeseries[station] = gpstimeseries(station, utmzone=self.utmzone, verbose=verbose)
+            self.timeseries[station] = gpstimeseries(station, utmzone=self.utmzone, verbose=verbose, lon0=self.lon0, lat=self.lat0)
             self.timeseries[station].initializeTimeSeries(start, end, interval=interval)
 
         # All done

@@ -21,7 +21,7 @@ from .insar import insar
 
 class insartimeseries(insar):
 
-    def __init__(self, name, utmzone='10', ellps='WGS84', verbose=True):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True, lon0=None, lat0=None):
         '''
         Args:
             * name          : Name of the InSAR dataset.
@@ -30,7 +30,12 @@ class insartimeseries(insar):
         '''
 
         # Base class init
-        super(insartimeseries,self).__init__(name,utmzone,ellps, verbose=False) 
+        super(insartimeseries,self).__init__(name,
+                                             utmzone=utmzone,
+                                             ellps=ellps,
+                                             lon0=lon0, 
+                                             lat0=lat0,
+                                             verbose=False) 
 
         # Initialize the data set 
         self.dtype = 'insartimeseries'
@@ -92,7 +97,7 @@ class insartimeseries(insar):
 
         # Set the elevation if provided
         if elevation is not None:
-            self.elevation = insar('Elevation', utmzone=self.utmzone, verbose=False)
+            self.elevation = insar('Elevation', utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
             self.elevation.read_from_binary(elevation, lon, lat, incidence=None, heading=None, remove_nan=False, remove_zeros=False)
             self.z = self.elevation.vel
 
@@ -101,7 +106,7 @@ class insartimeseries(insar):
 
         # Create an insarrate instance for each step
         for date in self.dates:
-            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False)
+            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
             sar.read_from_binary(np.zeros((nSamples,)), lon, lat, incidence=incidence, heading=heading, dtype=dtype, remove_nan=False, remove_zeros=False)
             self.timeseries.append(sar)
 
@@ -220,7 +225,7 @@ class insartimeseries(insar):
 
         # Elevation
         if zfile is not None:
-            self.elevation = insar('Elevation', utmzone=self.utmzone, verbose=False)
+            self.elevation = insar('Elevation', utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
             self.elevation.read_from_binary(zfile, lonfile, latfile, 
                     incidence=None, heading=None, remove_nan=False, remove_zeros=False)
             self.z = self.elevation.vel
@@ -246,7 +251,7 @@ class insartimeseries(insar):
                 dat *= mask
 
             # Create an insar object
-            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False)
+            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
             # Put thing in the insarrate object
             sar.vel = dat.flatten()
@@ -272,7 +277,7 @@ class insartimeseries(insar):
         if readVel is not None:
             u = np.flatnonzero(self.h5in['mName'][:]==readVel)
             if len(u)==1:
-                self.param = insar('Parameter {}'.format(readVel), utmzone=self.utmzone, 
+                self.param = insar('Parameter {}'.format(readVel), utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps,
                         verbose=False)
                 self.param.vel = h5in['parms'][:,:,u[0]].flatten()
                 self.param.lon = self.lon

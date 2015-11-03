@@ -24,7 +24,7 @@ from . import okadafull
 
 class RectangularPatchesKin(RectangularPatches):
     
-    def __init__(self, name, utmzone=None, ellps='WGS84'):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
         '''
         Args:
             * name      : Name of the fault.
@@ -36,7 +36,11 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         
         # Parent class init
-        super(RectangularPatchesKin,self).__init__(name,utmzone,ellps)
+        super(RectangularPatchesKin,self).__init__(name,
+                                                   utmzone=utmzone,
+                                                   ellps=ellps,
+                                                   lon0=lon0,
+                                                   lat0=lat0)
 
         # Hypocenter coordinates
         self.hypo_x   = None

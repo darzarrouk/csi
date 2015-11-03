@@ -18,7 +18,7 @@ from .gpstimeseries import gpstimeseries
 
 class multigps(gps):
 
-    def __init__(self, name, gpsobjects=None, utmzone='10', ellps='WGS84', obs_per_station=2):
+    def __init__(self, name, gpsobjects=None, utmzone=None, ellps='WGS84', obs_per_station=2, lon0=None, lat0=None):
         '''
         Args:
             * name              : Name of the dataset.
@@ -29,7 +29,12 @@ class multigps(gps):
         '''
 
         # Base class init
-        super(multigps,self).__init__(name,utmzone,ellps,verbose=False) 
+        super(multigps,self).__init__(name,
+                                      utmzone=utmzone,
+                                      ellps=ellps,
+                                      lon0=lon,
+                                      lat0=lat0,
+                                      verbose=False) 
         
         # Set things
         self.dtype = 'multigps'

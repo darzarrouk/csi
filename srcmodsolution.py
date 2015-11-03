@@ -17,30 +17,33 @@ major, minor, micro, release, serial = sys.version_info
 if major==2:
     import okada4py as ok
 from .gps import gps as gpsclass
+from .SourceInv import SourceInv
 
 class srcmodsolution(object):
 
-    def __init__(self, name, utmzone=None):
+    def __init__(self, name, utmzone=None, lon0=None, lat0=None, ellps='WGS84', verbose=True):
         '''
         Args:
             * name          : Name of the fault.
         '''
 
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initializing fault {}".format(self.name))
+        self.verbose = verbose
+
+        # Base class init
+        super(srcmodsolution, self).__init__(name, 
+                                             utmzone=utmzone, 
+                                             lon0=lon0, lat0=lat0, ellps=ellps)
+
         # Initialize the fault
         self.name = name
-
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initializing fault {}".format(self.name))
 
         # Set the reference point in the x,y domain (not implemented)
         self.xref = 0.0
         self.yref = 0.0
-
-        # Set the utm zone
-        self.utmzone = utmzone
-        if self.utmzone is not None:
-            self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
 
         # allocate some things
         self.xf = None
@@ -176,21 +179,6 @@ class srcmodsolution(object):
 
         # Create the trace
         self.trace(Lon, Lat)
-
-        # All done
-        return
-
-    def utmzone(self, utmzone):
-        '''
-        Set the utm zone of the fault.
-
-        Args:
-            * utm           : UTM zone of the fault.
-        '''
-
-        # Set utmzone
-        self.utmzone = utmzone
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
 
         # All done
         return
@@ -1969,7 +1957,7 @@ class srcmodsolution(object):
         '''
 
         # create a fake gps object
-        self.sim = gpsclass('simulation', utmzone=self.utmzone)
+        self.sim = gpsclass('simulation', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0)
 
         # Create a lon lat grid
         if (box is None) and (disk is None) :

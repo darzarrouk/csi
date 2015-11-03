@@ -12,10 +12,11 @@ import sys
 
 # Personal
 from .timeseries import timeseries
+from .SourceInv import SourceInv
 
-class gpstimeseries:
+class gpstimeseries(SourceInv):
 
-    def __init__(self, name, utmzone='10', verbose=True):
+    def __init__(self, name, utmzone=None, verbose=True, lon0=None, lat0=None, ellps='WGS84'):
         '''
         Args:
             * name      : Name of the station.
@@ -24,20 +25,24 @@ class gpstimeseries:
             * verbose   : Speak to me (default=True)
         '''
 
-        # Set things
-        self.name = name
-        self.dtype = 'gpstimeseries'
-        self.utmzone = utmzone
- 
         # print
         if verbose:
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Initialize GPS Time Series {}".format(self.name))
+        self.verbose = verbose
 
-        # Create a utm transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
+        # Base class init
+        super(gpstimeseries,self).__init__(name,
+                                           utmzone=utmzone,
+                                           lon0=lon0,
+                                           lat0=lat0, 
+                                           ellps=ellps)
 
+        # Set things
+        self.name = name
+        self.dtype = 'gpstimeseries'
+ 
         # All done
         return
 
@@ -98,9 +103,9 @@ class gpstimeseries:
             stdup.append(float(values[6]))
 
         # Initiate some timeseries
-        self.north = timeseries('North', utmzone=self.utmzone)
-        self.east = timeseries('East', utmzone=self.utmzone)
-        self.up = timeseries('Up', utmzone=self.utmzone)
+        self.north = timeseries('North', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.east = timeseries('East', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.up = timeseries('Up', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
         # Set time
         self.time = np.array(time)
@@ -139,8 +144,8 @@ class gpstimeseries:
         for line in Lines:
             values = line.split()
             year = np.floor(float(values[0]))
-            doy = np.floor((np.floor(float(values[0]))-year)*365.24).astype(int)
-            time.append(dt.datetime(year, 1, 1).toordinal() + doy)
+            doy = np.floor((float(values[0])-year)*365.24).astype(int)
+            time.append(dt.datetime.fromordinal(dt.datetime(year.astype(int), 1, 1).toordinal() + doy))
             east.append(float(values[1]))
             north.append(float(values[2]))
             up.append(float(values[3]))
@@ -149,9 +154,9 @@ class gpstimeseries:
             stdup.append(float(values[6]))
 
         # Initiate some timeseries
-        self.north = timeseries('North', utmzone=self.utmzone)
-        self.east = timeseries('East', utmzone=self.utmzone)
-        self.up = timeseries('Up', utmzone=self.utmzone)
+        self.north = timeseries('North', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.east = timeseries('East', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.up = timeseries('Up', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
         # Set time
         self.time = np.array(time)
@@ -223,9 +228,9 @@ class gpstimeseries:
         self.time = [st + dt.timedelta(0, t) for t in range(0, delta_sec, time_step)]
 
         # Initialize timeseries instances
-        self.north = timeseries('North', utmzone=self.utmzone)
-        self.east = timeseries('East', utmzone=self.utmzone)
-        self.up = timeseries('Up', utmzone=self.utmzone)
+        self.north = timeseries('North', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.east = timeseries('East', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.up = timeseries('Up', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
         # Time
         self.north.time = self.time

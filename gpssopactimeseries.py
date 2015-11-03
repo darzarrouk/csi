@@ -9,9 +9,11 @@ import pyproj as pp
 import datetime as dt
 import sys
 
-class gpstimeseries:
+from .SourceInv import SourceInv
 
-    def __init__(self, name, utmzone='10'):
+class gpstimeseries(SourceInv):
+
+    def __init__(self, name, utmzone=None, lon0=None, lat0=None, ellps='WGS84', verbose=True):
         '''
         Args:
             * name      : Name of the dataset.
@@ -19,18 +21,23 @@ class gpstimeseries:
             * utmzone   : UTM zone. Default is 10 (Western US).
         '''
 
+        # print
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize GPS array {}".format(self.name))
+        self.verbose = verbose
+
+        # Base class init
+        super(gpstimeseries, self).__init__(name, 
+                                            utmzone=utmzone,
+                                            lon0=lon0,
+                                            lat0=lat0,
+                                            ellps=ellps)
+
         # Set things
         self.name = name
         self.dtype = 'gpstimeseries'
-        self.utmzone = utmzone
- 
-        # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initialize GPS array {}".format(self.name))
-
-        # Create a utm transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
 
         # Initialize things
         self.data = None

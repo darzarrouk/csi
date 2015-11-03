@@ -24,7 +24,7 @@ if major==2:
 
 class fault3D(RectangularPatches):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84'):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
         '''
         Args:
             * name          : Name of the fault.
@@ -32,7 +32,11 @@ class fault3D(RectangularPatches):
             * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
-        super(fault3D,self).__init__(name,utmzone,ellps)
+        super(fault3D,self).__init__(name,
+                                     utmzone = utmzone,
+                                     ellps = ellps, 
+                                     lon0 = lon0, 
+                                     lat0 = lat0)
 
         # All done
         return

@@ -20,14 +20,14 @@ from .RectangularPatches import RectangularPatches
 
 class verticalfault(RectangularPatches):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84'):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
         '''
         Args:
             * name          : Name of the fault.
         '''
 
         # Initialize base class
-        super(verticalfault,self).__init__(name,utmzone,ellps)
+        super(verticalfault,self).__init__(name,utmzone=utmzone,ellps=ellps,lon0=lon0,lat0=lat0)
 
         # All done
         return

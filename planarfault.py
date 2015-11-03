@@ -24,7 +24,7 @@ if major==2:
 
 class planarfault(RectangularPatches):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True, lon0=None, lat0=None):
         '''
         Args:
             * name          : Name of the fault.
@@ -33,7 +33,12 @@ class planarfault(RectangularPatches):
         '''
 
         # Parent class init
-        super(planarfault,self).__init__(name,utmzone,ellps,verbose=verbose)
+        super(planarfault,self).__init__(name,
+                                         utmzone=utmzone,
+                                         ellps=ellps,
+                                         lon0=lon0,
+                                         lat0=lat0,
+                                         verbose=verbose)
         
         # All done
         return

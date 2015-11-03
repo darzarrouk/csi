@@ -727,7 +727,7 @@ class geodeticplot(object):
         # All don
         return
 
-    def gps(self, gps, data=['data'], color=['k'], scale=None, legendscale=10., linewidths=.1, name=False, zorder=5):
+    def gps(self, gps, data=['data'], color=['k'], scale=None, scale_units=None, legendscale=10., linewidths=.1, name=False, zorder=5):
         '''
         Args:
             * gps           : gps object from gps.
@@ -736,6 +736,7 @@ class geodeticplot(object):
             * color         : List of the colors of the gps velocity arrows.
                               Must be the same size as data
             * scale         : Scales the arrows
+            * scale_units   : 'width', 'height', 'dots' or 'inches'
             * legendscale   : Length of the scale.
             * linewidths    : Width of the arrows.
             * name          : Plot the name of the stations (True/False).
@@ -782,7 +783,7 @@ class geodeticplot(object):
         for dName in Data:
             values = Data[dName]['Values']
             c = Data[dName]['Color']
-            p = self.carte.quiver(lon, lat, values[:,0], values[:,1], width=0.005, color=c, scale=scale, linewidths=linewidths, zorder=zorder)
+            p = self.carte.quiver(lon, lat, values[:,0], values[:,1], width=0.005, color=c, scale=scale, scale_units=scale_units, linewidths=linewidths, zorder=zorder)
 #            if np.isfinite(self.err_enu[:,0]).all() and np.isfinite(self.err_enu[:,1]).all():
                 # Extract the location of the arrow head
 

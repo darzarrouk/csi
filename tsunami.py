@@ -20,7 +20,7 @@ from .SourceInv import SourceInv
 
 class tsunami(SourceInv):
 
-    def __init__(self,name,dtype='tsunami',utmzone=None,ellps='WGS84'):
+    def __init__(self,name,dtype='tsunami',utmzone=None,ellps='WGS84', lon0=None, lat0=None):
         '''
         Args:
             * name      : Name of the dataset.
@@ -29,7 +29,8 @@ class tsunami(SourceInv):
             * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
-        super(tsunami,self).__init__(name,utmzone,ellps)
+        # Base class init
+        super(tsunami,self).__init__(name,utmzone=utmzone,ellps=ellps, lon0=lon0, lat0=lat0)
 
         # Initialize the data set
         self.dtype = dtype

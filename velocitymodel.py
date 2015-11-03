@@ -11,26 +11,31 @@ import mpl_toolkits.mplot3d.art3d as art3d
 import scipy.linalg as scilin
 import shapely.geometry as geom
 
-class velocitymodel(object):
+from .SourceInv import SourceInv
 
-    def __init__(self, name, utmzone='10'):
+class velocitymodel(SourceInv):
+
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
         '''
         Args:
             * name      : Name of the dataset.
             * utmzone   : UTM zone. Default is 10 (Western US).
         '''
 
+        # Base class inita
+        super(velocitymodel, self).__init__(name, utmzone=utmzone, 
+                                            lon0=lon0, lat0=lat0,
+                                            ellps=ellps)
+
         # Set things
         self.name = name
-        self.utmzone = utmzone
- 
-        # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initialize Velocity Model {}".format(self.name))
 
-        # Create a utm transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
+        # print
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize Velocity Model {}".format(self.name))
+        self.verbose = verbose
 
         # Initialize things
         self.Vp = None

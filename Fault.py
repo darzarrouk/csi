@@ -23,7 +23,7 @@ from .EDKS import dropSourcesInPatches as Patches2Sources
 
 class Fault(SourceInv):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
         '''
         Args:
             * name          : Name of the fault.
@@ -32,7 +32,7 @@ class Fault(SourceInv):
         '''
 
         # Base class init
-        super(Fault,self).__init__(name, utmzone, ellps)
+        super(Fault,self).__init__(name, utmzone=utmzone, ellps=ellps, lon0=lon0, lat0=lat0)
 
         # Initialize the fault
         if verbose:
@@ -1430,7 +1430,7 @@ class Fault(SourceInv):
         # All done
         return Gss, Gds
 
-    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False, keepRotatedGFs=True):
+    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False, keepRotatedGFs=True, verbose=True):
         '''
             For the data set data, computes the Green's Function for coupling, using the formula
             described in Francisco Ortega's PhD, pages 106 to 108.
@@ -1453,7 +1453,7 @@ class Fault(SourceInv):
         assert self.patchType!='triangletent', 'This function is not for {} type of fault'.format(self.patchType)
 
         # Compute the Green's functions
-        self.buildGFs(data, method=method, slipdir='sd', vertical=vertical)
+        self.buildGFs(data, method=method, slipdir='sd', vertical=vertical, verbose=False)
 
         # Rotates the Greens' functions
         Gss, Gds = self.rotateGFs(data, convergence)

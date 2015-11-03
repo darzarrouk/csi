@@ -11,9 +11,12 @@ import matplotlib.pyplot as plt
 import sys
 import os
 
-class faultpostproc(object):
+# Personals
+from .SourceInv import SourceInv
 
-    def __init__(self, name, fault, Mu=24e9, utmzone='10', samplesh5=None):
+class faultpostproc(SourceInv):
+
+    def __init__(self, name, fault, Mu=24e9, samplesh5=None, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
         '''
         Args:
             * name          : Name of the InSAR dataset.
@@ -23,10 +26,15 @@ class faultpostproc(object):
             * samplesh5     : file name of h5 file containing samples
         '''
 
+        # Base class init
+        super(faultpostproc,self).__init__(name,
+                                           utmzone = utmzone,
+                                           ellps = ellps, 
+                                           lon0 = lon0, lat0 = lat0) 
+
         # Initialize the data set 
         self.name = name
         self.fault = copy.deepcopy(fault) # we don't want to modify fault slip
-        self.utmzone = utmzone
         self.patchDepths = None
 
         # Determine number of patches along-strike and along-dip
@@ -43,12 +51,11 @@ class faultpostproc(object):
             self.Mu = np.array(Mu)
             
         # Display
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initialize Post Processing object {} on fault {}".format(self.name, fault.name))
-
-        # Initialize the UTM transformation
-        self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize Post Processing object {} on fault {}".format(self.name, fault.name))
+        self.verbose = verbose
 
         # Check to see if we're reading in an h5 file for posterior samples
         self.samplesh5 = samplesh5
