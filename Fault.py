@@ -1408,6 +1408,8 @@ class Fault(SourceInv):
         elif len(convergence)==nSlip:
             if type(convergence) is list:
                 self.convergence = np.array(convergence)
+            else:
+                self.convergence = convergence
         else:
             print('Convergence vector is of wrong format...')
             sys.exit()
