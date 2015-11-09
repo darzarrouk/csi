@@ -458,7 +458,7 @@ class gps(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None):
+    def plotprofile(self, name, legendscale=10., fault=None, data=['parallel', 'normal', 'vertical']):
         '''
         Plot profile.
         Args:
@@ -466,8 +466,15 @@ class gps(SourceInv):
             * legendscale: Length of the legend arrow.
         '''
 
+        if type(data) is str:
+            data = [data]
+
         # Plo the map
-        self.plot(faults=fault, figure=None, show=False, legendscale=legendscale)
+        if 'vertical' in data:
+            vertical=True
+        else:
+            vertical=False
+        self.plot(faults=fault, figure=None, show=False, legendscale=legendscale, vertical=vertical)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
@@ -488,15 +495,24 @@ class gps(SourceInv):
         prof = fig.add_subplot(111)
 
         # plot the profile
-        x = self.profiles[name]['Distance']
-        y = self.profiles[name]['Parallel Velocity']
-        ey = self.profiles[name]['Parallel Error']
-        p = prof.errorbar(x, y, yerr=ey, 
-                label='Profile Parallel velocity', marker='.', linestyle='')
-        y = self.profiles[name]['Normal Velocity']
-        ey = self.profiles[name]['Normal Error']
-        q = prof.errorbar(x, y, yerr=ey, 
-                label='Profile Normal velocity', marker='.', linestyle='')
+        if 'parallel' in data:
+            x = self.profiles[name]['Distance']
+            y = self.profiles[name]['Parallel Velocity']
+            ey = self.profiles[name]['Parallel Error']
+            p = prof.errorbar(x, y, yerr=ey, 
+                              label='Profile Parallel velocity', marker='.', linestyle='')
+        if 'normal' in data:
+            x = self.profiles[name]['Distance']
+            y = self.profiles[name]['Normal Velocity']
+            ey = self.profiles[name]['Normal Error']
+            q = prof.errorbar(x, y, yerr=ey, 
+                              label='Profile Normal velocity', marker='.', linestyle='')
+        if 'vertical' in data:
+            x = self.profiles[name]['Distance']
+            y = self.profiles[name]['Vertical Velocity']
+            ey = self.profiles[name]['Vertical Error']
+            r = prof.errorbar(x, y, yerr=ey,
+                              label='Vertical velocity', marker='.', linestyle='')
 
         # If a fault is here, plot it
         if fault is not None:
@@ -1300,7 +1316,11 @@ class gps(SourceInv):
         # If verticals
         if not np.isnan(self.vel_enu[:,2]).any() and transformation is not 'full':
             Npo += 1
-            
+         
+        # If no horizontals
+        if np.isnan(self.vel_enu[:,:2]).any():
+            Npo = 1
+
         # All done
         return Npo
 
@@ -1309,7 +1329,8 @@ class gps(SourceInv):
         Returns the estimator for the transform.
         Args:
             * transformation : String. Can be
-                        'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
+                        'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly', 'translation'
+                        or 'translationrotation'
         '''
         
         # Helmert Transform
@@ -1371,17 +1392,23 @@ class gps(SourceInv):
         tmpsynth = np.dot(orb, vec)
 
         # Fill it
-        no = self.vel_enu.shape[0]
-        self.transformation[:,0] = tmpsynth[:no]
-        self.transformation[:,1] = tmpsynth[no:2*no]
+        if self.obs_per_station==1:
+            self.transformation[:,2] = tmpsynth
+        if self.obs_per_station>=2:
+            no = self.vel_enu.shape[0]
+            self.transformation[:,0] = tmpsynth[:no]
+            self.transformation[:,1] = tmpsynth[no:2*no]
         if self.obs_per_station==3:
             self.transformation[:,2] = tmpsynth[2*no:]
 
         # Compute custom
         if custom:
             self.computeCustom(fault)
-            self.transformation[:,0] += self.custompred[:,0]
-            self.transformation[:,1] += self.custompred[:,1]
+            if self.obs_per_station==1:
+                self.transformation[:,2] += self.custompred[:,2]
+            if self.obs_per_station>=2:
+                self.transformation[:,0] += self.custompred[:,0]
+                self.transformation[:,1] += self.custompred[:,1]
             if self.obs_per_station==3:
                 self.transformation[:,2] += self.custompred[:,2]
 
@@ -1401,10 +1428,7 @@ class gps(SourceInv):
         self.custompred = np.dot(G,custom)
         
         # Reshape
-        if self.obs_per_station==3:
-            self.custompred = self.custompred.reshape((self.vel_enu.shape))
-        else: 
-            self.custompred = self.custompred.reshape((self.vel_enu.shape[0], 2))
+        self.custompred = self.custompred.reshape((self.vel_enu.shape[0], self.obs_per_station))
 
         # All done
         return
@@ -1501,6 +1525,10 @@ class gps(SourceInv):
         if not np.isnan(self.vel_enu[:,2]).any():
             Hout = np.vstack((np.hstack((Hout, np.zeros((Hout.shape[0], 1)))), np.zeros((ns,len(columns)+1))))
             Hout[-ns:,-1] = 1.
+
+        # For the awkward case where there is only verticals
+        if np.isnan(self.vel_enu[:,:2]).any():
+            Hout = Hout[-ns:,-1].reshape((ns, 1))
 
         # All done
         return Hout

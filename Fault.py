@@ -1432,7 +1432,7 @@ class Fault(SourceInv):
         # All done
         return Gss, Gds
 
-    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False, keepRotatedGFs=True, verbose=True):
+    def buildCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False, keepRotatedGFs=True, verbose=True):
         '''
             For the data set data, computes the Green's Function for coupling, using the formula
             described in Francisco Ortega's PhD, pages 106 to 108.
@@ -1455,7 +1455,7 @@ class Fault(SourceInv):
         assert self.patchType!='triangletent', 'This function is not for {} type of fault'.format(self.patchType)
 
         # Compute the Green's functions
-        self.buildGFs(data, method=method, slipdir='sd', vertical=vertical, verbose=False)
+        self.buildGFs(data, method=method, slipdir='sd', vertical=vertical, verbose=verbose)
 
         # Rotates the Greens' functions
         Gss, Gds = self.rotateGFs(data, convergence)

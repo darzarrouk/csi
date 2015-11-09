@@ -672,7 +672,7 @@ class TriangularTents(TriangularPatches):
         # All done
         return bigGss, bigGds
 
-    def computeCouplingGFs(self, data, convergence, initializeCoupling=True, vertical=True, verbose=True, keepRotatedGFs=True):
+    def buildCouplingGFs(self, data, convergence, initializeCoupling=True, vertical=True, verbose=True, keepRotatedGFs=True):
         '''
             For the data set data, computes the Green's Function for coupling, 
             using the formula described in Francisco Ortega's PhD, pages 106 to 108.
