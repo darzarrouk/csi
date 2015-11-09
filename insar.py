@@ -2041,7 +2041,7 @@ class insar(SourceInv):
         Uses surface to write the output to a grd file.
         Args:
             * fname     : Filename
-            * data      : can be 'data' or 'synth'.
+            * data      : can be 'data', 'synth' or 'resid'
         '''
 
         # Get variables
@@ -2053,6 +2053,8 @@ class insar(SourceInv):
             z = self.synth
         elif data is 'poly':
             z = self.orb
+        elif data is 'resid':
+            z = self.vel - self.synth
 
         # Write these to a dummy file
         fout = open(fname, 'w')
