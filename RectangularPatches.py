@@ -174,7 +174,7 @@ class RectangularPatches(Fault):
         # all done in one line
         return np.array([self.getpatchgeometry(p)[5] for p in self.patch])
 
-    def splitPatchesHoriz(self, nPatches):
+    def splitPatchesHoriz(self, nPatches, equiv=False):
         '''
         Splits all the patches in nPatches Horizontally.
         Args:
@@ -241,11 +241,12 @@ class RectangularPatches(Fault):
                 newPatchesLL.append(patchll)
 
         # Store
-        self.patch = newPatches
-        self.patchll = newPatchesLL
+        self.patch = np.array(newPatches)
+        self.patchll = np.array(newPatchesLL)
 
         # Compute the equivalent patches
-        self.computeEquivRectangle()
+        if equiv:
+            self.computeEquivRectangle()
 
         # Initialize slip 
         self.initializeslip()
