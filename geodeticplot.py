@@ -806,7 +806,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def gpsverticals(self, gps, norm=None, colorbar=True, data=['data'], markersize=[50], linewidth=0.1, zorder=4, cmap='jet'):
+    def gpsverticals(self, gps, norm=None, colorbar=True, data=['data'], markersize=[50], linewidth=0.1, zorder=4, cmap='jet', marker='o'):
         '''
         Scatter plot of the vertical displacement of the GPS.
         '''
