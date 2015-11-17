@@ -500,19 +500,19 @@ class gps(SourceInv):
             y = self.profiles[name]['Parallel Velocity']
             ey = self.profiles[name]['Parallel Error']
             p = prof.errorbar(x, y, yerr=ey, 
-                              label='Profile Parallel velocity', marker='.', linestyle='')
+                              label='Profile Parallel', marker='.', linestyle='')
         if 'normal' in data:
             x = self.profiles[name]['Distance']
             y = self.profiles[name]['Normal Velocity']
             ey = self.profiles[name]['Normal Error']
             q = prof.errorbar(x, y, yerr=ey, 
-                              label='Profile Normal velocity', marker='.', linestyle='')
+                              label='Profile Normal', marker='.', linestyle='')
         if 'vertical' in data:
             x = self.profiles[name]['Distance']
             y = self.profiles[name]['Vertical Velocity']
             ey = self.profiles[name]['Vertical Error']
             r = prof.errorbar(x, y, yerr=ey,
-                              label='Vertical velocity', marker='.', linestyle='')
+                              label='Vertical', marker='.', linestyle='')
 
         # If a fault is here, plot it
         if fault is not None:

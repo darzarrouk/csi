@@ -1755,9 +1755,9 @@ class insar(SourceInv):
         y = self.profiles[name]['LOS Velocity']
         ey = self.profiles[name]['LOS Error']
         try:
-            p = prof.errorbar(x, y, yerr=ey, label='los velocity', fmt='o')
+            p = prof.errorbar(x, y, yerr=ey, label='LOS', fmt='o')
         except:
-            p = prof.plot(x, y, label='los velocity', marker='.')
+            p = prof.plot(x, y, label='LOS', marker='.')
         if synth:
             sy = self.profiles[name]['LOS Synthetics']
             s = prof.plot(x, sy, '-r', label='synthetics')

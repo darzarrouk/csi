@@ -601,8 +601,8 @@ class RectangularPatches(Fault):
         pll4 = [lon4, lat4, -1.0*z4]
 
         # Set up patch
-        patch = [p1, p2, p3, p4]
-        patchll = [pll1, pll2, pll3, pll4]
+        patch = np.array([p1, p2, p3, p4])
+        patchll = np.array([pll1, pll2, pll3, pll4])
 
         # All done
         return patch, patchll
