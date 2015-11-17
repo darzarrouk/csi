@@ -336,6 +336,61 @@ class seismiclocations(SourceInv):
         # All done
         return
 
+    def read_csi(self, infile, header=0):
+        '''
+        Reads data from a file written by csi.seismiclocation.write2file
+        columns are time (isoformat, lat, lon, depth, mag).
+        '''
+
+        # open the file
+        fin = open(infile, 'r')
+
+        # Read all
+        All = fin.readlines()
+
+        # Initialize things
+        self.time = []
+        self.lon = []
+        self.lat = []
+        self.depth = []
+        self.mag = []
+
+        # Loop
+        for i in range(header, len(All)):
+
+            # Get the splitted string
+            tmp = All[i].split()
+
+            # Get values
+            time = dt.datetime.strptime(tmp[4], "%Y-%m-%dT%H:%M:%S.%f")
+            lon = np.float(tmp[0])
+            lat = np.float(tmp[1])
+            depth = np.float(tmp[2])
+            mag = np.float(tmp[3])
+
+            # Store
+            self.time.append(time)
+            self.lon.append(lon)
+            self.lat.append(lat)
+            self.depth.append(depth)
+            self.mag.append(mag)
+
+        # Close the file
+        fin.close()
+
+        # Make arrays
+        self.time = np.array(self.time)
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+        self.depth = np.array(self.depth)
+        self.mag = np.array(self.mag)
+
+        # Create the utm
+        self.lonlat2xy()
+
+        # All done
+        return
+
     def read_ascii(self, infile, header=0):
         '''
         Reads data from an ascii file.
