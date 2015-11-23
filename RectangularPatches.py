@@ -174,19 +174,25 @@ class RectangularPatches(Fault):
         # all done in one line
         return np.array([self.getpatchgeometry(p)[5] for p in self.patch])
 
-    def splitPatchesHoriz(self, nPatches, equiv=False):
+    def splitPatchesHoriz(self, nPatches, equiv=False, indices=None):
         '''
         Splits all the patches in nPatches Horizontally.
         Args:
             * nPatches      : Number of new patches per patch.
         '''
 
+        # Check which patches we want to split
+        if indices is None:
+            patches2split = self.patch
+        else:
+            patches2split = [self.patch[i] for i in indices]
+
         # Create a list of new patches
         newPatches = []
         newPatchesLL = []
 
         # Iterate over the patches
-        for patch in self.patch:
+        for patch in patches2split:
 
             # Get the 4 corners
             c1, c2, c3, c4 = patch
@@ -225,24 +231,27 @@ class RectangularPatches(Fault):
                 lon4, lat4 = self.xy2ll(x4, y4)
 
                 # Patch
-                patch = [ [x1, y1, z1],
-                          [x2, y2, z2],
-                          [x3, y3, z3],
-                          [x4, y4, z4] ]
+                patch = np.array( [ [x1, y1, z1],
+                                    [x2, y2, z2],
+                                    [x3, y3, z3],
+                                    [x4, y4, z4] ])
 
                 # Patch ll
-                patchll = [ [lon1, lat1, z1], 
-                            [lon2, lat2, z2],
-                            [lon3, lat3, z3],
-                            [lon4, lat4, z4] ]
+                patchll = np.array( [ [lon1, lat1, z1], 
+                                      [lon2, lat2, z2],
+                                      [lon3, lat3, z3],
+                                      [lon4, lat4, z4] ])
 
                 # Store
                 newPatches.append(patch)
                 newPatchesLL.append(patchll)
 
-        # Store
-        self.patch = np.array(newPatches)
-        self.patchll = np.array(newPatchesLL)
+        # Delete the patches we just split
+        self.deletepatches(indices)
+
+        # Add the patches
+        self.patch = self.patch+newPatches
+        self.patch2ll()
 
         # Compute the equivalent patches
         if equiv:
