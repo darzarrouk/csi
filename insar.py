@@ -57,6 +57,49 @@ class insar(SourceInv):
         # All done
         return
 
+    def mergeInsar(self, sar):
+        '''
+        Combine the existing data set with another insar object.
+        Args:
+            * sar     : Instance of the insar class
+        '''
+
+        # Assert we have the same geographic transformation
+        assert self.utmzone==sar.utmzone, 'Objects do not have the same \
+                geographic transform'
+        assert self.lon0==sar.lon0, 'Objects do not have the same \
+                geographic transform'
+        assert self.lat0==sar.lat0, 'Objects do not have the same \
+                geographic transform'
+
+        # Assert everything exists
+        if self.err is None:
+            self.err = np.array([])
+        if self.vel is None:
+            self.vel = np.array([])
+        if self.lat is None:
+            self.lat = np.array([])
+        if self.lon is None:
+            self.lon = np.array([])
+        if self.los is None:
+            self.los = np.array([])
+
+        # Assert everything exists in the slave 
+        assert sar.vel is not None, 'Nothing to merge in...'
+
+        # Add things
+        self.err = np.array(self.err.tolist()+sar.err.tolist())
+        self.vel = np.array(self.vel.tolist()+sar.vel.tolist())
+        self.lat = np.array(self.lat.tolist()+sar.lat.tolist())
+        self.lon = np.array(self.lon.tolist()+sar.lon.tolist())
+        self.los = np.array(self.los.tolist()+sar.los.tolist())
+
+        # Convert to xy
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
+
+        # All done
+        return
+
     def checkNaNs(self):
         ''' 
         Checks and remove data points that have NaNs in vel, err, lon, lat or los.
