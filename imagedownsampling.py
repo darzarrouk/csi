@@ -44,6 +44,8 @@ class imagedownsampling(object):
 
         # Set the transformation
         self.utmzone = image.utmzone
+        self.lon0 = image.lon0
+        self.lat0 = image.lat0
         self.putm = image.putm
         self.ll2xy = image.ll2xy
         self.xy2ll = image.xy2ll
@@ -55,6 +57,8 @@ class imagedownsampling(object):
                 faults = [faults]
             for fault in faults:
                 assert (fault.utmzone==self.utmzone), 'Fault {} not in utm zone #{}'.format(fault.name, self.utmzone)
+                assert (fault.lon0==self.lon0), 'Fault {} does not have same origin Lon {}'.format(fault.name, self.lon0)
+                assert (fault.lat0==self.lat0), 'Fault {} does not have same origin Lat {}'.format(fault.name, self.lat0)
                 self.faults.append(fault)
 
         # Save the image
@@ -173,9 +177,11 @@ class imagedownsampling(object):
 
         # Create the new image object
         if self.datatype is 'insar':
-            newimage = insar('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
+            newimage = insar('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False,
+                             lon0=self.lon0, lat0=self.lat0)
         elif self.datatype is 'opticorr':
-            newimage = opticorr('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False)
+            newimage = opticorr('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False,
+                                lon0=self.lon0, lat0=self.lat0)
 
         # Get the blocks 
         blocks = self.blocks
@@ -1012,7 +1018,7 @@ class imagedownsampling(object):
                 jSamples = len(np.flatnonzero(jj))
 
                 # Create 2 newimages
-                Image = insar('Image', utmzone=self.utmzone, verbose=False)
+                Image = insar('Image', utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0)
 
                 # Fill them
                 Image.x = np.hstack((self.image.x[ii], self.image.x[jj]))

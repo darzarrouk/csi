@@ -553,7 +553,7 @@ class imagecovariance(object):
         nData = len(self.datasets)
 
         # Iterate
-        ii = 0
+        ii = 1
         for dname in self.datasets:
 
             # Create an axes

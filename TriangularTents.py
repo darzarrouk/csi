@@ -157,6 +157,9 @@ class TriangularTents(TriangularPatches):
         else:
             raise NotImplementedError('Only works for len(slip)==len(tent)', self.N_slip, len(self.slip), len(self.tent))
 
+        # Delete the vertex and the patch, if needed
+        self.deletevertex(tent, checkPatch=True, checkSlip=False)
+
         # All done
         return
 
@@ -181,6 +184,29 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
+    def findNodes(self, lon, lat, round=2):
+        '''
+        Find the nodes with lon and lat (np.array or list)
+        '''
+
+        # Create list
+        indices = []
+
+        # Get lons and lats
+        lons = np.array([t[0] for t in self.tentll])
+        lats = np.array([t[1] for t in self.tentll])
+
+        # Loop
+        for lo, la in zip(lon, lat):
+            u = np.flatnonzero(np.logical_and(lons.round(round)==np.round(lo,round), 
+                                              lats.round(round)==np.round(la,round)))
+            if len(u)==0:
+                indices.append(None)
+            else:
+                indices.append(u[0])
+
+        # All done
+        return indices
 
     def chooseTents(self, tents):
         '''

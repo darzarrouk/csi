@@ -828,7 +828,7 @@ class TriangularPatches(Fault):
         # All done
         return
 
-    def deletepatch(self, patch, checkVertices=True):
+    def deletepatch(self, patch, checkVertices=True, checkSlip=False):
         '''
         Deletes a patch.
         Args:
@@ -854,7 +854,7 @@ class TriangularPatches(Fault):
             self.deletevertices(v2del, checkPatch=False)
 
         # Clean slip vector
-        if self.slip is not None:
+        if self.slip is not None and checkSlip:
             self.slip = np.delete(self.slip, patch, axis=0)
             self.N_slip = len(self.slip)
             if hasattr(self, 'numpatch'):
@@ -865,7 +865,7 @@ class TriangularPatches(Fault):
         # All done
         return
 
-    def deletevertices(self, iVertices, checkPatch=True):
+    def deletevertices(self, iVertices, checkPatch=True, checkSlip=True):
         '''
         Deletes some vertices.
         If some patches are composed of thexe vertices and checkPatch is True, 
@@ -883,9 +883,10 @@ class TriangularPatches(Fault):
                 i, j = np.where(self.Faces==iV)
                 if len(i.tolist())>0:
                     iPatch.append(np.unique(i))
-            iPatch = np.unique(np.concatenate(iPatch)).tolist()
-            # Delete
-            self.deletepatches(iPatch, checkVertices=False)
+            if len(iPatch)>0:
+                # Delete
+                iPatch = np.unique(np.concatenate(iPatch)).tolist()
+                self.deletepatches(iPatch, checkVertices=False, checkSlip=checkSlip)
 
         # Modify the vertex numbers in Faces
         newFaces = copy.deepcopy(self.Faces)
@@ -901,7 +902,7 @@ class TriangularPatches(Fault):
         # All done
         return
 
-    def deletevertex(self, iVertex, checkPatch=True):
+    def deletevertex(self, iVertex, checkPatch=True, checkSlip=True):
         '''
         Delete a Vertex.
         If some patches are composed of this vertex and checkPatch is True, 
@@ -912,13 +913,13 @@ class TriangularPatches(Fault):
         '''
 
         # Delete only one vertex
-        self.deletevertices([iVertex], checkPatch)
+        self.deletevertices([iVertex], checkPatch, checkSlip=checkSlip)
 
         # All done
         return
 
 
-    def deletepatches(self, tutu, checkVertices=True):
+    def deletepatches(self, tutu, checkVertices=True, checkSlip=True):
         '''
         Deletes a list of patches.
         '''
@@ -929,7 +930,7 @@ class TriangularPatches(Fault):
             i = tutu.pop()
 
             # delete it
-            self.deletepatch(i, checkVertices=checkVertices)
+            self.deletepatch(i, checkVertices=checkVertices, checkSlip=checkSlip)
 
             # Upgrade list
             for u in range(len(tutu)):
@@ -983,6 +984,7 @@ class TriangularPatches(Fault):
 
         # Vertices2ll
         self.vertices2ll()
+        self.patch2ll()
 
         # All done
         return
