@@ -234,6 +234,10 @@ class imagedownsampling(object):
                     los0 = np.mean(self.image.los[ii,0])
                     los1 = np.mean(self.image.los[ii,1])
                     los2 = np.mean(self.image.los[ii,2])
+                    norm = np.sqrt(los0*los0+los1*los1+los2*los2)
+                    los0 /= norm
+                    los1 /= norm
+                    los2 /= norm
                 elif self.datatype is 'opticorr':
                     east = np.mean(self.image.east[ii])
                     north = np.mean(self.image.north[ii])
