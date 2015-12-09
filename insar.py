@@ -681,7 +681,7 @@ class insar(SourceInv):
         nd = self.vel.shape[0]
 
         # Fill Cd
-        self.Cd = np.diag(self.err)
+        self.Cd = np.diag(self.err**2)
 
         # All done
         return

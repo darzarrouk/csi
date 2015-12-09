@@ -494,7 +494,7 @@ class geodeticplot(object):
         # put up a colorbar
         if colorbar:
             scalarMap.set_array(slip)
-            self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
+            self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.3, orientation='horizontal')
 
         # All done
         return 
@@ -625,7 +625,7 @@ class geodeticplot(object):
             # Color Bar
             if colorbar:
                 scalarMap.set_array(slip)
-                self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
+                self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.3, orientation='horizontal')
 
         elif method is 'scatter':
             # Do the scatter ploto
@@ -639,7 +639,7 @@ class geodeticplot(object):
 
             # put up a colorbar
             if colorbar:
-                self.fphbar = self.fig1.colorbar(cb, shrink=0.6, orientation='horizontal')
+                self.fphbar = self.fig1.colorbar(cb, shrink=0.3, orientation='horizontal')
 
         # All done
         return lon, lat, Z, Slip
@@ -722,7 +722,7 @@ class geodeticplot(object):
 
         # colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
+            self.fig2.colorbar(sc, shrink=0.3, orientation='horizontal')
 
         # All don
         return
@@ -869,16 +869,17 @@ class geodeticplot(object):
 
         # Colorbar
         if colorbar:
-            self.fig2.colorbar(sc, orientation='horizontal', shrink=0.6)
+            self.fig2.colorbar(sc, orientation='horizontal', shrink=0.3)
 
         return
 
-    def gpsprojected(self, gps, norm=None, colorbar=True, zorder=4):
+    def gpsprojected(self, gps, norm=None, colorbar=True, zorder=4, cmap='jet'):
         '''
         Args:
             * gps       : gpsrate object
             * norm      : List of lower and upper bound of the colorbar.
             * colorbar  : activates the plotting of the colorbar.
+            * cmap      : Colormap, by default 'jet'
         '''
 
         # Get the data
@@ -895,14 +896,14 @@ class geodeticplot(object):
             vmax = norm[1]
 
         # Prepare the colormap
-        cmap = plt.get_cmap('jet')
+        cmap = plt.get_cmap(cmap)
 
         # Plot
         sc = self.carte.scatter(lon, lat, s=100, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.5, zorder=zorder)
 
         # plot colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
+            self.fig2.colorbar(sc, shrink=0.3, orientation='horizontal')
 
         # All done
         return
@@ -945,13 +946,13 @@ class geodeticplot(object):
         if '2d' in plot:
             sc = self.carte.scatter(lon, lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1, zorder=zorder)
             if colorbar:
-                self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
+                self.fig2.colorbar(sc, shrink=0.3, orientation='horizontal')
 
         # plot the earthquakes in the volume if ask
         if '3d' in plot:
             sc = self.faille.scatter3D(lon, lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1)
             if colorbar:
-                self.fig1.colorbar(sc, shrink=0.6, orientation='horizontal')
+                self.fig1.colorbar(sc, shrink=0.3, orientation='horizontal')
 
         # All done
         return
@@ -1001,7 +1002,7 @@ class geodeticplot(object):
 
         # plot colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.6, orientation='horizontal')
+            self.fig2.colorbar(sc, shrink=0.3, orientation='horizontal')
 
         # All done
         return
@@ -1094,7 +1095,7 @@ class geodeticplot(object):
         # plot colorbar
         if colorbar:
             scalarMap.set_array(d)
-            plt.colorbar(scalarMap,shrink=0.6, orientation='horizontal')
+            plt.colorbar(scalarMap,shrink=0.3, orientation='horizontal')
 
         # All done
         return
@@ -1194,7 +1195,7 @@ class geodeticplot(object):
         # plot colorbar
         if colorbar:
             scalarMap.set_array(d)
-            plt.colorbar(scalarMap, shrink=0.6, orientation='horizontal')
+            plt.colorbar(scalarMap, shrink=0.3, orientation='horizontal')
 
         # All done
         return
