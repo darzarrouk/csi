@@ -686,7 +686,7 @@ class insar(SourceInv):
         # All done
         return
 
-    def buildCd(self, sigma, lam, function='exp'):
+    def buildCd(self, sigma, lam, function='exp', diagonalVar=False):
         '''
         Builds the full Covariance matrix from values of sigma and lambda.
 
@@ -698,6 +698,12 @@ class insar(SourceInv):
 
             Cov(i,j) = sigma*sigma * exp(-(d[i,j]*d[i,j])/(2*lam))
 
+        Args:
+            * sigma             : Sigma term of the covariance
+            * lam               : Caracteristic length of the covariance
+            * function          : Can be 'gauss' or 'exp'
+            * diagonalVar       : Substitute the diagonal by the standard deviation
+                                  of the measurement squared
         '''
 
         # Assert
@@ -724,6 +730,10 @@ class insar(SourceInv):
 
                 # Make it symmetric
                 self.Cd[j,i] = self.Cd[i,j]
+
+            # Substitute variance?
+            if diagonalVar:
+                self.Cd[i,i] = self.err[i]**2
 
         # All done
         return

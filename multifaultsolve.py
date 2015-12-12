@@ -719,7 +719,7 @@ class multifaultsolve(object):
         # All done
         return
 
-    def simpleMetropolis(self, priors, initialSample, nSample, nBurn, plotSampler=False,
+    def simpleSampler(self, priors, initialSample, nSample, nBurn, plotSampler=False,
                             writeSamples=False, dryRun=False):
         '''
         Uses a Metropolis algorithme to sample the posterior distribution of the model 
@@ -795,13 +795,16 @@ class multifaultsolve(object):
         # Build the forward model
         @pymc.deterministic(plot=False)
         def forward(theta=Priors):
-            return np.dot(G, theta)
+            return np.dot(G, np.array(theta))
 
         # Build the observation
-        d = pymc.MvNormalCov('Data', mu=forward, C=Cd, value=dobs, observed=True)
+        likelihood = pymc.MvNormalCov('Data', mu=forward, C=Cd, value=dobs, observed=True)
 
+        # PDFs
+        PDFs = Priors + [likelihood]
+    
         # Create a sampler
-        sampler = pymc.MCMC(Priors+[d])
+        sampler = pymc.MCMC(PDFs)
 
         # Make sure we use Metropolis
         for p in Priors:
@@ -811,7 +814,7 @@ class multifaultsolve(object):
         if dryRun:
             self.sampler = sampler
             self.priors = Priors
-            self.likelihood = d
+            self.likelihood = likelihood
             print('A dry run has been asked. Nothing has been done')
             print('Sampler object is saved in the solver object')
             return
@@ -831,7 +834,7 @@ class multifaultsolve(object):
         self.samples = samples
         self.sampler = sampler
         self.priors = Priors
-        self.likelihood = d
+        self.likelihood = likelihood
         self.mpost = np.array(mpost)
 
         # Write Samples?
@@ -841,6 +844,23 @@ class multifaultsolve(object):
         # Plot
         if plotSampler:
             pymc.Matplot.plot(sampler, path=self.figurePath)
+
+        # All done
+        return
+
+    def conditionCd(self, singularValue):
+        '''
+        Simple Conditioning of Cd.
+        '''
+
+        # SVD
+        u,s,v = np.linalg.svd(self.Cd)
+
+        # Select
+        i = np.flatnonzero(s>singularValue)
+
+        # Re-build
+        self.Cd = np.dot(u[:,i], np.dot(np.diag(s[i]), v[i,:]))
 
         # All done
         return

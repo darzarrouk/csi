@@ -344,16 +344,20 @@ def sum_layered_sub(IDs, xs, ys, zs, strike, dip, rake, slip, A, \
     # return the computed displacements for each sources
     return [ux, uy, uz]
 
-def dropSourcesInPatches(fault, verbose=False):
+def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
     '''
     From a fault object, returns sources to be given to sum_layered_sub.
     The number of sources is determined by the spacing provided in fault.
     Args:
-        fault       : instance of Fault (Rectangular or Triangular).
+        fault                   : instance of Fault (Rectangular or Triangular).
+        verbose                 : Talk to me
+        returnSplittedPactches  : Returns a triangularPatches object with the splitted 
+                                  patches.
     '''
 
     # Create lists
     Ids, Xs, Ys, Zs, Strike, Dip, Area = [], [], [], [], [], [], []
+    allSplitted = []
 
     # Check
     if (not hasattr(fault, 'sourceSpacing')) and (not hasattr(fault, 'sourceNumber')) and (not hasattr(fault, 'sourceArea')):
@@ -455,6 +459,7 @@ def dropSourcesInPatches(fault, verbose=False):
         Strike += strike
         Dip += dip
         Area += areas
+        allSplitted += splittedPatches
 
     # print
     if verbose:
@@ -471,5 +476,17 @@ def dropSourcesInPatches(fault, verbose=False):
     Area = np.array(Area)
 
     # All done
-    return Ids, Xs, Ys, Zs, Strike, Dip, Area
+    if returnSplittedPatches:
+        from .TriangularPatches import TriangularPatches as trianglePatches
+        splitFault = trianglePatches('Splitted {}'.format(fault.name), 
+                                     utmzone=fault.utmzone, 
+                                     lon0=fault.lon0,
+                                     lat0=fault.lat0,
+                                     ellps=fault.ellps,
+                                     verbose=verbose)
+        splitFault.addpatches(allSplitted)
+        splitFault.setdepth()
+        return Ids, Xs, Ys, Zs, Strike, Dip, Area, splitFault
+    else:
+        return Ids, Xs, Ys, Zs, Strike, Dip, Area
 
