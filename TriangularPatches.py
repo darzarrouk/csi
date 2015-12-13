@@ -584,6 +584,12 @@ class TriangularPatches(Fault):
                     else:
                         slp = self.slip[pIndex,1]*scale
                     string = '-Z{}'.format(slp)
+                elif add_slip is 'tensile':
+                    if stdh5 is not None:
+                        slp = np.std(samples[:,pIndex+2*nPatches])
+                    else:
+                        slp = self.slip[pIndex,2]*scale
+                    string = '-Z{}'.format(slp)
                 elif add_slip is 'total':
                     if stdh5 is not None:
                         slp = np.std(samples[:,pIndex]**2 + samples[:,pIndex+nPatches]**2)

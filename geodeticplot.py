@@ -499,7 +499,7 @@ class geodeticplot(object):
         # All done
         return 
 
-    def faultTents(self, fault, slip='strikeslip', Norm=None, colorbar=True, method='surface',
+    def faultTents(self, fault, slip='strikeslip', Norm=None, colorbar=True, method='surface', cmap='jet',
             plot_on_2d=False, revmap=False, factor=1.0, npoints=10, xystrides=[100, 100], zorder=0):
         '''
         Args:
@@ -550,9 +550,9 @@ class geodeticplot(object):
 
         # set color business
         if revmap:
-            cmap = plt.get_cmap('jet_r')
+            cmap = plt.get_cmap('{}_r'.format(cmap))
         else:
-            cmap = plt.get_cmap('jet')
+            cmap = plt.get_cmap(cmap)
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
