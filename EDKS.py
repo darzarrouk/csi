@@ -484,7 +484,12 @@ def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
                                      lat0=fault.lat0,
                                      ellps=fault.ellps,
                                      verbose=verbose)
-        splitFault.addpatches(allSplitted)
+        # set up patches
+        splitFault.patch = [np.array(p) for p in allSplitted]
+        splitFault.patch2ll()
+        # Patches 2 vertices
+        splitFault.setVerticesFromPatches()
+        # Depth
         splitFault.setdepth()
         return Ids, Xs, Ys, Zs, Strike, Dip, Area, splitFault
     else:

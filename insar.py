@@ -2031,7 +2031,7 @@ class insar(SourceInv):
         elif data == 'synth':
             z = self.synth
         elif data == 'poly':
-            z = self.orb
+            z = self.orbit
         elif data == 'res':
             z = self.vel - self.synth
 
