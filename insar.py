@@ -600,25 +600,25 @@ class insar(SourceInv):
                     finy = Dataset(los[1], 'r', format='NETCDF4')
                     finz = Dataset(los[2], 'r', format='NETCDF4')
                 except ImportError:
-                    import sicpy.io.netcdf as netcdf
+                    import scipy.io.netcdf as netcdf
                     finx = netcdf.netcdf_file(los[0])
                     finy = netcdf.netcdf_file(los[1])
                     finz = netcdf.netcdf_file(los[2])
-                losx = np.array(finx.variables['z']).flatten()
-                losy = np.array(finy.variables['z']).flatten()
-                losz = np.array(finz.variables['z']).flatten()
+                losx = np.array(finx.variables['z'][:,:]).flatten()
+                losy = np.array(finy.variables['z'][:,:]).flatten()
+                losz = np.array(finz.variables['z'][:,:]).flatten()
                 # Remove NaNs?
                 if not keepnans:
                     losx = losx[u]
                     losy = losy[u]
                     losz = losz[u]
                 # Do as if binary
-                los = [losx, losy, losz]
+                losList = [losx, losy, losz]
 
             # Store these guys
-            self.los[:,0] *= los[0]
-            self.los[:,1] *= los[1]
-            self.los[:,2] *= los[2]
+            self.los[:,0] = losx
+            self.los[:,1] = losy
+            self.los[:,2] = losz
         else:
             print('Warning: not enough information to compute LOS')
             print('LOS will be set to 1,0,0')
