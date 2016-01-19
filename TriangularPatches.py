@@ -2078,6 +2078,7 @@ class TriangularPatches(Fault):
         Ids, xs, ys, zs, strike, dip, Areas, fault = Patches2Sources(self, 
                                                     verbose=verbose,
                                                     returnSplittedPatches=True)
+        self.plotSources = [Ids, xs, ys, zs, strike, dip, Areas]
 
         # Interpolate the slip on each subsource
         fault.initializeslip()

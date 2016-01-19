@@ -351,9 +351,6 @@ class TriangularTents(TriangularPatches):
         # Assert
         assert not ( (increments is None) and (nSamples is None) ), 'Specify increments or nSamples...'
 
-        # Import needed stuff
-        import scipy.interpolate as sciint
-
         # Get the sources
         gp = geoplot(figure=None)
         lon, lat, z, s = gp.faultTents(self, slip=slip, method='scatter',
@@ -1287,37 +1284,19 @@ class TriangularTents(TriangularPatches):
         Areas = 0.5 * np.sqrt(np.sum(np.cross(S1, S2, axis=0)**2, axis=0))
         Wi = Areas/Area
 
-        # Vectorial Method: More Lines, same results.
-        ## Calculate the height of the triangle
-        #v3 = Vertices[nodeTwo] - Vertices[nodeOne]
-        #if np.dot(v1, v3)==0:
-        #    h = v1
-        #elif np.dot(v2, v3)==0:
-        #    h = v2
-        #else:
-        #    v4 = np.cross(v1, v2)
-        #    C = Vertices[nodeOne][2] - Vertices[mainNode][2]
-        #    h = np.ones((3,))
-        #    h[2] = C
-        #    h[1] = C * (v4[2]*v3[0] - v3[2]*v4[0]) / (v3[1]*v4[0] - v3[0]*v4[1])
-        #    h[0] = C * (v4[2]*v3[1] - v3[2]*v4[1]) / (v3[0]*v4[1] - v4[0]*v3[1])
-        ## Normalize it
-        #h = h/np.sqrt(np.sum(h**2))
-        ## Compute the vectors between the mainNode and each subPoint
-        #Is = np.array([self.edksSources[1][iS], self.edksSources[2][iS], self.edksSources[3][iS]])
-        #Vi = Is - Vertices[mainNode][:,np.newaxis]
-        ## Compute the scalar product (which is the distance we want)
-        #d = np.dot(Vi.T, h[:,None])
-        ## Compute the distance max
-        #Dmax = np.dot(Vertices[nodeOne] - Vertices[mainNode], h) 
-        ## Compute the weights
-        #Wi = 1. - d/Dmax
-
         return Wi
 
-    def _getSlipOnSubSources(self, Ids, X, Y, Z, slip):
+    def _getSlipOnSubSources(self, Ids, X, Y, Z, slip, method='manual'):
         '''
         From a slip distribution in slip at each Node, interpolate onto the sources defined by Ids, X, Y and Z.
+        Args:
+            * Ids       : Index of the subsources
+            * X         : X position of the subsources
+            * Y         : Y position of the subsources
+            * Z         : Z position of the subsources
+            * slip      : Slip on the sources
+            * method    : 'manual' for a barycentric implementation (slow, but correct)
+                          'scipy' for a LinearNDInterpolator (quick, but not tested)
         '''
 
         # Create array
@@ -1326,21 +1305,38 @@ class TriangularTents(TriangularPatches):
         # Get Vertices
         vertices = self.Vertices
 
-        # Compute the slip value at each subpoint
-        for iPatch in range(len(self.patch)):
-            nodeOne, nodeTwo, nodeThree = self.Faces[iPatch]
-            slipOne = slip[nodeOne]
-            slipTwo = slip[nodeTwo]
-            slipThree = slip[nodeThree]
-            vertOne = np.array(vertices[nodeOne])
-            vertTwo = np.array(vertices[nodeTwo])
-            vertThree = np.array(vertices[nodeThree])
-            ids = np.flatnonzero(Ids==iPatch)
-            w1 = self._getWeights(vertOne, vertTwo, vertThree, X[ids], Y[ids], Z[ids])
-            w2 = self._getWeights(vertTwo, vertOne, vertThree, X[ids], Y[ids], Z[ids])
-            w3 = self._getWeights(vertThree, vertTwo, vertOne, X[ids], Y[ids], Z[ids])
-            weightedSlip = w1*slipOne + w2*slipTwo + w3*slipThree
-            Slip[ids] = weightedSlip
+        if method is 'scipy':
+            
+            # create the interpolator
+            try:
+                inter = self.slipInter
+            except:
+                self.slipInter = sciint.Rbf(self.Vertices[:,0],
+                                            self.Vertices[:,1],
+                                            self.Vertices[:,2],
+                                            slip,
+                                            function='linear')
+
+            # Interpolate
+            Slip = self.slipInter(X, Y, Z)
+        
+        elif method is 'manual':
+
+            # Compute the slip value at each subpoint
+            for iPatch in range(len(self.patch)):
+                nodeOne, nodeTwo, nodeThree = self.Faces[iPatch]
+                slipOne = slip[nodeOne]
+                slipTwo = slip[nodeTwo]
+                slipThree = slip[nodeThree]
+                vertOne = np.array(vertices[nodeOne])
+                vertTwo = np.array(vertices[nodeTwo])
+                vertThree = np.array(vertices[nodeThree])
+                ids = np.flatnonzero(Ids==iPatch)
+                w1 = self._getWeights(vertOne, vertTwo, vertThree, X[ids], Y[ids], Z[ids])
+                w2 = self._getWeights(vertTwo, vertOne, vertThree, X[ids], Y[ids], Z[ids])
+                w3 = self._getWeights(vertThree, vertTwo, vertOne, X[ids], Y[ids], Z[ids])
+                weightedSlip = w1*slipOne + w2*slipTwo + w3*slipThree
+                Slip[ids] = weightedSlip
 
         # All Done
         return Slip

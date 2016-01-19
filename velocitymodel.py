@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
 import scipy.linalg as scilin
 import shapely.geometry as geom
+import scipy.interpolate as interp
 
 from .SourceInv import SourceInv
 
@@ -643,6 +644,82 @@ class velocitymodel(SourceInv):
 
         # All Done
         return
+
+    def readEDKSModelFile(self, filename):
+        '''
+        Reads the EDKS model file.
+        Args:
+            * filename      : Name of the input file.
+        '''
+
+        # Open the file
+        fin = open(filename, 'r')
+
+        # Readall
+        Lines = fin.readlines()
+
+        # Create the list
+        vp = []
+        vs = []
+        rho = []
+        depth = [0.]
+
+        # Read
+        for line in Lines[1:-1]:
+            line = line.split()
+            depth.append(depth[-1]+float(line[-1]))
+            rho.append(float(line[0]))
+            vp.append(float(line[1]))
+            vs.append(float(line[2]))
+
+        # Last one
+        vp.append(float(Lines[-1].split()[1]))
+        vs.append(float(Lines[-1].split()[2]))
+        rho.append(float(Lines[-1].split()[0]))
+
+        # Set things
+        self.VpVert = vp
+        self.VsVert = vs
+        self.RhoVert = rho
+        self.Dvert = depth
+
+        # Close file
+        fin.close()
+
+        # All done
+        return
+
+    def getModelOnFault(self, fault):
+        '''
+        Returns the velocity model on each fault patch or tent.
+        '''
+
+        # Get the fault depths
+        if fault.patchType is ('triangletent'):
+            depths = np.array([tent[2] for tent in fault.tent])
+        else:
+            depths = np.array([center[2] for center in fault.getcenters()])
+
+        # Create the lists 
+        vp = []; vs = []; rho = []
+
+        # models
+        mDepths = np.vstack((self.Dvert[:-1], self.Dvert[1:])).T.flatten()
+        mVp = np.vstack((self.VpVert[:-1], self.VpVert[1:])).T.flatten()
+        iVp = interp.interp1d(mDepths, mVp)
+        mVs = np.vstack((self.VsVert[:-1], self.VsVert[1:])).T.flatten()
+        iVs = interp.interp1d(mDepths, mVs)
+        mRho = np.vstack((self.RhoVert[:-1], self.RhoVert[1:])).T.flatten()
+        iRho = interp.interp1d(mDepths, mRho)
+
+        # Iterate over the depths
+        for d in depths:
+            vp.append(iVp(d))
+            vs.append(iVs(d))
+            rho.append(iRho(d))
+
+        # All done
+        return rho, vp, vs
 
     def plotVertical(self, figure=67, depth=50):
         '''

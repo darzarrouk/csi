@@ -216,6 +216,25 @@ class faultpostproc(SourceInv):
         # All done
         return mt
 
+    def computeMoments(self):
+        '''
+        Computes the moment tensor for each patch.
+        Result is stored in self.Moments
+        '''
+
+        # Create the list
+        Moments = []
+
+        # Iterate
+        for p in range(len(self.fault.patch)):
+            Moments.append(self.computePatchMoment(p))
+        
+        # Save 
+        self.Moments = Moments
+
+        # All done
+        return
+
     def computeMomentTensor(self):
         '''
         Computes the full seismic (0-order) moment tensor from the slip distribution.
@@ -302,6 +321,24 @@ class faultpostproc(SourceInv):
 
         # All done
         return Mw
+
+    def computePotencies(self):
+        '''
+        Computes the potencies for all the patches.
+        Result is stored in self.Potencies
+        '''
+
+        # Compute the patch moments
+        self.computeMoments()
+
+        # calculate the potencies
+        Potencies = [np.sqrt(0.5*np.sum(M**2, axis=(0,1)))/mu for M,mu in zip(self.Moments,self.Mu)]
+
+        # Save
+        self.Potencies = Potencies
+
+        # All done
+        return
 
     def Aki2Harvard(self):
         '''

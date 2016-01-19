@@ -169,7 +169,10 @@ class insar(SourceInv):
             self.lon.append(np.float(line[0]))
             self.lat.append(np.float(line[1]))
             self.vel.append(np.float(line[2]))
-            self.err.append(np.float(line[3]))
+            if len(line)>3:
+                self.err.append(np.float(line[3]))
+            else:
+                self.err.append(0.0)
 
         # Make arrays
         self.vel = (np.array(self.vel)+step)*factor
