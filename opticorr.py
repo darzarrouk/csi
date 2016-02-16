@@ -646,50 +646,45 @@ class opticorr(SourceInv):
         # Get the basic size of the polynomial
         basePoly = ptype / self.obs_per_station
         assert basePoly >= 3 or basePoly == 1, """
-            only support 1st, 3rd or 4th order poly for cosicorr
+            only support 0th, 1st and 2nd order polynomials
             """
 
         # Get number of points
         nd = self.east.shape[0]
 
-        if ptype >=3: 
 		# Compute normalizing factors
-                x0 = self.x[0]
-                y0 = self.y[0]
-                normX = np.abs(self.x - x0).max()
-                normY = np.abs(self.y - y0).max()
+        x0 = self.x[0]
+        y0 = self.y[0]
+        normX = np.abs(self.x - x0).max()
+        normY = np.abs(self.y - y0).max()
 
-                # Save them for later
-                self.OrbNormalizingFactor = {}
-                self.OrbNormalizingFactor['ref'] = [x0, y0]
-                self.OrbNormalizingFactor['x'] = normX
-                self.OrbNormalizingFactor['y'] = normY
+        # Save them for later
+        self.OrbNormalizingFactor = {}
+        self.OrbNormalizingFactor['ref'] = [x0, y0]
+        self.OrbNormalizingFactor['x'] = normX
+        self.OrbNormalizingFactor['y'] = normY
 
-                # Pre-compute position-dependent functional forms
-                f1 = self.factor * np.ones((nd,))
-                f2 = self.factor * (self.x - x0) / normX
-                f3 = self.factor * (self.y - y0) / normY
-                f4 = self.factor * (self.x - x0) * (self.y - y0) / (normX*normY)
-                f5 = self.factor * (self.x - x0)**2 / normX**2
-                f6 = self.factor * (self.y - y0)**2 / normY**2
-                polyFuncs = [f1, f2, f3, f4, f5, f6]
+        # Pre-compute position-dependent functional forms
+        f1 = self.factor * np.ones((nd,))
+        f2 = self.factor * (self.x - x0) / normX
+        f3 = self.factor * (self.y - y0) / normY
+        f4 = self.factor * (self.x - x0) * (self.y - y0) / (normX*normY)
+        f5 = self.factor * (self.x - x0)**2 / normX**2
+        f6 = self.factor * (self.y - y0)**2 / normY**2
+        polyFuncs = [f1, f2, f3, f4, f5, f6]
 
-                # Fill in orb matrix given an order
-                orb = np.zeros((nd, basePoly))
-                for ind in range(basePoly):
-                    orb[:,ind] = polyFuncs[ind]
+        # Fill in orb matrix given an order
+        orb = np.zeros((nd, basePoly))
+        for ind in range(basePoly):
+            orb[:,ind] = polyFuncs[ind]
 
-                # Block diagonal for both components
-                orb = block_diag(orb, orb)
+        # Block diagonal for both components
+        if self.obs_per_station > 1:
+            orb = block_diag(orb, orb)
 
-                # Check to see if we're including verticals
-                if self.obs_per_station == 3:
-                    orb = np.vstack((orb, np.zeros((nd, 2*basePoly))))
-
-        elif basePoly==1:
-            orb = np.zeros((2*nd,1*basePoly))
-            orb[:,0] = self.factor	
-
+        # Check to see if we're including verticals
+        if self.obs_per_station == 3:
+            orb = np.vstack((orb, np.zeros((nd, 2*basePoly))))
 
         # All done
         return orb
