@@ -82,7 +82,7 @@ class faultpostproc(SourceInv):
                 print('Cannot import h5py. Computing scalar moments only')
                 return
             self.hfid = h5py.File(self.samplesh5, 'r')
-            samples = self.hfid['samples']
+            samples = self.hfid['Sample Set']
             nsamples = np.arange(0, samples.shape[0], decim).size
             self.fault.slip = np.zeros((self.numPatches,3,nsamples))
             self.fault.slip[:,0,:] = samples[::decim,:self.numPatches].T

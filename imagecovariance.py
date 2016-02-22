@@ -309,7 +309,7 @@ class imagecovariance(object):
         # All done
         return
 
-    def computeCovariance(self, function='exp', frac=0.4, every=1., distmax=50., rampEst=True, prior=None, tol=1e-10):
+    def computeCovariance(self, function='exp', ComputeSemiVar=True, frac=0.4, every=1., distmax=50., rampEst=True, prior=None, tol=1e-10):
         '''
         Computes the covariance functions.
         Args:
@@ -323,9 +323,13 @@ class imagecovariance(object):
         '''
 
         # Compute the semivariograms
-        if self.verbose:
-            print('Computing semivariograms')
-        self.empiricalSemivariograms(frac=frac, every=every, distmax=distmax, rampEst=rampEst)
+        if ComputeSemiVar:
+            if self.verbose:
+                print('Computing semivariograms')
+            self.empiricalSemivariograms(frac=frac, every=every, distmax=distmax, rampEst=rampEst)
+        else: # Check that it's already done
+            dname = covtool.datasets.keys()[0]
+            assert 'Semivariogram' in covtool.datasets[dname].keys(), 'Need to compute the semivariogram first: {}'.format(dname)
 
         # Fit the semivariograms
         if self.verbose:
@@ -335,10 +339,17 @@ class imagecovariance(object):
             # Get the dataset
             data = self.datasets[dname]
 
+            # Find indice of chosen distance
+            if distmax < data['Distance'].max():
+                idx = np.abs(data['Distance']-distmax).argmin() #indice of closest value to distmax in Distance
+            else:
+                idx = len(data['Distance'])
+
+
             # Get the data
-            y = data['Semivariogram']
-            x = data['Distance']
-            error = data['Semivariogram Std']
+            y = data['Semivariogram'][:idx]
+            x = data['Distance'][:idx]
+            error = data['Semivariogram Std'][:idx]
             weights = error/np.sum(error)
 
             # Save the type of function
@@ -499,12 +510,14 @@ class imagecovariance(object):
             # Write what is in there
             distance = data['Distance']
             semivar = data['Semivariogram']
+            semivarstd = data['Semivariogram Std']
             if 'Covariance' in data.keys():
                 covar = data['Covariance']
             for i in range(distance.shape[0]):
                 d = distance[i]
                 s = semivar[i]
-                line = '{}     {} '.format(d, s)
+                ss = semivarstd[i]
+                line = '{}     {}     {} '.format(d, s, ss)
                 if 'Covariance' in data.keys():
                     c = covar[i]
                     line = line + '    {}'.format(c)
@@ -624,7 +637,7 @@ class imagecovariance(object):
         # All done
         return
 
-    def read_from_covfile(self,dname,filename):
+    def read_from_covfile(self,dname,filename,Covariance=True):
         '''
         Read a file that was written by write2file()
         Args :
@@ -645,10 +658,13 @@ class imagecovariance(object):
         self.datasets[dname]['function'] = 'exp'
         self.datasets[dname]['Sill'] = float(re.findall('\d+.\d+',l3)[0])
         self.datasets[dname]['Sigma'] = float(re.findall('\d+.\d+',l4)[0])
-        self.datasets[dname]['Lambda'] = Lambda = float(re.findall('\d+.\d+',l5)[0])
+        self.datasets[dname]['Lambda'] = float(re.findall('\d+.\d+',l5)[0])
         self.datasets[dname]['Distance'] = tmp[:,0]
         self.datasets[dname]['Semivariogram'] = tmp[:,1]
-        self.datasets[dname]['Covariance'] = tmp[:,2]
+        self.datasets[dname]['Semivariogram Std'] = tmp[:,2]
+        
+        if Covariance:
+            self.datasets[dname]['Covariance'] = tmp[:,3]
 
         return
 
