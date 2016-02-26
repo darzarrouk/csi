@@ -328,8 +328,8 @@ class imagecovariance(object):
                 print('Computing semivariograms')
             self.empiricalSemivariograms(frac=frac, every=every, distmax=distmax, rampEst=rampEst)
         else: # Check that it's already done
-            dname = covtool.datasets.keys()[0]
-            assert 'Semivariogram' in covtool.datasets[dname].keys(), 'Need to compute the semivariogram first: {}'.format(dname)
+            dname = self.datasets.keys()[0]
+            assert 'Semivariogram' in self.datasets[dname].keys(), 'Need to compute the semivariogram first: {}'.format(dname)
 
         # Fit the semivariograms
         if self.verbose:
@@ -596,8 +596,9 @@ class imagecovariance(object):
 
             # Plot Covariance
             if data in ('covariance', 'all', 'cov'):
+                idx = len(self.datasets[dname]['Covariance'])
                 covar = self.datasets[dname]['Covariance']
-                dist = self.datasets[dname]['Distance']
+                dist = self.datasets[dname]['Distance'][:idx]
                 ax.plot(dist, covar, '.k', markersize=10)
                 if 'function' in self.datasets[dname].keys():
                     sill = self.datasets[dname]['Sill']
