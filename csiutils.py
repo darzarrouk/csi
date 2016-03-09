@@ -121,7 +121,7 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
         xy = np.vstack((olon.flatten(), olat.flatten())).T
 
         # Findthose outside
-        bol = ~poly.contains_points(xy)
+        bol = poly.contains_points(xy)
 
         # Mask those out
         oZ = oZ.flatten()
