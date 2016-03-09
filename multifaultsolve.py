@@ -356,7 +356,7 @@ class multifaultsolve(object):
             # check
             if hasattr(fault, 'NumberCustom'):
                 se = st + fault.NumberCustom
-                fault.custom = self.mpost[st:se]
+                fault.custom = fault.mpost[st:se]
                 st += fault.NumberCustom
 
             # Get the polynomial/orbital/helmert values if they exist
