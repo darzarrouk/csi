@@ -647,7 +647,6 @@ class imagecovariance(object):
 
         '''
 
-        import re
         import linecache
 
         tmp = np.loadtxt(filename,comments='#')
@@ -657,9 +656,9 @@ class imagecovariance(object):
         l5 = linecache.getline(filename,5)
 
         self.datasets[dname]['function'] = 'exp'
-        self.datasets[dname]['Sill'] = float(re.findall('\d+.\d+',l3)[0])
-        self.datasets[dname]['Sigma'] = float(re.findall('\d+.\d+',l4)[0])
-        self.datasets[dname]['Lambda'] = float(re.findall('\d+.\d+',l5)[0])
+        self.datasets[dname]['Sill'] = float(l3.split()[-1])
+        self.datasets[dname]['Sigma'] = float(l4.split()[-1])
+        self.datasets[dname]['Lambda'] = float(l5.split()[-1])
         self.datasets[dname]['Distance'] = tmp[:,0]
         self.datasets[dname]['Semivariogram'] = tmp[:,1]
         self.datasets[dname]['Semivariogram Std'] = tmp[:,2]

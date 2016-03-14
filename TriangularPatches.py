@@ -1055,12 +1055,19 @@ class TriangularPatches(Fault):
         # Get the patch normal
         normal = np.cross(p2 - p1, p3 - p1)
         normal /= np.linalg.norm(normal)
-
         # Enforce clockwise circulation
-        if normal[2] < 0:
+        if np.round(normal[2],decimals=1) < 0:
             normal *= -1.0
             p2, p3 = p3, p2
 
+        # If fault is vertical, force normal to be horizontal
+        if np.round(normal[2],decimals=1) == 0.: 
+            normal[2] = 0.
+        # Force strike between 0 and 90 or between 270 and 360
+            if normal[1] > 0:
+                normal *= -1
+             
+                    
         # Get the strike vector and strike angle
         strike = np.arctan2(-normal[0], normal[1]) - np.pi
         if strike<0.:
@@ -1830,9 +1837,9 @@ class TriangularPatches(Fault):
         '''
 
         # Get lons lats
-        lon = np.unique([p[:,0] for p in self.patchll])
+        lon = np.unique(np.array([p[:,0] for p in self.patchll]))
         lon[lon<0.] += 360.
-        lat = np.unique([p[:,1] for p in self.patchll])
+        lat = np.unique(np.array([p[:,1] for p in self.patchll]))
         lonmin = lon.min()-expand
         lonmax = lon.max()+expand
         latmin = lat.min()-expand
