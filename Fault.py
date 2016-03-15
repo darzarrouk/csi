@@ -65,6 +65,7 @@ class Fault(SourceInv):
         self.N_slip    = None # This will be the number of slip values
         self.totalslip = None
         self.Cm        = None
+        self.mu        = None
 
         # Create a dictionnary for the polysol
         self.polysol = {}
