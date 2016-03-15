@@ -2308,7 +2308,7 @@ class Fault(SourceInv):
         # All done
         return
 
-    def setMu(self, model_file):
+    def setmu(self, model_file):
         '''
         Set shear modulus values from a edks model_file
         Args:
