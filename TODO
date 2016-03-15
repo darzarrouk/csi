@@ -3,7 +3,6 @@
 # Technical points: Deadline -- 16/03/2016
 . Add Custom for Opticor object (Romain)
 . Verify the computeEquivPatch routine. It behaves weird for the Himalaya case... (Romain)
-. Implement automatic detection of shear modulus for Mw calculation (Zach)
 . Check the usefulness and pertinence of the 2 faultpostproc objects (redundancy?) (Zach)
 . Check the strike of triangles in TriangularPatches and TriangularTents (Baptiste)
 . Create a setup.py that handles csi, okada4py and edks (Romain)
