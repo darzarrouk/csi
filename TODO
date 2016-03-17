@@ -1,21 +1,21 @@
 # TODO for CSI 1.0
 
-# Technical points: Deadline -- 16/03/2016
-. Add Custom for Opticor object (Romain)
-. Verify the computeEquivPatch routine. It behaves weird for the Himalaya case... (Romain)
+# Technical points: Deadline -- 23/03/2016
+DONE . Add Custom for Opticor object (Romain)
 . Check the usefulness and pertinence of the 2 faultpostproc objects (redundancy?) (Zach)
-. Check the strike of triangles in TriangularPatches and TriangularTents (Baptiste)
+DONE . Check the strike of triangles in TriangularPatches and TriangularTents (Baptiste)
 . Create a setup.py that handles csi, okada4py and edks (Romain)
 . Check matplotlib behavior on different machines (Romain)
 . Do we include the calculation of EDKS kernels in CSI? (Zach)
 
 # Organisation: Deadline TBD
-. Read the code entirely and check redundancy or obsolete methods.
-. Check help for each method.
-. Check names of methods and attributes for data objects (same name for same usage).
-. Check option consistency between differents objects.
-. Examples.
-. Test on different architectures.
+. Read the code entirely and check redundancy or obsolete methods. (Romain)
+. Verify the computeEquivPatch routine. It behaves weird for the Himalaya case... (Romain)
+. Check help for each method. (Zach)
+. Check names of methods and attributes for data objects (same name for same usage). (Baptiste)
+. Check option consistency between differents objects. (Baptiste)
+. Examples. (Romain)
+. Test on different architectures. (Zach)
 
 # Writings
 . Write Documentation
@@ -23,4 +23,4 @@
 
 # TODO for CSI 2.0
 . Add uncertainties on the covariance plots (standard deviations, for instance)
-. Incorporate EDKS correctly in csi (stop writing stuff and pass arrays)
+. Incorporate EDKS correctly in csi (stop writing stuff to file and start passing arrays)
