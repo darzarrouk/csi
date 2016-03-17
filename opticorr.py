@@ -870,7 +870,7 @@ class opticorr(SourceInv):
                 self.computePoly(fault)
                 if poly == 'include':
                     self.east_synth += self.east_orbit
-                    self.north_synth += self.east_north
+                    self.north_synth += self.north_orbit
 
         # All done
         return
@@ -1396,7 +1396,7 @@ class opticorr(SourceInv):
         Args:
             * fname     : Filename
             * oversample: Oversampling factor.
-            * data      : can be 'data' or 'synth'.
+            * data      : can be 'data', 'synth' or 'res'.
             * interp    : Number of points along lon and lat (can be a list).
             * cmd       : command used for the conversion( i.e., surface or xyz2gmt)
         '''
@@ -1414,8 +1414,11 @@ class opticorr(SourceInv):
             e = self.east
             n = self.north
         elif data is 'synth':
-            e = self.synth_east
-            n = self.synth_north
+            e = self.east_synth
+            n = self.north_synth
+        elif data is 'res':
+            e = self.east - self.east_synth
+            n = self.north - self.north_synth
 
         if not useGMT:
 
