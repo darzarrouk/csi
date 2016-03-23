@@ -81,7 +81,7 @@ class fault3D(RectangularPatches):
         # all done
         return
 
-    def buildPatches(self, dip, dipdirection, every=10, minpatchsize=0.00001, trace_tol=0.1, trace_fracstep=0.2, 
+    def buildPatches(self, dip=None, dipdirection=None, every=10, minpatchsize=0.00001, trace_tol=0.1, trace_fracstep=0.2, 
                      trace_xaxis='x', trace_cum_error=True):
         '''
         Builds a dipping fault.
@@ -95,17 +95,12 @@ class fault3D(RectangularPatches):
             * trace_xaxis     : x axis for the discretization ('x' use x as the x axis, 'y' use y as the x axis)
             * trace_cum_error : if True, account for accumulated error to define the x axis bound for the last patch
 
-            Example: dip = [[0, 20], [10, 30], [80, 90]] means that from the origin point of the 
-            fault (self.xi[0], self.yi[0]), the dip is 20 deg at 0 km, 30 deg at km 10 and 90 deg 
-            at km 80. The routine starts by discretizing the surface trace, then defines a dip 
-            evolution as a function of distance from the fault origin and drapes the fault down to
+            Example: dip = [[0, 0, 20], [10, 10, 30], [80, 10, 90]] means that from the origin point of the 
+            fault (self.xi[0], self.yi[0]), the dip is 20 deg at 0 km and 0 km depth, 30 deg at km 10 and 10 km-depth 
+            and 90 deg at km 80 and 10 km-depth. The routine starts by discretizing the surface trace, then 
+            defines a dip evolution as a function of distance from the fault origin and drapes the fault down to
             depth.
         '''
-
-        # Print
-        print("Building a dipping fault")
-        print("         Dip Angle       : from {} to {} degrees".format(dip[0], dip[-1]))
-        print("         Dip Direction   : {} degrees From North".format(dipdirection))
 
         # Initialize the structures
         self.patch = []
@@ -114,16 +109,26 @@ class fault3D(RectangularPatches):
         self.patchdip = []
 
         # Build a 2d dip interpolator
-        import scipy.interpolate as sciint
-        xy = np.array([ [dip[i][0], dip[i][1]] for i in range(len(dip))])
-        dips = np.array([dip[i][2] for i in range(len(dip))])
-        dipinterpolator = sciint.LinearNDInterpolator(xy, dips, fill_value=90.)      # If the points are not inside the area provided by the user, the dip will be 90 deg (vertical)
+        if dip is not None:
+            import scipy.interpolate as sciint
+            xy = np.array([ [dip[i][0], dip[i][1]] for i in range(len(dip))])
+            dips = np.array([dip[i][2] for i in range(len(dip))])
+            dipinterpolator = sciint.LinearNDInterpolator(xy, dips, fill_value=90.)      # If the points are not inside the area provided by the user, the dip will be 90 deg (vertical)
+        else:
+            def dipinterpolator(d, z):
+                return 90.
 
         # Discretize the surface trace of the fault
         self.discretize(every,trace_tol,trace_fracstep,trace_xaxis,trace_cum_error)
 
         # degree to rad
-        dipdirection_rad = dipdirection*np.pi/180.
+        if dipdirection is not None:
+            dipdirection_rad = dipdirection*np.pi/180.
+            sdr = np.sin(sdr)
+            cdr = np.cos(cdr)
+        else:
+            sdr = 0.
+            cdr = 0.
 
         # initialize the depth of the top row
         self.zi = np.ones((self.xi.shape))*self.top
@@ -148,8 +153,8 @@ class fault3D(RectangularPatches):
             zt = self.zi
 
             # Compute the bottom row
-            xb = xt + self.width*np.cos(self.dip)*np.sin(dipdirection_rad)
-            yb = yt + self.width*np.cos(self.dip)*np.cos(dipdirection_rad)
+            xb = xt + self.width*np.cos(self.dip)*sdr
+            yb = yt + self.width*np.cos(self.dip)*cdr
             lonb, latb = self.putm(xb*1000., yb*1000., inverse=True)
             zb = zt + self.width*np.sin(self.dip)
 

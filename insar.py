@@ -581,14 +581,13 @@ class insar(SourceInv):
         self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # Deal with the LOS
-        self.los = np.ones((self.lon.shape[0],3))
         if heading is not None and incidence is not None and los is None:
             if type(heading) is str:
                 ori = 'grd'
             else:
                 ori = 'float'
             self.inchd2los(incidence, heading, origin=ori)
-            if not keepnans:
+            if not keepnans and self.los.shape[0]!=self.lon.shape[0]:
                 self.los = self.los[u,:] 
         elif los is not None:
             # If strings, they are meant to be grd files
