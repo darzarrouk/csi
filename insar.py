@@ -932,12 +932,10 @@ class insar(SourceInv):
         # compute the polynomial
         self.computePoly(fault)
 
-        # Get the vector
-        params = fault.polysol[self.name].tolist()
-
         # Print Something
         if verbose:
-            print('Correcting insar rate {} from polynomial function: {}'.format(self.name, tuple(p for p in params)))
+            params = fault.polysol[self.name].tolist()
+            print('Correcting insar {} from polynomial function: {}'.format(self.name, tuple(p for p in params)))
 
         # Correct
         self.vel -= self.orbit

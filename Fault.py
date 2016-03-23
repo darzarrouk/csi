@@ -65,6 +65,7 @@ class Fault(SourceInv):
         self.N_slip    = None # This will be the number of slip values
         self.totalslip = None
         self.Cm        = None
+        self.mu        = None
 
         # Create a dictionnary for the polysol
         self.polysol = {}
@@ -2307,4 +2308,66 @@ class Fault(SourceInv):
 
         # All done
         return
+
+    def setmu(self, model_file):
+        '''
+        Set shear modulus values from a edks model_file
+        Args:
+          - model_file: path to model file
+        Outputs:
+          - self.mu: shear modulus values (1 for each patch)
+
+        The model file format is as follows:        
+        N F
+        RHO_1 VP_1 VS_1 TH_1
+        RHO_2 VP_2 VS_2 TH_2
+        ...
+        RHO_N VP_N VS_N TH_N
+
+        where N is the number of layers, F a conversion factor to SI units
+        RHO_i is the density of the i-th layer
+        VP_i is the P-wave velocity in the i-th layer
+        VS_i is the S-wave velocity in the i-th layer
+        TH_i is the thickness of the i-th layer
+
+        '''
+        
+        # Read model file
+        mu = []
+        depth  = 0.
+        depths = []
+        with open(model_file) as f:
+            L = f.readlines()
+            items = L[0].strip().split()
+            N = int(items[0])
+            F = float(items[1])   
+            for l in L[1:]:
+                c = l.strip()
+                if len(c) and c[0]=='#':
+                    continue
+                items = c.split()
+                if len(items)!=4:
+                    continue
+                TH  = float(items[3])*F
+                VS  = float(items[2])*F
+                RHO = float(items[0])*F
+                mu.append(VS*VS*RHO)
+                if TH==0.:
+                    TH = np.inf
+                depths.append([depth,depth+TH])
+                depth += TH
+        depths = np.array(depths)*1e-3 # depth in km
+        Nd = len(depths)
+        Np = len(self.patch)
+
+        # Set Mu for each patch
+        self.mu = np.zeros((Np,))
+        for p in range(Np):
+            p_x, p_y, p_z, width, length, strike_rad, dip_rad = self.getpatchgeometry(p,center=True)
+            for d in range(Nd):
+                if p_z>=depths[d][0] and p_z<depths[d][1]:
+                    self.mu[p] = mu[d]
+
+        # All done
+        return        
 #EOF

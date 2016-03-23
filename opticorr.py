@@ -716,7 +716,28 @@ class opticorr(SourceInv):
         # All done
         return
 
-    def removePoly(self, fault):
+    def computeCustom(self, fault):
+        '''
+        Computes the displacements associated with the custom green's functions.
+        Args:
+            * fault : Fault object with custom green's functions
+        '''
+
+        # Get the GFs and the parameters
+        G = fault.G[self.name]['custom']
+        custom = fault.custom
+
+        # Compute
+        custompred = np.dot(G, custom)
+
+        # Store
+        nd = self.east.shape[0]
+        self.east_custompred = custompred[:nd]
+        self.north_custompred = custompred[nd:2*nd]
+
+        # All done
+
+    def removePoly(self, fault, verbose=False, custom=False):
         '''
         Removes a polynomial from the parameters that are in a fault.
         '''
@@ -724,9 +745,20 @@ class opticorr(SourceInv):
         # Compute the polynomial
         self.computePoly(fault)
 
+        # Print Something
+        if verbose:
+            params = fault.polysol[self.name].tolist()
+            print('Correcting opticor {} from polynomial function: {}'.format(self.name, tuple(p for p in params)))
+
         # Correct data
         self.east -= self.east_orbit
         self.north -= self.north_orbit
+
+        # Correct custom
+        if custom:
+            self.computeCustom(fault)
+            self.east -= self.east_custompred
+            self.north -= self.north_custompred
 
         # All done
         return
@@ -791,7 +823,7 @@ class opticorr(SourceInv):
         '''
 
         # Build synthetics
-        self.buildsynth(faults, direction=direction, poly=poly, custom=False)
+        self.buildsynth(faults, direction=direction, poly=poly, custom=custom)
 
         # Correct
         self.east -= self.east_synth
@@ -870,7 +902,7 @@ class opticorr(SourceInv):
                 self.computePoly(fault)
                 if poly == 'include':
                     self.east_synth += self.east_orbit
-                    self.north_synth += self.east_north
+                    self.north_synth += self.north_orbit
 
         # All done
         return
@@ -1396,7 +1428,7 @@ class opticorr(SourceInv):
         Args:
             * fname     : Filename
             * oversample: Oversampling factor.
-            * data      : can be 'data' or 'synth'.
+            * data      : can be 'data', 'synth' or 'res'.
             * interp    : Number of points along lon and lat (can be a list).
             * cmd       : command used for the conversion( i.e., surface or xyz2gmt)
         '''
@@ -1414,8 +1446,11 @@ class opticorr(SourceInv):
             e = self.east
             n = self.north
         elif data is 'synth':
-            e = self.synth_east
-            n = self.synth_north
+            e = self.east_synth
+            n = self.north_synth
+        elif data is 'res':
+            e = self.east - self.east_synth
+            n = self.north - self.north_synth
 
         if not useGMT:
 
