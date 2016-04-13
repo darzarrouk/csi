@@ -769,11 +769,14 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def readPatchesFromFile(self, filename, Cm=None, readpatchindex=True, inputCoordinates='lonlat', donotreadslip=False):
+    def readPatchesFromFile(self, filename, Cm=None, readpatchindex=True, inputCoordinates='lonlat', donotreadslip=False, increasingy = True):
         '''
         Read the patches from a GMT formatted file.
         Args:   
             * filename  : Name of the file.
+            * increasingy : if you don't want csi to set your patches 
+                            corners according to increasing y, set
+                            increasingy = False
         '''
 
         # create the lists
@@ -850,16 +853,24 @@ class RectangularPatches(Fault):
             if D<mm:
                 D=mm
             # Set points
-            if y1>y2:
-                p2 = [x1, y1, z1]; p2ll = [lon1, lat1, z1]
-                p1 = [x2, y2, z2]; p1ll = [lon2, lat2, z2]
-                p4 = [x3, y3, z3]; p4ll = [lon3, lat3, z3]
-                p3 = [x4, y4, z4]; p3ll = [lon4, lat4, z4]
+            if increasingy:
+                if y1>y2:
+                    p2 = [x1, y1, z1]; p2ll = [lon1, lat1, z1]
+                    p1 = [x2, y2, z2]; p1ll = [lon2, lat2, z2]
+                    p4 = [x3, y3, z3]; p4ll = [lon3, lat3, z3]
+                    p3 = [x4, y4, z4]; p3ll = [lon4, lat4, z4]
+                else:
+                    p1 = [x1, y1, z1]; p1ll = [lon1, lat1, z1]
+                    p2 = [x2, y2, z2]; p2ll = [lon2, lat2, z2]
+                    p3 = [x3, y3, z3]; p3ll = [lon3, lat3, z3]
+                    p4 = [x4, y4, z4]; p4ll = [lon4, lat4, z4]
             else:
                 p1 = [x1, y1, z1]; p1ll = [lon1, lat1, z1]
                 p2 = [x2, y2, z2]; p2ll = [lon2, lat2, z2]
                 p3 = [x3, y3, z3]; p3ll = [lon3, lat3, z3]
                 p4 = [x4, y4, z4]; p4ll = [lon4, lat4, z4]
+
+
             # Store these
             p = [p1, p2, p3, p4]
             pll = [p1ll, p2ll, p3ll, p4ll]
