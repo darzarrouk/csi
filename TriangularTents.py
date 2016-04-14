@@ -80,26 +80,6 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-    def setdepth(self, nump, width, top=0):
-        '''
-        Set depth patch attributes
-
-        Args:
-            * nump          : Number of fault patches at depth.
-            * width         : Width of the fault patches
-            * top           : depth of the top row
-        '''
-
-        raise NotImplementedError('do not need this')
-
-        # Set depth
-        self.top = top
-        self.numz = nump
-        self.width = width
-
-        # All done
-        return
-
     def getStrikes(self):
         '''
         Returns the strikes of each nodes.

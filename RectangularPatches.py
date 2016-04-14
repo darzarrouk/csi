@@ -57,20 +57,25 @@ class RectangularPatches(Fault):
         return
 
 
-    def setdepth(self, nump, width, top=0):
+    def setdepth(self, nump=None, top=0):
         '''
         Set depth patch attributes
 
         Args:
             * nump          : Number of fault patches at depth.
-            * width         : Width of the fault patches
             * top           : depth of the top row
         '''
 
+        # If there is patches
+        if self.patch is not None:
+            self.top = np.min([[p[2] for p in patch] for patch in self.patch])
+            self.numz = np.unique([[p[2] for p in patch] for patch in self.patch]).size - 1
+            
         # Set depth
-        self.top = top
-        self.numz = nump
-        self.width = width
+        if top is not None:
+            self.top = top
+        if nump is not None:
+            self.numz = nump
 
         # All done
         return
@@ -1545,13 +1550,13 @@ class RectangularPatches(Fault):
         # All done
         return dis
 
-    def read3DsquareGrid(self, filename):
+    def read3DrectangularGrid(self, filename, aggregatePatchNodes=None):
         '''
-        This routine read the square fault geometry
-        Format: lon lat E[km] N[km] Dep[km] strike dip Area ID
-
-        These files are to be used with edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
-        or edks/MPI_EDKS/calcGreenFunctions_EDKS_subSquares.py
+        This routine read the rectangular geometry.
+        Format: lon lat E[km] N[km] Dep[km] strike dip length Area ID
+        Args:
+            * filename            : Name of the text file
+            * aggregatePatchNodes : Aggregates patche nodes that are closer than a distance (float)
         '''
 
         # Open the output file
@@ -1572,13 +1577,14 @@ class RectangularPatches(Fault):
             zc     = float(items[4])
             strike = float(items[5])
             dip    = float(items[6])
-            area   = float(items[7])
-            PID    = int(items[8])
-            #if strike<0.:
-            #    strike += 360.
-            length = np.sqrt(area)
-            width  = np.sqrt(area)
+            length = float(items[7])
+            area   = float(items[8])
+            PID    = int(items[9])
+
+            # Length width
+            width  = area/length
             
+            # Convert patch center to utm coordinates
             xc,yc = self.ll2xy(lonc,latc)
             
             # Build a patch with that
@@ -1590,30 +1596,21 @@ class RectangularPatches(Fault):
             ddip_y     = -0.5 * width  * np.cos(dip_rad) * np.sin(strike_rad)
             ddip_z     =  0.5 * width  * np.sin(dip_rad)    
 
-            x1 = xc - dstrike_x - ddip_x
-            y1 = yc - dstrike_y - ddip_y
-            z1 = zc - ddip_z
+            x1 = np.round(xc - dstrike_x - ddip_x, decimals=4)
+            y1 = np.round(yc - dstrike_y - ddip_y, decimals=4)
+            z1 = np.round(zc - ddip_z,             decimals=4)
             
-            x2 = xc + dstrike_x - ddip_x
-            y2 = yc + dstrike_y - ddip_y
-            z2 = zc - ddip_z            
+            x2 = np.round(xc + dstrike_x - ddip_x, decimals=4)
+            y2 = np.round(yc + dstrike_y - ddip_y, decimals=4)
+            z2 = np.round(zc - ddip_z            , decimals=4)
 
-            x3 = xc + dstrike_x + ddip_x
-            y3 = yc + dstrike_y + ddip_y
-            z3 = zc + ddip_z
+            x3 = np.round(xc + dstrike_x + ddip_x, decimals=4)
+            y3 = np.round(yc + dstrike_y + ddip_y, decimals=4)
+            z3 = np.round(zc + ddip_z            , decimals=4)
 
-            x4 = xc - dstrike_x + ddip_x
-            y4 = yc - dstrike_y + ddip_y
-            z4 = zc + ddip_z     
-            
-            if self.top == None:
-                self.top = z2
-            elif self.top > z2:
-                self.top = z2
-            if self.depth == None:
-                self.depth = z1
-            elif self.depth > z1:
-                self.depth = z2
+            x4 = np.round(xc - dstrike_x + ddip_x, decimals=4)
+            y4 = np.round(yc - dstrike_y + ddip_y, decimals=4)
+            z4 = np.round(zc + ddip_z            , decimals=4)
 
             # Convert to lat lon
             lon1, lat1 = self.xy2ll(x1, y1)
@@ -1637,9 +1634,19 @@ class RectangularPatches(Fault):
             self.patchll.append(pll)            
             self.z_patches.append(z1)            
             
-            
+        # Depth
+        depths = [self.getcenter(p)[2] for p in self.patch]
+        self.depth = np.max(depths)
+        self.top = np.min(depths)
+
         # Close the files
         flld.close()
+
+        # Check patch aggregation
+        if aggregatePatchNodes is not None:
+            self._aggregatePatchNodes(aggregatePatchNodes)
+
+        # Equiv patches
         self.equivpatch   = self.patch
         self.equivpatchll = self.patchll
         # All done
@@ -3059,5 +3066,42 @@ class RectangularPatches(Fault):
             D[p,p] = -4.0
 
         return D
+
+    def _aggregatePatchNodes(self, distance):
+        '''
+        Replaces the patch nodes that are close to each other by the barycenter.
+        Args:
+            * distance      : Distance between the patches to aggregate.
+        '''
+
+        # It should be fine in terms of speed
+        for patch, ip in zip(self.patch, range(len(self.patch))):
+
+            # Iterate over the nodes of the patch
+            for node, iN in zip(patch, range(len(patch))):
+                
+                # Create the distance map
+                Distances = np.array([ [np.sqrt((p[0]-node[0])**2 + (p[1]-node[1])**2 + (p[2]-node[2])**2) for p in pp] for pp in self.patch])
+    
+                # Find the nodes that are closer than 'distance' and not 0
+                ipatches, inodes = np.where(np.logical_and(Distances<distance, Distances>0.))
+                
+                # If there nothing, do nothing:
+                if ipatches.size>0:
+                    
+                    # These nodes are the same, so we average them
+                    xmean = np.mean([node[0]]+[self.patch[p][n][0] for p,n in zip(ipatches,inodes)])
+                    ymean = np.mean([node[1]]+[self.patch[p][n][1] for p,n in zip(ipatches,inodes)])
+                    zmean = np.mean([node[2]]+[self.patch[p][n][2] for p,n in zip(ipatches,inodes)])
+    
+                    # Replace these nodes by the mean position
+                    for p,n in zip(ipatches,inodes):
+                        self.patch[p][n] = [xmean, ymean, zmean]
+                    self.patch[ip][iN][0] = xmean
+                    self.patch[ip][iN][1] = ymean 
+                    self.patch[ip][iN][2] = zmean
+        
+        # All done
+        return
 
 #EOF

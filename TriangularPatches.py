@@ -269,7 +269,6 @@ class TriangularPatches(Fault):
                 faces.append(f)
                 self.patch.append(p)
 
-
         # Save
         self.Vertices = np.array(vertices)
         self.Faces = np.array(faces)
