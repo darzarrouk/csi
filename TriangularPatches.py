@@ -2082,8 +2082,8 @@ class TriangularPatches(Fault):
 
         # Drop the sources in the patches and get the corresponding fault
         Ids, xs, ys, zs, strike, dip, Areas, fault = Patches2Sources(self, 
-                                                    verbose=verbose,
-                                                    returnSplittedPatches=True)
+                                                verbose=verbose,
+                                                returnSplittedPatches=True)
         self.plotSources = [Ids, xs, ys, zs, strike, dip, Areas]
 
         # Interpolate the slip on each subsource
@@ -2094,5 +2094,101 @@ class TriangularPatches(Fault):
 
         # All done
         return fault
+
+    def findAsperities(self, function, slip='strikeslip', verbose=True):
+        '''
+        Finds the number, size and location of asperities that are identified by the 
+        given function.
+        Args:
+            * function          : Function that takes an array the size of the 
+                                  number of patches and returns an array of bolean
+                                  the same size. Trues are within the asperity.
+            * slip              : Which slip vector do you want to apply the function to
+            * verbose           : Talk to me?
+        '''
+
+        # Assert 
+        assert self.patchType is 'triangle', 'Not implemented for Triangular tents'
+
+        # Update the map
+        def _checkUpdate(check, iTriangle, modifier, fault):
+            # Get the 3 surrounding triangles
+            Adjacents = fault.adjacencyMap[iTriangle]
+            # Check if they are in the asperity
+            modify = [iTriangle]
+            for adjacent in Adjacents:
+                if check[adjacent]==1.: modify.append(adjacent)
+            # Modify the map
+            for mod in modify: check[mod] = modifier
+            # Return the triangles surrounding
+            modify.remove(iTriangle)
+            return modify
+
+        # Get the array to test
+        if slip is 'strikeslip':
+            values = self.slip[:,0]
+        elif slip is 'dipslip':
+            values = self.slip[:,1]
+        elif slip is 'tensile':
+            values = self.slip[:,2]
+        elif slip is 'coupling':
+            values = self.coupling
+        else:
+            print('findAsperities: Unknown type slip vector...')
+
+        # Get the bolean array
+        test = function(values).astype(float)
+
+        # Build the adjacency Map
+        if self.adjacencyMap is None:
+            self.buildAdjacencyMap(verbose=verbose)
+
+        # Number of the first asperity
+        i = 1
+
+        # We iterate until no triangle has been classified in an asperity
+        # 0 means the triangle is not in an asperity
+        # 1 means the triangle is in an asperity
+        # 2 or more means the triangle is in an asperity and has been classified
+        while len(np.flatnonzero(test==1.))>0:
+
+            # Pick a triangle inside an asperity
+            iTriangle = np.flatnonzero(test==1.)[0]
+ 
+            # This is asperity i
+            i += 1
+
+            # Talk to me
+            if verbose:
+                print('Dealing with asperity #{}'.format(i))
+
+            # Build the list of new triangles to check
+            toCheck = _checkUpdate(test, iTriangle, i, self)
+
+            # While toCheck has stuff to check, check them
+            nT = 0
+            while len(toCheck)>0:
+                # Get triangle to check
+                iCheck = toCheck.pop()
+                if verbose:
+                    nT += 1
+                    sys.stdout.write('\r Triangles: {}'.format(nT))
+                    sys.stdout.flush()
+                # Check it
+                toCheck += _checkUpdate(test, iCheck, i, self)
+
+        # Normally, all the 1. have been replaced by 2., 3., etc
+        
+        # Find the unique numbers in test
+        Counters = np.unique(test).tolist()
+        Counters.remove(0.)
+    
+        # Get the asperities
+        Asperities = []
+        for counter in Counters:
+            Asperities.append(np.flatnonzero(test==counter))
+
+        # All done
+        return Asperities
 
 #EOF

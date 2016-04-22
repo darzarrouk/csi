@@ -7,6 +7,7 @@ DONE . Check the strike of triangles in TriangularPatches and TriangularTents (B
 . Create a setup.py that handles csi, okada4py and edks (Romain)
 . Check matplotlib behavior on different machines (Romain)
 . Do we include the calculation of EDKS kernels in CSI? (Zach)
+. Add a case for slip='somethingunknown' where the method picks is using getattr (Romain)
 
 # Organisation: Deadline TBD
 . Read the code entirely and check redundancy or obsolete methods. (Romain)
