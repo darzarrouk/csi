@@ -583,7 +583,7 @@ class faultpostproc(SourceInv):
             # Sum the total moment for the depth bin
             M = 0.0
             for patchIndex in ind:
-                M += self.computePatchMoment(int(patchIndex)) / self.Mu[p]
+                M += self.computePatchMoment(int(patchIndex)) / self.Mu[patchIndex]
             # Convert to scalar potency
             potency = np.sqrt(0.5 * np.sum(M**2, axis=(0,1)))
             logPotency = np.log10(potency)
@@ -749,5 +749,78 @@ class faultpostproc(SourceInv):
 
         # All done
         return
+
+    def stressdrop(self,shapefactor=2.44,threshold=0.2,threshold_rand=False,return_Area_Mo_Slip=False):
+        '''
+        Compute threshold-dependent moment-based average stress-dip (cf., Noda et al., GJI 2013)
+        Args:
+            * shapefactor: shape factor (e.g., 2.44 for a circular crack,)
+            * threshold: Rupture Area = area for slip > threshold * slip_max
+            * threashold_rand: if ='log-normal' randomly generate threshold with mean threshold[0] 
+                                   and sigma=threshold[1]
+                               if ='uniform' randomly generate threshold between threshold[0] 
+                                   and threshold[1]
+                               if =False: compute stressdrop for a constant threshold
+            * return_Area_Mo_Slip: if True, also return Rupture area as well as corresponding 
+                                   scalar moment and averaged slip amplitude
+        '''
+
+        assert hasattr(self, 'MTs'), 'Compute moment tensor first'
+        
+        # Slip amplitude
+        if self.fault.slip.ndim == 3:
+            u       = self.fault.slip[:,:2,:]
+            ndim = 3
+        else:
+            u       = self.fault.slip[:,:2]
+            ndim = 2        
+        slp     = np.sqrt((u*u).sum(axis=1))
+        slp_max = slp.max(axis=0)
+        plt.hist(slp_max)
+        plt.show()
+        if threshold_rand=='log-normal': # Use log-normal distributed thresholds
+            th = scipy.random.lognormal(mean=threshold[0],sigma=threshold[1],size=slp_max.size)
+        elif threshold_rand=='uniform': # Use uniform distributed thresholds
+            th = scipy.random.uniform(low=threshold[0],high=threshold[1],size=slp_max.size)
+        else:
+            th = threshold * np.ones(slp_max.shape)
+        slp_th = th * slp_max
+
+        # Rupture Area and seismic moment
+        area = np.zeros(slp_th.shape)
+        Mo   = np.zeros(slp_th.shape)
+        A = np.array(self.fault.area)
+        Slip = np.zeros(slp_th.shape)
+        for i in range(len(slp_th)):
+            if ndim==3:
+                ps = np.where(slp[:,i]>=slp_th[i])[0]
+            else:
+                ps = np.where(slp>=slp_th[i])[0]
+            if ps.size>0:
+                area[i] += A[ps].sum()*1000000.
+                M = 0.0
+                if ndim==3:
+                    Slip[i] = slp[ps,i].mean()
+                    for p in ps:
+                        M += self.MTs[p][:,:,i]                    
+                else:
+                    Slip[i] = slp[ps].mean()
+                    for p in ps:
+                        M += self.MTs[p][:,:]
+                self.checkSymmetric(M)
+                Mo[i] = np.sqrt(0.5 * np.sum(M**2, axis=(0,1)))
+        self.rupture_Mo   = Mo
+        self.rupture_area = area
+
+        # Scalar moment
+        StressDrop = shapefactor * Mo/(area**1.5)
+        self.StressDrop = StressDrop 
+        
+        # All done
+        if return_Area_Mo_Slip:
+            return area,Mo,Slip,self.StressDrop
+        else:
+            return self.StressDrop
+                   
 
 #EOF
