@@ -24,7 +24,7 @@ from . import okadafull
 
 class RectangularPatchesKin(RectangularPatches):
     
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
+    def __init__(self, name, utmzone=None, ellps='WGS84'):
         '''
         Args:
             * name      : Name of the fault.
@@ -36,11 +36,7 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         
         # Parent class init
-        super(RectangularPatchesKin,self).__init__(name,
-                                                   utmzone=utmzone,
-                                                   ellps=ellps,
-                                                   lon0=lon0,
-                                                   lat0=lat0)
+        super(RectangularPatchesKin,self).__init__(name,utmzone,ellps)
 
         # Hypocenter coordinates
         self.hypo_x   = None
@@ -58,6 +54,7 @@ class RectangularPatchesKin(RectangularPatches):
         self.mu    = None
 
         # bigG and bigD
+        self.bigD_map = None
         self.bigG = None
         self.bigD = None
         
@@ -95,7 +92,10 @@ class RectangularPatchesKin(RectangularPatches):
             region = path.Path(Reg,closed=False)
             if region.contains_point(hypo_point):
                 x1, x2, x3, width, length, strike, dip = self.getpatchgeometry(p, center=True)
-                self.hypo_z = x3
+                dx = self.hypo_x-x1
+                dy = self.hypo_y-x2            
+                dh = dy*np.sin(strike)-dx*np.cos(strike)                
+                self.hypo_z = x3 - dh*np.tan(dip)
                 self.hypo_patch_index = self.getindex(p)
 
         # UTM to lat/lon conversion        
@@ -104,6 +104,71 @@ class RectangularPatchesKin(RectangularPatches):
         # All done
         return
 
+    def setHypoOnFault(self,h_strike,h_dip):
+        '''
+        Set hypocenter attributes from on fault coordinates h_strike, h_dip
+        Args:
+            * h_strike: Along strike distance from the center of the top left patch
+            * h_dip:    Along dip distance from the center of the top left patch
+        '''
+        
+        # Fault map must exists
+        assert self.fault_map is not None, 'Fault map must exists'
+        
+        # Initialize hypocenter values
+        self.hypo_x = None
+        self.hypo_y = None
+        self.hypo_z = None
+        self.hypo_lon = None
+        self.hypo_lat = None
+        self.hypo_patch_index = None
+        
+        # Check if within a patch
+        hypo_point = np.array([h_strike,h_dip])
+        x1, x2, x3, width, length, strike, dip = self.getpatchgeometry(0, center=True)
+        length = np.round(length,3)
+        width  = np.round(width,3)
+        for p in range(len(self.patch)):
+            # Get patch size
+            x1, x2, x3, W, L, strike, dip = self.getpatchgeometry(p, center=True)
+            assert np.round(W,3)==width,  'Patch width  must be homogeneous accross fault (%f vs %f)'%(W,width)
+            assert np.round(L,3)==length, 'Patch length must be homogeneous accross fault  (%f vs %f)'%(W,length)
+            # Get patch onfault coordinates
+            nstrike,ndip = self.fault_map[p]
+            p_strike = nstrike * L
+            p_dip    = ndip    * W
+            # Define region
+            Reg = [[p_strike-L/2,p_dip-W/2],
+                   [p_strike-L/2,p_dip+W/2],
+                   [p_strike+L/2,p_dip+W/2],
+                   [p_strike+L/2,p_dip-W/2]]
+            Reg = np.array(Reg)
+            region = path.Path(Reg,closed=False)
+            # If hypocenter within that region
+            if region.contains_point(hypo_point):
+                self.hypo_patch_index = p
+                d1  = h_strike - p_strike 
+                d2  = h_dip    - p_dip    
+                d2h = d2 * np.cos(dip)                
+                dx = d1*np.sin(strike)+d2h*np.cos(strike)
+                dy = d1*np.cos(strike)-d2h*np.sin(strike)
+                dz = d2 * np.sin(dip)
+                self.hypo_x = x1 + dx
+                self.hypo_y = x2 + dy
+                self.hypo_z = x3 + dz
+                self.hypo_lon,self.hypo_lat = self.xy2ll(self.hypo_x,self.hypo_y)
+                break
+                
+        # Check if everything is correctly assigned
+        assert self.hypo_x != None
+        assert self.hypo_y != None
+        assert self.hypo_z != None
+        assert self.hypo_lon != None
+        assert self.hypo_lat != None
+        assert self.hypo_patch_index != None
+
+        # All done
+        return
 
     def getHypoToCenter(self, p, sd_dist=False):
         ''' 
@@ -123,8 +188,8 @@ class RectangularPatchesKin(RectangularPatches):
 
         # Along dip and along strike distance to hypocenter
         if sd_dist:
-            assert self.hypo_patch_index != None, 'Must provide a hypocenter patch index'
-            assert self.fault_map        != None, 'Must provide a fault map'
+            assert self.hypo_patch_index is not None, 'Must provide a hypocenter patch index'
+            assert self.fault_map        is not None, 'Must provide a fault map'
 
             hp_x, hp_y, hp_z, hp_W, hp_L, hp_S, hp_D = self.getpatchgeometry(self.hypo_patch_index,center=True)
 
@@ -132,13 +197,13 @@ class RectangularPatchesKin(RectangularPatches):
             assert np.round(p_length,2) == np.round(hp_L,2), 'Patch length must be homogeneous over the fault'            
 
             hp_strike,hp_dip = self.fault_map[self.hypo_patch_index]
-            p_strike ,p_dip = self.fault_map[p]
+            p_strike ,p_dip  = self.fault_map[p]
             
             strike_d = (p_strike - hp_strike) * p_length
             dip_d    = (p_dip    - hp_dip   ) * p_width
             
-            dip_d    += (self.hypo_z-hp_z) / np.sin(hp_D)            
-            strike_d += (self.hypo_x-hp_x) * np.sin(hp_S) + (self.hypo_y-hp_y) * np.cos(hp_S)
+            dip_d    -= (self.hypo_z-hp_z) / np.sin(hp_D)            
+            strike_d -= (self.hypo_x-hp_x) * np.sin(hp_S) + (self.hypo_y-hp_y) * np.cos(hp_S)
 
             return dip_d, strike_d
         else:
@@ -147,6 +212,7 @@ class RectangularPatchesKin(RectangularPatches):
             z = p_z - self.hypo_z
             return x,y,z
 
+    
     def setFaultMap(self,Nstrike,Ndip,leading='strike',check_depth=True):
         '''
         Set along dip and along strike indexing for patches
@@ -311,7 +377,54 @@ class RectangularPatchesKin(RectangularPatches):
         # All done
         return
 
-    def buildKinGFsFromDB(self, data, wave_engine, slip, rake, Mu = None, filter_coef=None):
+    def setMuLambdaRho(self,model_file):
+        '''
+        Set shear modulus values for seismic moment calculation
+        from model_file:
+        Thickness  Vp  Vs  Rho (...)
+        '''
+        
+        # Read model file
+        mu = []
+        la = []
+        rho = []
+        depth  = 0.
+        depths = []
+        with open(model_file) as f:
+            for l in f:
+                if l.strip()[0]=='#':
+                    continue
+                items = l.strip().split()
+                H   = float(items[0])
+                VP  = float(items[1])
+                VS  = float(items[2])
+                RHO = float(items[3])
+                mu.append(VS*VS*RHO*1.0e9)
+                la.append(VP*VP*RHO*1.0e9 - 2*mu[-1])
+                rho.append(RHO*1.0e3)
+                if H==0.:
+                    H = np.inf
+                depths.append([depth,depth+H])
+                depth += H
+        Nd = len(depths)
+        Np = len(self.patch)
+        
+        # Set Mu for each patch
+        self.mu = np.zeros((Np,))
+        self.la = np.zeros((Np,))
+        self.rho= np.zeros((Np,))
+        for p in range(Np):
+            p_x, p_y, p_z, width, length, strike_rad, dip_rad = self.getpatchgeometry(p,center=True)
+            for d in range(Nd):
+                if p_z>=depths[d][0] and p_z<depths[d][1]:
+                    self.mu[p] = mu[d]
+                    self.la[p] = la[d]
+                    self.rho[p] = rho[d]
+
+        # All done
+        return
+
+    def buildKinGFsFromDB(self, data, wave_engine, slip, rake, Mu = None, filter_coef=None, differentiate=False):
         '''
         Build Kinematic Green's functions based on the discretized fault and a pre-calculated GF database. 
         Green's functions will be calculated for a given shear modulus and a given slip (cf., slip) 
@@ -325,8 +438,6 @@ class RectangularPatchesKin(RectangularPatches):
             * filter_coef: Filter coefficient [a, b] (optional)
         '''        
         
-        
-
         print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
         print ("Using GF_path: {}".format(wave_engine.GF_path))        
         
@@ -335,7 +446,7 @@ class RectangularPatchesKin(RectangularPatches):
         if Mu!=None:
             self.mu = np.ones((Np,)) * Mu
         else:
-            assert self.mu != None
+            assert self.mu is not None
 
         # Check the patch attribute
         assert self.patch != None, 'Patch object should be assigned'
@@ -376,17 +487,23 @@ class RectangularPatchesKin(RectangularPatches):
             for s in range(Ns):
                 # Get station name and component
                 dkey = data.sta_name[s]
-                ori  = data.d[dkey].kcmpnm[2]         
+                ori  = data.d[dkey].kcmpnm[2]
                 # Station Azimuth and distance                
                 [az,baz,dist] = self.geod.inv(p_lon,p_lat,s_lon[s],s_lat[s])
-                dist /= 1000. # km -> m
+                dist /= 1000. # km -> m                
                 # Compute synthetics
+                #print(dkey,dist)
                 o_sac,L_sac,T_sac = wave_engine.synthSDR(p_z,az,dist,M0,strike,dip,rake)
                 if ( ori == 'N' or ori == 'E' or ori == '1' or ori == '2' ):                    
                     o_sac = wave_engine.rotTraces(L_sac,T_sac,baz,data.d[dkey].cmpaz)
                 # Check delta
-                assert data.d[dkey].delta == delta, 'Sampling frequency must be identical for each station'
-                assert o_sac.delta == delta,        'Sampling frequency must be identical for each GFs'
+                assert np.round(data.d[dkey].delta,4) == np.round(delta,4), 'Sampling frequency must be identical for each station'
+                assert np.round(o_sac.delta,4) == np.round(delta,4),        'Sampling frequency must be identical for each GFs'
+                # Differentiate
+                if differentiate:
+                    o_sac.depvar = np.diff(o_sac.depvar)/delta
+                    o_sac.b    += 0.5*delta
+                    o_sac.npts -= 1
                 # GFs filtering
                 if filter_coef != None:
                     assert len(filter_coef)==2, 'Incorrect filter_coef, must include [a,b]'
@@ -397,7 +514,8 @@ class RectangularPatchesKin(RectangularPatches):
                 npts = data.d[dkey].npts
                 t = np.arange(o_sac.npts)*o_sac.delta+o_sac.b-o_sac.o
                 dtb = np.absolute(t-b)
-                ib  = np.where(dtb==dtb.min())[0][0]           
+                ib  = np.where(dtb==dtb.min())[0][0]
+                assert np.absolute(dtb[ib])<o_sac.delta,'Incomplete GFs'                
                 o_sac.depvar = o_sac.depvar[ib:ib+npts]
                 # Sac headers
                 o_sac.kstnm  = data.d[dkey].kstnm
@@ -408,31 +526,85 @@ class RectangularPatchesKin(RectangularPatches):
                 o_sac.stla   = data.d[dkey].stla
                 o_sac.npts   = npts
                 o_sac.b      = t[ib]+o_sac.o
-                # Assemble GFs
+                #if p==91:
+                #    o_sac.wsac('bidon/'+dkey+'_gf%d'%(rake))
+                # Assemble GFs                
                 synth[s_name[s]] = o_sac.copy()
             G.append(copy.deepcopy(synth))
 
         # All done
         return        
+
+    def buildBigCd(self,seismic_data):
+        '''
+        Assemble Cd from multiple kinematic datasets
+        '''
+        assert self.bigD is not None, 'bigD must be assigned'
+        assert self.bigD_map is not None, 'bigD_map must be assigned (use setbigDmap)'
+        self.bigCd = np.zeros((self.bigD.size,self.bigD.size))
+        for data in seismic_data:
+            i = self.bigD_map[data.name]
+            self.bigCd[i[0]:i[1],i[0]:i[1]] = data.Cd
+        # All done return
+        return
+
+    def saveBigCd(self, bigCdfile = 'kinematicG.Cd', dtype='float64'):
+        '''
+        Save bigCd matrix
+        '''
+        # Check if Cd exists
+        assert self.bigCd is not None, 'bigCd must be assigned'
         
-    def buildBigGD(self,eik_solver,data,rakes,vmax,Nt,Dt):
+        # Convert Cd to dtype
+        Cd = self.bigCd.astype(dtype)
+
+        # Write t file
+        Cd.tofile(bigCdfile)
+
+        # All done
+        return
+    
+    def setBigDmap(self,seismic_data):
+        '''
+        Assign data_idx map for kinematic data
+        '''
+        if type(seismic_data) != list:
+            data_list = [seismic_data]
+        else:
+            data_list = seismic_data
+            
+        # Set the data index map
+        d1 = 0
+        d2 = 0        
+        self.bigD_map = {}
+        for data in data_list:
+            for dkey in data.sta_name:
+                d2 += data.d[dkey].npts
+            self.bigD_map[data.name]=[d1,d2]
+            d1 = d2
+        # All done
+        return
+        
+    def buildBigGD(self,eik_solver,seismic_data,rakes,vmax,Nt,Dt, dtype='float64'):
         '''
         Build BigG and bigD matrices from Green's functions and data dictionaries
         Args:
             eik_solver: Eikonal solver (e.g., FastSweep)
-            data:       Seismic data object
+            data:       Seismic data object or list of objects
             rakes:      List of rake angles
             vmax:       Maximum rupture velocity
             Nt:         Number of rupture time-steps
             Dt:         Rupture time-steps
         '''
 
-        # Check vmax
-        assert vmax > 0., 'vmax must be positive'
-        
+        if type(seismic_data) != list:
+            data_list = [seismic_data]
+        else:
+            data_list = seismic_data
+            
         # Set eikonal solver grid for vmax
-         
-        if vmax != np.inf:
+        Np = len(self.patch)
+        if vmax != np.inf and vmax > 0.:
             vr = copy.deepcopy(self.vr)
             self.vr[:] = vmax 
             eik_solver.setGridFromFault(self,1.0)
@@ -441,42 +613,47 @@ class RectangularPatchesKin(RectangularPatches):
         
             # Get tmin for each patch
             tmin = []
-            for p in range(len(self.patch)):
+            for p in range(Np):
                 # Location at the patch center
                 dip_c, strike_c = self.getHypoToCenter(p,True)
                 tmin.append(eik_solver.getT0([dip_c],[strike_c])[0])
+        else:
+            tmin = np.zeros((Np,))
         
         # Build up bigD
         self.bigD = []
-        for dkey in data.sta_name:
-            self.bigD.extend(data.d[dkey].depvar)
+        for data in data_list:
+            for dkey in data.sta_name:
+                self.bigD.extend(data.d[dkey].depvar)
         self.bigD = np.array(self.bigD)
-        self.bigD = self.bigD.reshape(len(self.bigD),1)
         
         # Get tmin for each patch
-        Np = len(self.patch)
         self.bigG = np.zeros((len(self.bigD),Nt*Np*len(rakes)))
         j  = 0
         for nt in range(Nt):
+            #print('Processing %d'%(nt))
             for r in rakes:
                 for p in range(Np):
-                    tshift = tmin[p] + nt * Dt
+                    tshift  = int(np.round(tmin[p] + nt * Dt,0))
                     di = 0
-                    for dkey in data.sta_name:
-                        b    = self.G[data.name][r][p][dkey].b
-                        o    = self.G[data.name][r][p][dkey].o
-                        npts = self.G[data.name][r][p][dkey].npts
-                        depvar = self.G[data.name][r][p][dkey].depvar
-                        t = np.arange(npts) + b - o                         
-                        i = np.where(t>=tshift)[0] + di
-                        self.bigG[i,j] = depvar[:len(i)]
-                        di += npts
+                    for data in data_list:
+                        for dkey in data.sta_name:
+                            depvar = self.G[data.name][r][p][dkey].depvar
+                            npts   = self.G[data.name][r][p][dkey].npts
+                            i = tshift + di     
+                            l = npts - tshift
+                            if l>0:
+                                self.bigG[i:i+l,j] = depvar[:l]                        
+                            #for i in range(npts):
+                            #    if i>=tshift:
+                            #        self.bigG[i+di,j] = depvar[i-tshift]
+                            di += npts
                     j += 1
-                
+
         # All done
         return tmin
             
-    def saveBigGD(self, bigDfile = 'data.kin', bigGfile='gf.kin', dtype='float64'):
+    def saveBigGD(self, bigDfile = 'kinematicG.data', bigGfile='kinematicG.gf', dtype='float64'):
         '''
         Save bigG and bigD to binary file
         Args:
@@ -485,12 +662,14 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         
         # Check bigG and bigD
-        assert self.bigD != None
-        assert self.bigG != None
+        assert self.bigD is not None or self.bigG is not None
+        assert bigDfile is not None or bigGfile is not None
 
         # Write files
-        self.bigD.tofile(bigDfile, dtype=dtype)
-        self.bigG.T.tofile(bigGfile, dtype=dtype)
+        if bigDfile != None:
+            self.bigD.astype(dtype).tofile(bigDfile)
+        if bigGfile != None:
+            self.bigG.astype(dtype).T.tofile(bigGfile)
         
         # All done
         return
@@ -504,20 +683,26 @@ class RectangularPatchesKin(RectangularPatches):
             * bigGfile: bigG gilename (optional)
         '''
         
-        # Write files
-        self.bigD = np.fromfile(bigDfile, dtype=dtype)
-        self.bigG = np.fromfile(bigGfile, dtype=dtype)
-        Nd = self.bigD.size
-        assert self.bigG.size%Nd == 0
-        Nm = self.bigG.size/Nd
+        # Check file names
+        assert bigDfile  != None or bigGfile  != None
+        
+        # Load bigG and/or bigD files and convert them to double precision
+        if bigDfile != None:
+            self.bigD = np.fromfile(bigDfile, dtype=dtype).astype('float64')
 
-        # Reshape matrices
-        self.bigG = self.bigG.reshape(Nm,Nd).T
+        if bigGfile is not None:
+            assert self.bigD is not None
+            Nd = self.bigD.size
+            self.bigG = np.fromfile(bigGfile, dtype=dtype).astype('float64')
+            assert self.bigG.size%Nd == 0
+            Nm = self.bigG.size/Nd
+            # Reshape bigG matrix
+            self.bigG = self.bigG.reshape(Nm,Nd).T
         
         # All done
         return
 
-    def saveKinGF(self, data, outputDir = 'GFs'):
+    def saveKinGF(self, data, outputDir = 'GFs', prefix='gf', rmdir=True):
         '''
         Save kinematic Green's functions in outputDir
         Args:
@@ -536,23 +721,24 @@ class RectangularPatchesKin(RectangularPatches):
         Np = len(self.patch)
         for r in G.keys():
             o_dir = os.path.join(outputDir,'rake_%.1f'%(r))
-            if os.path.exists(o_dir):
+            if os.path.exists(o_dir) and rmdir:
                 sh.rmtree(o_dir)
-            os.mkdir(o_dir)
+            if not os.path.exists(o_dir):
+                os.mkdir(o_dir)
             for p in range(Np):
                 for dkey in data.sta_name:                    
-                    o_file = os.path.join(o_dir,'gf_p%d_%s.kin'%(p,dkey))
+                    o_file = os.path.join(o_dir,'%s_p%d_%s.kin'%(prefix,p,dkey))
                     self.G[data.name][r][p][dkey].wsac(o_file)
     
         # All done
         return
 
-    def loadKinGF(self, data, rakes, inputDir = 'GFs'):
+    def loadKinGF(self, data, rakes, inputDir = 'GFs', prefix='gf'):
         '''
         Load kinematic Green's functions in i_path
         Args:
             data:     seismic data object
-            rakes:    list of rake angles
+            rakes:    list of rake angle
             inputDir: input directory where GFs are stored
         '''
 
@@ -587,12 +773,57 @@ class RectangularPatchesKin(RectangularPatches):
                 synth = {}
                 for dkey in data.sta_name:
                     # Read sac
-                    i_file = os.path.join(i_dir,'gf_p%d_%s.kin'%(p,dkey))
+                    i_file = os.path.join(i_dir,'%s_p%d_%s.kin'%(prefix,p,dkey))
                     i_sac.rsac(i_file)
                     synth[dkey] = i_sac.copy()
                 self.G[data.name][r].append(copy.deepcopy(synth))
         
         # All done
         return
+
+    def castbigM(self,n_ramp_param,eik_solver,npt=4,Dtriangles=1.,grid_space=1.0):
+        '''
+        Cast kinematic model into bigM for forward modeling using bigG
+        (model should be specified in slip, tr and vr attributes, hypocenter must be specified)
+        Args:
+            * n_ramp_param: number of model parameters
+            * eik_solver: eikonal solver
+            * npt**2: numper of point sources per patch 
+        Outs:
+            * bigM matrix
+        '''
+
+        print('Casting model into bigM')        
         
-#EOF
+        # Eikonal resolution
+        eik_solver.setGridFromFault(self,grid_space)
+        eik_solver.fastSweep()
+        
+        # BigG x BigM (on the fly time-domain convolution)
+        Np = len(self.patch)  
+        Ntriangles = self.bigG.shape[1]/(2*Np)
+        bigM = np.zeros((self.bigG.shape[1],))
+        for p in range(Np):
+            # Location at the patch center
+            p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = self.getpatchgeometry(p,center=True)
+            dip_c, strike_c = self.getHypoToCenter(p,True)
+            # Grid location
+            grid_size_dip = p_length/npt
+            grid_size_strike = p_length/npt
+            grid_strike = strike_c+np.arange(0.5*grid_size_strike,p_length,grid_size_strike) - p_length/2.
+            grid_dip    = dip_c+np.arange(0.5*grid_size_dip   ,p_width ,grid_size_dip   )    - p_width/2.
+            time = np.arange(Ntriangles)*Dtriangles#+Dtriangles
+            T    = np.zeros(time.shape)
+            Tr2  = self.tr[p]/2.
+            for i in range(npt):
+                for j in range(npt):
+                    t = eik_solver.getT0([grid_dip[i]],[grid_strike[j]])[0]
+                    tc = t+Tr2
+                    ti = np.where(np.abs(time-tc)<Tr2)[0]            
+                    T[ti] += (1/Tr2 - np.abs(time[ti]-tc)/(Tr2*Tr2))*Dtriangles
+            for nt in range(Ntriangles):
+                bigM[2*nt*Np+p]     = T[nt] * self.slip[p,0]/float(npt*npt)
+                bigM[(2*nt+1)*Np+p] = T[nt] * self.slip[p,1]/float(npt*npt)
+
+        # All done 
+        return bigM  
