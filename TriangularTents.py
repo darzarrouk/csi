@@ -686,13 +686,13 @@ class TriangularTents(TriangularPatches):
             When inverting for coupling, we suggest building these functions and 
             assembling with slipdir='c'.
         
-        Args:
-            * data                  : Name of the data set.
-            * convergence           : Convergence vector, or list/array of convergence vector with
-                                        shape = (Number of fault patches, 2). 
-            * initializeCoupling    : Do you initialize the coupling vector in fault (True/False)
-            * vertical              : Use the verticals?
-            * keepRotatedGFs        : Store the dip and strike rotated GFs?
+            Args:
+                * data                  : Name of the data set.
+                * convergence           : Convergence vector, or list/array of convergence vector with
+                                            shape = (Number of fault patches, 2). 
+                * initializeCoupling    : Do you initialize the coupling vector in fault (True/False)
+                * vertical              : Use the verticals?
+                * keepRotatedGFs        : Store the dip and strike rotated GFs?
         '''
 
         # 0. Initialize?

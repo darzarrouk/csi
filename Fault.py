@@ -325,7 +325,7 @@ class Fault(SourceInv):
         return
 
 
-    def file2trace(self, filename, utm=False):
+    def file2trace(self, filename, utm=False, header=0):
         '''
         Reads the fault trace Lat/Lon directly from a text file.
         Format is:
@@ -333,6 +333,7 @@ class Fault(SourceInv):
 
         Args:
             * filename      : Name of the fault file.
+            * header        : Number of lines to skip at the beginning of the file
         '''
 
         # Open the file
@@ -344,7 +345,7 @@ class Fault(SourceInv):
         # store these into Lon Lat
         x = []
         y = []
-        for i in range(len(A)):
+        for i in range(header, len(A)):
             x.append(np.float(A[i].split()[0]))
             y.append(np.float(A[i].split()[1]))
 
