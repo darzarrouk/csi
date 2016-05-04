@@ -1005,7 +1005,7 @@ class RectangularPatches(Fault):
         return
 
 
-    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False, ellipse=False, flipstrike=False):
+    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False, ellipse=False, flipstrike=False,nsigma=1.):
         '''
         Write a psxyz compatible file to draw lines starting from the center of each patch, 
         indicating the direction of slip.
@@ -1014,7 +1014,7 @@ class RectangularPatches(Fault):
         '''
 
         # Copmute the slip direction
-        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse, flipstrike=flipstrike)
+        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse, flipstrike=flipstrike,nsigma=nsigma)
 
         # Write something
         print('Writing slip direction to file {}'.format(filename))
@@ -1074,7 +1074,7 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def getEllipse(self,patch,ellipseCenter=None,Npoints=10,factor=1.0):
+    def getEllipse(self,patch,ellipseCenter=None,Npoints=10,factor=1.0,nsigma=1.):
         '''
         Compute the ellipse error given Cm for a given patch
         args:
@@ -1094,8 +1094,8 @@ class RectangularPatches(Fault):
         # Compute eigenvalues/eigenvectors
         D,V=np.linalg.eig(Cm)
         v1 = V[:,0]
-        a  = np.sqrt(np.abs(D[0]))
-        b  = np.sqrt(np.abs(D[1]))
+        a  = nsigma*np.sqrt(np.abs(D[0]))
+        b  = nsigma*np.sqrt(np.abs(D[1]))
         phi   = np.arctan2(v1[1],v1[0])
         theta = np.linspace(0,2*np.pi,Npoints);
     
@@ -1123,7 +1123,7 @@ class RectangularPatches(Fault):
         # All done
         return RE
 
-    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False, flipstrike=False):
+    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False, flipstrike=False,nsigma=1.):
         '''
         Computes the segment indicating the slip direction.
         scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
@@ -1184,7 +1184,7 @@ class RectangularPatches(Fault):
  
             # Append ellipse 
             if ellipse:
-                self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze],factor=factor*ellipse))
+                self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze],factor=factor,nsigma=nsigma))
 
             # Append slip direction
             self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])

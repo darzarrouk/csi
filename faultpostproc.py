@@ -36,6 +36,7 @@ class faultpostproc(SourceInv):
         self.name = name
         self.fault = copy.deepcopy(fault) # we don't want to modify fault slip
         self.patchDepths = None
+        self.MTs = None
 
         # Determine number of patches along-strike and along-dip
         self.numPatches = len(self.fault.patch)
@@ -248,9 +249,11 @@ class faultpostproc(SourceInv):
         M = 0.0
 
         # Compute the tensor for each patch
+        self.MTs = []
         for p in range(len(self.fault.patch)):
             # Compute the moment of one patch
             mt = self.computePatchMoment(p)
+            self.MTs.append(mt)
             # Add it up to the full tensor
             M += mt
             
