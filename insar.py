@@ -618,12 +618,14 @@ class insar(SourceInv):
                 losList = [losx, losy, losz]
 
             # Store these guys
+            self.los = np.zeros((len(losx),3))
             self.los[:,0] = losx
             self.los[:,1] = losy
             self.los[:,2] = losz
         else:
             print('Warning: not enough information to compute LOS')
             print('LOS will be set to 1,0,0')
+            self.los = np.zeros((len(self.vel),3))
             self.los[:,0] = 1.0
             self.los[:,1] = 0.0
             self.los[:,2] = 0.0

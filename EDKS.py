@@ -402,7 +402,8 @@ def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
             splittedPatches = []
         else: 
             keepGoing = False
-            print('Be carefull, patch {} has not been refined into point sources'.format(fault.getindex(p)))
+            print('Be carefull, patch {} has not been refined into point sources'.format(fault.getindex(patch)))
+            print('Possible causes: Area = {}, Nodes = {}'.format(area, patch))
             tobeSplitted = []
             splittedPatches = [patch]
 
