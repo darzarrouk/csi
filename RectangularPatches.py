@@ -1010,7 +1010,13 @@ class RectangularPatches(Fault):
         Write a psxyz compatible file to draw lines starting from the center of each patch, 
         indicating the direction of slip.
         Tensile slip is not used...
-        scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+        Args:
+           - scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+           - factor is a scaling factor
+           - neg_depth: use True if depth is negative
+           - ellipse: if True, design error ellipse for each slip vector
+           - flipstrike: if True, flip strike
+           - nsigma: if ellipse==True, design nsigma*sigma error ellipses
         '''
 
         # Copmute the slip direction
@@ -1080,6 +1086,8 @@ class RectangularPatches(Fault):
         args:
                (optional) center  : center of the ellipse
                (optional) Npoints : number of points on the ellipse
+               (optional) factor  : scaling factor
+               (optional) nsigma  : will design a nsigma*sigma error ellipse
         '''
 
         # Get Cm
@@ -1126,7 +1134,12 @@ class RectangularPatches(Fault):
     def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False, flipstrike=False,nsigma=1.):
         '''
         Computes the segment indicating the slip direction.
-        scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+        Args:
+            - scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+            - factor is a scaling factor
+            - ellipse: if True: design an ellipse for each slip vector
+            - flipstrike: if True will flip strike direction
+            - nsigma: nsigma for error ellipses
         '''
 
         # Create the array
