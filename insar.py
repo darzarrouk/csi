@@ -840,7 +840,46 @@ class insar(SourceInv):
         # All done
         return
 
-    def getPolyEstimator(self, ptype, x0=None, y0=None, normX=None, normY=None):
+
+    def setOrbNormalizingFactor(self, x0, y0, normX, normY):
+        '''
+        Set orbit normalizing factors in insar object. 
+        '''
+        if hasattr(self, 'OrbNormalizingFactor'):
+            print("WARNING : OrbNormalizingFactor attributes will be overwritten")
+
+        self.OrbNormalizingFactor = {}
+        self.OrbNormalizingFactor['x'] = normX
+        self.OrbNormalizingFactor['y'] = normY
+        self.OrbNormalizingFactor['ref'] = [x0, y0]
+
+        # All done
+        return
+
+
+    def computeOrbNormalizingFactor(self):
+        '''
+        Compute orbit normalizing factors and store them in insar object. 
+        '''
+
+        if hasattr(self, 'OrbNormalizingFactor'):
+            print("WARNING : OrbNormalizingFactor attributes will be overwritten")
+
+        x0 = self.x[0]
+        y0 = self.y[0]
+        normX = np.abs(self.x - x0).max()
+        normY = np.abs(self.y - y0).max()
+
+        self.OrbNormalizingFactor = {}
+        self.OrbNormalizingFactor['x'] = normX
+        self.OrbNormalizingFactor['y'] = normY
+        self.OrbNormalizingFactor['ref'] = [x0, y0]
+
+        # All done
+        return
+
+
+    def getPolyEstimator(self, ptype, computeNormFact=True):
         '''
         Returns the Estimator for the polynomial form to estimate in the InSAR data.
         Args:
@@ -851,6 +890,10 @@ class insar(SourceInv):
                     constant and linear function of x and y
                 if ptype==4:
                     constant, linear term and cross term.
+
+            * computeNormFact : bool
+                if True, compute new OrbNormalizingFactor
+                if False, uses parameters in self.OrbNormalizingFactor 
         '''
 
         # number of data points
@@ -862,20 +905,15 @@ class insar(SourceInv):
 
         if ptype >= 3:
             # Compute normalizing factors
-            if not hasattr(self, 'OrbNormalizingFactor'):
-                self.OrbNormalizingFactor = {}
-            if x0 is None:
-                x0 = self.x[0]
-            if y0 is None:
-                y0 = self.y[0]
-            if normX is None:
-                normX = np.abs(self.x - x0).max()
-            if normY is None:
-                normY = np.abs(self.y - y0).max()
-            # Save them for later
-            self.OrbNormalizingFactor['x'] = normX
-            self.OrbNormalizingFactor['y'] = normY
-            self.OrbNormalizingFactor['ref'] = [x0, y0]
+            if computeNormFact:
+                self.computeOrbNormalizingFactor()
+            else:
+                assert hasattr(self, 'OrbNormalizingFactor'), 'You must set OrbNormalizingFactor first'
+            
+            normX = self.OrbNormalizingFactor['x']
+            normY = self.OrbNormalizingFactor['y']
+            x0, y0 = self.OrbNormalizingFactor['ref']
+
             # Fill in functionals
             orb[:,1] = (self.x - x0) / normX
             orb[:,2] = (self.y - y0) / normY
@@ -889,7 +927,7 @@ class insar(SourceInv):
         # All done
         return orb
 
-    def computePoly(self, fault):
+    def computePoly(self, fault, computeNormFact=True):
         '''
         Computes the orbital bias estimated in fault
         Args:
@@ -903,7 +941,7 @@ class insar(SourceInv):
         params = fault.polysol[self.name]
 
         # Get the estimator
-        Horb = self.getPolyEstimator(ptype)
+        Horb = self.getPolyEstimator(ptype, computeNormFact=computeNormFact)
 
         # Compute the polynomial
         self.orbit = np.dot(Horb, params)
@@ -926,13 +964,13 @@ class insar(SourceInv):
         # All done
         return
 
-    def removePoly(self, fault, verbose=False, custom=False):
+    def removePoly(self, fault, verbose=False, custom=False ,computeNormFact=True):
         '''
         Removes a polynomial from the parameters that are in a fault.
         '''
 
         # compute the polynomial
-        self.computePoly(fault)
+        self.computePoly(fault,computeNormFact=computeNormFact)
 
         # Print Something
         if verbose:
@@ -960,7 +998,7 @@ class insar(SourceInv):
         # All done
         return
 
-    def removeSynth(self, faults, direction='sd', poly=None, vertical=True, custom=False):
+    def removeSynth(self, faults, direction='sd', poly=None, vertical=True, custom=False, computeNormFact=True):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
         Args:
@@ -969,10 +1007,11 @@ class insar(SourceInv):
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
+            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor            
         '''
 
         # Build synthetics
-        self.buildsynth(faults, direction=direction, poly=poly, custom=custom)
+        self.buildsynth(faults, direction=direction, poly=poly, custom=custom, computeNormFact=computeNormFact)
 
         # Correct
         self.vel -= self.synth
@@ -980,7 +1019,7 @@ class insar(SourceInv):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', poly=None, vertical=True, custom=False):
+    def buildsynth(self, faults, direction='sd', poly=None, vertical=True, custom=False, computeNormFact=True):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
@@ -989,6 +1028,7 @@ class insar(SourceInv):
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
+            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
         '''
 
         # Check list
@@ -1036,9 +1076,9 @@ class insar(SourceInv):
 
             if poly is not None:
                 # Compute the polynomial 
-                self.computePoly(fault)
+                self.computePoly(fault,computeNormFact=computeNormFact)
                 if poly is 'include':
-                    self.removePoly(fault)
+                    self.removePoly(fault, computeNormFact=computeNormFact)
                 else:
                     self.synth += self.orbit
 

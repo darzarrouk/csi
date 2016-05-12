@@ -629,7 +629,45 @@ class opticorr(SourceInv):
         # All done
         return
 
-    def getPolyEstimator(self, ptype):
+    def setOrbNormalizingFactor(self, x0, y0, normX, normY):
+        '''
+        Set orbit normalizing factors in insar object. 
+        '''
+        if hasattr(self, 'OrbNormalizingFactor'):
+            print("WARNING : OrbNormalizingFactor attributes will be overwritten")
+
+        self.OrbNormalizingFactor = {}
+        self.OrbNormalizingFactor['x'] = normX
+        self.OrbNormalizingFactor['y'] = normY
+        self.OrbNormalizingFactor['ref'] = [x0, y0]
+
+        # All done
+        return
+
+
+    def computeOrbNormalizingFactor(self):
+        '''
+        Compute orbit normalizing factors and store them in insar object. 
+        '''
+
+        if hasattr(self, 'OrbNormalizingFactor'):
+            print("WARNING : OrbNormalizingFactor attributes will be overwritten")
+
+        x0 = self.x[0]
+        y0 = self.y[0]
+        normX = np.abs(self.x - x0).max()
+        normY = np.abs(self.y - y0).max()
+
+        self.OrbNormalizingFactor = {}
+        self.OrbNormalizingFactor['x'] = normX
+        self.OrbNormalizingFactor['y'] = normY
+        self.OrbNormalizingFactor['ref'] = [x0, y0]
+
+        # All done
+        return
+
+
+    def getPolyEstimator(self, ptype, computeNormFact=True):
         '''
         Returns the Estimator for the polynomial form to estimate in the optical correlation data.
         Args:
@@ -641,6 +679,11 @@ class opticorr(SourceInv):
                 if ptype==4:
                     constant, linear term and cross term.
         Watch out: If vertical is True, you should only estimate polynomials for the horizontals.
+
+            * computeNormFact : bool
+                if True, compute new OrbNormalizingFactor
+                if False, uses parameters in self.OrbNormalizingFactor 
+
         '''
 
         # Get the basic size of the polynomial
@@ -653,16 +696,14 @@ class opticorr(SourceInv):
         nd = self.east.shape[0]
 
 		# Compute normalizing factors
-        x0 = self.x[0]
-        y0 = self.y[0]
-        normX = np.abs(self.x - x0).max()
-        normY = np.abs(self.y - y0).max()
-
-        # Save them for later
-        self.OrbNormalizingFactor = {}
-        self.OrbNormalizingFactor['ref'] = [x0, y0]
-        self.OrbNormalizingFactor['x'] = normX
-        self.OrbNormalizingFactor['y'] = normY
+        if computeNormFact:
+            self.computeOrbNormalizingFactor()
+        else:
+            assert hasattr(self, 'OrbNormalizingFactor'), 'You must set OrbNormalizingFactor first'
+            
+        normX = self.OrbNormalizingFactor['x']
+        normY = self.OrbNormalizingFactor['y']
+        x0, y0 = self.OrbNormalizingFactor['ref']
 
         # Pre-compute position-dependent functional forms
         f1 = self.factor * np.ones((nd,))
@@ -689,7 +730,7 @@ class opticorr(SourceInv):
         # All done
         return orb
 
-    def computePoly(self, fault):
+    def computePoly(self, fault, computeNormFact=True):
         '''
         Computes the orbital bias estimated in fault
         Args:
@@ -703,7 +744,7 @@ class opticorr(SourceInv):
         params = fault.polysol[self.name]
 
         # Get the estimator
-        Horb = self.getPolyEstimator(ptype)
+        Horb = self.getPolyEstimator(ptype, computeNormFact=computeNormFact)
 
         # Compute the polynomial
         tmporbit = np.dot(Horb, params)
@@ -737,13 +778,13 @@ class opticorr(SourceInv):
 
         # All done
 
-    def removePoly(self, fault, verbose=False, custom=False):
+    def removePoly(self, fault, verbose=False, custom=False,computeNormFact=True):
         '''
         Removes a polynomial from the parameters that are in a fault.
         '''
 
         # Compute the polynomial
-        self.computePoly(fault)
+        self.computePoly(fault,computeNormFact=computeNormFact)
 
         # Print Something
         if verbose:
@@ -812,7 +853,7 @@ class opticorr(SourceInv):
         
 
 
-    def removeSynth(self, faults, direction='sd', poly=None, vertical=False, custom=False):
+    def removeSynth(self, faults, direction='sd', poly=None, vertical=False, custom=False,computeNormFact=True):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
         Args:
@@ -820,10 +861,11 @@ class opticorr(SourceInv):
             * direction     : Direction of slip to use.
             * include_poly  : if a polynomial function has been estimated, include it.
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
+            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
         '''
 
         # Build synthetics
-        self.buildsynth(faults, direction=direction, poly=poly, custom=custom)
+        self.buildsynth(faults, direction=direction, poly=poly, custom=custom, computeNormFact=computeNormFact)
 
         # Correct
         self.east -= self.east_synth
@@ -832,7 +874,7 @@ class opticorr(SourceInv):
         # All done
         return
 
-    def buildsynth(self, faults, direction='sd', poly=None, vertical=False, custom=False):
+    def buildsynth(self, faults, direction='sd', poly=None, vertical=False, custom=False,computeNormFact=True):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
         Args:
@@ -840,6 +882,7 @@ class opticorr(SourceInv):
             * direction     : Direction of slip to use.
             * include_poly  : if a polynomial function has been estimated, include it.
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
+            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
         '''
 
         # Number of data points
@@ -899,7 +942,7 @@ class opticorr(SourceInv):
                     self.up_synth += dc_synth[2*Nd:]
 
             if poly is not None:
-                self.computePoly(fault)
+                self.computePoly(fault, computeNormFact=computeNormFact)
                 if poly == 'include':
                     self.east_synth += self.east_orbit
                     self.north_synth += self.north_orbit

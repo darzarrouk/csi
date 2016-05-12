@@ -1522,7 +1522,7 @@ class Fault(SourceInv):
         # All done
         return
 
-    def assembleGFs(self, datas, polys=None, slipdir='sd', verbose=True, custom=False):
+    def assembleGFs(self, datas, polys=None, slipdir='sd', verbose=True, custom=False, computeNormFact=True):
         '''
         Assemble the Green's functions that have been built using build GFs.
         This routine spits out the General G and the corresponding data vector d.
@@ -1552,6 +1552,10 @@ class Fault(SourceInv):
                               t: tensile
                               c: coupling
             * custom        : If True, Gets the additional Green's function from the dictionary under the
+            
+            * computeNormFact : bool
+                if True, compute new OrbNormalizingFactor
+                if False, uses parameters in self.OrbNormalizingFactor 
         '''
 
         # print
@@ -1682,7 +1686,7 @@ class Fault(SourceInv):
                 if data.dtype in ('gps', 'multigps'):
                     orb = data.getTransformEstimator(self.poly[data.name]) 
                 elif data.dtype in ('insar', 'opticorr'):
-                    orb = data.getPolyEstimator(self.poly[data.name])
+                    orb = data.getPolyEstimator(self.poly[data.name],computeNormFact=computeNormFact)
 
                 # Number of columns
                 nc = orb.shape[1]
