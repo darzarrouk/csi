@@ -83,12 +83,13 @@ class tsunami(SourceInv):
         #  All done
         return GF_SS, GF_DS
 
-    def buildsynth(self, faults, direction='sd'):
+    def buildsynth(self, faults, direction='sd', poly=None):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
         Args:
             * faults        : list of faults to include.
             * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
+            * poly          : if True, add an offseta in the data
         '''
 
         Nd = len(self.d)
@@ -109,6 +110,14 @@ class tsunami(SourceInv):
                 Gd = G['dipslip']
                 Sd = fault.slip[:,1]
                 self.synth += np.dot(Gd, Sd)
+
+            if poly is not None:
+                esti = self.getShiftEstimator()
+                sol = fault.polysol[self.name]
+                self.shift = esti.dot(sol)
+                
+                if poly == 'include':
+                    self.synth += self.shift
 
         # All done
         return
@@ -166,3 +175,23 @@ class tsunami(SourceInv):
 
         # All done
         return
+
+
+    def getShiftEstimator(self):
+        '''
+        Returns the Estimator of a constant offset in the data
+        '''
+
+        nsta = len(self.sta)
+        nd = len(self.d)
+        obspersta = nd / nsta
+
+        shift = np.zeros((nd,nsta))
+
+        for i in range(nsta):
+            ib = i * obspersta
+            ie = (i+1) * obspersta
+            shift[ib:ie,i] = 1.0
+
+
+        return shift
