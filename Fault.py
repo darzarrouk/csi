@@ -1688,7 +1688,7 @@ class Fault(SourceInv):
                 elif data.dtype in ('insar', 'opticorr'):
                     orb = data.getPolyEstimator(self.poly[data.name],computeNormFact=computeNormFact)
                 elif data.dtype == 'tsunami':
-                    orb = data.getShiftEstimator()
+                    orb = data.getRampEstimator(self.poly[data.name])
 
                 # Number of columns
                 nc = orb.shape[1]

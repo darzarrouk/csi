@@ -112,7 +112,7 @@ class tsunami(SourceInv):
                 self.synth += np.dot(Gd, Sd)
 
             if poly is not None:
-                esti = self.getShiftEstimator()
+                esti = self.getRampEstimator(fault.poly[self.name])
                 sol = fault.polysol[self.name]
                 self.shift = esti.dot(sol)
                 
@@ -132,19 +132,28 @@ class tsunami(SourceInv):
         fig.subplots_adjust(bottom=bottom,top=top,left=left,right=right,wspace=wspace,hspace=hspace)
         nsamp = nobs_per_trace
         nstat = len(self.d)/nobs_per_trace
-        print(nstat)
+
+
         for i in range(nstat): 
             data  = self.d[i*nsamp:nsamp*i+nsamp]
-            if len(self.synth.shape)==2:
-                synth = self.synth[i*nsamp:nsamp*i+nsamp,:]
-            else:
-                synth = self.synth[i*nsamp:nsamp*i+nsamp]
+            
+            if plot_synth == True:
+                if len(self.synth.shape)==2:
+                    synth = self.synth[i*nsamp:nsamp*i+nsamp,:]
+                else:
+                    synth = self.synth[i*nsamp:nsamp*i+nsamp]
             plt.subplot(2,np.ceil(nstat/2.),i+1)
-            t = np.arange(len(synth))
+            t = np.arange(len(data))
             if self.t0 is not None:
-                t += self.t0[i]
-            plt.plot(t,synth*scale,'r',alpha=alpha)            
-            plt.plot(t,data*scale,'k')
+                t += int(self.t0[i])
+
+            plt.plot(t,data*scale,'k',label='data')
+                
+            if plot_synth == True:            
+                plt.plot(t,synth*scale,'r',alpha=alpha,label='predictions')        
+                if i>=nstat/2:
+                    plt.legend(loc='best')
+
             #plt.grid()
             plt.title(self.sta[i])
             if not i%np.ceil(nstat/2.):
@@ -177,21 +186,36 @@ class tsunami(SourceInv):
         return
 
 
-    def getShiftEstimator(self):
+    def getRampEstimator(self,order):
         '''
         Returns the Estimator of a constant offset in the data
+        args:
+            * order : 1 -> estimate just a vertical shift in the data
+                      2 -> estimate a ramp in the data
+                      order given as argiment is in reality order*number_of_station
         '''
 
         nsta = len(self.sta)
         nd = len(self.d)
         obspersta = nd / nsta
+        
+        order /= nsta
 
-        shift = np.zeros((nd,nsta))
+        shift = np.zeros((nd,nsta*order))
 
-        for i in range(nsta):
-            ib = i * obspersta
-            ie = (i+1) * obspersta
+        ista = 0
+        for i in range(0,order*nsta,order):
+            ib = ista * obspersta
+            ie = (ista+1) * obspersta
+            ista += 1
+            
             shift[ib:ie,i] = 1.0
 
+            if order == 1:
+                continue
+            elif order == 2:
+                shift[ib:ie,i+1] = np.arange(0,obspersta)
+
+            
 
         return shift

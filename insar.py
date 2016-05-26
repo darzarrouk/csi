@@ -845,8 +845,6 @@ class insar(SourceInv):
         '''
         Set orbit normalizing factors in insar object. 
         '''
-        if hasattr(self, 'OrbNormalizingFactor'):
-            print("WARNING : OrbNormalizingFactor attributes will be overwritten")
 
         self.OrbNormalizingFactor = {}
         self.OrbNormalizingFactor['x'] = normX
@@ -861,9 +859,6 @@ class insar(SourceInv):
         '''
         Compute orbit normalizing factors and store them in insar object. 
         '''
-
-        if hasattr(self, 'OrbNormalizingFactor'):
-            print("WARNING : OrbNormalizingFactor attributes will be overwritten")
 
         x0 = self.x[0]
         y0 = self.y[0]
