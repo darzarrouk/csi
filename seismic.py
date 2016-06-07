@@ -21,7 +21,7 @@ from .SourceInv import SourceInv
 
 class seismic(SourceInv):
     
-    def __init__(self,name,dtype='seismic',utmzone=None,ellps='WGS84'):
+    def __init__(self,name,dtype='seismic',utmzone=None,ellps='WGS84',lon0=None,lat0=None):
         '''
         Args:
             * name      : Name of the dataset.
@@ -30,7 +30,7 @@ class seismic(SourceInv):
             * ellps     : ellipsoid (optional, default='WGS84')
         '''
         
-        super(self.__class__,self).__init__(name,utmzone,ellps) 
+        super(self.__class__,self).__init__(name,utmzone,ellps,lon0,lat0) 
 
         # Initialize the data set 
         self.dtype = dtype
@@ -196,7 +196,6 @@ class seismic(SourceInv):
             plt.plot(tcor,cor)
             plt.show()
         for dkey in self.sta_name:
-            print('Cd for %s'%dkey)
             npts = self.d[dkey].npts
             res  = R[n:n+npts]
             obs  = self.d[dkey].depvar
@@ -358,6 +357,28 @@ class seismic(SourceInv):
         # All done
         return
 
+    def initWaveKK(self,waveform_engine):
+        '''
+        Initialize Kikuchi Kanamori waveform engine
+        '''
+
+        # Assign reference to waveform engine
+        self.initWave(waveform_engine)
+
+        # Get data channel names
+        self.sta_name = self.waveform_engine.chans
+        
+        # Get waveforms and other stuff
+        self.d = self.waveform_engine.data
+        self.lon = []
+        self.lat = []
+        for dkey in self.sta_name:
+            sac = self.d[dkey]
+            self.lon.append(sac.stlo)
+            self.lat.append(sac.stla)
+
+        # All done
+        return
 
     def calcSynthetics(self,dir_name,strike,dip,rake,M0,rise_time,stf_type='triangle',rfile_name=None,
                        out_type='D',src_loc=None,cleanup=True,ofd=sys.stdout,efd=sys.stderr):

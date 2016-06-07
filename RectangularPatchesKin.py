@@ -450,33 +450,55 @@ class RectangularPatchesKin(RectangularPatches):
         # All done
         return 
 
-    def setMu(self,model_file):
+    def setMu(self,model_file,modelformat='CPS'):
         '''
         Set shear modulus values for seismic moment calculation
         from model_file:
-        Thickness  Vp  Vs  Rho (...)
+        Thickness  Vp  Vs  Rho (...) if format == 'CPS'
+        fort.2 (Kikuchi-Kanamori) if format == 'KK'
         '''
+
+        # Check modelformat
+        assert modelformat == 'CPS' or modelformat == 'KK', 'Incorrect model format (CPS or KK)'
         
         # Read model file
         mu = []
         depth  = 0.
         depths = []
         with open(model_file) as f:
-            for l in f:
-                if l.strip()[0]=='#':
-                    continue
-                items = l.strip().split()
-                H   = float(items[0])
-                VS  = float(items[2])
-                RHO = float(items[3])
-                mu.append(VS*VS*RHO*1.0e9)
-                if H==0.:
-                    H = np.inf
-                depths.append([depth,depth+H])
-                depth += H
+            if modelformat == 'CPS':
+                for l in f:
+                    if l.strip()[0]=='#':
+                        continue
+                    items = l.strip().split()
+                    H   = float(items[0])
+                    VS  = float(items[2])
+                    RHO = float(items[3])
+                    mu.append(VS*VS*RHO*1.0e9)
+                    if H==0.:
+                        H = np.inf
+                    depths.append([depth,depth+H])
+                    depth += H
+            elif modelformat == 'KK':
+                vmodelname = f.readline().strip()
+                print('Reading model '+vmodelname)
+                items = f.readline().strip().split()
+                N = int(items[2]) # Number of layers
+                for i in range(N):
+                    VS  = float(items[-3])
+                    RHO = float(items[-2])
+                    H   = float(items[-1])
+                    mu.append(VS*VS*RHO*1.0e9)
+                    if H == 0 or H==99.0:
+                        H = np.inf
+                    depths.append([depth,depth+H])
+                    items = f.readline().strip().split()
+                    depth += H
+            else:
+                sys.write('Incorrect model format')
+                sys.exit(1)
         Nd = len(depths)
-        Np = len(self.patch)
-        
+        Np = len(self.patch)        
         # Set Mu for each patch
         self.mu = np.zeros((Np,))
         for p in range(Np):
@@ -535,6 +557,99 @@ class RectangularPatchesKin(RectangularPatches):
         # All done
         return
 
+    def buildKK(self,data,rakes=[0.,90.],Mu=None, slip=1.0, coord0 = None, causal=False):
+        '''
+        Build Kikuchi-Kanamori Green's functions
+        Args:
+            * data: teleseismic data object
+            * rake: Rake angles (default [0.,90.])          
+            * Mu: Shear modulus (optional)
+            * slip: Slip amplitude for tsunami GF calculation (default: 1. m)
+            * coord0: lon,lat,dep of reference point to shift GFs (optional)
+        '''
+
+        print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
+
+        # Check the patch attribute
+        assert self.patch != None, 'Patch object should be assigned'        
+
+        # Check the waveform engine
+        assert data.waveform_engine is not None, 'KK Waveform engine not initiated (see seismic.waveKK)'
+        wave_engine = data.waveform_engine
+        
+        # Check Mu
+        Np = len(self.patch)
+        if Mu!=None:
+            self.mu = np.ones((Np,)) * Mu
+        else:
+            assert self.mu is not None, 'Shear modulus must be assigned (use self.setMu)'
+
+        # Set M0 for all patches
+        M0 = []
+        for p in range(Np):       
+            p_x, p_y, p_z, width, length, strike_rad, dip_rad = self.getpatchgeometry(p,center=True)
+            M0.append(self.mu[p] * slip * width * length * 1.0e6)
+            
+        # List all fault parameters
+        lon = []
+        lat = []
+        dep = []
+        strike = []
+        dip    = []
+        rake   = []
+        for p_rake in rakes:
+            for p in range(Np):            
+                p_x, p_y, p_z, width, length, strike_rad, dip_rad = self.getpatchgeometry(p,center=True)
+                p_strike = np.round(strike_rad*180./np.pi,5)
+                p_dip    = np.round(dip_rad*180./np.pi,5)
+                p_z      = np.round(p_z,5)
+                p_lon,p_lat = self.xy2ll(p_x,p_y)
+                lon.append(p_lon)
+                lat.append(p_lat)
+                dep.append(p_z)
+                strike.append(p_strike)
+                dip.append(p_dip)
+                rake.append(p_rake)
+        lon = np.array(lon)
+        lat = np.array(lat)
+        dep = np.array(dep)
+        strike = np.array(strike)
+        dip    = np.array(dip)
+        rake   = np.array(rake)
+        
+        # Build Green's function database
+        fault_params = np.array([dep,strike,dip,rake]).T
+        o = np.vstack({tuple(row) for row in fault_params})
+        udep    = o[:,0]
+        ustrike = o[:,1]
+        udip    = o[:,2]
+        urake   = o[:,3]
+        
+        wave_engine.computeGFdb(udep,ustrike,udip,urake)
+
+        # Compute Green's functions from GF database
+        if coord0 is not None:
+            wave_engine.computeGF(coord0[0],coord0[1],coord0[2],lon,lat,dep,strike,dip,rake,causal=causal)
+        else:
+            wave_engine.computeGF(self.hypo_lon,self.hypo_lat,self.hypo_z,lon,lat,dep,strike,dip,rake,causal=causal)
+        #wave_engine.computeGF(-79.940,0.371,19.000,lon,lat,dep,strike,dip,rake)
+
+        # Assign Green's functions dictionary
+        self.G[data.name] = {}
+        j = 0
+        for p_rake in rakes:
+            self.G[data.name][p_rake] = []
+            for p in range(Np):
+                self.G[data.name][p_rake].append({})
+                for dkey in wave_engine.GF[j]:
+                    self.G[data.name][p_rake][p][dkey] = wave_engine.GF[j][dkey].copy()
+                    self.G[data.name][p_rake][p][dkey].depvar *= M0[p]
+                j += 1
+                
+        # All done
+        return                        
+                
+    
     def buildKinGFsFromDB(self, data, wave_engine, slip, rake, Mu = None, filter_coef=None, differentiate=False):
         '''
         Build Kinematic Green's functions based on the discretized fault and a pre-calculated GF database. 
@@ -551,16 +666,16 @@ class RectangularPatchesKin(RectangularPatches):
         
         print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
         print ("Using GF_path: {}".format(wave_engine.GF_path))        
-        
+
+        # Check the patch attribute
+        assert self.patch != None, 'Patch object should be assigned'
+
         # Check Mu
         Np = len(self.patch)
         if Mu!=None:
             self.mu = np.ones((Np,)) * Mu
         else:
             assert self.mu is not None
-
-        # Check the patch attribute
-        assert self.patch != None, 'Patch object should be assigned'
 
         # Init Green's functions
         if not self.G.has_key(data.name):
@@ -653,7 +768,13 @@ class RectangularPatchesKin(RectangularPatches):
         assert self.bigD is not None, 'bigD must be assigned'
         assert self.bigD_map is not None, 'bigD_map must be assigned (use setbigDmap)'
         self.bigCd = np.zeros((self.bigD.size,self.bigD.size))
-        for data in seismic_data:
+
+        if type(seismic_data) != list:
+            data_list = [seismic_data]
+        else:
+            data_list = seismic_data
+            
+        for data in data_list:
             i = self.bigD_map[data.name]
             self.bigCd[i[0]:i[1],i[0]:i[1]] = data.Cd
         # All done return
@@ -744,20 +865,18 @@ class RectangularPatchesKin(RectangularPatches):
         for nt in range(Nt):
             #print('Processing %d'%(nt))
             for r in rakes:
-                for p in range(Np):
-                    tshift  = int(np.round(tmin[p] + nt * Dt,0))
+                for p in range(Np):                    
                     di = 0
                     for data in data_list:
                         for dkey in data.sta_name:
                             depvar = self.G[data.name][r][p][dkey].depvar
                             npts   = self.G[data.name][r][p][dkey].npts
-                            i = tshift + di     
-                            l = npts - tshift
+                            delta  = self.G[data.name][r][p][dkey].delta
+                            its = int(np.round((tmin[p] + nt * Dt)/delta,0)) 
+                            i = its + di     
+                            l = npts - its
                             if l>0:
                                 self.bigG[i:i+l,j] = depvar[:l]                        
-                            #for i in range(npts):
-                            #    if i>=tshift:
-                            #        self.bigG[i+di,j] = depvar[i-tshift]
                             di += npts
                     j += 1
 
@@ -925,7 +1044,7 @@ class RectangularPatchesKin(RectangularPatches):
             grid_dip    = dip_c+np.arange(0.5*grid_size_dip   ,p_width ,grid_size_dip   )    - p_width/2.
             time = np.arange(Ntriangles)*Dtriangles#+Dtriangles
             T    = np.zeros(time.shape)
-            Tr2  = self.tr[p]/2.
+            Tr2  = self.tr[p]/2.            
             for i in range(npt):
                 for j in range(npt):
                     t = eik_solver.getT0([grid_dip[i]],[grid_strike[j]])[0]
