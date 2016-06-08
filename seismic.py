@@ -111,12 +111,12 @@ class seismic(SourceInv):
     
 
     def buildCdFromRes(self,fault,model_file,n_ramp_param,eik_solver,npt=4,nmesh=None,relative_error=0.2,
-                       add_to_previous_Cd=False,average_correlation=False,gauss_cor=False,gauss_cor_std=10.):
+                       add_to_previous_Cd=False,average_correlation=False,exp_cor=False,exp_cor_len=10.):
         '''
         Build Cd from residuals
         Args:
             * model_file: model file name
-            * n_ramp_param: number of model parameters
+            * n_ramp_param: number of nuisance parameters (e.g., InSAR orbits)
             * eik_solver: eikonal solver
             * npt**2: numper of point sources per patch 
             * relative_error: standard deviation = relative_error * max(data)
@@ -188,11 +188,11 @@ class seismic(SourceInv):
         if average_correlation:
             cor = signal.correlate(R,R)
             cor /= cor.max()
-        if gauss_cor:
+        if exp_cor:
             tcor = np.arange(2*len(R)-1)-len(R)+1            
             plt.plot(tcor,cor)
             #cor = np.exp(-(tcor*tcor)/(gauss_cor_std*gauss_cor_std))
-            cor = np.exp(-np.abs(tcor)/(gauss_cor_std))
+            cor = np.exp(-np.abs(tcor)/(exp_cor_len))
             plt.plot(tcor,cor)
             plt.show()
         for dkey in self.sta_name:

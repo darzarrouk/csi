@@ -1016,7 +1016,7 @@ class RectangularPatchesKin(RectangularPatches):
         Cast kinematic model into bigM for forward modeling using bigG
         (model should be specified in slip, tr and vr attributes, hypocenter must be specified)
         Args:
-            * n_ramp_param: number of model parameters
+            * n_ramp_param: number of nuisance parameters (e.g., InSAR orbits)
             * eik_solver: eikonal solver
             * npt**2: numper of point sources per patch 
         Outs:
