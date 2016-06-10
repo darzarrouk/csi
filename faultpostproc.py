@@ -64,14 +64,16 @@ class faultpostproc(SourceInv):
         # All done
         return
 
-    def h5_init(self, decim=1):
+    def h5_init(self, decim=1,indss=None,indds=None):
         '''
         If the attribute self.samplesh5 is not None, we open the h5 file specified by 
         self.samplesh5 and copy the slip values to self.fault.slip (hopefully without loading 
         into memory).
 
         kwargs:
-            decim                       decimation factor for skipping samples
+            decim :  decimation factor for skipping samples
+            indss :  tuples (size (2,)) containing desired indices of strike slip in h5File
+            indds :  tuples (size (2,)) containing desired indices of dip slip in h5File
         '''
 
         if self.samplesh5 is None:
@@ -84,10 +86,21 @@ class faultpostproc(SourceInv):
                 return
             self.hfid = h5py.File(self.samplesh5, 'r')
             samples = self.hfid['Sample Set']
-            nsamples = np.arange(0, samples.shape[0], decim).size
-            self.fault.slip = np.zeros((self.numPatches,3,nsamples))
-            self.fault.slip[:,0,:] = samples[::decim,:self.numPatches].T
-            self.fault.slip[:,1,:] = samples[::decim,self.numPatches:2*self.numPatches].T
+
+            if indss is None or indds is None:
+                nsamples = np.arange(0, samples.shape[0], decim).size
+                self.fault.slip = np.zeros((self.numPatches,3,nsamples))
+                self.fault.slip[:,0,:] = samples[::decim,:self.numPatches].T
+                self.fault.slip[:,1,:] = samples[::decim,self.numPatches:2*self.numPatches].T
+
+            else:
+                assert indss[1]-indss[0] == self.numPatches, 'indss[1] - indss[0] different from number of patches'
+                assert indss[1]-indss[0] == self.numPatches, 'indds[1] - indds[0] different from number of patches'
+                nsamples =  np.arange(0, samples.shape[0], decim).size
+                self.fault.slip = np.zeros((self.numPatches,3,nsamples))
+                self.fault.slip[:,0,:] = samples[::decim,indss[0]:indss[1]].T
+                self.fault.slip[:,1,:] = samples[::decim,indds[0]:indds[1]].T
+
 
         return
 
