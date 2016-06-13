@@ -635,7 +635,7 @@ class TriangularPatches(Fault):
         return
 
     def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0,
-                                neg_depth=False, ellipse=False):
+                                neg_depth=False, ellipse=False,nsigma=1.):
         '''
         Write a psxyz compatible file to draw lines starting from the center of each patch,
         indicating the direction of slip.
@@ -644,7 +644,7 @@ class TriangularPatches(Fault):
         '''
 
         # Copmute the slip direction
-        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse)
+        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse,nsigma=nsigma)
 
         # Write something
         print('Writing slip direction to file {}'.format(filename))
@@ -703,12 +703,14 @@ class TriangularPatches(Fault):
         # All done
         return
 
-    def getEllipse(self, patch, ellipseCenter=None, Npoints=10, factor=1.0):
+    def getEllipse(self, patch, ellipseCenter=None, Npoints=10, factor=1.0,nsigma=1.):
         '''
         Compute the ellipse error given Cm for a given patch
         args:
                (optional) center  : center of the ellipse
                (optional) Npoints : number of points on the ellipse
+               (optional) factor  : scaling factor
+               (optional) nsigma  : will design a nsigma*sigma error ellipse
         '''
 
         # Get Cm
@@ -725,8 +727,8 @@ class TriangularPatches(Fault):
         # Compute eigenvalues/eigenvectors
         D,V = np.linalg.eig(Cm)
         v1 = V[:,0]
-        a = np.sqrt(np.abs(D[0]))
-        b = np.sqrt(np.abs(D[1]))
+        a = nsigma*np.sqrt(np.abs(D[0]))
+        b = nsigma*np.sqrt(np.abs(D[1]))
         phi = np.arctan2(v1[1],v1[0])
         theta = np.linspace(0,2*np.pi,Npoints);
 
@@ -755,7 +757,7 @@ class TriangularPatches(Fault):
         return RE
 
 
-    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False):
+    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False,nsigma=1.):
         '''
         Computes the segment indicating the slip direction.
             * scale : can be a real number or a string in 'total', 'strikeslip',
@@ -814,7 +816,7 @@ class TriangularPatches(Fault):
 
             # Append ellipse
             if ellipse:
-                self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze],factor=factor))
+                self.ellipse.append(self.getEllipse(p,ellipseCenter=[xe, ye, ze],factor=factor,nsigma=nsigma))
 
             # Append slip direction
             self.slipdirection.append([[xc, yc, zc],[xe, ye, ze]])
