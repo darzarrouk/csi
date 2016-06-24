@@ -2126,12 +2126,12 @@ class Fault(SourceInv):
         # All done
         return
 
-    def writePatchesCenters2File(self, filename, add_slip=None, scale=1.0):
+    def writePatchesCenters2File(self, filename, slip=None, scale=1.0):
         '''
         Writes the patch corners in a file that can be used in psxyz.
         Args:
             * filename      : Name of the file.
-            * add_slip      : Put the slip as a value for the color.
+            * slip          : Put the slip as a value for the color.
                               Can be None, strikeslip, dipslip, total, coupling
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
@@ -2140,6 +2140,22 @@ class Fault(SourceInv):
         # Check size
         if self.N_slip!=None and self.N_slip!=len(self.patch):
             raise NotImplementedError('Only works for len(slip)==len(patch)')
+
+        # Select the string for the color
+        if slip is not None:
+            if slip is 'coupling':
+                slp = self.coupling[:]
+            elif slip is 'strikeslip':
+                slp = self.slip[:,0]*scale
+            elif slip is 'dipslip':
+                slp = self.slip[:,1]*scale
+            elif slip is 'total':
+                slp = np.sqrt(self.slip[:,0]**2 + self.slip[:,1]**2)*scale
+            else:
+                try:
+                    slp = getattr(self, slip)
+                except:
+                    assert False, 'No value called {}'.format(slip)
 
         # Write something
         print('Writing geometry to file {}'.format(filename))
@@ -2158,19 +2174,8 @@ class Fault(SourceInv):
             xc, yc, zc = self.getcenter(patch)
             lonc, latc = self.xy2ll(xc, yc)
 
-            # Select the string for the color
-            if add_slip is not None:
-                if add_slip is 'coupling':
-                    slp = self.coupling[pIndex]
-                elif add_slip is 'strikeslip':
-                    slp = self.slip[pIndex,0]*scale
-                elif add_slip is 'dipslip':
-                    slp = self.slip[pIndex,1]*scale
-                elif add_slip is 'total':
-                    slp = np.sqrt(self.slip[pIndex,0]**2 + self.slip[pIndex,1]**2)*scale
-
             # Write the string to file
-            fout.write('{} {} {} {} \n'.format(lonc, latc, zc, slp))
+            fout.write('{} {} {} {} \n'.format(lonc, latc, zc, slp[pIndex]))
 
         # Close the file
         fout.close()
@@ -2304,6 +2309,8 @@ class Fault(SourceInv):
                 slip = self.slip[:,2]
             elif slip=='coupling':
                 slip = self.coupling
+            else: 
+                slip = getattr(self, slip)
         elif type(slip) in (np.ndarray, list):
             assert len(slip)==len(self.patch), 'Slip vector is the wrong size'
         else:
