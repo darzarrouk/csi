@@ -9,7 +9,7 @@ Written by R. Jolivet, July 2014.
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize as sp
-import sys
+import sys, os
 import copy
 
 # Personals
@@ -251,18 +251,20 @@ class imagecovariance(object):
 
             # Remove a ramp
             if rampEst:
-                G = np.zeros((Nsamp,4))
+                G = np.zeros((Nsamp,6))
+                G[:,4] = x*x
+                G[:,5] = y*y
                 G[:,3] = x*y
                 G[:,0] = x
                 G[:,1] = y
                 G[:,2] = 1.
                 pars = np.dot(np.dot(np.linalg.inv(np.dot(G.T,G)),G.T),d) 
-                a = pars[0]; b = pars[1]; c = pars[2]; w = pars[3]
-                d = d - (a*x + b*y + c + w*x*y)
+                a, b, c, w, u, v = pars
+                d = d - (a*x + b*y + c + w*x*y + u*x*x + v*y*y)
                 if self.verbose:
-                    print('Estimated Orbital Plane: {}xy + {}x + {}y + {}'.format(w,a,b,c))  
+                    print('Estimated Orbital Plane: {}x2 + {}y2 + {}xy + {}x + {}y + {}'.format(u,v,w,a,b,c))  
                 # Save it
-                data['Ramp'] = [a, b, c, w]       
+                data['Ramp'] = [a, b, c, u, v, w]       
 
             # Build all the permutations
             if self.verbose:
@@ -438,7 +440,7 @@ class imagecovariance(object):
         if self.verbose:
             print('Fitting Covariance functions')
         for dname in self.datasets:
-            
+ 
             # Get the dataset
             data = self.datasets[dname]
 
@@ -447,7 +449,6 @@ class imagecovariance(object):
                 idx = np.abs(data['Distance']-distmax).argmin() #indice of closest value to distmax in Distance
             else:
                 idx = len(data['Distance'])
-
 
             # Get the data
             y = data['Covariogram'][:idx]
@@ -565,7 +566,7 @@ class imagecovariance(object):
         # All done
         return Cd
 
-    def write2file(self):
+    def write2file(self, savedir='./'):
         '''
         Writes the results to a text file.
         '''
@@ -577,12 +578,13 @@ class imagecovariance(object):
             data = self.datasets[dname]
 
             # continue if nothing has been done
-            if 'Semivariogram' not in data.keys():
+            if 'Covariogram' not in data.keys():
                 print('Nothing to be written for data set {}'.format(dname))
                 continue
 
             # filename
             filename = '{}.cov'.format(dname.replace(' ','_'))
+            filename = os.path.join(savedir, filename)
 
             # Open file
             fout = open(filename, 'w')
@@ -598,25 +600,25 @@ class imagecovariance(object):
                 fout.write('#       Lambda : {} \n'.format(data['Lambda']))
 
             # Write header
-            header = '# Distance (km) || Semivariogram '
-            if 'Covariogram' in data.keys():
-                header = header + '|| Covariogram'
+            header = '# Distance (km) || Covariogram '
+            if 'Semivariogram' in data.keys():
+                header = header + '|| Semivariogram'
             header = header + '\n'
             fout.write(header)
 
             # Write what is in there
             distance = data['Distance']
-            semivar = data['Semivariogram']
-            semivarstd = data['Semivariogram Std']
-            if 'Covariogram' in data.keys():
-                covar = data['Covariogram']
+            covar = data['Covariogram']
+            covarstd = data['Covariogram Std']
+            if 'Semivariogram' in data.keys():
+                semivar = data['Semivariogram']
             for i in range(distance.shape[0]):
                 d = distance[i]
-                s = semivar[i]
-                ss = semivarstd[i]
+                s = covar[i]
+                ss = covarstd[i]
                 line = '{}     {}     {} '.format(d, s, ss)
-                if 'Covariogram' in data.keys():
-                    c = covar[i]
+                if 'Semivariogram' in data.keys():
+                    c = semivar[i]
                     line = line + '    {}'.format(c)
                 line = line + '\n'
                 fout.write(line)
@@ -627,7 +629,7 @@ class imagecovariance(object):
         # All done
         return
 
-    def plot(self, data='covariogram', plotData=False, figure=1, savefig=False, show=True):
+    def plot(self, data='covariance', plotData=False, figure=1, savefig=False, show=True, savedir='./'):
         '''
         Plots the covariance function.
         Args:
@@ -653,6 +655,7 @@ class imagecovariance(object):
                     self.image.fig.carte.plot(x, y, '-r', zorder=20)
             if savefig:
                 figname = 'Data_{}.png'.format(self.name.replace(' ','_'))
+                figname = os.path.join(savedir, figname)
                 plt.savefig(figname)
 
         # Create a figure
@@ -711,6 +714,7 @@ class imagecovariance(object):
         # Save?
         if savefig:
             figname = '{}.png'.format(self.name.replace(' ','_'))
+            figname = os.path.join(savedir, figname)
             plt.savefig(figname)
 
         # Show me
@@ -723,7 +727,7 @@ class imagecovariance(object):
         # All done
         return
 
-    def read_from_covfile(self,dname,filename,Covariance=True):
+    def read_from_covfile(self,dname,filename):
         '''
         Read a file that was written by write2file()
         Args :
@@ -745,12 +749,9 @@ class imagecovariance(object):
         self.datasets[dname]['Sigma'] = float(l4.split()[-1])
         self.datasets[dname]['Lambda'] = float(l5.split()[-1])
         self.datasets[dname]['Distance'] = tmp[:,0]
-        self.datasets[dname]['Semivariogram'] = tmp[:,1]
-        self.datasets[dname]['Semivariogram Std'] = tmp[:,2]
+        self.datasets[dname]['Covariogram'] = tmp[:,1]
+        self.datasets[dname]['Covariogram Std'] = tmp[:,2]
         
-        if Covariance:
-            self.datasets[dname]['Covariogram'] = tmp[:,3]
-
         return
 
 

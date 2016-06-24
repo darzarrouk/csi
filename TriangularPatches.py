@@ -1067,7 +1067,6 @@ class TriangularPatches(Fault):
         # Force strike between 0 and 90 or between 270 and 360
             if normal[1] > 0:
                 normal *= -1
-             
                     
         # Get the strike vector and strike angle
         strike = np.arctan2(-normal[0], normal[1]) - np.pi

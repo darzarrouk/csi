@@ -11,7 +11,8 @@ except:
 
 def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None, 
         title='CSI product', name='z', scale=1.0, offset=0.0, mask=None,
-        xyunits=['Lon', 'Lat'], units='None', interpolation=True, verbose=True):
+        xyunits=['Lon', 'Lat'], units='None', interpolation=True, verbose=True, 
+        noValues=np.nan):
     '''
     Creates a netCDF file  with the arrays in Z. 
     Z can be list of array or an array, the size of lon.
@@ -101,7 +102,7 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
     
     if interpolation:
         # Interpolate
-        interpZ = sciint.LinearNDInterpolator(np.vstack((lon, lat)).T, z, fill_value=np.nan)
+        interpZ = sciint.LinearNDInterpolator(np.vstack((lon, lat)).T, z, fill_value=noValues)
         oZ = interpZ(olon, olat)
     else:
         # Get values
@@ -327,3 +328,10 @@ def intersectProfileFault(xe1, ye1, xe2, ye2, xc, yc, fault):
     # All done
     return d
 
+# List splitter
+def _split_seq(seq, size):
+    newseq = []
+    splitsize = 1.0/size*len(seq)
+    for i in range(size):
+            newseq.append(seq[int(round(i*splitsize)):int(round((i+1)*splitsize))])
+    return newseq

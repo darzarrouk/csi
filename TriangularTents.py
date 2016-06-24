@@ -313,7 +313,8 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', increments=None, nSamples=None, outDir='./', mask=False):
+    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', increments=None, nSamples=None, outDir='./', mask=False, 
+            noValues=np.nan):
         '''
         Writes the values of slip in two grd files:
                 -> z_{filename}
@@ -346,9 +347,11 @@ class TriangularTents(TriangularPatches):
 
         # write 2 grd
         utils.write2netCDF('{}/z_{}'.format(outDir, filename), 
-                lon, lat, -1.0*z, increments=increments, nSamples=nSamples, mask=mask)
+                lon, lat, -1.0*z, increments=increments, nSamples=nSamples, mask=mask,
+                noValues=noValues)
         utils.write2netCDF('{}/{}_{}'.format(outDir, slip, filename),
-                lon, lat, s, increments=increments, nSamples=nSamples, mask=mask)
+                lon, lat, s, increments=increments, nSamples=nSamples, mask=mask, 
+                noValues=noValues)
 
         # All done
         return
@@ -1325,7 +1328,7 @@ class TriangularTents(TriangularPatches):
         # All Done
         return Slip
 
-    def _getFaultContour(self, takeAngle='max', check=False):
+    def _getFaultContour(self, takeAngle='max', check=False, write2file=None):
         '''
         Returns the outer-edge of the fault.
         '''
@@ -1409,6 +1412,13 @@ class TriangularTents(TriangularPatches):
 
         # Remove the last point because we already have it
         contour.pop()
+
+        # Write 2 file?
+        if write2file is not None: 
+            fout = open(write2file, 'w')
+            for cont in contour:
+                fout.write('{} {} {} \n'.format(cont[0], cont[1], cont[2]))
+            fout.close()
 
         # All done
         return contour
