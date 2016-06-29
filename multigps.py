@@ -32,7 +32,7 @@ class multigps(gps):
         super(multigps,self).__init__(name,
                                       utmzone=utmzone,
                                       ellps=ellps,
-                                      lon0=lon,
+                                      lon0=lon0,
                                       lat0=lat0,
                                       verbose=False) 
         
