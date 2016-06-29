@@ -81,7 +81,7 @@ class faultpostproctents(object):
         # All done
         return
 
-    def h5_init(self, decim=1):
+    def h5_init(self, decim=1,indss=None,indds=None):
         '''
         If the attribute self.samplesh5 is not None, we open the h5 file specified by 
         self.samplesh5 and copy the slip values to self.fault.slip (hopefully without loading 
@@ -89,6 +89,8 @@ class faultpostproctents(object):
 
         kwargs:
             decim                       decimation factor for skipping samples
+            indss :  tuples (size (2,)) containing desired indices of strike slip in h5File
+            indds :  tuples (size (2,)) containing desired indices of dip slip in h5File
         '''
 
         if self.samplesh5 is None:
@@ -105,6 +107,23 @@ class faultpostproctents(object):
             self.fault.slip = np.zeros((self.numNodes,3,nsamples))
             self.fault.slip[:,0,:] = samples[::decim,:self.numNodes].T
             self.fault.slip[:,1,:] = samples[::decim,self.numNodes:2*self.numNodes].T
+
+            if indss is None or indds is None:
+                nsamples = np.arange(0, samples.shape[0], decim).size
+                self.fault.slip = np.zeros((self.numNodes,3,nsamples))
+                self.fault.slip[:,0,:] = samples[::decim,:self.numNodes].T
+                self.fault.slip[:,1,:] = samples[::decim,self.numNodes:2*self.numNodes].T
+
+            else:
+                assert indss[1]-indss[0] == self.numNodes, 'indss[1] - indss[0] different from number of patches'
+                assert indss[1]-indss[0] == self.numNodes, 'indds[1] - indds[0] different from number of patches'
+                nsamples =  np.arange(0, samples.shape[0], decim).size
+                self.fault.slip = np.zeros((self.numNodes,3,nsamples))
+                self.fault.slip[:,0,:] = samples[::decim,indss[0]:indss[1]].T
+                self.fault.slip[:,1,:] = samples[::decim,indds[0]:indds[1]].T
+
+
+            self.h5 = True # set flag for the rest of the process
 
         return
 

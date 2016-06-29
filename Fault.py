@@ -2323,11 +2323,12 @@ class Fault(SourceInv):
         # All done
         return
 
-    def setmu(self, model_file):
+    def setmu(self, model_file, tents = False):
         '''
         Set shear modulus values from a edks model_file
         Args:
           - model_file: path to model file
+          - tents     : if True, set mu values every point source in patches                                
         Outputs:
           - self.mu: shear modulus values (1 for each patch)
 
@@ -2372,16 +2373,38 @@ class Fault(SourceInv):
                 depth += TH
         depths = np.array(depths)*1e-3 # depth in km
         Nd = len(depths)
-        Np = len(self.patch)
+        if tents:
+            if self.keepTrackOfSources and hasattr(self, 'edksSources'):
+                Ids, xs, ys, zs, strike, dip, Areas = self.edksSources[:7]
+                
+            else:
+                Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(self)
+                # All these guys need to be in meters
+                xs *= 1000. ; ys *= 1000. ; zs *= 1000.
+                Areas *= 1e6
+                # Strike and dip in degrees
+                strike = strike*180./np.pi
+                dip = dip*180./np.pi
+                # Keep track?
+                self.edksSources = [Ids, xs, ys, zs, strike, dip, Areas]
+            
+            Np = len(self.edksSources[0])
+
+        else:    
+            Np = len(self.patch)
 
         # Set Mu for each patch
         self.mu = np.zeros((Np,))
         for p in range(Np):
-            p_x, p_y, p_z, width, length, strike_rad, dip_rad = self.getpatchgeometry(p,center=True)
+            if tents:
+               p_z = zs[p]/1000. 
+            else:
+                p_x, p_y, p_z,width, length, strike_rad, dip_rad = self.getpatchgeometry(p,center=True)
+
             for d in range(Nd):
                 if p_z>=depths[d][0] and p_z<depths[d][1]:
                     self.mu[p] = mu[d]
 
         # All done
-        return        
+        return          
 #EOF
