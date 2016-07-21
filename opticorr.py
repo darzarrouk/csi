@@ -1085,7 +1085,14 @@ class opticorr(SourceInv):
         # Get these values
         east = self.east[Bol]
         north = self.north[Bol]
+        if self.east_synth is not None:
+            esynth = self.east_synth[Bol]
+            nsynth = self.north_synth[Bol]
+        else:
+            esynth = None
+            nsynth = None
 
+ 
         # Get some numbers
         x1, y1 = box[0]
         x2, y2 = box[1]
@@ -1100,6 +1107,15 @@ class opticorr(SourceInv):
         Vec2 = Vec2/np.sqrt( Vec2[0]**2 + Vec2[1]**2 )
         FNor = np.dot([[east[i], north[i]] for i in range(east.shape[0])], Vec2)
 
+        if self.east_synth is not None:
+            FParS = np.dot([[esynth[i], nsynth[i]] for i in range(esynth.shape[0])], Vec1)
+            FNorS = np.dot([[esynth[i], nsynth[i]] for i in range(esynth.shape[0])], Vec2)
+        else:
+            FParS = None
+            FNorS = None
+
+
+
         # Store it in the profile list
         self.profiles[name] = {}
         dic = self.profiles[name]
@@ -1109,8 +1125,12 @@ class opticorr(SourceInv):
         dic['Box'] = np.array(boxll)
         dic['East'] = east
         dic['North'] = north
+        dic['East Synthetics'] = esynth
+        dic['North Synthetics'] = nsynth
         dic['Fault Normal'] = FNor
         dic['Fault Parallel'] = FPar
+        dic['Fault Normal Synthetics'] = FNorS
+        dic['Fault Parallel Synthetics'] = FParS
         dic['Distance'] = np.array(Dalong)
         dic['Normal Distance'] = np.array(Dacros)
         dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
