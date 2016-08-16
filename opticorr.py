@@ -1225,8 +1225,8 @@ class opticorr(SourceInv):
                     x += 360.
                 bb[i,0] = x
                 bb[i,1] = b[i,1]
-            bb[-1,0] = b[0,0]
-            bb[-1,1] = b[0,1]
+            bb[-1,0] = bb[0,0]
+            bb[-1,1] = bb[0,1]
             fig.carte.plot(bb[:,0], bb[:,1], '-k', zorder=40)
 
         # open a figure
