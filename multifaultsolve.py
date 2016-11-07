@@ -49,7 +49,6 @@ class multifaultsolve(object):
             if fault.Gassembled is None:
                 self.ready = False
                 print("G has not been assembled in fault structure {}".format(fault.name))
-                return
             if fault.dassembled is None:
                 self.ready = False
                 print("d has not been assembled in fault structure {}".format(fault.name))
@@ -59,14 +58,12 @@ class multifaultsolve(object):
         for fault in faults:
             if (fault.dassembled != self.d).all():
                 print("Data vectors are not consistent, please re-consider your data in fault structure {}".format(fault.name))
-                return
 
         # Check that the data covariance matrix is the same
         self.Cd = faults[0].Cd
         for fault in faults:
             if (fault.Cd != self.Cd).all():
                 print("Data Covariance Matrix are not consistent, please re-consider your data in fault structure {}".format(fault.name))
-                return
 
         # Initialize things
         self.fault_indexes = None
