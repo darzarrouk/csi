@@ -163,7 +163,7 @@ def stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30
     s = s.reshape((len(xs), 6))
 
     if not full:
-        return s
+        return s, flag, flag2
     else:
         Stress = np.zeros((3, 3, len(xs)))
         Stress[0,0,:] = s[:,0]  # Sxx
