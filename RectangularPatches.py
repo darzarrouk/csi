@@ -508,7 +508,7 @@ class RectangularPatches(Fault):
             # 2. Get the strike of this patch
             vs = p2-p1
             vd = p4-p1
-            assert vs[2]==0., "p1 and p2 must be located at the same depth"
+            assert vs[2]==0., 'p1 and p2 must be located at the same depth: {}'.format(vs[2])
             vnz = vs[1]*vd[0]-vs[0]*vd[1]
             if vnz<0.:
                 vs *= -1.

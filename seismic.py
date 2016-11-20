@@ -431,7 +431,7 @@ class seismic(SourceInv):
     def plot(self,synth_vector=None,plot_synt_mean=False,nc=3,nl=5, title = 'Seismic data', sta_lst=None, basename=None,
              figsize=[11.69,8.270],xlims=None,ylims=[-20.,20.],bottom=0.06,top=0.87,left=0.06,right=0.95,wspace=0.25,
              hspace=0.35,grid=True,axis_visible=True,inc=False,Y_max=False,Y_units='mm',fault=None,
-             basemap=True,basemap_dlon=2.5,basemap_dlat=2.5,endclose=True):
+             basemap=True,globalbasemap=False,basemap_dlon=2.5,basemap_dlat=2.5,endclose=True):
         '''
         Plot seismic traces
         Args:
@@ -521,10 +521,10 @@ class seismic(SourceInv):
                 label = r'%s %s %s $(\phi,\Delta, A) = %6.1f^{\circ}, %6.1f^{\circ}, %.0f%s$'%(
                     self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm[-1], 
                     self.d[dkey].az, self.d[dkey].gcarc,b,Y_units)                   
-            elif self.d[dkey].kcmpnm[2] == 'Z' or inc==False:
-                # label = r'%s %s %s %s $(\phi,\Delta) = %6.1f^{\circ}, %6.1f^{\circ}$'%(
-                #     self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm[-1], self.d[dkey].khole,
-                #     self.d[dkey].az, self.d[dkey].gcarc)
+            elif len(self.d[dkey].kcmpnm)>2 and self.d[dkey].kcmpnm[2] == 'Z' or inc==False:
+                 #label = r'%s %s %s %s $(\phi,\Delta) = %6.1f^{\circ}, %6.1f^{\circ}$'%(
+                 #    self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm[-1], self.d[dkey].khole,
+                 #    self.d[dkey].az, self.d[dkey].gcarc)
                 label = r'%s %s %s $(\phi,\Delta) = %6.1f^{\circ}, %6.1f^{\circ}$'%(
                     self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm[-1], 
                     self.d[dkey].az, self.d[dkey].gcarc)                
@@ -550,11 +550,12 @@ class seismic(SourceInv):
                 plt.xlim(xlims)
             if grid:
                 plt.grid()            
-            if basemap==True and fault is not None:
+            if basemap==True and fault is not None and globalbasemap==False:
                 m = Basemap(llcrnrlon=fault.hypo_lon-basemap_dlon, llcrnrlat=fault.hypo_lat-basemap_dlat,
                             urcrnrlon=fault.hypo_lon+basemap_dlon, urcrnrlat=fault.hypo_lat+basemap_dlat,
                             projection='lcc',lat_1=fault.hypo_lat-basemap_dlat/2.,lat_2=fault.hypo_lat+basemap_dlat/2.,
                             lon_0=fault.hypo_lon, resolution ='h',area_thresh=50. )                
+                
                 pos  = ax.get_position().get_points()
                 W  = pos[1][0]-pos[0][0] ; H  = pos[1][1]-pos[0][1] ;		
                 ax2 = plt.axes([pos[1][0]-W*0.6,pos[0][1]+H*0.01,H*1.08,H*1.00])
@@ -568,7 +569,25 @@ class seismic(SourceInv):
                 stx,sty=m(self.d[dkey].stlo,self.d[dkey].stla)                
                 m.plot(xs,ys,'o',color=(1.00000,  0.74706,  0.00000),ms=4.0,alpha=1.0,zorder=1000)
                 m.plot([stx],[sty],'o',color=(1,.27,0),ms=8,alpha=1.0,zorder=1001)
-                m.scatter([xc],[yc],c='b',marker=(5,1,0),s=120,zorder=1002)	                
+                m.scatter([xc],[yc],c='b',marker=(5,1,0),s=120,zorder=1002)	     
+
+            elif globalbasemap==True:
+                m = Basemap(projection='ortho',lat_0=fault.hypo_lat,lon_0=fault.hypo_lon,resolution='c')
+                pos  = ax.get_position().get_points()
+                W  = pos[1][0]-pos[0][0] ; H  = pos[1][1]-pos[0][1] ;		
+                ax2 = plt.axes([pos[1][0]-W*0.4,pos[0][1]+H*0.01,H*0.68,H*.60])
+                m.drawcoastlines(linewidth=0.5,zorder=900)
+                m.fillcontinents(color='0.75',lake_color=None)
+                #m.drawparallels(np.arange(fault.hypo_lat-basemap_dlat,fault.hypo_lat+basemap_dlat,3.0),linewidth=0.2)
+                #m.drawmeridians(np.arange(fault.hypo_lon-basemap_dlon,fault.hypo_lon+basemap_dlon,3.0),linewidth=0.2)
+                #m.drawmapboundary(fill_color='w')
+                xc,yc = m(fault.hypo_lon,fault.hypo_lat)
+                xs,ys = m(self.lon,self.lat)                
+                stx,sty=m(self.d[dkey].stlo,self.d[dkey].stla)                
+                m.plot(xs,ys,'o',color=(1.00000,  0.74706,  0.00000),ms=4.0,alpha=1.0,zorder=1000)
+                m.plot([stx],[sty],'o',color=(1,.27,0),ms=8,alpha=1.0,zorder=1001)
+                m.scatter([xc],[yc],c='b',marker=(5,1,0),s=120,zorder=1002)	                   
+                        
             count += 1
             nchan += 1
         #fig.set_rasterized(True)

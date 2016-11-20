@@ -817,7 +817,7 @@ class RectangularPatchesKin(RectangularPatches):
         # All done
         return
         
-    def buildBigGD(self,eik_solver,seismic_data,rakes,vmax,Nt,Dt, dtype='float64'):
+    def buildBigGD(self,eik_solver,seismic_data,rakes,vmax,Nt,Dt, dtype='float64',fastsweep=False):
         '''
         Build BigG and bigD matrices from Green's functions and data dictionaries
         Args:
@@ -827,6 +827,8 @@ class RectangularPatchesKin(RectangularPatches):
             vmax:       Maximum rupture velocity
             Nt:         Number of rupture time-steps
             Dt:         Rupture time-steps
+            fastsweep:  If True and vmax is set, solves min arrival time 
+                        using fastsweep algo. If false, uses analytical solution.
         '''
 
         if type(seismic_data) != list:
@@ -839,18 +841,28 @@ class RectangularPatchesKin(RectangularPatches):
         if vmax != np.inf and vmax > 0.:
             vr = copy.deepcopy(self.vr)
             self.vr[:] = vmax 
-            eik_solver.setGridFromFault(self,1.0)
-            eik_solver.fastSweep()
-            self.vr[:] = copy.deepcopy(vr)
+            if fastsweep: # Uses fastsweep
+                eik_solver.setGridFromFault(self,1.0)
+                eik_solver.fastSweep()
+                self.vr[:] = copy.deepcopy(vr)
         
-            # Get tmin for each patch
-            tmin = []
-            for p in range(Np):
-                # Location at the patch center
-                dip_c, strike_c = self.getHypoToCenter(p,True)
-                tmin.append(eik_solver.getT0([dip_c],[strike_c])[0])
+                # Get tmin for each patch
+                tmin = []
+                for p in range(Np):
+                    # Location at the patch center
+                    dip_c, strike_c = self.getHypoToCenter(p,True)
+                    tmin.append(eik_solver.getT0([dip_c],[strike_c])[0])
+
+            else: # Uses analytical solution
+                # Get tmin for each patch
+                tmin = []
+                for p in range(Np):
+                    dip_c, strike_c = self.getHypoToCenter(p,True)
+                    tmin.append(np.sqrt(dip_c**2+strike_c**2)/vmax)                    
+
         else:
             tmin = np.zeros((Np,))
+
         
         # Build up bigD
         self.bigD = []
