@@ -8,7 +8,7 @@ import numpy as np
 import pyproj as pp
 import datetime as dt
 import matplotlib.pyplot as plt
-import sys
+import sys, os
 
 # Personal
 from .timeseries import timeseries
@@ -25,6 +25,10 @@ class gpstimeseries(SourceInv):
             * verbose   : Speak to me (default=True)
         '''
 
+        # Set things
+        self.name = name
+        self.dtype = 'gpstimeseries'
+ 
         # print
         if verbose:
             print ("---------------------------------")
@@ -39,10 +43,6 @@ class gpstimeseries(SourceInv):
                                            lat0=lat0, 
                                            ellps=ellps)
 
-        # Set things
-        self.name = name
-        self.dtype = 'gpstimeseries'
- 
         # All done
         return
 
@@ -124,6 +124,64 @@ class gpstimeseries(SourceInv):
         # All done
         return
 
+    def read_from_sql(self, filename, 
+                      tables={'e': 'east', 'n': 'north', 'u': 'up'},
+                      sigma={'e': 'sigma_east', 'n': 'sigma_north', 'u': 'sigma_up'}):
+        '''
+        Reads the East, North and Up components of the station in a sql file.
+        This follows the organization of M. Simons' group at Caltech.
+        Args:
+            * filename  : Name of the sql file
+        '''
+
+        # Import necessary bits
+        try:
+            import pandas
+            from sqlalchemy import create_engine
+        except:
+            assert False, 'Could not import pandas or sqlalchemy...'
+
+        # Open the file
+        assert os.path.exists(filename), 'File cannot be found'
+        engine = create_engine('sqlite:///{}'.format(filename))
+        east = pandas.read_sql_table(tables['e'], engine)
+        north = pandas.read_sql_table(tables['n'], engine)
+        up = pandas.read_sql_table(tables['u'], engine)
+        sigmaeast = pandas.read_sql_table(sigma['e'], engine)
+        sigmanorth = pandas.read_sql_table(sigma['n'], engine)
+        sigmaup = pandas.read_sql_table(sigma['u'], engine)
+
+        # Find the time
+        assert (east['DATE'].values==north['DATE'].values).all(), \
+                'There is something weird with the timeline of your station'
+        ns = 1e-9 # Number of nanoseconds in a second
+        self.time = np.array([dt.datetime.utcfromtimestamp(t.astype(int)*ns) \
+                              for t in east['DATE'].values])
+
+        # Initiate some timeseries
+        self.north = timeseries('North', utmzone=self.utmzone, verbose=self.verbose,
+                                lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.east = timeseries('East', utmzone=self.utmzone, verbose=self.verbose,
+                               lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.up = timeseries('Up', utmzone=self.utmzone, verbose=self.verbose,
+                             lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+
+        # set time
+        self.east.time = self.time
+        self.north.time = self.time
+        self.up.time = self.time
+
+        # Set the values
+        self.north.value = north[self.name].values
+        self.north.error = sigmanorth[self.name].values
+        self.east.value = east[self.name].values
+        self.east.error = sigmaeast[self.name].values
+        self.up.value = up[self.name].values
+        self.up.error = sigmaup[self.name].values
+        
+        # All done
+        return
+
     def read_from_caltech(self, filename):
         '''
         Reads the data from a time series file from CalTech (Avouac's group).
@@ -154,9 +212,12 @@ class gpstimeseries(SourceInv):
             stdup.append(float(values[6]))
 
         # Initiate some timeseries
-        self.north = timeseries('North', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
-        self.east = timeseries('East', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
-        self.up = timeseries('Up', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.north = timeseries('North', utmzone=self.utmzone, 
+                                lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.east = timeseries('East', utmzone=self.utmzone, 
+                               lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.up = timeseries('Up', utmzone=self.utmzone, 
+                             lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
         # Set time
         self.time = np.array(time)
@@ -171,6 +232,28 @@ class gpstimeseries(SourceInv):
         self.east.error = np.array(stdeast)
         self.up.value = np.array(up)
         self.up.error = np.array(stdup)
+
+        # All done
+        return
+    
+    def removeNaNs(self):
+        '''
+        Remove NaNs in the time series
+        '''
+
+        # Get the indexes
+        east = self.east.checkNaNs()
+        north = self.north.checkNaNs()
+        up = self.north.checkNaNs()
+
+        # check
+        enu = np.union1d(east, north)
+        enu = np.union1d(enu, up)
+
+        # Remove these guys
+        self.east.removePoints(enu)
+        self.north.removePoints(enu)
+        self.up.removePoints(enu)
 
         # All done
         return
@@ -280,6 +363,25 @@ class gpstimeseries(SourceInv):
  
         # Time vector
         self.time = self.up.time
+
+        # All done
+        return
+
+    def fitFunction(self, function, m0, solver='L-BFGS-B', iteration=1000, tol=1e-8):
+        '''
+        Fits a function to the timeseries
+        Args:
+            * function  : Prediction function, 
+            * m0        : Initial model
+            * solver    : Solver type (see list of solver in scipy.optimize.minimize)
+            * iteration : Number of iteration for the solver
+            * tol       : Tolerance
+        '''
+
+        # Do it for the three components
+        self.east.fitFunction(function, m0, solver=solver, iteration=iteration, tol=tol)
+        self.north.fitFunction(function, m0, solver=solver, iteration=iteration, tol=tol)
+        self.up.fitFunction(function, m0, solver=solver, iteration=iteration, tol=tol)
 
         # All done
         return

@@ -100,6 +100,11 @@ class planarfault(RectangularPatches):
             print("         Width           : {} km".format(f_width))
             print("         {} patches along strike".format(n_strike))
             print("         {} patches along dip".format(n_dip))
+
+        # Set depth patch attributes
+        p_width = f_width/float(n_dip)
+        self.setdepth(nump=n_dip,top=dep)
+        
         
         # Initialize the structures
         self.patch        = []        
@@ -108,10 +113,6 @@ class planarfault(RectangularPatches):
         self.equivpatchll = []
         self.slip         = []
         self.patchdip     = []
-        
-        # Set depth patch attributes
-        p_width = f_width/float(n_dip)
-        self.setdepth(nump=n_dip,top=dep)
         
         # Discretize the surface trace of the fault
         self.discretize(lon,lat,strike,f_length,n_strike)

@@ -12,6 +12,7 @@ import scipy.interpolate as sciint
 import sys
 
 # Personal
+from .functionfit import functionfit
 from .tidalfit import tidalfit
 from .SourceInv import SourceInv
 
@@ -110,6 +111,28 @@ class timeseries(SourceInv):
 
         # Sort 
         self.SortInTime()
+
+        # All done
+        return
+
+    def checkNaNs(self):
+        '''
+        Returns the index of the NaNs
+        '''
+
+        # All done
+        return np.flatnonzero(np.isnan(self.value))
+
+    def removePoints(self, indexes):
+        '''
+        Removes the points from the time series
+        Args:
+            * indexes:  Indexes of the poitns to remove
+        '''
+
+        self.value = np.delete(self.value, indexes)
+        self.error = np.delete(self.error, indexes)
+        self.time = np.delete(self.time, indexes)
 
         # All done
         return
@@ -282,7 +305,31 @@ class timeseries(SourceInv):
 
         # All Done
         return
-    
+ 
+    def fitFunction(self, function, m0, solver='L-BFGS-B', iteration=1000, tol=1e-8):
+        '''
+        Fits a function to the timeseries
+        Args:
+            * function  : Prediction function, 
+            * m0        : Initial model
+            * solver    : Solver type (see list of solver in scipy.optimize.minimize)
+            * iteration : Number of iteration for the solver
+            * tol       : Tolerance
+        '''
+
+        # Do the fit
+        fit = functionfit(function, verbose=self.verbose)
+        fit.doFit(self, m0, solver=solver, iteration=iteration, tol=tol)
+
+        # Do the prediction
+        fit.predict(self)
+
+        # Save
+        self.m = fit.m
+
+        # All done
+        return
+
     def fitTidalConstituents(self, steps=None, linear=False, tZero=dt.datetime(2000, 1, 1), chunks=None, cossin=False, constituents='all'):
         '''
         Fits tidal constituents on the time series.

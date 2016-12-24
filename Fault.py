@@ -67,6 +67,9 @@ class Fault(SourceInv):
         self.Cm        = None
         self.mu        = None
 
+        # Remove files
+        self.cleanUp = True
+
         # Create a dictionnary for the polysol
         self.polysol = {}
 
@@ -1034,7 +1037,7 @@ class Fault(SourceInv):
                                         strike, dip, np.zeros(dip.shape), slip, 
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1,
                                         xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                        cleanUp=True, verbose=verbose))
+                                        cleanUp=self.cleanUp, verbose=verbose))
             if verbose:
                 print('Summing sub-sources...')
             Gss = np.zeros((3, iGss.shape[1],np.unique(Ids).shape[0]))
@@ -1050,7 +1053,7 @@ class Fault(SourceInv):
                                         strike, dip, np.ones(dip.shape)*90.0, slip, 
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1,
                                         xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                        cleanUp=True, verbose=verbose))
+                                        cleanUp=self.cleanUp, verbose=verbose))
             if verbose:
                 print('Summing sub-sources...')
             Gds = np.zeros((3, iGds.shape[1], np.unique(Ids).shape[0]))
