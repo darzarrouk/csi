@@ -66,6 +66,7 @@ class Fault(SourceInv):
         self.totalslip = None
         self.Cm        = None
         self.mu        = None
+        self.numz      = None
 
         # Remove files
         self.cleanUp = True
