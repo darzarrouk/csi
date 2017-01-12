@@ -1438,6 +1438,68 @@ class Fault(SourceInv):
         # All done
         return Gss, Gds
 
+
+
+    def rotateGFsFromAngle(self,data,rotation):
+        '''
+        For the data set data, returns the rotated GFs so that strike slip and dip slip motions 
+        are rotated from a given angle.
+        It uses the Greens functions stored in self.G[data.name]
+
+        Args:
+            * data          : Name of the data set.
+            * convergence   : rotation angle in DEGREE. Positive angle is clockwise. 
+        '''
+
+        # Convert angle in radians
+        rotation *= ((np.pi) / 180.)
+
+        #Store it, it will be used to return the slip vector.
+        self.rotationangle = rotation
+
+        # Get the Green's functions
+        Gss = self.G[data.name]['strikeslip']
+        Gds = self.G[data.name]['dipslip']
+
+        # Rotate them
+        rotatedGss = Gss*np.cos(rotation) - Gds*np.sin(rotation)
+        rotatedGds = Gss*np.sin(rotation) + Gds*np.cos(rotation)
+
+        # All done
+        return rotatedGss, rotatedGds
+
+
+    def rotateSlipVectors(self,rotation=None):
+        '''
+        Rotate the slip vector given an angle.
+        Only handle an horizontal rotation
+        Args:
+            * convergence   : rotation angle in DEGREE. Positive angle is clockwise. 
+                              If None, use the one stored in self.rotation
+        '''
+
+        # Get the angle
+        if rotation is not None:
+            rotation *= (np.pi) / 180. # convert to radians
+        else:
+            rotation = self.rotation
+
+        # Get the slip vectors
+        ss = self.slip[:,0].copy()
+        ds = self.slip[:,1].copy()
+        tensile = self.slip[:,2].copy()
+
+        # Rotate them
+        rotatedss = ss*np.cos(rotation) - ds*np.sin(rotation)
+        rotatedds = ss*np.sin(rotation) + ds*np.cos(rotation)
+    
+        # build 3 column matrix.
+        rotatedSlip = np.vstack((rotatedss,rotatedds,tensile)).T
+
+        # All done.
+        return rotatedSlip
+
+
     def buildCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False, keepRotatedGFs=True, verbose=True):
         '''
             For the data set data, computes the Green's Function for coupling, using the formula

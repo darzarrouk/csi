@@ -83,6 +83,44 @@ class tsunami(SourceInv):
         #  All done
         return GF_SS, GF_DS
 
+    def setGFsInFault(self, fault, G, vertical=False):
+        '''
+        From a dictionary of Green's functions, sets these correctly into the fault 
+        object fault for future computation.
+        Args:
+            * fault     : Instance of Fault
+            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
+                          These can be a matrix or None.
+            * vertical  : Set here for consistency with other data objects, but will 
+                          always be set to False, whatever you do.
+        '''
+
+        # Get the values
+        try: 
+            GssLOS = G['strikeslip']
+        except:
+            GssLOS = None
+        try:
+            GdsLOS = G['dipslip']
+        except:
+            GdsLOS = None
+        try: 
+            GtsLOS = G['tensile']
+        except:
+            GtsLOS = None
+        try:
+            GcpLOS = G['coupling']
+        except:
+            GcpLOS = None
+
+        # set the GFs
+        fault.setGFs(self, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS],
+                    coupling=[GcpLOS], vertical=False)
+
+        # All done
+        return
+
+
     def buildsynth(self, faults, direction='sd', poly=None):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
