@@ -179,6 +179,14 @@ class RectangularPatches(Fault):
         # all done in one line
         return np.array([self.getpatchgeometry(p)[5] for p in self.patch])
 
+    def getDips(self):
+        '''
+        Returns an array of dips
+        '''
+
+        # all done in one line
+        return np.array([self.getpatchgeometry(p)[6] for p in self.patch])
+
     def splitPatchesHoriz(self, nPatches, equiv=False, indices=None):
         '''
         Splits all the patches in nPatches Horizontally.
@@ -1563,13 +1571,15 @@ class RectangularPatches(Fault):
         # All done
         return dis
 
-    def read3DrectangularGrid(self, filename, aggregatePatchNodes=None):
+    def read3DrectangularGrid(self, filename, aggregatePatchNodes=None, square=False):
         '''
         This routine read the rectangular geometry.
         Format: lon lat E[km] N[km] Dep[km] strike dip length Area ID
         Args:
             * filename            : Name of the text file
             * aggregatePatchNodes : Aggregates patche nodes that are closer than a distance (float)
+            * square              : If square == True, length = width and format is:
+                                    lon lat E[km] N[km] Dep[km] strike dip Area ID
         '''
 
         # Open the output file
@@ -1590,9 +1600,14 @@ class RectangularPatches(Fault):
             zc     = float(items[4])
             strike = float(items[5])
             dip    = float(items[6])
-            length = float(items[7])
-            area   = float(items[8])
-            PID    = int(items[9])
+            if square == True:
+                area = float(items[7])
+                PID = int(items[8])                
+                length = np.sqrt(area)
+            else:
+                length = float(items[7])
+                area   = float(items[8])
+                PID    = int(items[9])
 
             # Length width
             width  = area/length

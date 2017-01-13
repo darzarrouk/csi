@@ -694,10 +694,13 @@ class multifaultsolve(object):
         # Call solver
         if method == 'nnls':
             print("Performing non-negative least squares")
+            # Compute cholesky decomposition of iCd and iCm
+            L = np.linalg.cholesky(iCd)
+            M = np.linalg.cholesky(iCm)
             # Form augmented matrices and vectors
             d_zero = d - np.dot(G, mprior)
-            F = np.vstack((np.dot(iCd, G), iCm))
-            b = np.hstack((np.dot(iCd, d_zero), np.zeros_like(mprior)))
+            F = np.vstack((np.dot(L.T, G), M.T))
+            b = np.hstack((np.dot(L.T, d_zero), np.zeros_like(mprior)))
             m = nnls(F, b)[0] + mprior
         
         else:

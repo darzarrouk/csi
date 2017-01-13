@@ -110,69 +110,80 @@ class seismic(SourceInv):
         return
     
 
-    def buildCdFromRes(self,fault,model_file,n_ramp_param,eik_solver,npt=4,nmesh=None,relative_error=0.2,
+    def buildCdFromRes(self,fault,model,n_ramp_param=None,eik_solver=None,npt=4,nmesh=None,relative_error=0.2,
                        add_to_previous_Cd=False,average_correlation=False,exp_cor=False,exp_cor_len=10.):
         '''
         Build Cd from residuals
         Args:
-            * model_file: model file name
-            * n_ramp_param: number of nuisance parameters (e.g., InSAR orbits)
-            * eik_solver: eikonal solver
-            * npt**2: numper of point sources per patch 
+            * model: Can be a AlTar kinematic model file (posterior mean model in a txt file) or a bigM vector
+            * n_ramp_param: number of nuisance parameters (e.g., InSAR orbits, used with a model file)
+            * eik_solver: eikonal solver (to be used with an AlTar kinematic model file)
+            * npt**2: numper of point sources per patch (to be used with an AlTar kinematic model file)
             * relative_error: standard deviation = relative_error * max(data)
+            * add_to_previous_Cd: if True, will add Cd to previous Cd
+            * average_correlation: Compute average correlation for the entire set of stations
+            * exp_corr: Use an exponential correlation function
+            * exp_corr_len: Correlation length
         '''
         
         print('Computing Cd from residuals')
-
-        Dtriangles = 1. # HACK: We assume Dtriangles=1 !!!
-        
-        Np = len(fault.patch)        
-        # Read model file
-        post     = np.loadtxt(model_file)
-        assert len(post)==4*Np + n_ramp_param + 2
-        
-        # Assign fault parameters
-        fault.slip[:,0] = post[:Np]
-        fault.slip[:,1] = post[Np:2*Np]
-        fault.tr = post[2*Np+n_ramp_param:3*Np+n_ramp_param]
-        fault.vr = post[3*Np+n_ramp_param:4*Np+n_ramp_param]
-        h_strike = post[4*Np+n_ramp_param]
-        h_dip    = post[4*Np+n_ramp_param+1]
-        fault.setHypoOnFault(h_strike,h_dip)
-        
-        # Eikonal resolution    
-        if nmesh is None:
-            eik_solver.setGridFromFault(fault,1.0)
-        else:            
-            p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = fault.getpatchgeometry(0,center=True)
-            eik_solver.setGridFromFault(fault,p_length/nmesh)
-        eik_solver.fastSweep()
-        
-        # BigG x BigM (on the fly time-domain convolution)
-        Ntriangles = fault.bigG.shape[1]/(2*Np)
         G = fault.bigG
-        m = np.zeros((G.shape[1],))
-        for p in range(len(fault.patch)):
-            # Location at the patch center
-            p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = fault.getpatchgeometry(p,center=True)
-            dip_c, strike_c = fault.getHypoToCenter(p,True)
-            # Grid location
-            grid_size_dip = p_length/npt
-            grid_size_strike = p_length/npt
-            grid_strike = strike_c+np.arange(0.5*grid_size_strike,p_length,grid_size_strike) - p_length/2.
-            grid_dip    = dip_c+np.arange(0.5*grid_size_dip   ,p_width ,grid_size_dip   ) - p_width/2.
-            time = np.arange(Ntriangles)*Dtriangles#+Dtriangles
-            T  = np.zeros(time.shape)
-            Tr2 = fault.tr[p]/2.
-            for i in range(npt):
-                for j in range(npt):
-                    t = eik_solver.getT0([grid_dip[i]],[grid_strike[j]])[0]
-                    tc = t+Tr2
-                    ti = np.where(np.abs(time-tc)<Tr2)[0]            
-                    T[ti] += (1/Tr2 - np.abs(time[ti]-tc)/(Tr2*Tr2))*Dtriangles
-            for nt in range(Ntriangles):
-                m[2*nt*Np+p]     = T[nt] * fault.slip[p,0]/float(npt*npt)
-                m[(2*nt+1)*Np+p] = T[nt] * fault.slip[p,1]/float(npt*npt)
+        
+        if type(model)==str: # Use an AlTar Kin
+            print('Use model file: %s to compute residuals for Cd'%(model))
+            Dtriangles = 1. # HACK: We assume Dtriangles=1 !!!
+            print('Warning: Dtriangle=1 is hardcoded in buildCdFromRes')
+            
+            Np = len(fault.patch)        
+            # Read model file
+            post     = np.loadtxt(model)
+            assert len(post)==4*Np + n_ramp_param + 2
+            
+            # Assign fault parameters
+            fault.slip[:,0] = post[:Np]
+            fault.slip[:,1] = post[Np:2*Np]
+            fault.tr = post[2*Np+n_ramp_param:3*Np+n_ramp_param]
+            fault.vr = post[3*Np+n_ramp_param:4*Np+n_ramp_param]
+            h_strike = post[4*Np+n_ramp_param]
+            h_dip    = post[4*Np+n_ramp_param+1]
+            fault.setHypoOnFault(h_strike,h_dip)
+            
+            # Eikonal resolution    
+            if nmesh is None:
+                eik_solver.setGridFromFault(fault,1.0)
+            else:            
+                p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = fault.getpatchgeometry(0,center=True)
+                eik_solver.setGridFromFault(fault,p_length/nmesh)
+            eik_solver.fastSweep()
+            
+            # BigG x BigM (on the fly time-domain convolution)
+            Ntriangles = fault.bigG.shape[1]/(2*Np)            
+            m = np.zeros((G.shape[1],))
+            for p in range(len(fault.patch)):
+                # Location at the patch center
+                p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = fault.getpatchgeometry(p,center=True)
+                dip_c, strike_c = fault.getHypoToCenter(p,True)
+                # Grid location
+                grid_size_dip = p_length/npt
+                grid_size_strike = p_length/npt
+                grid_strike = strike_c+np.arange(0.5*grid_size_strike,p_length,grid_size_strike) - p_length/2.
+                grid_dip    = dip_c+np.arange(0.5*grid_size_dip   ,p_width ,grid_size_dip   ) - p_width/2.
+                time = np.arange(Ntriangles)*Dtriangles#+Dtriangles
+                T  = np.zeros(time.shape)
+                Tr2 = fault.tr[p]/2.
+                for i in range(npt):
+                    for j in range(npt):
+                        t = eik_solver.getT0([grid_dip[i]],[grid_strike[j]])[0]
+                        tc = t+Tr2
+                        ti = np.where(np.abs(time-tc)<Tr2)[0]            
+                        T[ti] += (1/Tr2 - np.abs(time[ti]-tc)/(Tr2*Tr2))*Dtriangles
+                for nt in range(Ntriangles):
+                    m[2*nt*Np+p]     = T[nt] * fault.slip[p,0]/float(npt*npt)
+                    m[(2*nt+1)*Np+p] = T[nt] * fault.slip[p,1]/float(npt*npt)
+        else: # Use a bigM vector
+            print('Use a bigM vector')
+            m = model
+            
         P = np.dot(G,m)
 
         # Select only relevant observations/predictions
@@ -189,7 +200,7 @@ class seismic(SourceInv):
             cor = signal.correlate(R,R)
             cor /= cor.max()
         if exp_cor:
-            tcor = np.arange(2*len(R)-1)-len(R)+1            
+            tcor = (np.arange(2*len(R)-1)-len(R)+1).astype('float64') 
             plt.plot(tcor,cor)
             #cor = np.exp(-(tcor*tcor)/(gauss_cor_std*gauss_cor_std))
             cor = np.exp(-np.abs(tcor)/(exp_cor_len))

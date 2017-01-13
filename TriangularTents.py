@@ -88,6 +88,14 @@ class TriangularTents(TriangularPatches):
         # All done in one line
         return np.array([self.getTentInfo(t)[3] for t in self.tent])
 
+    def getDips(self):
+        '''
+        Returns the dip of each nodes.
+        '''
+
+        # All done in one line
+        return np.array([self.getTentInfo(t)[4] for t in self.tent])
+
     def getTentInfo(self, tent):
         '''
         Returns the geometry info related to vertex-based tent parameterization

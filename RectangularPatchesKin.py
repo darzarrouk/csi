@@ -817,11 +817,11 @@ class RectangularPatchesKin(RectangularPatches):
         # All done
         return
         
-    def buildBigGD(self,eik_solver,seismic_data,rakes,vmax,Nt,Dt, dtype='float64',fastsweep=False):
+    def buildBigGD(self,eik_solver,seismic_data,rakes,vmax,Nt,Dt, dtype='float64',fastsweep=False,indexing='Altar'):
         '''
         Build BigG and bigD matrices from Green's functions and data dictionaries
         Args:
-            eik_solver: Eikonal solver (e.g., FastSweep)
+            eik_solver: Eikonal solver (e.g., FastSweep or None)
             data:       Seismic data object or list of objects
             rakes:      List of rake angles
             vmax:       Maximum rupture velocity
@@ -841,7 +841,7 @@ class RectangularPatchesKin(RectangularPatches):
         if vmax != np.inf and vmax > 0.:
             vr = copy.deepcopy(self.vr)
             self.vr[:] = vmax 
-            if fastsweep: # Uses fastsweep
+            if fastsweep and (eik_solver is not None): # Uses fastsweep
                 eik_solver.setGridFromFault(self,1.0)
                 eik_solver.fastSweep()
                 self.vr[:] = copy.deepcopy(vr)
@@ -859,7 +859,6 @@ class RectangularPatchesKin(RectangularPatches):
                 for p in range(Np):
                     dip_c, strike_c = self.getHypoToCenter(p,True)
                     tmin.append(np.sqrt(dip_c**2+strike_c**2)/vmax)                    
-
         else:
             tmin = np.zeros((Np,))
 
@@ -871,26 +870,44 @@ class RectangularPatchesKin(RectangularPatches):
                 self.bigD.extend(data.d[dkey].depvar)
         self.bigD = np.array(self.bigD)
         
-        # Get tmin for each patch
+        # Build Big G matrix
         self.bigG = np.zeros((len(self.bigD),Nt*Np*len(rakes)))
         j  = 0
-        for nt in range(Nt):
-            #print('Processing %d'%(nt))
+        if indexing == 'Altar':
+            for nt in range(Nt):
+                #print('Processing %d'%(nt))
+                for r in rakes:
+                    for p in range(Np):                    
+                        di = 0
+                        for data in data_list:
+                            for dkey in data.sta_name:
+                                depvar = self.G[data.name][r][p][dkey].depvar
+                                npts   = self.G[data.name][r][p][dkey].npts
+                                delta  = self.G[data.name][r][p][dkey].delta
+                                its = int(np.round((tmin[p] + nt * Dt)/delta,0)) 
+                                i = its + di     
+                                l = npts - its
+                                if l>0:
+                                    self.bigG[i:i+l,j] = depvar[:l]                        
+                                di += npts
+                        j += 1
+        else:
             for r in rakes:
                 for p in range(Np):                    
                     di = 0
-                    for data in data_list:
-                        for dkey in data.sta_name:
-                            depvar = self.G[data.name][r][p][dkey].depvar
-                            npts   = self.G[data.name][r][p][dkey].npts
-                            delta  = self.G[data.name][r][p][dkey].delta
-                            its = int(np.round((tmin[p] + nt * Dt)/delta,0)) 
-                            i = its + di     
-                            l = npts - its
-                            if l>0:
-                                self.bigG[i:i+l,j] = depvar[:l]                        
-                            di += npts
-                    j += 1
+                    for nt in range(Nt):                
+                        for data in data_list:
+                            for dkey in data.sta_name:
+                                depvar = self.G[data.name][r][p][dkey].depvar
+                                npts   = self.G[data.name][r][p][dkey].npts
+                                delta  = self.G[data.name][r][p][dkey].delta
+                                its = int(np.round((tmin[p] + nt * Dt)/delta,0)) 
+                                i = its + di     
+                                l = npts - its
+                                if l>0:
+                                    self.bigG[i:i+l,j] = depvar[:l]                        
+                                di += npts
+                        j += 1                                    
 
         # All done
         return tmin
