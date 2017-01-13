@@ -91,7 +91,8 @@ class resample(object):
         sampler.sample(iter=self.niter, burn=self.niter-1)
 
         # All done -- return the last sample
-        return samples.trace('Alpha 1')[-1], samples.trace('Alpha 2')[-1]
+        return samples.trace('Alpha 1')[-1].tolist(), 
+               samples.trace('Alpha 2')[-1].tolist()
 
     def sample(self):
         '''
