@@ -40,6 +40,14 @@ class timebayes(object):
         # All done
         return
 
+    def finalize(self):
+        '''
+        Kill MPI workers
+        '''
+        self.MPI.Finalize()
+        # All done
+        return
+        
     def generateInitialSample(self):
         '''
         Generate the initial set of samples for the first step, 
