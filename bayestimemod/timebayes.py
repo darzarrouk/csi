@@ -93,31 +93,24 @@ class timebayes(object):
         # Create a prediction function
 
         # Split the samples in as many workers 
-        if samples is not None and fixed is not None:
+        if self.me==0:
             
             # Split
             splitSamples = _split_seq(samples, self.comm.Get_size())
             splitFixed = _split_seq(fixed, self.comm.Get_size())
 
-        else:
+            # Iterate over the workers
+            for worker in range(self.comm.Get_size()):
 
-            splitSamples = [None for i in range(self.comm.Get_size())]
-            splitFixed = [None for i in range(self.comm.Get_size())]
+                # Send the packages
+                self.comm.send([splitSamples[worker], splitFixed[worker]], 
+                               dest=worker, tag=worker+10)
 
-        # Iterate over the workers
-        for worker in range(self.comm.Get_size()):
+        # Wait for everybody
+        self.comm.Barrier()
 
-            # Make a package
-            ToSend = [splitSamples[i], splitFixed[i]]
-
-            # Send the samples
-            Received = self.comm.gather(ToSend, root=worker)
-
-            # If am the worker, store the samples
-            if worker==me:
-                subsamples = Received[0]
-                subfixed = Received[1]
-                del Received
+        # Receive
+        subsamples,subfixed= self.comm.recv(source=0, tag=self.me+10)
 
         # Walk the chains in each worker
         sampler = resample(data, self.sigma, time, 
@@ -125,16 +118,16 @@ class timebayes(object):
                            prediction, self.comm)
         subsamples = sampler.sample()
 
-        # Collect the new posteriors
-        ToSend = [subsamples]
-        Received = self.comm.gather(ToSend, root=0)
+        # Send to master
+        self.comm.send(subsamples, dest=0, tag=self.me+20)
         
         # Update/Append samples
-        if worker==0:
+        if self.me==0:
             alpha1 = []; alpha2 = []
-            for subsample in Received:
-                alpha1 += subsample[0]
-                alpha2 += subsample[1]
+            for worker in range(self.comm.Get_size()):
+                newsamples = self.comm.recv(source=worker, tag=worker+20)
+                alpha1 += newsamples[0]
+                alpha2 += newsamples[1]
 
         # All done
         return alpha1, alpha2
