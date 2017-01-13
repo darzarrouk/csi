@@ -68,4 +68,7 @@ from . import csiutils as utils
 
 #from timefnutils import *
 
+## New time modeling stuff
+import bayestimemod 
+
 #EOF
