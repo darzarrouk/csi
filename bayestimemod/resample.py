@@ -75,7 +75,7 @@ class resample(object):
         @pymc.deterministic(plot=False)
         def forward(theta=Priors):
             alpha1, alpha2 = theta
-            return self.fpred(self.time, fixedPoint, alpha1, alpha2)
+            return self.fpred([fixedPoint, alpha1, alpha2])
 
         # Create a multivariate normal likelihood (the pdf is gaussian so far, so 
         # a diagonal covariance matrix will do it)
