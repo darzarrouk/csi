@@ -104,11 +104,16 @@ class resample(object):
         nextSample1 = []
         nextSample2 = []
 
+        import time
+
         # Iterate over the samples
         for alpha1, alpha2, fixed in zip(self.samples[:,0], 
                                          self.samples[:,1], 
                                          self.fixedsamples):
+            tstart = time.time()
             newAlpha1, newAlpha2 = self.walkOneChain((alpha1, alpha2), fixed)
+            tend = time.time()
+            print('Worker {}: resampling one chain -- {} s'.format(self.me, tend-tstart))
             nextSample1.append(newAlpha1)
             nextSample2.append(newAlpha2)
 

@@ -2,7 +2,7 @@
 
 # imports
 import numpy as np
-import sys, gc
+import sys, gc, os, psutil
 import copy
 from .resample import resample
 
@@ -122,14 +122,10 @@ class timebayes(object):
         data = self.data[di]
         time = self.time[di]
         
-        # Time 
-        tstart = pouet.time()
-
         # Identify the samples to update/create and the fixed ones
-        fixed   = None
-        samples = None
-        if not self.me:
-            samples = np.zeros((self.nsamples,2))            
+        fixed   = np.zeros((self.nsamples,))
+        samples = np.zeros((self.nsamples,2))
+        if self.me==0:
             if step == 0:
                 fixed = np.zeros((self.nsamples,))
                 samples[:,0] = self.generateInitialSample()
@@ -146,31 +142,30 @@ class timebayes(object):
         triTimes = np.arange(triIndex-1,triIndex+2)*self.dt        
         self.initializePredFunction(triTimes,time,h=triTimes[1]-triTimes[0])
         
-        # Split the samples in as many workers 
+        # Split
+        splitSamples = _split_seq(samples, self.comm.Get_size())
+        splitFixed = _split_seq(fixed, self.comm.Get_size())
+
+        # Send to each worker
         if self.me==0:
-
-            # Split
-            splitSamples = _split_seq(samples, self.comm.Get_size())
-            splitFixed = _split_seq(fixed, self.comm.Get_size())
-
-            # Iterate over the workers
             for worker in range(self.comm.Get_size()):
-                tstart = pouet.time()
-                # Send the packages
-                print('Sending {} samples to worker {}'.format(len(splitSamples[worker]), worker))
-                self.comm.send([splitSamples[worker], splitFixed[worker]], 
-                               dest=worker, tag=worker+10)
-                print('Send samples to worker {}: {}'.format(worker,pouet.time()-tstart))
-        
-            # Clean up
-            del splitSamples, splitFixed
-            gc.collect()
+                self.comm.Send(splitSamples[worker], dest=worker, tag=2*worker)
+                self.comm.Send(splitFixed[worker], dest=worker, tag=2*worker+1)
+
+        # Create holders of the right size
+        subsamples = np.zeros((splitSamples[self.me].shape[0],2))
+        subfixed = np.zeros((splitFixed[self.me].shape[0],))
 
         # Wait for everybody
         self.comm.Barrier()
 
         # Receive
-        subsamples,subfixed= self.comm.recv(source=0, tag=self.me+10)
+        self.comm.Recv(subsamples, source=0, tag=2*self.me)
+        self.comm.Recv(subfixed, source=0, tag=2*self.me+1)
+
+        # Clean up
+        del samples, fixed
+        gc.collect()
 
         # Walk the chains in each worker
         sampler = resample(data, self.sigma, time, 
