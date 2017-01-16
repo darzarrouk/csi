@@ -23,14 +23,6 @@ class timebayes(object):
             * nsamples  : number of samples
         '''
 
-        # Init
-        self.data = data
-        self.time = time
-        self.sigma = sigma
-        self.dt = dt
-        self.bounds = bounds
-        self.nsamples = nsamples
-        
         # Create the mpi framework
         import mpi4py
         from mpi4py import MPI
@@ -39,6 +31,14 @@ class timebayes(object):
         self.MPI = MPI
         self.comm = MPI.COMM_WORLD
         self.me = MPI.COMM_WORLD.Get_rank()
+
+        # Init
+        self.data = self.comm.bcast(data, root=0)
+        self.time = self.comm.bcast(time, root=0)
+        self.sigma = self.comm.bcast(sigma, root=0)
+        self.dt = self.comm.bcast(dt, root=0)
+        self.bounds = self.comm.bcast(bounds, root=0)
+        self.nsamples = self.comm.bcast(nsamples, root=0)
 
         # All done
         return
