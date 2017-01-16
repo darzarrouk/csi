@@ -6,10 +6,8 @@ import pymc
 
 class resample(object):
     '''
-    Class to sample the posterior probability function of 2 interpolating variables
-    given a 1D set of data.
-    2 functions are estimated, while the third one, covering the data before the 2nd 
-    triangle kicks in, stays fixed.
+    Class to sample the posterior probability function of 2 interpolating 
+    variables given a 1D set of data.
     '''
 
     def __init__(self, data, sigma, time, 
@@ -23,7 +21,7 @@ class resample(object):
             * sigma         : standard dev of data covariance
             * time          : Time of each data
             * Samples       : Set of samples to be taken as initial state
-            * fixedSample   : Sample set of the third triangle
+            * fixedSample   : Sample set of the previous interpolating functions
             * bounds        : Prior pdf bounds (priors are uniform)
                          ex : bounds = (0., 10.)
             * fpred         : Prediction function
@@ -56,27 +54,26 @@ class resample(object):
         # All done 
         return
 
-    def walkOneChain(self, startingPoints, fixedPoint):
+    def walkOneChain(self, startingPoints, fixedPoints):
         '''
         Do a metropolis walk starting from a sample.
 
         Args:
-            * startingPoints    : Sample to start from (ex: [0.2342, 1.345])
-            * fixedPoint        : Value of the preceding triangle.
+            * startingPoints   : Sample to start from (ex: [0.2342, 1.345, 0.34])
+            * fixedPoints      : Value of the preceding basis functions
         '''
 
         # Create the priors
-        alphaOne = pymc.Uniform('Alpha 1', self.bounds[0], self.bounds[1], 
-                                value=startingPoints[0])
-        alphaTwo = pymc.Uniform('Alpha 2', self.bounds[0], self.bounds[1],
-                                value=startingPoints[1])
-        Priors = [alphaOne, alphaTwo]
+        Priors = []
+        for sp, b in zip(startingPoints, range(len(startingPoints))):
+            Priors.append(pymc.Uniform('Alpha {}'.format(b), 
+                                       self.bounds[0], self.bounds[1], 
+                                       value=sp))
 
         # Data prediction function
         @pymc.deterministic(plot=False)
         def forward(theta=Priors):
-            alpha1, alpha2 = theta
-            return self.fpred([fixedPoint, alpha1, alpha2])
+            return self.fpred(fixedPoints + theta)
 
         # Create a multivariate normal likelihood (the pdf is gaussian so far, so 
         # a diagonal covariance matrix will do it)
@@ -93,26 +90,29 @@ class resample(object):
         sampler.sample(iter=self.niter, burn=self.niter-1, progress_bar=False)
 
         # All done -- return the last sample
-        return sampler.trace('Alpha 1')[-1], sampler.trace('Alpha 2')[-1]
+        return [sampler.trace('Alpha {}'.format(b))[-1] for b in range(len(Priors))]
 
     def sample(self):
         '''
         Samples the posterior PDF, starting from the samples in self.samples
         '''
 
+        # Get counters
+        nbasis = self.samples.shape[1]
+        nsamples = self.samples.shape[0]
+
         # New list of samples
-        nextSample1 = []
-        nextSample2 = []
+        nextSample = [[] for b in range(nbasis)]
 
         # Iterate over the samples
-        for alpha1, alpha2, fixed in zip(self.samples[:,0], 
-                                         self.samples[:,1], 
-                                         self.fixedsamples):
-            newAlpha1, newAlpha2 = self.walkOneChain((alpha1, alpha2), fixed)
-            nextSample1.append(newAlpha1)
-            nextSample2.append(newAlpha2)
+        for i in range(nsamples):
+            starting = self.samples[i,:].tolist()
+            fixed = self.fixedsamples[i, :].tolist()
+            newsamples = self.walkOneChain(starting, fixed)
+            for i in range(nbasis):
+                nextSample[i].append(newsamples[i])
 
         # All done
-        return np.array(nextSample1), np.array(nextSample2)
+        return np.array(nextSample)
 
 #EOF

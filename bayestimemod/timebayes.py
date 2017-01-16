@@ -40,6 +40,9 @@ class timebayes(object):
         self.bounds = self.comm.bcast(bounds, root=0)
         self.nsamples = self.comm.bcast(nsamples, root=0)
 
+        # So far we are doing triangles
+        self.nbasis = 2
+
         # All done
         return
 
@@ -60,30 +63,30 @@ class timebayes(object):
         return np.random.rand(self.nsamples)*(self.bounds[1]-self.bounds[0]) + self.bounds[0]
 
 
-    def initializePredFunction(self,triTimes,times,h=None):
+    def initializePredFunction(self,bfTimes,times,h=None):
         '''
         Initialize the prediction function.
 
         Args:
-             * triTimes: triangle center times
-             * triTimes: observation times
+             * bfTimes: basis function nodes
+             * times: observation times
         '''
 
         # Check h
         if h is None:
-            h = triTimes[1]-triTimes[0]
+            h = bfTimes[1]-bfTimes[0]
 
         # Do stuff
         def predict(alphas):
             '''
-            Linear interpolation using triangular base functions
+            Linear interpolation using basis functions
             Args:
-                - alphas: amplitude of each triangle
+                - alphas: amplitude of each basis function
             '''
             # Linear interpolation
             p = np.zeros(times.shape)
-            for i in range(len(triTimes)):
-                dt = np.abs(times - triTimes[i])
+            for i in range(len(bfTimes)):
+                dt = np.abs(times - bfTimes[i])
                 j = np.where(dt<h)
                 p[j] += alphas[i] * (1-dt[j]/h)
             # All done
@@ -95,11 +98,12 @@ class timebayes(object):
         # All done
         return
 
-    def initializeTriangleMap(self):
+    def initializeBasisFunctionMap(self):
         '''
-        Initialize a map linking data time steps to the index of the preceeding triangle
+        Initialize a map linking data time steps to the index of the preceeding 
+        basis functions
         '''
-        self.triangleMap = np.array(list(map(int,self.time/self.dt)))
+        self.bfMap = np.array(list(map(int,self.time/self.dt)))
 
         # All done
         return
@@ -116,35 +120,37 @@ class timebayes(object):
         import time as pouet
 
         # Identify the data
-        triIndex  = self.triangleMap[step] # Index of the previous triangle
-        ti = triIndex*self.dt                     # Time of the previous triangle
-        di = np.where(np.logical_and(self.time>=ti-self.dt,self.time<=self.time[step]))
+        bfIndex  = self.bfMap[step]    # Get the right index
+        bi = bfIndex*self.dt           # Get the corresponding time
+        di = np.where(np.logical_and(self.time>=bi-self.dt,
+                        self.time<=self.time[step]))
         data = self.data[di]
         time = self.time[di]
         
         # Identify the samples to update/create and the fixed ones
-        fixed   = np.zeros((self.nsamples,))
-        samples = np.zeros((self.nsamples,2))
+        fixed   = np.zeros((self.nsamples,self.nbasis-1))
+        samples = np.zeros((self.nsamples,self.nbasis))
         if self.me==0:
             if step == 0:
-                fixed = np.zeros((self.nsamples,))
-                samples[:,0] = self.generateInitialSample()
-                samples[:,1] = self.generateInitialSample()
+                fixed = np.zeros((self.nsamples,self.nbasis-1))
+                for i in range(self.nbasis):
+                    samples[:,i] = self.generateInitialSample()
             else:
-                fixed = np.array(self.samples[triIndex-1])
-                samples[:,0] = self.samples[triIndex]
-                if triIndex > self.triangleMap[step-1]:
+                fixed = np.array(self.samples[bfIndex-1])
+                samples[:,0] = self.samples[bfIndex]
+                if bfIndex > self.bfMap[step-1]:
                     samples[:,1] = self.generateInitialSample()
                 else:
-                    samples[:,1] = self.samples[triIndex+1]
+                    samples[:,1] = self.samples[bfIndex+1]
  
         # Create a prediction function
-        triTimes = np.arange(triIndex-1,triIndex+2)*self.dt        
-        self.initializePredFunction(triTimes,time,h=triTimes[1]-triTimes[0])
+        bfTimes = np.arange(bfIndex-(self.nbasis-1),bfIndex+self.nbasis)*self.dt
+        self.initializePredFunction(bfTimes,time,h=bfTimes[1]-bfTimes[0])
         
         # Split
         splitSamples = _split_seq(samples, self.comm.Get_size())
         splitFixed = _split_seq(fixed, self.comm.Get_size())
+        splitIndex = _split_seq(range(samples.shape[0]), self.comm.Get_size())
 
         # Send to each worker
         if self.me==0:
@@ -153,8 +159,8 @@ class timebayes(object):
                 self.comm.Send(splitFixed[worker], dest=worker, tag=2*worker+1)
 
         # Create holders of the right size
-        subsamples = np.zeros((splitSamples[self.me].shape[0],2))
-        subfixed = np.zeros((splitFixed[self.me].shape[0],))
+        subsamples = np.zeros((splitSamples[self.me].shape[0],self.nbasis))
+        subfixed = np.zeros((splitFixed[self.me].shape[0],self.nbasis-1))
 
         # Wait for everybody
         self.comm.Barrier()
@@ -170,25 +176,24 @@ class timebayes(object):
         subsamples = sampler.sample()
 
         # Send to master
-        self.comm.Send(subsamples[0], dest=0, tag=2*self.me)
-        self.comm.Send(subsamples[1], dest=0, tag=2*self.me+1)
+        self.comm.Send(subsamples, dest=0, tag=2*self.me)
 
         # Update/Append samples
         if self.me==0:
-            alpha1 = []; alpha2 = []
-            subalpha1 = np.zeros((splitSamples[worker].shape[0], ))
-            subalpha2 = np.zeros((splitSamples[worker].shape[0], ))
+            newsamples = np.zeros(samples.shape)
+            newsubsamples = np.zeros(subsamples.shape)
             for worker in range(self.comm.Get_size()):
-                self.comm.Recv(subalpha1, source=worker, tag=2*worker)
-                self.comm.Recv(subalpha2, source=worker, tag=2*worker+1)
-                alpha1 += subalpha1.tolist()
-                alpha2 += subalpha2.tolist()
+                self.comm.Recv(newsubsamples, source=worker, tag=2*worker)
+                newsamples[splitIndex[worker],:] = newsubsamples.T
         else:
-            alpha1 = None
-            alpha2 = None
+            newsamples = None
         
+        # Clean up 
+        del samples
+        del splitSamples, splitFixed, splitIndex
+
         # All done
-        return alpha1, alpha2, triIndex
+        return newsamples, bfIndex
 
     def walkWithTime(self, chainLength=1000):
         '''
@@ -199,30 +204,32 @@ class timebayes(object):
         self.samples = []
 
         # Create data <-> triangle map
-        self.initializeTriangleMap()
+        self.initializeBasisFunctionMap()
 
         # Chain length 
         self.chainlength = chainLength
 
         # Iterate over the data
         for step in range(self.data.size):
+
             # Print stuff
             if self.me==0:
                 sys.stdout.write('\r Time Step {} / {}'.format(step, 
                                     self.data.size))
                 sys.stdout.flush()
+
             # Walk one step
-            alpha1,alpha2,triIndex = self.oneTimeStep(step)
+            newsamples,bfIndex = self.oneTimeStep(step)
+
             # Update sample set
-            if alpha1 is not None:
-                if triIndex>len(self.samples)-1:
-                    self.samples.append(alpha1)
-                else:
-                    self.samples[triIndex] = copy.deepcopy(alpha1)
-                if triIndex+1>len(self.samples)-1:
-                    self.samples.append(alpha2)
-                else:
-                    self.samples[triIndex+1] = copy.deepcopy(alpha2)
+            if self.me == 0:
+                for c in range(newsamples.shape[1]):
+                    alpha = newsamples[:,c].tolist()
+                    if bfIndex+c>len(self.samples)-1:
+                        self.samples.append(alpha)
+                    else:
+                        self.samples[bfIndex+c] = copy.deepcopy(alpha)
+
             # Collect the garbage
             gc.collect()
         
@@ -242,16 +249,20 @@ class timebayes(object):
             import matplotlib.cm as cmx
             cNorm  = colors.Normalize(vmin=0, vmax=self.nsamples)
             scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=plt.get_cmap('jet'))
-            # Triangle center times
-            triTimes = np.arange(len(self.samples))*self.dt
+            # Basis Function center times
+            bfTimes = np.arange(len(self.samples))*self.dt
             # Initialize prediction function
-            self.initializePredFunction(triTimes,self.time,h=triTimes[1]-triTimes[0])
+            self.initializePredFunction(bfTimes,
+                                        self.time,
+                                        h=bfTimes[1]-bfTimes[0])
             # Get stochastic predictions
             preds = []
             k = 0
             for amplitudes in np.array(self.samples).T:
                 k += 1
-                plt.plot(self.time, self.fpred(amplitudes), '-', color=scalarMap.to_rgba(k))
+                plt.plot(self.time, 
+                         self.fpred(amplitudes), 
+                         '-', color=scalarMap.to_rgba(k))
             # Plot them all
             plt.plot(self.time,self.data,'ko-')
             plt.show()
