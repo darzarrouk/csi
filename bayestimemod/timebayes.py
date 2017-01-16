@@ -2,7 +2,7 @@
 
 # imports
 import numpy as np
-import sys, gc, os, psutil
+import sys, gc, os
 import copy
 from .resample import resample
 
@@ -131,7 +131,7 @@ class timebayes(object):
                 samples[:,0] = self.generateInitialSample()
                 samples[:,1] = self.generateInitialSample()
             else:
-                fixed = self.samples[triIndex-1]
+                fixed = np.array(self.samples[triIndex-1])
                 samples[:,0] = self.samples[triIndex]
                 if triIndex > self.triangleMap[step-1]:
                     samples[:,1] = self.generateInitialSample()
@@ -170,7 +170,7 @@ class timebayes(object):
         # Walk the chains in each worker
         sampler = resample(data, self.sigma, time, 
                            subsamples, subfixed, self.bounds, 
-                           self.fpred, self.comm)
+                           self.fpred, self.comm, niter=self.chainlength)
         subsamples = sampler.sample()
 
         # Send to master
@@ -194,7 +194,7 @@ class timebayes(object):
         # All done
         return alpha1, alpha2, triIndex
 
-    def walkWithTime(self):
+    def walkWithTime(self, chainLength=1000):
         '''
         Advance throught time.
         '''
@@ -204,6 +204,9 @@ class timebayes(object):
 
         # Create data <-> triangle map
         self.initializeTriangleMap()
+
+        # Chain length 
+        self.chainlength = chainLength
 
         # Iterate over the data
         for step in range(self.data.size):
