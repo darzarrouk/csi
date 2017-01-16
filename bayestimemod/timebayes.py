@@ -230,7 +230,8 @@ class timebayes(object):
             # Collect the garbage
             gc.collect()
         
-        print('All done')
+        if self.me == 0:
+            print(' All done')
 
         # All done
         return
@@ -241,16 +242,21 @@ class timebayes(object):
         '''
         if not self.me:
             import matplotlib.pyplot as plt
+            import matplotlib.colors as colors
+            import matplotlib.cm as cmx
+            cNorm  = colors.Normalize(vmin=0, vmax=self.nsamples)
+            scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=plt.get_cmap('jet'))
             # Triangle center times
             triTimes = np.arange(len(self.samples))*self.dt
             # Initialize prediction function
             self.initializePredFunction(triTimes,self.time,h=triTimes[1]-triTimes[0])
             # Get stochastic predictions
             preds = []
+            k = 0
             for amplitudes in np.array(self.samples).T:
-                preds.append(self.fpred(amplitudes))
+                k += 1
+                plt.plot(self.time, self.fpred(amplitudes), '-', color=scalarMap.to_rgba(k))
             # Plot them all
-            plt.plot(self.time,np.array(preds).T,'0.75')
             plt.plot(self.time,self.data,'ko-')
             plt.show()
         # All done
