@@ -2,6 +2,9 @@
 
 # imports
 import numpy as np
+import sys, gc
+import copy
+from .resample import resample
 
 class timebayes(object):
 
@@ -35,7 +38,7 @@ class timebayes(object):
         # Store
         self.MPI = MPI
         self.comm = MPI.COMM_WORLD
-        self.me = MPI.COMM_WORL.Get_rank()
+        self.me = MPI.COMM_WORLD.Get_rank()
 
         # All done
         return
@@ -57,28 +60,26 @@ class timebayes(object):
         return np.random.rand(self.nsamples)*(self.bounds[1]-self.bounds[0]) + self.bounds[0]
 
 
-   def initializePredFunction(self,triTimes,times,h=None):
-       '''
-       Initialize the prediction function.
-
-       Args:
-            * triTimes: triangle center times
-            * triTimes: observation times
+    def initializePredFunction(self,triTimes,times,h=None):
         '''
+        Initialize the prediction function.
+
+        Args:
+             * triTimes: triangle center times
+             * triTimes: observation times
+        '''
+
+        # Check h
+        if h is None:
+            h = triTimes[1]-triTimes[0]
 
         # Do stuff
         def predict(alphas):
             '''
             Linear interpolation using triangular base functions
             Args:
-            - triTimes: time at the center of each triangle
-            - alphas: amplitude of each triangle
-            - times: observation times
-            - h: triangle half-width (if not specified, we assume h=triTimes[1]-triTimes[0])
+                - alphas: amplitude of each triangle
             '''
-            # Triangle half-width
-            if h==None:
-                h = triTimes[1]-triTimes[0]
             # Linear interpolation
             p = np.zeros(times.shape)
             for i in range(len(triTimes)):
@@ -87,7 +88,7 @@ class timebayes(object):
                 p[j] += alphas[i] * (1-dt[j]/h)
             # All done
             return p
-        
+
         # Save the prediction function
         self.fpred = predict
 
@@ -112,6 +113,8 @@ class timebayes(object):
             * step      : index of the time step.
         '''
 
+        import time as pouet
+
         # Identify the data
         triIndex  = self.triangleMap[step] # Index of the previous triangle
         ti = triIndex*self.dt                     # Time of the previous triangle
@@ -119,6 +122,9 @@ class timebayes(object):
         data = self.data[di]
         time = self.time[di]
         
+        # Time 
+        tstart = pouet.time()
+
         # Identify the samples to update/create and the fixed ones
         fixed   = None
         samples = None
@@ -129,30 +135,36 @@ class timebayes(object):
                 samples[:,0] = self.generateInitialSample()
                 samples[:,1] = self.generateInitialSample()
             else:
-                fixed = self.samples[triIndex-1].copy()
-                samples[:,0] = self.samples[:,triIndex].copy()
+                fixed = self.samples[triIndex-1]
+                samples[:,0] = self.samples[triIndex]
                 if triIndex > self.triangleMap[step-1]:
                     samples[:,1] = self.generateInitialSample()
                 else:
-                    samples[:,1] = self.samples[:,triIndex+1].copy()
-                
+                    samples[:,1] = self.samples[triIndex+1]
+ 
         # Create a prediction function
         triTimes = np.arange(triIndex-1,triIndex+2)*self.dt        
         self.initializePredFunction(triTimes,time,h=triTimes[1]-triTimes[0])
         
         # Split the samples in as many workers 
         if self.me==0:
-            
+
             # Split
             splitSamples = _split_seq(samples, self.comm.Get_size())
             splitFixed = _split_seq(fixed, self.comm.Get_size())
 
             # Iterate over the workers
             for worker in range(self.comm.Get_size()):
-
+                tstart = pouet.time()
                 # Send the packages
+                print('Sending {} samples to worker {}'.format(len(splitSamples[worker]), worker))
                 self.comm.send([splitSamples[worker], splitFixed[worker]], 
                                dest=worker, tag=worker+10)
+                print('Send samples to worker {}: {}'.format(worker,pouet.time()-tstart))
+        
+            # Clean up
+            del splitSamples, splitFixed
+            gc.collect()
 
         # Wait for everybody
         self.comm.Barrier()
@@ -168,7 +180,9 @@ class timebayes(object):
 
         # Send to master
         self.comm.send(subsamples, dest=0, tag=self.me+20)
-        
+        del subsamples
+        gc.collect()
+
         # Update/Append samples
         if self.me==0:
             alpha1 = []; alpha2 = []
@@ -176,10 +190,12 @@ class timebayes(object):
                 newsamples = self.comm.recv(source=worker, tag=worker+20)
                 alpha1 += newsamples[0]
                 alpha2 += newsamples[1]
+            del newsamples
+            gc.collect()
         else:
             alpha1   = None
             alpha2   = None
-                
+        
         # All done
         return alpha1, alpha2, triIndex
 
@@ -196,19 +212,28 @@ class timebayes(object):
 
         # Iterate over the data
         for step in range(self.data.size):
+            # Print stuff
+            if self.me==0:
+                sys.stdout.write('\r Time Step {} / {}'.format(step, 
+                                    self.data.size))
+                sys.stdout.flush()
             # Walk one step
-            alpha1,alpha2, triIndex = self.oneTimeStep(step)
+            alpha1,alpha2,triIndex = self.oneTimeStep(step)
             # Update sample set
             if alpha1 is not None:
                 if triIndex>len(self.samples)-1:
                     self.samples.append(alpha1)
                 else:
-                    self.samples[triIndex] = alpha1.copy()
+                    self.samples[triIndex] = copy.deepcopy(alpha1)
                 if triIndex+1>len(self.samples)-1:
                     self.samples.append(alpha2)
                 else:
-                    self.samples[triIndex+1] = alpha2.copy()
+                    self.samples[triIndex+1] = copy.deepcopy(alpha2)
+            # Collect the garbage
+            gc.collect()
         
+        print('All done')
+
         # All done
         return
             
@@ -217,16 +242,17 @@ class timebayes(object):
         Plot data and results if there is some
         '''
         if not self.me:
+            import matplotlib.pyplot as plt
             # Triangle center times
-            triTimes = np.arange(self.samples.shape[1])*self.dt
+            triTimes = np.arange(len(self.samples))*self.dt
             # Initialize prediction function
             self.initializePredFunction(triTimes,self.time,h=triTimes[1]-triTimes[0])
             # Get stochastic predictions
             preds = []
-            for i in range(self.samples.shape[0]):
-                preds.append(self.fpred(self.samples[i,:]))
+            for amplitudes in np.array(self.samples).T:
+                preds.append(self.fpred(amplitudes))
             # Plot them all
-            plt.plot(self.time,preds,'0.75')
+            plt.plot(self.time,np.array(preds).T,'0.75')
             plt.plot(self.time,self.data,'ko-')
             plt.show()
         # All done

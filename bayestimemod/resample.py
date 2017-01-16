@@ -13,7 +13,7 @@ class resample(object):
     '''
 
     def __init__(self, data, sigma, time, 
-                       Samples, fixedSamples, bounds, 
+                       samples, fixedSamples, bounds, 
                        fpred, comm, niter=1000):
         '''
         Initialization of an instance.
@@ -25,7 +25,7 @@ class resample(object):
             * Samples       : Set of samples to be taken as initial state
             * fixedSample   : Sample set of the third triangle
             * bounds        : Prior pdf bounds (priors are uniform)
-                         ex : bounds = [(0., 10.), (0., 100.)] 
+                         ex : bounds = (0., 10.)
             * fpred         : Prediction function
             * comm          : MPI communicator
             * niter         : number of iterations per chain
@@ -33,6 +33,7 @@ class resample(object):
 
         # Save the communicator
         self.comm = comm
+        self.me = comm.Get_rank()
 
         # save the samples
         self.samples = samples
@@ -65,9 +66,9 @@ class resample(object):
         '''
 
         # Create the priors
-        alphaOne = pymc.Uniform('Alpha 1', self.bounds[0][0], self.bounds[0][1], 
+        alphaOne = pymc.Uniform('Alpha 1', self.bounds[0], self.bounds[1], 
                                 value=startingPoints[0])
-        alphaTwo = pymc.Uniform('Alpha 2', self.bounds[1][0], self.bounds[1][1],
+        alphaTwo = pymc.Uniform('Alpha 2', self.bounds[0], self.bounds[1],
                                 value=startingPoints[1])
         Priors = [alphaOne, alphaTwo]
 
@@ -79,7 +80,8 @@ class resample(object):
 
         # Create a multivariate normal likelihood (the pdf is gaussian so far, so 
         # a diagonal covariance matrix will do it)
-        likelihood = pymc.Normal('Data likelihood', mu=forward, tau=1/sigma**2, 
+        likelihood = pymc.Normal('Data likelihood', mu=forward, 
+                                 tau=1./self.sigma**2, 
                                  value=self.data, observed=True)
         
         # Create a sampler
@@ -88,27 +90,29 @@ class resample(object):
             sampler.use_step_method(pymc.Metropolis, p)
 
         # Sample
-        sampler.sample(iter=self.niter, burn=self.niter-1)
+        sampler.sample(iter=self.niter, burn=self.niter-1, progress_bar=False)
 
         # All done -- return the last sample
-        return samples.trace('Alpha 1')[-1].tolist(), 
-               samples.trace('Alpha 2')[-1].tolist()
+        return sampler.trace('Alpha 1')[-1], sampler.trace('Alpha 2')[-1]
 
     def sample(self):
         '''
         Samples the posterior PDF, starting from the samples in self.samples
         '''
-        
+
         # New list of samples
-        nextSamples = []
+        nextSample1 = []
+        nextSample2 = []
 
         # Iterate over the samples
-        for alpha1, alpha2, fixed in zip(self.Samples[:,0], 
-                                         self.Samples[:,1], 
-                                         self.fixedSamples):
+        for alpha1, alpha2, fixed in zip(self.samples[:,0], 
+                                         self.samples[:,1], 
+                                         self.fixedsamples):
             newAlpha1, newAlpha2 = self.walkOneChain((alpha1, alpha2), fixed)
+            nextSample1.append(newAlpha1)
+            nextSample2.append(newAlpha2)
 
         # All done
-        return np.array(nextSamples)
+        return nextSample1, nextSample2
 
 #EOF
