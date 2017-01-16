@@ -113,6 +113,6 @@ class resample(object):
             nextSample2.append(newAlpha2)
 
         # All done
-        return nextSample1, nextSample2
+        return np.array(nextSample1), np.array(nextSample2)
 
 #EOF

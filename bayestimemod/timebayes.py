@@ -163,10 +163,6 @@ class timebayes(object):
         self.comm.Recv(subsamples, source=0, tag=2*self.me)
         self.comm.Recv(subfixed, source=0, tag=2*self.me+1)
 
-        # Clean up
-        del samples, fixed
-        gc.collect()
-
         # Walk the chains in each worker
         sampler = resample(data, self.sigma, time, 
                            subsamples, subfixed, self.bounds, 
@@ -174,22 +170,22 @@ class timebayes(object):
         subsamples = sampler.sample()
 
         # Send to master
-        self.comm.send(subsamples, dest=0, tag=self.me+20)
-        del subsamples
-        gc.collect()
+        self.comm.Send(subsamples[0], dest=0, tag=2*self.me)
+        self.comm.Send(subsamples[1], dest=0, tag=2*self.me+1)
 
         # Update/Append samples
         if self.me==0:
             alpha1 = []; alpha2 = []
+            subalpha1 = np.zeros((splitSamples[worker].shape[0], ))
+            subalpha2 = np.zeros((splitSamples[worker].shape[0], ))
             for worker in range(self.comm.Get_size()):
-                newsamples = self.comm.recv(source=worker, tag=worker+20)
-                alpha1 += newsamples[0]
-                alpha2 += newsamples[1]
-            del newsamples
-            gc.collect()
+                self.comm.Recv(subalpha1, source=worker, tag=2*worker)
+                self.comm.Recv(subalpha2, source=worker, tag=2*worker+1)
+                alpha1 += subalpha1.tolist()
+                alpha2 += subalpha2.tolist()
         else:
-            alpha1   = None
-            alpha2   = None
+            alpha1 = None
+            alpha2 = None
         
         # All done
         return alpha1, alpha2, triIndex
