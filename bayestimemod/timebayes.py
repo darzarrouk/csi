@@ -8,7 +8,7 @@ from .resample import resample
 
 class timebayes(object):
 
-    def __init__(self, data, time, sigma, dt, bounds, nsamples=1000):
+    def __init__(self, data, time, sigma, dt, bounds, nsamples=1000, nbasis=2):
         '''
         Initialization of a timebayes instance.
         This class solves the interpolation problem 
@@ -21,6 +21,7 @@ class timebayes(object):
             * dt        : delta-time between the interpolating functions
             * bounds    : bounds of the uniform prior PDF
             * nsamples  : number of samples
+            * nbasis    : spline order - 1
         '''
 
         # Create the mpi framework
@@ -39,9 +40,7 @@ class timebayes(object):
         self.dt = self.comm.bcast(dt, root=0)
         self.bounds = self.comm.bcast(bounds, root=0)
         self.nsamples = self.comm.bcast(nsamples, root=0)
-
-        # So far we are doing triangles
-        self.nbasis = 2
+        self.nbasis = self.comm.bcast(nbasis, root=0)
 
         # All done
         return
@@ -239,7 +238,7 @@ class timebayes(object):
         # All done
         return
             
-    def plot(self):
+    def plot(self, savefig=None):
         '''
         Plot data and results if there is some
         '''
@@ -265,6 +264,11 @@ class timebayes(object):
                          '-', color=scalarMap.to_rgba(k))
             # Plot them all
             plt.plot(self.time,self.data,'ko-')
+
+            # Save?
+            if savefig is not None:
+                plt.savefig(savefig)
+
             plt.show()
         # All done
         return
