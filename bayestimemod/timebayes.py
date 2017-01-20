@@ -256,8 +256,7 @@ class timebayes(object):
 
             # Print stuff
             if self.me==0:
-                #sys.stdout.write('\r Time Step {} / {}'.format(step+1,self.data.size))
-                sys.stdout.write(' Time Step {} / {}\n'.format(step+1,self.data.size))
+                sys.stdout.write('\r Time Step {} / {}'.format(step+1,self.data.size))
                 sys.stdout.flush()
 
             # Walk one step
