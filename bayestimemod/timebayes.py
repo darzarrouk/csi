@@ -257,6 +257,7 @@ class timebayes(object):
             # Get stochastic predictions
             preds = []
             k = 0
+            plt.figure(figsize=(15,8))
             for amplitudes in np.array(self.samples).T:
                 k += 1
                 plt.plot(self.time, 
