@@ -28,7 +28,7 @@ def bspline(n,dtk,t):
 
 class timebayes(object):
 
-    def __init__(self, data, time, sigma, dt, bounds, nbasis=2, nsamples=1000):
+    def __init__(self, data, time, sigma, dt, bounds, nsamples=1000, nbasis=2):
         '''
         Initialization of a timebayes instance.
         This class solves the interpolation problem 
@@ -42,6 +42,7 @@ class timebayes(object):
             * bounds    : bounds of the uniform prior PDF
             * nbasis    : degree of the basis function (e.g., 1: linear (triangular), 
             * nsamples  : number of samples
+            * nbasis    : spline order - 1
         '''
 
         # Create the mpi framework
@@ -61,6 +62,7 @@ class timebayes(object):
         self.bounds = self.comm.bcast(bounds, root=0)
         self.nbasis = self.comm.bcast(nbasis, root=0)        
         self.nsamples = self.comm.bcast(nsamples, root=0)
+        self.nbasis = self.comm.bcast(nbasis, root=0)
 
         # All done
         return
@@ -279,7 +281,7 @@ class timebayes(object):
         # All done
         return
             
-    def plot(self):
+    def plot(self, savefig=None):
         '''
         Plot data and results if there is some
         '''
@@ -296,6 +298,7 @@ class timebayes(object):
             # Get stochastic predictions
             preds = []
             k = 0
+            plt.figure(figsize=(15,8))
             for amplitudes in np.array(self.samples).T:
                 k += 1
                 plt.plot(self.time, 
@@ -303,6 +306,11 @@ class timebayes(object):
                          '-', color=scalarMap.to_rgba(k))
             # Plot them all
             plt.plot(self.time,self.data,'ko-')
+
+            # Save?
+            if savefig is not None:
+                plt.savefig(savefig)
+
             plt.show()
         # All done
         return
