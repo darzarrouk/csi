@@ -4,11 +4,31 @@
 import numpy as np
 import sys, gc, os
 import copy
+from scipy.misc import factorial
 from .resample import resample
+
+def nCk(n,k):
+    '''Combinatorial function.'''
+    c = factorial(n)/(factorial(n-k)*factorial(k)*1.0)
+    return c
+
+def bspline(n,dtk,t):
+    '''Uniform b-splines.
+       n    -  Order
+       dtk  -  Spacing
+       t    -  Time vector'''
+    x = (t/dtk) + n + 1
+    b = np.zeros(len(x))
+    for k in range(n+2):
+        m = x-k-(n+1)/2
+        up = np.power(m,n)
+        b = b+((-1)**k)*nCk(n+1,k)*up*(m>=0)
+    b = b/(1.0*factorial(n))
+    return b
 
 class timebayes(object):
 
-    def __init__(self, data, time, sigma, dt, bounds, nsamples=1000):
+    def __init__(self, data, time, sigma, dt, bounds, nbasis=2, nsamples=1000):
         '''
         Initialization of a timebayes instance.
         This class solves the interpolation problem 
@@ -20,6 +40,7 @@ class timebayes(object):
             * sigma     : noise (1 value, std)
             * dt        : delta-time between the interpolating functions
             * bounds    : bounds of the uniform prior PDF
+            * nbasis    : degree of the basis function (e.g., 1: linear (triangular), 
             * nsamples  : number of samples
         '''
 
@@ -38,10 +59,8 @@ class timebayes(object):
         self.sigma = self.comm.bcast(sigma, root=0)
         self.dt = self.comm.bcast(dt, root=0)
         self.bounds = self.comm.bcast(bounds, root=0)
+        self.nbasis = self.comm.bcast(nbasis, root=0)        
         self.nsamples = self.comm.bcast(nsamples, root=0)
-
-        # So far we are doing triangles
-        self.nbasis = 2
 
         # All done
         return
@@ -63,32 +82,39 @@ class timebayes(object):
         return np.random.rand(self.nsamples)*(self.bounds[1]-self.bounds[0]) + self.bounds[0]
 
 
-    def initializePredFunction(self,bfTimes,times,h=None):
+    def initializePredFunction(self,bfTimes,times):
         '''
         Initialize the prediction function.
 
         Args:
-             * bfTimes: basis function nodes
+             * bfTimes: basis function knots
              * times: observation times
         '''
 
-        # Check h
-        if h is None:
-            h = bfTimes[1]-bfTimes[0]
-
+        # Initialize a reference B-spline function
+        tbeg = -self.dt * np.ceil((self.nbasis + 1)/2.)
+        tend = tbeg + self.dt * (self.nbasis + 1)        
+        basis_time = np.arange(tbeg,tend+1,dtype='float64')
+        basis_fun  = bspline(self.nbasis, self.dt, basis_time)
+        
         # Do stuff
         def predict(alphas):
             '''
-            Linear interpolation using basis functions
+            Linear interpolation using uniform b-splines
             Args:
-                - alphas: amplitude of each basis function
-            '''
-            # Linear interpolation
-            p = np.zeros(times.shape)
-            for i in range(len(bfTimes)):
-                dt = np.abs(times - bfTimes[i])
-                j = np.where(dt<h)
-                p[j] += alphas[i] * (1-dt[j]/h)
+                - alphas: coefficient of each basis function
+            '''            
+            # Interpolation
+            p = np.zeros(times.shape) # Prediction vector
+            for i in range(len(bfTimes)): # Loop over basis functions
+                # Time relative to basis function knot
+                dtime = times - bfTimes[i]
+                # Select relevant data samples
+                j = np.where(np.logical_and(dtime>=tbeg,dtime<=tend))
+                dtj = np.round(dtime[j]-tbeg).astype('int64')
+                # Include current basis function to predictions
+                p[j] += alphas[i] * basis_fun[dtj]
+
             # All done
             return p
 
@@ -100,10 +126,15 @@ class timebayes(object):
 
     def initializeBasisFunctionMap(self):
         '''
-        Initialize a map linking data time steps to the index of the preceeding 
-        basis functions
+        Initialize a map linking data time steps to the index of the first basis
+        function for which we invert a coefficient (e.g., for a triangle observation_time/triangle_dt)
         '''
+        
+        # Map index of basis functions
         self.bfMap = np.array(list(map(int,self.time/self.dt)))
+        # Knot vector (i.e., discrete time knots)
+        Nfirst = int((self.nbasis-1)/2)     # Number of basis functions starting before zeros
+        self.knots = self.dt * (np.arange(self.bfMap.max()+self.nbasis)-Nfirst) # Knot vector 
 
         # All done
         return
@@ -114,38 +145,47 @@ class timebayes(object):
         Does the posterior sampling for a new time step.
 
         Args:
-            * step      : index of the time step.
+            * step      : index of the observation time step.
         '''
 
         import time as pouet
 
-        # Identify the data
-        bfIndex  = self.bfMap[step]    # Get the right index
-        bi = bfIndex*self.dt           # Get the corresponding time
-        di = np.where(np.logical_and(self.time>=bi-self.dt,
-                        self.time<=self.time[step]))
+        # Identify the first basis function for which we invert a coefficient
+        bfIndex  = self.bfMap[step] # Get the first basis function index 
+        bi = self.knots[bfIndex]   # Get the corresponding knot
+        Tstart = - np.ceil(0.5*(self.nbasis+1))*self.dt # Start time of the basis function (with respect to bi)
+        bstart = bi + Tstart                            # Get the start time of the first basis function
+        
+        # Select the corresponding data 
+        di = np.where(np.logical_and(self.time>=bstart,self.time<=self.time[step]))
         data = self.data[di]
         time = self.time[di]
         
         # Identify the samples to update/create and the fixed ones
-        fixed   = np.zeros((self.nsamples,self.nbasis-1))
-        samples = np.zeros((self.nsamples,self.nbasis))
+        nfixed   = self.nbasis     # Number of fixed coefficients 
+        nsampled = self.nbasis + 1 # Number of sampled coefficients
+        fixed   = np.zeros((self.nsamples,nfixed))
+        samples = np.zeros((self.nsamples,nsampled)) # Initial sample matrix (to be communicated to the sampler)
         if self.me==0:
             if step == 0:
-                fixed = np.zeros((self.nsamples,self.nbasis-1))
-                for i in range(self.nbasis):
+                assert bfIndex == 0, 'Error in the basis function map'
+                for i in range(nsampled):
                     samples[:,i] = self.generateInitialSample()
-            else:
-                fixed = np.array(self.samples[bfIndex-1])
-                samples[:,0] = self.samples[bfIndex]
-                if bfIndex > self.bfMap[step-1]:
-                    samples[:,1] = self.generateInitialSample()
-                else:
-                    samples[:,1] = self.samples[bfIndex+1]
+            else:                
+                # Fixed coefficients
+                for i in range(nfixed):
+                    if bfIndex-nfixed+i >= 0:
+                        fixed[:,i] = self.samples[bfIndex-nfixed+i]
+                # Initial coefficient matrix
+                for i in range(nsampled):
+                    if bfIndex > self.bfMap[step-1] and i==nsampled-1:
+                        samples[:,i] = self.generateInitialSample()
+                    else:
+                        samples[:,i] = self.samples[bfIndex+i]
  
         # Create a prediction function
-        bfTimes = np.arange(bfIndex-(self.nbasis-1),bfIndex+self.nbasis)*self.dt
-        self.initializePredFunction(bfTimes,time,h=bfTimes[1]-bfTimes[0])
+        bfTimes = np.arange(bfIndex-nfixed,bfIndex+nsampled)*self.dt + self.knots[0] # Basis function knots
+        self.initializePredFunction(bfTimes,time) # Initialize prediction function
         
         # Split
         splitSamples = _split_seq(samples, self.comm.Get_size())
@@ -159,8 +199,8 @@ class timebayes(object):
                 self.comm.Send(splitFixed[worker], dest=worker, tag=2*worker+1)
 
         # Create holders of the right size
-        subsamples = np.zeros((splitSamples[self.me].shape[0],self.nbasis))
-        subfixed = np.zeros((splitFixed[self.me].shape[0],self.nbasis-1))
+        subsamples = np.zeros((splitSamples[self.me].shape[0],nsampled))
+        subfixed = np.zeros((splitFixed[self.me].shape[0],nfixed))
 
         # Wait for everybody
         self.comm.Barrier()
@@ -214,8 +254,8 @@ class timebayes(object):
 
             # Print stuff
             if self.me==0:
-                sys.stdout.write('\r Time Step {} / {}'.format(step, 
-                                    self.data.size))
+                #sys.stdout.write('\r Time Step {} / {}'.format(step+1,self.data.size))
+                sys.stdout.write(' Time Step {} / {}\n'.format(step+1,self.data.size))
                 sys.stdout.flush()
 
             # Walk one step
@@ -252,9 +292,7 @@ class timebayes(object):
             # Basis Function center times
             bfTimes = np.arange(len(self.samples))*self.dt
             # Initialize prediction function
-            self.initializePredFunction(bfTimes,
-                                        self.time,
-                                        h=bfTimes[1]-bfTimes[0])
+            self.initializePredFunction(bfTimes,self.time)
             # Get stochastic predictions
             preds = []
             k = 0
