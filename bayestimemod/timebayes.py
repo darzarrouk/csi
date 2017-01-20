@@ -55,8 +55,8 @@ class timebayes(object):
         self.me = MPI.COMM_WORLD.Get_rank()
 
         # Init
-        self.data = self.comm.bcast(data, root=0)
-        self.time = self.comm.bcast(time, root=0)
+        self.data = self.comm.bcast(data.astype(float), root=0)
+        self.time = self.comm.bcast(time.astype(float), root=0)
         self.sigma = self.comm.bcast(sigma, root=0)
         self.dt = self.comm.bcast(dt, root=0)
         self.bounds = self.comm.bcast(bounds, root=0)
@@ -93,12 +93,14 @@ class timebayes(object):
              * times: observation times
         '''
 
-        # Initialize a reference B-spline function
-        tbeg = -self.dt * np.ceil((self.nbasis + 1)/2.)
-        tend = tbeg + self.dt * (self.nbasis + 1)        
-        basis_time = np.arange(tbeg,tend+1,dtype='float64')
-        basis_fun  = bspline(self.nbasis, self.dt, basis_time)
-        
+        # Build the basis functions
+        Base = np.zeros((len(bfTimes), times.size))
+        for i in range(len(bfTimes)):
+            # Time relative to basis function knot
+            dtime = times - bfTimes[i]
+            # Get the value of basis function
+            Base[i,:] = bspline(self.nbasis, self.dt, dtime)
+
         # Do stuff
         def predict(alphas):
             '''
@@ -106,19 +108,8 @@ class timebayes(object):
             Args:
                 - alphas: coefficient of each basis function
             '''            
-            # Interpolation
-            p = np.zeros(times.shape) # Prediction vector
-            for i in range(len(bfTimes)): # Loop over basis functions
-                # Time relative to basis function knot
-                dtime = times - bfTimes[i]
-                # Select relevant data samples
-                j = np.where(np.logical_and(dtime>=tbeg,dtime<=tend))
-                dtj = np.round(dtime[j]-tbeg).astype('int64')
-                # Include current basis function to predictions
-                p[j] += alphas[i] * basis_fun[dtj]
-
             # All done
-            return p
+            return (np.array(alphas)[:,np.newaxis]*Base).sum(axis=0)
 
         # Save the prediction function
         self.fpred = predict
