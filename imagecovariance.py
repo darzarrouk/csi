@@ -454,7 +454,7 @@ class imagecovariance(object):
             y = data['Covariogram'][:idx]
             x = data['Distance'][:idx]
             error = data['Covariogram Std'][:idx]
-            weights = error/np.sum(error)
+            weights = 1/error
 
             # Save the type of function
             data['function'] = function
