@@ -94,12 +94,12 @@ class timebayes(object):
         '''
 
         # Build the basis functions
-        Base = np.zeros((len(bfTimes), times.size))
+        Base = np.zeros((times.size,len(bfTimes)))
         for i in range(len(bfTimes)):
             # Time relative to basis function knot
             dtime = times - bfTimes[i]
             # Get the value of basis function
-            Base[i,:] = bspline(self.nbasis, self.dt, dtime)
+            Base[:,i] = bspline(self.nbasis, self.dt, dtime)
 
         # Do stuff
         def predict(alphas):
@@ -109,7 +109,7 @@ class timebayes(object):
                 - alphas: coefficient of each basis function
             '''            
             # All done
-            return (np.array(alphas)[:,np.newaxis]*Base).sum(axis=0)
+            return Base.dot(alphas) #(np.array(alphas)[:,np.newaxis]*Base).sum(axis=0)
 
         # Save the prediction function
         self.fpred = predict
