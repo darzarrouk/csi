@@ -109,7 +109,7 @@ class timebayes(object):
                 - alphas: coefficient of each basis function
             '''            
             # All done
-            return Base.dot(alphas) #(np.array(alphas)[:,np.newaxis]*Base).sum(axis=0)
+            return Base.dot(alphas)
 
         # Save the prediction function
         self.fpred = predict
