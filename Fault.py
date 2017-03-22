@@ -1500,6 +1500,11 @@ class Fault(SourceInv):
         assert 'dipslip' in self.G[data.name].keys(), \
                         "No dip slip Green's function available..."
 
+        # Make azimuth positive
+        if azimuth < 0.:
+            azimuth += 360.
+
+
         #Store it, it will be used to return the slip vector.
         self.azimuth = azimuth
         
@@ -1510,6 +1515,15 @@ class Fault(SourceInv):
         azimuth *= ((np.pi) / 180.)
         rotation = np.arctan2(np.tan(strike) - np.tan(azimuth), 
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
+
+
+        # If azimuth within ]90, 270], change rotation
+        if self.azimuth > 90. and self.azimuth<=270.:
+            rotation += np.pi
+
+
+        # Store rotation angles
+        self.rotation = rotation.copy()
 
         # Get the Green's functions
         Gss = self.G[data.name]['strikeslip']

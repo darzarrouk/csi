@@ -160,7 +160,7 @@ class multifaultsolve(object):
 
     def sensitivity(self):
         '''
-        Calculates sqrt(diag(G^t Cd^-1 G))
+        Calculates diag(G^t Cd^-1 G)
         '''
         # Import things
         import scipy.linalg as scilin
