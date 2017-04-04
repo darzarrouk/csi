@@ -63,6 +63,8 @@ class geodeticplot(object):
                                 urcrnrlat=latmax, 
                                 resolution=resolution, ax=ax)
 
+        # Just a test
+
         # Set the axes
         faille.set_xlabel('Longitude')
         faille.set_ylabel('Latitude')
