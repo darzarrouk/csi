@@ -1810,9 +1810,9 @@ class gps(SourceInv):
         '''
         Removes a rotation from the lon, lat and velocity of a rotation pole.
         Args:
-            * elon   : Longitude of the rotation pole
-            * elat   : Latitude of the rotation pole
-            * omega : Amplitude of the rotation.
+            * elon   : Longitude of the rotation pole (in rad)
+            * elat   : Latitude of the rotation pole (in rad)
+            * omega : Amplitude of the rotation (in rad/yr).
         '''
 
         import eulerPoleUtils as eu
