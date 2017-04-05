@@ -458,7 +458,7 @@ class gps(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None, data=['parallel', 'normal', 'vertical']):
+    def plotprofile(self, name, legendscale=10., fault=None, data=['parallel', 'normal', 'vertical'], show=True):
         '''
         Plot profile.
         Args:
@@ -531,7 +531,8 @@ class gps(SourceInv):
         prof.legend()
 
         # Show to screen 
-        self.fig.show(showFig=['map'])
+        if show:
+            self.fig.show(showFig=['map'])
 
         # All done
         return

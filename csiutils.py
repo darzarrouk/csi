@@ -251,7 +251,8 @@ def coord2prof(csiobject, xc, yc, length, azimuth, width, minNum=5):
     lat = csiobject.lat[Bol]
 
     # Check if lengths are ok
-    assert len(xg)>minNum, 'Not enough points to make a worthy profile'
+    assert len(xg)>minNum, \
+            'Not enough points to make a worthy profile: {}'.format(len(xg))
 
     # 5. Get the sign of the scalar product between the line and the point
     vec = np.array([xe1-xc, ye1-yc])
