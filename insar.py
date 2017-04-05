@@ -33,7 +33,7 @@ class insar(SourceInv):
                                    utmzone=utmzone,
                                    ellps=ellps,
                                    lon0=lon0,
-                                   lat0=lat0) 
+                                   lat0=lat0)
 
         # Initialize the data set
         self.dtype = 'insar'
@@ -84,7 +84,7 @@ class insar(SourceInv):
         if self.los is None:
             self.los = np.array([])
 
-        # Assert everything exists in the slave 
+        # Assert everything exists in the slave
         assert sar.vel is not None, 'Nothing to merge in...'
 
         # Add things
@@ -101,11 +101,11 @@ class insar(SourceInv):
         return
 
     def checkNaNs(self):
-        ''' 
+        '''
         Checks and remove data points that have NaNs in vel, err, lon, lat or los.
         '''
 
-        # Check 
+        # Check
         if self.vel is not None:
             uVel = np.flatnonzero(np.isnan(self.vel))
         else:
@@ -141,8 +141,8 @@ class insar(SourceInv):
         '''
         Read the InSAR data from an ascii file with 3 cols.
         Args:
-            * filename      : Name of the input file. 
-            Lon | Lat | los measurement 
+            * filename      : Name of the input file.
+            Lon | Lat | los measurement
             * factor        : Factor to multiply the LOS velocity.
             * step          : Add a value to the velocity.
             * header        : Size of the header.
@@ -228,7 +228,7 @@ class insar(SourceInv):
         self.corner = []
 
         # Loop over yje lines
-        for i in range(len(Lines)):
+        for i in range(header,len(Lines)):
             # Get values
             line = Lines[i].split()
             # Fill in the values
@@ -588,7 +588,7 @@ class insar(SourceInv):
                 ori = 'float'
             self.inchd2los(incidence, heading, origin=ori)
             if not keepnans and self.los.shape[0]!=self.lon.shape[0]:
-                self.los = self.los[u,:] 
+                self.los = self.los[u,:]
         elif los is not None:
             # If strings, they are meant to be grd files
             if type(los[0]) is str:
@@ -805,18 +805,18 @@ class insar(SourceInv):
 
     def setGFsInFault(self, fault, G, vertical=True):
         '''
-        From a dictionary of Green's functions, sets these correctly into the fault 
+        From a dictionary of Green's functions, sets these correctly into the fault
         object fault for future computation.
         Args:
             * fault     : Instance of Fault
             * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
                           These can be a matrix or None.
-            * vertical  : Set here for consistency with other data objects, but will 
+            * vertical  : Set here for consistency with other data objects, but will
                           always be set to True, whatever you do.
         '''
 
         # Get the values
-        try: 
+        try:
             GssLOS = G['strikeslip']
         except:
             GssLOS = None
@@ -824,7 +824,7 @@ class insar(SourceInv):
             GdsLOS = G['dipslip']
         except:
             GdsLOS = None
-        try: 
+        try:
             GtsLOS = G['tensile']
         except:
             GtsLOS = None
@@ -843,7 +843,7 @@ class insar(SourceInv):
 
     def setOrbNormalizingFactor(self, x0, y0, normX, normY):
         '''
-        Set orbit normalizing factors in insar object. 
+        Set orbit normalizing factors in insar object.
         '''
 
         self.OrbNormalizingFactor = {}
@@ -857,7 +857,7 @@ class insar(SourceInv):
 
     def computeOrbNormalizingFactor(self):
         '''
-        Compute orbit normalizing factors and store them in insar object. 
+        Compute orbit normalizing factors and store them in insar object.
         '''
 
         x0 = self.x[0]
@@ -888,7 +888,7 @@ class insar(SourceInv):
 
             * computeNormFact : bool
                 if True, compute new OrbNormalizingFactor
-                if False, uses parameters in self.OrbNormalizingFactor 
+                if False, uses parameters in self.OrbNormalizingFactor
         '''
 
         # number of data points
@@ -904,7 +904,7 @@ class insar(SourceInv):
                 self.computeOrbNormalizingFactor()
             else:
                 assert hasattr(self, 'OrbNormalizingFactor'), 'You must set OrbNormalizingFactor first'
-            
+
             normX = self.OrbNormalizingFactor['x']
             normY = self.OrbNormalizingFactor['y']
             x0, y0 = self.OrbNormalizingFactor['ref']
@@ -1002,7 +1002,7 @@ class insar(SourceInv):
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
-            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor            
+            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
         '''
 
         # Build synthetics
@@ -1070,7 +1070,7 @@ class insar(SourceInv):
                 self.synth += losdc_synth
 
             if poly is not None:
-                # Compute the polynomial 
+                # Compute the polynomial
                 self.computePoly(fault,computeNormFact=computeNormFact)
                 if poly is 'include':
                     self.removePoly(fault, computeNormFact=computeNormFact)
@@ -1314,8 +1314,8 @@ class insar(SourceInv):
 
         # Get the indexes
         ii = self._getindexXlimProfile(name, xmin, xmax)
-        
-        # Check 
+
+        # Check
         if len(ii)==0:
             return
 
@@ -1375,7 +1375,7 @@ class insar(SourceInv):
         # Create the bins
         bins = np.arange(dis.min(), dis.max(), window)
         indexes = np.digitize(dis, bins)
-        
+
         # Create Lists
         outvel = []
         outerr = []
@@ -1391,7 +1391,7 @@ class insar(SourceInv):
 
             # If there is points in this bin
             if len(uu)>0:
-                
+
                 # Get the mean
                 if method in ('mean'):
                     m = vel[uu].mean()
@@ -1552,7 +1552,7 @@ class insar(SourceInv):
                 jm = imin2
             # Append
             Dalong.append(dis[jm] + np.sqrt( (xcd-xl[jm])**2 + (ycd-yl[jm])**2) )
-            Dacross.append(s*np.sqrt( (xcd-x)**2 + (ycd-y)**2 )) 
+            Dacross.append(s*np.sqrt( (xcd-x)**2 + (ycd-y)**2 ))
 
         # Remove NaNs
         jj = np.flatnonzero(np.isfinite(vel)).tolist()
@@ -1625,7 +1625,7 @@ class insar(SourceInv):
             if np.isfinite(Az):
 
                 # Get the profile
-                norm, dis, Bol = utils.coord2prof(xp, yp, 
+                norm, dis, Bol = utils.coord2prof(xp, yp,
                         length, pAz, width)[0:3]
                 vel = self.vel[Bol]
                 err = self.err[Bol]
@@ -2234,7 +2234,7 @@ class insar(SourceInv):
         '''
 
         # Display
-        print('Checks the LOS orientation')       
+        print('Checks the LOS orientation')
 
         # Create a figure
         fig = plt.figure(figure)
