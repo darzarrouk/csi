@@ -223,9 +223,8 @@ class imagedownsampling(object):
             # Find those who are inside
             ii = p.contains_points(PIXXY)
             # Check if total area is sufficient
-            blockarea = self.getblockarea(block)
-            coveredarea = np.flatnonzero(ii).shape[0]*self.pixelArea
-            if (coveredarea/blockarea >= self.tolerance):
+            check = self._isItAGoodBlock(block, np.flatnonzero(ii).shape[0])
+            if check:
                 # Get Mean, Std, x, y, ...
                 wgt = len(np.flatnonzero(ii))
                 if self.datatype is 'insar':
@@ -491,9 +490,8 @@ class imagedownsampling(object):
                     # Find those who are inside
                     ii = p.contains_points(PIXXY)
                     # Check if total area is sufficient
-                    blockarea = self.getblockarea(block)
-                    coveredarea = np.flatnonzero(ii).shape[0]*self.pixelArea
-                    if (coveredarea/blockarea >= self.tolerance):
+                    check = self._isItAGoodBlock(block, np.flatnonzero(ii).shape[0])
+                    if check:
                         if self.datatype is 'insar':
                             vel = np.mean(self.image.vel[ii])
                             means.append(vel)
@@ -1242,5 +1240,24 @@ class imagedownsampling(object):
         
         # all done
         return BlockSizeW
+
+    def _isItAGoodBlock(self, block, num):
+        '''
+        Returns True or False given the criterion
+
+        Args:
+            * block     : Shape of the block
+            * num       : Number of pixels
+        '''
+
+        if self.tolerance<1.:
+            coveredarea = num*self.pixelArea
+            blockarea = self.getblockarea(block)
+            return coveredarea/blockarea>self.tolerance
+        else:
+            return num>=self.tolerance
+
+        # All done
+        return
 
 #EOF
