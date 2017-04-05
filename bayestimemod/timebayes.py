@@ -144,10 +144,14 @@ class timebayes(object):
         import time as pouet
 
         # Identify the first basis function for which we invert a coefficient
-        bfIndex  = self.bfMap[step] # Get the first basis function index 
-        bi = self.knots[bfIndex]   # Get the corresponding knot
-        Tstart = - np.ceil(0.5*(self.nbasis+1))*self.dt # Start time of the basis function (with respect to bi)
-        bstart = bi + Tstart                            # Get the start time of the first basis function
+        # Get the first basis function index 
+        bfIndex  = self.bfMap[step]
+        # Get the corresponding knot
+        bi = self.knots[bfIndex]  
+        # Start time of the basis function (with respect to bi)
+        Tstart = - np.ceil(0.5*(self.nbasis+1))*self.dt 
+        # Get the start time of the first basis function
+        bstart = bi + Tstart                            
         
         # Select the corresponding data 
         di = np.where(np.logical_and(self.time>=bstart,self.time<=self.time[step]))

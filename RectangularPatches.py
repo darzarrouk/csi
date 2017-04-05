@@ -56,8 +56,7 @@ class RectangularPatches(Fault):
         # All done
         return
 
-
-    def setdepth(self, nump=None, top=0):
+    def setdepth(self, nump=None, top=0, width=None):
         '''
         Set depth patch attributes
 
@@ -76,6 +75,8 @@ class RectangularPatches(Fault):
             self.top = top
         if nump is not None:
             self.numz = nump
+        if width is not None:
+            self.width = width
 
         # All done
         return

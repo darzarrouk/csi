@@ -81,8 +81,7 @@ class fault3D(RectangularPatches):
         # all done
         return
 
-    def buildPatches(self, dip=None, dipdirection=None, every=10, minpatchsize=0.00001, trace_tol=0.1, trace_fracstep=0.2, 
-                     trace_xaxis='x', trace_cum_error=True):
+    def buildPatches(self, dip=None, dipdirection=None, every=10, minpatchsize=0.00001, trace_tol=0.1, trace_fracstep=0.2, trace_xaxis='x', trace_cum_error=True):
         '''
         Builds a dipping fault.
         Args:
@@ -124,8 +123,8 @@ class fault3D(RectangularPatches):
         # degree to rad
         if dipdirection is not None:
             dipdirection_rad = dipdirection*np.pi/180.
-            sdr = np.sin(sdr)
-            cdr = np.cos(cdr)
+            sdr = np.sin(dipdirection_rad)
+            cdr = np.cos(dipdirection_rad)
         else:
             sdr = 0.
             cdr = 0.
