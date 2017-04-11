@@ -169,7 +169,10 @@ class insartimeseries(insar):
         # All done
         return
 
-    def readFromGIAnT(self, h5file, zfile=None, lonfile=None, latfile=None, incidence=None, heading=None, field='recons', keepnan=False, mask=None, readVel=None):
+    def readFromGIAnT(self, h5file, 
+                            zfile=None, lonfile=None, latfile=None, 
+                            incidence=None, heading=None, inctype='onefloat', 
+                            field='recons', keepnan=False, mask=None, readVel=None):
         '''
         Read the output from a tipycal GIAnT h5 output file.
         Args:
@@ -179,6 +182,8 @@ class insartimeseries(insar):
             * latfile       : File with latitudes (float32)
             * incidence     : Incidence angle (degree)
             * heading       : Heading angle (degree)
+            * inctype       : Type of the incidence and heading values (see insar.py for details)
+                              Can be 'onefloat', 'grd', 'binary', 'binaryfloat'
             * field         : Name of the field in the h5 file.
             * mask          : Adds a common mask to the data.
                                 mask is an array the same size as the data with nans and 1
@@ -268,7 +273,7 @@ class insartimeseries(insar):
             sar.factor = 1.0
 
             # Take care of the LOS
-            sar.inchd2los(incidence, heading)
+            sar.inchd2los(incidence, heading, origin=inctype)
 
             # Store the object in the list
             self.timeseries.append(sar)
@@ -277,8 +282,9 @@ class insartimeseries(insar):
         if readVel is not None:
             u = np.flatnonzero(self.h5in['mName'][:]==readVel)
             if len(u)==1:
-                self.param = insar('Parameter {}'.format(readVel), utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps,
-                        verbose=False)
+                self.param = insar('Parameter {}'.format(readVel), 
+                                   utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps,
+                                   verbose=False)
                 self.param.vel = h5in['parms'][:,:,u[0]].flatten()
                 self.param.lon = self.lon
                 self.param.lat = self.lat
@@ -287,7 +293,7 @@ class insartimeseries(insar):
                 self.param.corner = None
                 self.param.err = None
                 self.param.factor=1.0
-                self.param.inchd2los(incidence, heading)
+                self.param.inchd2los(incidence, heading, origin=inctype)
             else:
                 print('{}: No such parameter in {}'.format(readVel,h5file))
                 sys.exit()
@@ -297,18 +303,19 @@ class insartimeseries(insar):
         # Make a common mask if asked
         if not keepnan:
             # Create an array
-            checkNaNs = np.array(self.lon.shape)
+            checkNaNs = np.zeros(self.lon.shape)
             checkNaNs[:] = False
             # Trash the pixels where there is only NaNs
             for sar in self.timeseries:
                 checkNaNs += np.isfinite(sar.vel)
-            uu = np.flatnonzero(not checkNaNs)
+            uu = np.flatnonzero(checkNaNs==0)
             # Keep 'em
             for sar in self.timeseries:
-                sar.reject_pixels(uu)
-            elevation.reject_pixels(uu)
+                sar.reject_pixel(uu)
+            if zfile is not None:
+                elevation.reject_pixel(uu)
             if self.param is not None:
-                self.param.reject_pixels(uu)
+                self.param.reject_pixel(uu)
 
         # all done
         return
@@ -387,6 +394,21 @@ class insartimeseries(insar):
         # All done
         return
 
+    def extractAroundGPS(self, gps, distance, doprojection=True):
+        '''
+        Returns a gpstimeseries object with values projected along the LOS around the 
+        gps stations included in gps. In addition, it projects the gps displacements 
+        along the LOS
+
+        Args:
+            * gps           : gps or gpstimeseries object
+            * distance      : distance to consider around the stations
+            * doprojection  : Projects the gps enu disp into the los as well
+        '''
+    
+        # All done
+        return
+        
     def getProfiles(self, prefix, loncenter, latcenter, length, azimuth, width, verbose=False):
         '''
         Get a profile for each time step

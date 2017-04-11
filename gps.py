@@ -99,6 +99,44 @@ class gps(SourceInv):
         # All done
         return
     
+    def setStatFromFile(self,filename, initVel=False, header=0):
+        '''
+        Set station names and locations attributes
+        Args:
+            * filename  : name of the station list 
+                    Station Name | lon | lat 
+            * initVel   : Intialize a vel_enu vector or not
+            * header    : Length of the file header
+        '''
+
+        # Check input parameters
+        assert os.path.exists(filename), 'Cannot find file {}'.format(filename)
+
+        # Read file
+        fin = open(filename, 'r')
+        self.station = []
+        self.lon = []; self.lat = []
+        for line in fin.readlines()[header:]:
+            self.station.append(line.split()[0])
+            self.lon.append(float(line.split()[1]))
+            self.lat.append(float(line.split()[2]))
+
+        # convert to arrays
+        self.station = np.array(self.station)
+        self.lon = np.array(self.lon)
+        self.lat = np.array(self.lat)
+
+        # Assign input parameters to station attributes
+        self.x, self.y = self.ll2xy(self.lon,self.lat)
+        
+        # Initialize the vel_enu array
+        if initVel:
+            self.vel_enu = np.zeros((len(self.station), 3))
+            self.err_enu = np.zeros((len(self.station), 3))
+
+        # All done
+        return
+
     def combineNetworks(self, gpsdata, newNetworkName='Combined Network'):
         '''
         Combine networks into the current network.
@@ -2152,7 +2190,7 @@ class gps(SourceInv):
 
         # All done
 
-    def initializeTimeSeries(self, start, end, interval=1, verbose=False):
+    def initializeTimeSeries(self, start=None, end=None, sqlfile=None, interval=1, verbose=False):
         '''
         Initializes a time series for all the stations.
         Args:
@@ -2166,9 +2204,15 @@ class gps(SourceInv):
 
         # Loop over the stations
         for station in self.station:
-            
-            self.timeseries[station] = gpstimeseries(station, utmzone=self.utmzone, verbose=verbose, lon0=self.lon0, lat=self.lat0)
-            self.timeseries[station].initializeTimeSeries(start, end, interval=interval)
+            self.timeseries[station] = gpstimeseries(station, 
+                                                     utmzone=self.utmzone, 
+                                                     verbose=verbose, 
+                                                     lon0=self.lon0, 
+                                                     lat0=self.lat0)
+            if start is not None and end is not None:
+                self.timeseries[station].initializeTimeSeries(start, end, interval=interval)
+            elif sqlfile is not None:
+                self.timeseries[station].read_from_sql(sqlfile)
 
         # All done
         return

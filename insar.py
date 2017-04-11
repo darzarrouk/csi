@@ -759,6 +759,59 @@ class insar(SourceInv):
         # All done
         return d
 
+    def distance2point(self, lon, lat):
+        '''
+        Returns the distance of all pixels to a point.
+        '''
+
+        # Get coordinates
+        x = self.x
+        y = self.y 
+
+        # Get point coordinates
+        xp, yp = self.ll2xy(lon, lat)
+
+        # compute distance
+        return np.sqrt( (x-xp)**2 + (y-yp)**2 )
+
+    def returnAverageNearPoint(self, lon, lat, distance):
+        '''
+        Returns the phase value, the los and the errors averaged over a distance
+        from a point (lon, lat).
+
+        Args:
+            * lon       : longitude of the point
+            * lat       : latitude of the point
+            * distance  : distance around the point
+        '''
+
+        # Get the distances
+        distances = self.distance2point(lon, lat)
+
+        # Get the indexes
+        u = np.flatnonzero(distances<=distance)
+
+        # return the values
+        if len(u)>0:
+            return np.mean(self.vel[u]), np.mean(self.err[u]), np.mean(self.los[u,:],axis=0)
+        else:
+            return None, None, None
+
+    def extractAroundGPS(self, gps, distance, doprojection=True):
+        '''
+        Returns a gps object with values projected along the LOS around the 
+        gps stations included in gps. In addition, it projects the gps displacements
+        along the LOS
+
+        Args:
+            * gps           : gps or gpstimeseries object
+            * distance      : distance to consider around the stations
+            * doprojection  : Projects the gps enu disp into the los as well
+        '''
+
+        # All done
+        return 
+
     def select_pixels(self, minlon, maxlon, minlat, maxlat):
         '''
         Select the pixels in a box defined by min and max, lat and lon.
@@ -778,6 +831,17 @@ class insar(SourceInv):
 
         # Select on latitude and longitude
         u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon))
+    
+        # Do it 
+        self.keepPixels(u)
+
+        # All done
+        return
+
+    def keepPixels(self, u):
+        ''' 
+        Keep the pixels indexed u and ditch the other ones
+        '''
 
         # Select the stations
         self.lon = self.lon[u]
