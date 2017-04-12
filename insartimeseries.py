@@ -18,6 +18,7 @@ import copy
 # Personals
 from .SourceInv import SourceInv
 from .insar import insar
+from .gpstimeseries import gpstimeseries
 
 class insartimeseries(insar):
 
@@ -396,7 +397,7 @@ class insartimeseries(insar):
 
     def extractAroundGPS(self, gps, distance, doprojection=True):
         '''
-        Returns a gpstimeseries object with values projected along the LOS around the 
+        Returns a gps object with values projected along the LOS around the 
         gps stations included in gps. In addition, it projects the gps displacements 
         along the LOS
 
@@ -405,7 +406,16 @@ class insartimeseries(insar):
             * distance      : distance to consider around the stations
             * doprojection  : Projects the gps enu disp into the los as well
         '''
-    
+
+        # Create a gps object 
+        out = copy.deepcopy(gps)
+
+        # Initialize time series
+        out.initializeTimeSeries(time=np.array(self.dates))
+
+        # Iterate over time
+        for date in 
+
         # All done
         return
         

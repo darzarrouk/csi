@@ -809,6 +809,30 @@ class insar(SourceInv):
             * doprojection  : Projects the gps enu disp into the los as well
         '''
 
+        # Create a gps object
+        out = copy.deepcopy(gps)
+
+        # Create a holder in the new gps object 
+        out.vel_los = []
+        out.err_los = []
+        out.los = []
+
+        # Iterate over the stations
+        for lon, lat in zip(out.lon, out.lat):
+            vel, err, los = self.returnAverageNearPoint(lon, lat, distance)
+            out.vel_los.append(vel)
+            out.err_los.append(err)
+            out.los.append(los)
+
+        # Convert to arrays 
+        out.vel_los = np.array(out.vel_los)
+        out.err_los = np.array(out.err_los)
+        out.los = np.array(out.los)
+
+        # Do a projection
+        if doprojection:
+            gps.project2InSAR(out.los)
+
         # All done
         return 
 

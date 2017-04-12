@@ -1053,12 +1053,14 @@ class gps(SourceInv):
         self.vel_los = np.zeros((self.vel_enu.shape[0]))
 
         # Convert los to numpy array
-        los = np.array(los)
-        self.los = los
+        if len(los)==3:
+            self.los = np.ones(self.vel_enu.shape)
+            self.los *= los[np.newaxis,:]
+        assert self.los.shape==self.vel_enu.shape
 
         # Loop over 
         for i in range(self.vel_enu.shape[0]):
-            self.vel_los[i] = np.dot( self.vel_enu[i,:], self.los )
+            self.vel_los[i] = np.dot( self.vel_enu[i,:], self.los[i,:] )
 
         # All done 
         return
@@ -2190,7 +2192,7 @@ class gps(SourceInv):
 
         # All done
 
-    def initializeTimeSeries(self, start=None, end=None, sqlfile=None, interval=1, verbose=False):
+    def initializeTimeSeries(self, start=None, end=None, sqlfile=None, time=None,  interval=1, verbose=False):
         '''
         Initializes a time series for all the stations.
         Args:
@@ -2209,8 +2211,8 @@ class gps(SourceInv):
                                                      verbose=verbose, 
                                                      lon0=self.lon0, 
                                                      lat0=self.lat0)
-            if start is not None and end is not None:
-                self.timeseries[station].initializeTimeSeries(start, end, interval=interval)
+            if (start is not None and end is not None) or (time is not None):
+                self.timeseries[station].initializeTimeSeries(start=start, end=end, time=time, interval=interval)
             elif sqlfile is not None:
                 self.timeseries[station].read_from_sql(sqlfile)
 

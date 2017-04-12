@@ -258,10 +258,11 @@ class gpstimeseries(SourceInv):
         # All done
         return
 
-    def initializeTimeSeries(self, start, end, interval=1):
+    def initializeTimeSeries(self, time=None, start=None, end=None, interval=1):
         '''
         Initializes the time series by creating whatever is necessary.
         Args:
+            * time              Time vector
             * starttime:        Begining of the time series.
             * endtime:          End of the time series.
             * interval:         In days.
@@ -305,10 +306,13 @@ class gpstimeseries(SourceInv):
             ed = end
 
         # Initialize a time vector
-        delta = ed - st
-        delta_sec = np.int(np.floor(delta.days * 24 * 60 * 60 + delta.seconds))
-        time_step = np.int(np.floor(interval * 24 * 60 * 60))
-        self.time = [st + dt.timedelta(0, t) for t in range(0, delta_sec, time_step)]
+        if end is not None:
+            delta = ed - st
+            delta_sec = np.int(np.floor(delta.days * 24 * 60 * 60 + delta.seconds))
+            time_step = np.int(np.floor(interval * 24 * 60 * 60))
+            self.time = [st + dt.timedelta(0, t) for t in range(0, delta_sec, time_step)]
+        if time is not None:
+            self.time = time
 
         # Initialize timeseries instances
         self.north = timeseries('North', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
