@@ -793,7 +793,11 @@ class insar(SourceInv):
 
         # return the values
         if len(u)>0:
-            return np.mean(self.vel[u]), np.mean(self.err[u]), np.mean(self.los[u,:],axis=0)
+            vel = np.nanmean(self.vel[u])
+            err = np.nanstd(self.vel[u])
+            los = np.nanmean(self.los[u,:], axis=0)
+            los /= np.linalg.norm(los)
+            return vel, err, los
         else:
             return None, None, None
 
@@ -834,7 +838,7 @@ class insar(SourceInv):
             gps.project2InSAR(out.los)
 
         # All done
-        return 
+        return out
 
     def select_pixels(self, minlon, maxlon, minlat, maxlat):
         '''

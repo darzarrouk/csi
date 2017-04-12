@@ -402,7 +402,7 @@ class insartimeseries(insar):
         along the LOS
 
         Args:
-            * gps           : gps or gpstimeseries object
+            * gps           : gps object
             * distance      : distance to consider around the stations
             * doprojection  : Projects the gps enu disp into the los as well
         '''
@@ -411,13 +411,30 @@ class insartimeseries(insar):
         out = copy.deepcopy(gps)
 
         # Initialize time series
-        out.initializeTimeSeries(time=np.array(self.dates))
+        out.initializeTimeSeries(time=np.array(self.dates), los=True, verbose=False)
+
+        # Line-of-sight
+        los = {}
 
         # Iterate over time
-        for date in 
+        for date, insar in zip(self.dates, self.timeseries):
+            # Extract the values at this date
+            tmp = insar.extractAroundGPS(gps, distance, doprojection=False)
+            # Iterate over the station names to store correctly
+            for istation, station in enumerate(out.station):
+                assert tmp.station[istation]==station, 'Wrong station name'
+                vel, err = tmp.vel_los[istation], tmp.err_los[istation]
+                los[station] = tmp.los[istation]
+                out.timeseries[station].los.value[istation] = vel
+                out.timeseries[station].los.error[istation] = err
+
+        # project
+        if doprojection:
+            for station in gps.station:
+                gps.timeseries[station].project2InSAR(los[station])
 
         # All done
-        return
+        return out
         
     def getProfiles(self, prefix, loncenter, latcenter, length, azimuth, width, verbose=False):
         '''

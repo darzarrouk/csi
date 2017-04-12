@@ -213,11 +213,14 @@ class gpstimeseries(SourceInv):
 
         # Initiate some timeseries
         self.north = timeseries('North', utmzone=self.utmzone, 
-                                lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+                                lon0=self.lon0, lat0=self.lat0, ellps=self.ellps,
+                                verbose=self.verbose)
         self.east = timeseries('East', utmzone=self.utmzone, 
-                               lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+                               lon0=self.lon0, lat0=self.lat0, ellps=self.ellps,
+                               verbose=self.verbose)
         self.up = timeseries('Up', utmzone=self.utmzone, 
-                             lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+                             lon0=self.lon0, lat0=self.lat0, ellps=self.ellps,
+                             verbose=self.verbose)
 
         # Set time
         self.time = np.array(time)
@@ -258,7 +261,7 @@ class gpstimeseries(SourceInv):
         # All done
         return
 
-    def initializeTimeSeries(self, time=None, start=None, end=None, interval=1):
+    def initializeTimeSeries(self, time=None, start=None, end=None, interval=1, los=False):
         '''
         Initializes the time series by creating whatever is necessary.
         Args:
@@ -315,24 +318,52 @@ class gpstimeseries(SourceInv):
             self.time = time
 
         # Initialize timeseries instances
-        self.north = timeseries('North', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
-        self.east = timeseries('East', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
-        self.up = timeseries('Up', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+        self.north = timeseries('North', 
+                                utmzone=self.utmzone, 
+                                lon0=self.lon0, 
+                                lat0=self.lat0, 
+                                ellps=self.ellps, 
+                                verbose=self.verbose)
+        self.east = timeseries('East', 
+                               utmzone=self.utmzone, 
+                               lon0=self.lon0, 
+                               lat0=self.lat0, 
+                               ellps=self.ellps, 
+                               verbose=self.verbose)
+        self.up = timeseries('Up', 
+                             utmzone=self.utmzone, 
+                             lon0=self.lon0, 
+                             lat0=self.lat0, 
+                             ellps=self.ellps, 
+                             verbose=self.verbose)
+        if los:
+            self.los = timeseries('LOS', 
+                                  utmzone=self.utmzone, 
+                                  lon0=self.lon0, 
+                                  lat0=self.lat0, 
+                                  ellps=self.ellps,
+                                  verbose=self.verbose)
 
         # Time
         self.north.time = self.time
         self.east.time = self.time
         self.up.time = self.time
+        if los:
+            self.los.time = self.time
 
         # Values
         self.north.value = np.zeros(self.time.shape)
         self.east.value = np.zeros(self.time.shape)
         self.up.value = np.zeros(self.time.shape)
+        if los:
+            self.los.value = np.zeros(self.time.shape)
 
         # Initialize uncertainties
         self.north.error = np.zeros(len(self.time))
         self.east.error = np.zeros(len(self.time))
         self.up.error = np.zeros(len(self.time))
+        if los:
+            self.los.error = np.zeros(len(self.time))
 
         # All done
         return
@@ -476,6 +507,43 @@ class gpstimeseries(SourceInv):
         # All done
         return
 
+    def project2InSAR(self, los):
+        '''
+        Projects the time series of east, north and up displacements into the 
+        line-of-sight given as argument
+        Args:
+            * los       : list of three component
+        '''
+
+        # Create a time series
+        self.los = timeseries('LOS', 
+                              utmzone=self.utmzone, 
+                              lon0=self.lon0, 
+                              lat0=self.lat0, 
+                              ellps=self.ellps,
+                              verbose=self.verbose)
+
+        # Make sure los is an array
+        if type(los) is list:
+            los = np.array(los)
+
+        # Get the values and project
+        self.los.time = self.time
+        self.los.value = np.dot(np.vstack((self.east.value, 
+                                           self.north.value, 
+                                           self.up.value)).T, 
+                                los[:,np.newaxis])
+        self.los.error = np.dot(np.vstack((self.east.error, 
+                                           self.north.error, 
+                                           self.up.error)).T, 
+                                           los[:,np.newaxis])
+
+        # Save the los vector
+        self.losvector = los
+
+        # All done
+        return
+
     def plot(self, figure=1, styles=['.r'], show=True, data='data'):
         '''
         Plots the time series.
@@ -493,15 +561,23 @@ class gpstimeseries(SourceInv):
         # Create a figure
         fig = plt.figure(figure)
 
+        # Number of plots
+        nplot = 311
+        if hasattr(self, 'los'):
+            nplot += 100
+
         # Create axes
-        axnorth = fig.add_subplot(311)
-        axeast = fig.add_subplot(312)
-        axup = fig.add_subplot(313)
+        axnorth = fig.add_subplot(nplot)
+        axeast = fig.add_subplot(nplot+1)
+        axup = fig.add_subplot(nplot+2)
+        if nplot > 350:
+            axlos = fig.add_subplot(nplot+3)
 
         # Plot
         self.north.plot(figure=fig, subplot=axnorth, styles=styles, data=data, show=False)
         self.east.plot(figure=fig, subplot=axeast, styles=styles, data=data, show=False)
         self.up.plot(figure=fig, subplot=axup, styles=styles, data=data, show=False)
+        self.los.plot(figure=fig, subplot=axlos, styles=styles, data=data, show=False)
 
         # show
         if show:

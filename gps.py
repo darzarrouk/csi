@@ -2192,7 +2192,7 @@ class gps(SourceInv):
 
         # All done
 
-    def initializeTimeSeries(self, start=None, end=None, sqlfile=None, time=None,  interval=1, verbose=False):
+    def initializeTimeSeries(self, start=None, end=None, sqlfile=None, time=None,  interval=1, verbose=False, los=False):
         '''
         Initializes a time series for all the stations.
         Args:
@@ -2212,7 +2212,11 @@ class gps(SourceInv):
                                                      lon0=self.lon0, 
                                                      lat0=self.lat0)
             if (start is not None and end is not None) or (time is not None):
-                self.timeseries[station].initializeTimeSeries(start=start, end=end, time=time, interval=interval)
+                self.timeseries[station].initializeTimeSeries(start=start, 
+                                                              end=end, 
+                                                              time=time, 
+                                                              interval=interval, 
+                                                              los=los)
             elif sqlfile is not None:
                 self.timeseries[station].read_from_sql(sqlfile)
 
