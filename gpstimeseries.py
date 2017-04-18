@@ -533,11 +533,11 @@ class gpstimeseries(SourceInv):
         self.los.value = np.dot(np.vstack((self.east.value, 
                                            self.north.value, 
                                            self.up.value)).T, 
-                                los[:,np.newaxis])
+                                los[:,np.newaxis]).reshape((len(self.time), ))
         self.los.error = np.dot(np.vstack((self.east.error, 
                                            self.north.error, 
                                            self.up.error)).T, 
-                                           los[:,np.newaxis])
+                                           los[:,np.newaxis]).reshape((len(self.time),))
 
         # Save the los vector
         self.losvector = los

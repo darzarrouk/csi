@@ -469,6 +469,9 @@ class insartimeseries(insar):
                         if not np.isnan(average):
                             insar.value -= average
 
+        # Save the los vectors
+        out.losvectors = los
+
         # All done
         return out
         
