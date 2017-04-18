@@ -395,7 +395,7 @@ class insartimeseries(insar):
         # All done
         return
 
-    def extractAroundGPS(self, gps, distance, doprojection=True):
+    def extractAroundGPS(self, gps, distance, doprojection=True, reference=False, verbose=False):
         '''
         Returns a gps object with values projected along the LOS around the 
         gps stations included in gps. In addition, it projects the gps displacements 
@@ -405,7 +405,15 @@ class insartimeseries(insar):
             * gps           : gps object
             * distance      : distance to consider around the stations
             * doprojection  : Projects the gps enu disp into the los as well
+            * reference     : if True, removes to the InSAR the average gps displacemnt in 
+                              the LOS for the points overlapping in time.
         '''
+
+        # Print
+        if verbose:
+            print('---------------------------------')
+            print('---------------------------------')
+            print('Projecting GPS into InSAR LOS')
 
         # Create a gps object 
         out = copy.deepcopy(gps)
@@ -417,7 +425,9 @@ class insartimeseries(insar):
         los = {}
 
         # Iterate over time
-        for date, insar in zip(self.dates, self.timeseries):
+        for idate,insar in enumerate(self.timeseries):
+            if verbose:
+                sys.stdout.write('\r Date: {}'.format(self.dates[idate].isoformat()))
             # Extract the values at this date
             tmp = insar.extractAroundGPS(gps, distance, doprojection=False)
             # Iterate over the station names to store correctly
@@ -425,13 +435,39 @@ class insartimeseries(insar):
                 assert tmp.station[istation]==station, 'Wrong station name'
                 vel, err = tmp.vel_los[istation], tmp.err_los[istation]
                 los[station] = tmp.los[istation]
-                out.timeseries[station].los.value[istation] = vel
-                out.timeseries[station].los.error[istation] = err
+                out.timeseries[station].los.value[idate] = vel
+                out.timeseries[station].los.error[idate] = err
+
+        # Print
+        if verbose:
+            print(' All Done')
 
         # project
-        if doprojection:
+        if reference or doprojection:
             for station in gps.station:
-                gps.timeseries[station].project2InSAR(los[station])
+                if los[station] is not None:
+                    gps.timeseries[station].project2InSAR(los[station])
+                else:
+                    gps.timeseries[station].los = None
+
+        # Reference
+        if reference:
+            for station in gps.station:
+                # Get the insar projected time series
+                insar = out.timeseries[station].los
+                gpspr = gps.timeseries[station].los
+                if insar is not None and gpspr is not None:
+                    # Find the common dates 
+                    diff = []
+                    for itime, time in enumerate(insar.time):
+                        u = np.flatnonzero(gpspr.time==time)
+                        if len(u)>0:
+                            diff.append(insar.value[itime]-gpspr.value[u[0]])
+                    # Average and correct
+                    if len(diff)>0:
+                        average = np.nanmean(diff)
+                        if not np.isnan(average):
+                            insar.value -= average
 
         # All done
         return out

@@ -648,19 +648,20 @@ class Fault(SourceInv):
         # All done
         return
     
-    def buildGFs(self, data, vertical=True, slipdir='sd', method='homogeneous', verbose=True, revertVert=False):
+    def buildGFs(self, data, vertical=True, slipdir='sd', method='homogeneous', verbose=True, convergence=None):
         '''
         Builds the Green's function matrix based on the discretized fault.
         Args:
-            * data      : data object from gps or insar.
-            * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
-            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
-            * method    : Can be okada (Okada, 1982) (rectangular patches only)
-                                 meade (Meade 2007) (triangular patches only)
-                                 edks (Zhao & Rivera, 2002) 
-                                 homogeneous (Okada for rectangles, Meade for triangles)
-            * verbose   : Writes stuff to the screen 
-            * revertVert: Changes the sign of the vertical displacements (Only to be used for coupling green's functions)
+            * data          : data object from gps or insar.
+            * vertical      : if True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir       : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
+            * method        : Can be okada (Okada, 1982) (rectangular patches only)
+                                     meade (Meade 2007) (triangular patches only)
+                                     edks (Zhao & Rivera, 2002) 
+                                     homogeneous (Okada for rectangles, Meade for triangles)
+            * verbose       : Writes stuff to the screen 
+            * convergence   : If coupling case, needs convergence azimuth and rate (azimuth in deg, rate)
+
         The Green's function matrix is stored in a dictionary. 
         Each entry of the dictionary is named after the corresponding dataset. 
         Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
@@ -705,9 +706,9 @@ class Fault(SourceInv):
 
         # Compute the Green's functions
         if method in ('okada', 'Okada', 'OKADA', 'ok92', 'meade', 'Meade', 'MEADE'):
-            G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, revertVert=revertVert)
+            G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
         elif method in ('edks', 'EDKS'):
-            G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, revertVert=revertVert)
+            G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
 
         # Separate the Green's functions for each type of data set
         data.setGFsInFault(self, G, vertical=vertical)
@@ -715,7 +716,7 @@ class Fault(SourceInv):
         # All done
         return
 
-    def homogeneousGFs(self, data, vertical=True, slipdir='sd', verbose=True, revertVert=False):
+    def homogeneousGFs(self, data, vertical=True, slipdir='sd', verbose=True, convergence=None):
         '''
         Builds the Green's functions for a homogeneous half-space.
         If your patches are rectangular, Okada's formulation is used (Okada, 1982)
@@ -723,7 +724,8 @@ class Fault(SourceInv):
         Args:
             * data      : data object from gps or insar.
             * vertical  : if True, will produce green's functions for the vertical displacements in a gps object.
-            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).
+            * slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling).
+            * converence: Convergence azimuth and rate for the coupling case
         '''
 
         assert self.patchType != 'triangletent', 'Need to run EDKS for that particular type of fault'
@@ -744,13 +746,24 @@ class Fault(SourceInv):
             SLP.append(1.0) 
         else:                           # Else
             SLP.append(0.0)
+        if convergence is not None:
+            SLP = [1.0, 1.0]
+            if 'c' not in slipdir:
+                slipdir += 'c'
+        if 'c' in slipdir:
+            assert convergence is not None, 'No convergence azimuth and rate given'
         if 't' in slipdir:              # If tensile is asked
             SLP.append(1.0)
         else:                           # Else
             SLP.append(0.0)
 
         # Create the dictionary
-        G = {'strikeslip':[], 'dipslip':[], 'tensile':[]}
+        G = {'strikeslip':[], 'dipslip':[], 'tensile':[], 'coupling':[]}
+
+        # Create the matrices to hold the whole thing
+        Gss = np.zeros((3, len(data.x), len(self.patch)))
+        Gds = np.zeros((3, len(data.x), len(self.patch)))
+        Gts = np.zeros((3, len(data.x), len(self.patch)))
 
         # Loop over each patch
         for p in range(len(self.patch)):
@@ -760,75 +773,99 @@ class Fault(SourceInv):
             
             # get the surface displacement corresponding to unit slip
             # ss,ds,op will all have shape (Nd,3) for 3 components
-            ss, ds, op = self.slip2dis(data, p, slip=SLP)
-            Nd = ss.shape[0]
+            ss, ds, ts = self.slip2dis(data, p, slip=SLP)
 
-            if revertVert:
-                ss[:,2] *= -1.0
-                ds[:,2] *= -1.0
-                op[:,2] *= -1.0
+            # Store them
+            Gss[:,:,p] = ss.T
+            Gds[:,:,p] = ds.T
+            Gts[:,:,p] = ts.T
 
-            # Do we keep the verticals
-            if not vertical:
-                # Just get horizontal components
-                ss = ss[:,0:2]
-                ds = ds[:,0:2]
-                op = op[:,0:2]
+        print(' ')
 
-            # Organize the response
-            if data.dtype in ['gps', 'opticorr', 'multigps']:
-                # If GPS type, construct a flat vector with east displacements first, then
-                # north, then vertical
-                ss = ss.T.flatten()
-                ds = ds.T.flatten()
-                op = op.T.flatten()
-
-            elif data.dtype == 'insar':
-                # If InSAR, do the dot product with the los
-                ss_los = []
-                ds_los = []
-                op_los = []
-                for i in range(Nd):
-                    ss_los.append(np.dot(data.los[i,:], ss[i,:]))
-                    ds_los.append(np.dot(data.los[i,:], ds[i,:]))
-                    op_los.append(np.dot(data.los[i,:], op[i,:]))
-                ss = np.array(ss_los)
-                ds = np.array(ds_los)
-                op = np.array(op_los)
-
-            # Store these guys in the corresponding G slot
-            if 's' in slipdir:
-                G['strikeslip'].append(ss)
-            if 'd' in slipdir:
-                G['dipslip'].append(ds)
-            if 't' in slipdir:
-                G['tensile'].append(op)
-
-        # Easily get the number of data
-        Nd = ss.shape[0]
-        Np = len(self.patch)
-
-        # Reshape the Green's functions
-        if 's' in slipdir:
-            G['strikeslip'] = np.array(G['strikeslip']).reshape((Np, Nd)).T
-        else:
-            G['strikeslip'] = None
-        if 'd' in slipdir:
-            G['dipslip'] = np.array(G['dipslip']).reshape((Np, Nd)).T
-        else:
-            G['dipslip'] = None
-        if 't' in slipdir:
-            G['tensile'] = np.array(G['tensile']).reshape((Np, Nd)).T
-        else:
-            G['tensile'] = None
-
-        # Clean the screen 
-        if verbose:
-            sys.stdout.write('\n')
-            sys.stdout.flush()
+        # Build the dictionary 
+        G = self._buildGFsdict(data, Gss, Gds, Gts, slipdir=slipdir, 
+                               convergence=convergence, vertical=vertical)
 
         # All done
         return G
+
+        # Modify for coupling if aasked for
+        #if convergence is not None:
+        #    cs = self._disp4coupling(ss.T.flatten(), ds.T.flatten(), convergence)
+        #    cs = cs.reshape((Nd, 3))
+        #else:
+        #    cs = np.zeros(ss.shape)
+
+        #    # Do we keep the verticals
+        #    if not vertical:
+        #        # Just get horizontal components
+        #        ss = ss[:,:2]
+        #        ds = ds[:,:2]
+        #        op = op[:,:2]
+        #        cs = cs[:,:2]
+
+        #    # Organize the response
+        #    if data.dtype in ['gps', 'opticorr', 'multigps']:
+        #        # If GPS type, construct a flat vector with east displacements first, then
+        #        # north, then vertical
+        #        ss = ss.T.flatten()
+        #        ds = ds.T.flatten()
+        #        op = op.T.flatten()
+        #        cs = cs.T.flatten()
+
+        #    elif data.dtype == 'insar':
+        #        # If InSAR, do the dot product with the los
+        #        ss_los = []
+        #        ds_los = []
+        #        op_los = []
+        #        cs_los = []
+        #        for i in range(Nd):
+        #            ss_los.append(np.dot(data.los[i,:], ss[i,:]))
+        #            ds_los.append(np.dot(data.los[i,:], ds[i,:]))
+        #            op_los.append(np.dot(data.los[i,:], op[i,:]))
+        #            cs_los.append(np.dot(data.los[i,:], cs[i,:]))
+        #        ss = np.array(ss_los)
+        #        ds = np.array(ds_los)
+        #        op = np.array(op_los)
+        #        cs = np.array(cs_los)
+
+        #    # Store these guys in the corresponding G slot
+        #    if 's' in slipdir:
+        #        G['strikeslip'].append(ss)
+        #    if 'd' in slipdir:
+        #        G['dipslip'].append(ds)
+        #    if 't' in slipdir:
+        #        G['tensile'].append(op)
+        #    if 'c' in slipdir:
+        #        G['coupling'].append(cs)
+
+        ## Easily get the number of data
+        #Nd = ss.shape[0]
+        #Np = len(self.patch)
+
+        ## Reshape the Green's functions
+        #if 's' in slipdir:
+        #    G['strikeslip'] = np.array(G['strikeslip']).reshape((Np, Nd)).T
+        #else:
+        #    G['strikeslip'] = None
+        #if 'd' in slipdir:
+        #    G['dipslip'] = np.array(G['dipslip']).reshape((Np, Nd)).T
+        #else:
+        #    G['dipslip'] = None
+        #if 't' in slipdir:
+        #    G['tensile'] = np.array(G['tensile']).reshape((Np, Nd)).T
+        #else:
+        #    G['tensile'] = None
+        #if 'c' in slipdir:
+        #    G['coupling'] = np.array(G['coupling']).reshape((Np, Nd)).T
+
+        ## Clean the screen 
+        #if verbose:
+        #    sys.stdout.write('\n')
+        #    sys.stdout.flush()
+
+        ## All done
+        #return G
 
     def setCustomGFs(self, data, G):
         '''
@@ -917,7 +954,7 @@ class Fault(SourceInv):
         # All done
         return
 
-    def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True, TentCouplingCase=False, revertVert=False):
+    def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True, convergence=None):
         '''
         Builds the Green's functions based on the solution by Zhao & Rivera 2002.
         The Corresponding functions are in the EDKS code that needs to be installed and 
@@ -931,8 +968,8 @@ class Fault(SourceInv):
         Args:
             * data              : data object from gps or insar.
             * vertical          : if True, will produce green's functions for the vertical displacements in a gps object.
-            * slipdir           : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile).
-            * TentCouplingCase  : Set to True when computing the coupling green's function for a Node based fault.
+            * slipdir           : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
+            * convergence       : [azimuth, rate] of convergence for coupling GFs computation
         '''
 
         # Print
@@ -985,6 +1022,22 @@ class Fault(SourceInv):
         # Prefix for the files
         prefix = '{}_{}'.format(self.name.replace(' ','-'), data.name.replace(' ','-'))
 
+        # Special case
+        #if convergence is not None and self.patchType=='triangletent':
+        #    TentCouplingCase = True
+        #else:
+        #    TentCouplingCase = False
+
+        # Check 
+        if convergence is not None and 'c' not in slipdir:
+            slipdir += 'c'
+        if 'c' in slipdir:
+            assert convergence is not None, 'No convergence azimuth and rate given'
+            if 's' not in slipdir:
+                slipdir += 's'
+            if 'd' not in slipdir:
+                slipdir += 'd'
+
         # Check something
         if not hasattr(self, 'keepTrackOfSources'):  
             if self.patchType == 'triangletent':
@@ -1030,7 +1083,7 @@ class Fault(SourceInv):
                     homD = self.homogeneousDip
                 else:
                     homD = False
-                self.Facet2Nodes(homogeneousStrike=homS, homogeneousDip=homD, keepFacetsSeparated=TentCouplingCase)
+                self.Facet2Nodes(homogeneousStrike=homS, homogeneousDip=homD)#, keepFacetsSeparated=TentCouplingCase)
                 Ids, xs, ys, zs, strike, dip, Areas, slip = self.edksSources
 
         # Informations
@@ -1052,6 +1105,8 @@ class Fault(SourceInv):
             for Id in np.unique(Ids):
                 Gss[:,:,Id] = np.sum(iGss[:,:,np.flatnonzero(Ids==Id)], axis=2)
             del iGss
+        else:
+            Gss = np.zeros((3, len(data.x), len(self.patch)))
 
         # Run EDKS dip slip
         if 'd' in slipdir:
@@ -1068,6 +1123,8 @@ class Fault(SourceInv):
             for Id in np.unique(Ids):
                 Gds[:,:,Id] = np.sum(iGds[:,:,np.flatnonzero(Ids==Id)], axis=2)
             del iGds
+        else:
+            Gds = np.zeros((3, len(data.x), len(self.patch)))
 
         # Run EDKS Tensile?
         if 't' in slipdir:
@@ -1085,82 +1142,12 @@ class Fault(SourceInv):
             for Id in np.unique(Ids):
                 Gts[:, :,Id] = np.sum(iGts[:,:,np.flatnonzero(Ids==Id)], axis=2)
             del iGts
+        else:
+            Gts = np.zeros((3, len(data.x), len(self.patch)))
         
-        # Revert?
-        if revertVert:
-            if 'd' in slipdir:
-                Gds[2,:,:] *= -1.0
-            if 's' in slipdir:
-                Gss[2,:,:] *= -1.0
-            if 't' in slipdir:
-                Gts[2,:,:] *= -1.0
-
-        # Verticals?
-        Ncomp = 3
-        if not vertical:
-            Ncomp = 2
-            if 'd' in slipdir:
-                Gds = Gds[:2,:,:]
-            if 's' in slipdir:
-                Gss = Gss[:2,:,:]
-            if 't' in slipdir:
-                Gts = Gts[:2,:,:]
-        
-        # Numbers
-        Ndata = Ncomp*xr.shape[0]
-        if TentCouplingCase:
-            Nparm = np.unique(Ids).shape[0]
-        else:
-            Nparm = self.slip.shape[0]
-
-        # Check format
-        if data.dtype in ['gps', 'opticorr', 'multigps']:
-            # Flat arrays with e, then n, then u (optional)
-            if 's' in slipdir:
-                Gss = Gss.reshape((Ndata, Nparm))
-            if 'd' in slipdir:
-                Gds = Gds.reshape((Ndata, Nparm))
-            if 't' in slipdir:
-                Gts = Gts.reshape((Ndata, Nparm))
-        elif data.dtype == 'insar':
-            # If InSAR, do the dot product with the los
-            if 's' in slipdir:
-                Gss_los = []
-            if 'd' in slipdir:
-                Gds_los = []
-            if 't' in slipdir:
-                Gts_los = []
-            for i in range(xr.shape[0]):
-                for j in range(Nparm):
-                    if 's' in slipdir:
-                        Gss_los.append(np.dot(data.los[i,:], Gss[:,i,j]))
-                    if 'd' in slipdir:
-                        Gds_los.append(np.dot(data.los[i,:], Gds[:,i,j]))
-                    if 't' in slipdir:
-                        Gts_los.append(np.dot(data.los[i,:], Gts[:,i,j]))
-            if 's' in slipdir:
-                Gss = np.array(Gss_los).reshape((xr.shape[0], Nparm))
-            if 'd' in slipdir:
-                Gds = np.array(Gds_los).reshape((xr.shape[0], Nparm))
-            if 't' in slipdir:
-                Gts = np.array(Gts_los).reshape((xr.shape[0], Nparm))
-
-        # Create the dictionary
-        G = {'strikeslip':[], 'dipslip':[], 'tensile':[]}
-
-        # Reshape the Green's functions
-        if 's' in slipdir:
-            G['strikeslip'] = Gss
-        else:
-            G['strikeslip'] = None
-        if 'd' in slipdir:
-            G['dipslip'] = Gds
-        else:
-            G['dipslip'] = None
-        if 't' in slipdir:
-            G['tensile'] = Gts
-        else:
-            G['tensile'] = None
+        # Ordering
+        G = self._buildGFsdict(data, Gss, Gds, Gts, slipdir=slipdir, 
+                               convergence=convergence, vertical=vertical)
 
         # All done
         return G
@@ -1402,102 +1389,41 @@ class Fault(SourceInv):
         # All done
         return
 
-    #def rotateGFsForCoupling(self, data, convergence):
+    #def buildCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False, keepRotatedGFs=True, verbose=True):
     #    '''
-    #        For the data set data, returns the rotated GFs so that dip slip motion is aligned with
-    #    the convergence vector.
-    #        These Greens' functions are stored in self.G.
+    #        For the data set data, computes the Green's Function for coupling, using the formula
+    #        described in Francisco Ortega's PhD, pages 106 to 108.
+    #        This function re-computes the Green's functions. No need to pre-compute them.
 
+    #        The corresponding GFs are stored in the GFs dictionary, under the name of the data
+    #        set and are named 'coupling'. When inverting for coupling, we suggest building these 
+    #        functions and assembling with slipdir='c'.
+    #    
     #    Args:
-    #        * data          : Name of the data set.
-    #        * convergence   : Convergence vector, or list/array of convergence vector with
-    #                            shape = (Number of fault patches, 2). 
+    #        * data                  : Name of the data set.
+    #        * convergence           : Convergence vector, or list/array of convergence vector with
+    #                                  shape = (Number of fault patches, 2). 
+    #                                  Convergence = [azimuth in deg, rate]
+    #        * initializeCoupling    : Initialize coupling?
+    #        * method                : Green's function method
+    #        * vertical              : Use the vertical displacements?
+    #        * keepRotatedGFs        : Store the dip and strike rotated GFs?
     #    '''
     #    
-    #    # Get the Green's functions
-    #    Gss = self.G[data.name]['strikeslip']
-    #    Gds = self.G[data.name]['dipslip']
+    #    #assert self.patchType!='triangletent', 'This function is not for {} type of fault'.format(self.patchType)
 
-    #    # Number of slip parameters
-    #    nSlip = Gss.shape[1]
+    #    # Compute the Green's functions
+    #    self.buildGFs(data, method=method, slipdir='sd', vertical=vertical, verbose=verbose, convergence=convergence)
 
-    #    # Get the convergence vector
-    #    if len(convergence)==2:
-    #        Conv = np.ones((nSlip, 2))
-    #        Conv[:,0] *= convergence[0]
-    #        Conv[:,1] *= convergence[1]
-    #        self.convergence = Conv
-    #    elif len(convergence)==nSlip:
-    #        if type(convergence) is list:
-    #            self.convergence = np.array(convergence)
-    #        else:
-    #            self.convergence = convergence
-    #    else:
-    #        print('Convergence vector is of wrong format...')
-    #        sys.exit()
+    #    # Store those new GFs
+    #    self.G[data.name]['coupling'] = Gc
 
-    #    # Get the fault strike
-    #    strike = self.getStrikes()
-
-    #    # Get the strike and dip vectors
-    #    strikeVec = np.vstack((np.sin(strike), np.cos(strike))).T
-    #    dipVec = np.vstack((np.sin(strike+np.pi/2.), np.cos(strike+np.pi/2.))).T
-
-    #    # Project the convergence along strike and dip
-    #    Sbr = (self.convergence*strikeVec).sum(axis=1)
-    #    Dbr = (self.convergence*dipVec).sum(axis=1)
-
-    #    # Rotate the GFs
-    #    Gss = np.multiply(-1.0*Gss, Sbr)
-    #    Gds = np.multiply(Gds, Dbr)
+    #    # Initialize a coupling vector
+    #    if initializeCoupling:
+    #        self.coupling = np.zeros((self.slip.shape[0],))
 
     #    # All done
-    #    return Gss, Gds
-
-    def buildCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False, keepRotatedGFs=True, verbose=True):
-        '''
-            For the data set data, computes the Green's Function for coupling, using the formula
-            described in Francisco Ortega's PhD, pages 106 to 108.
-            This function re-computes the Green's functions. No need to pre-compute them.
-
-            The corresponding GFs are stored in the GFs dictionary, under the name of the data
-            set and are named 'coupling'. When inverting for coupling, we suggest building these 
-            functions and assembling with slipdir='c'.
-        
-        Args:
-            * data                  : Name of the data set.
-            * convergence           : Convergence vector, or list/array of convergence vector with
-                                      shape = (Number of fault patches, 2). 
-            * initializeCoupling    : Initialize coupling?
-            * method                : Green's function method
-            * vertical              : Use the vertical displacements?
-            * keepRotatedGFs        : Store the dip and strike rotated GFs?
-        '''
-        
-        assert self.patchType!='triangletent', 'This function is not for {} type of fault'.format(self.patchType)
-
-        # Compute the Green's functions
-        self.buildGFs(data, method=method, slipdir='sd', vertical=vertical, verbose=verbose, revertVert=True)
-
-        # Rotates the Greens' functions
-        azimuth, rate = convergence
-        Gar, Grp = self.rotateGFs(data, azimuth)
-
-        # Multiply and sum
-        Gc = Gar*rate
-
-        # Store those new GFs
-        self.G[data.name]['coupling'] = Gc
-        if keepRotatedGFs:
-            self.G[data.name]['dipslip'] = Gar
-            self.G[data.name]['strikeslip'] = Grp
-
-        # Initialize a coupling vector
-        if initializeCoupling:
-            self.coupling = np.zeros((self.slip.shape[0],))
-
-        # All done
-        return
+    #    return
 
     def rotateGFs(self,data,azimuth):
         '''
@@ -1516,38 +1442,15 @@ class Fault(SourceInv):
         assert 'dipslip' in self.G[data.name].keys(), \
                         "No dip slip Green's function available..."
 
-        # Make azimuth positive
-        if azimuth < 0.:
-            azimuth += 360.
-
-
-        #Store it, it will be used to return the slip vector.
-        self.azimuth = azimuth
-        
-        # Get strikes and dips
-        strike, dip = self.getStrikes(), self.getDips()
-
-        # Convert angle in radians
-        azimuth *= ((np.pi) / 180.)
-        rotation = np.arctan2(np.tan(strike) - np.tan(azimuth), 
-                            np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
-
-
-        # If azimuth within ]90, 270], change rotation
-        if self.azimuth > 90. and self.azimuth<=270.:
-            rotation += np.pi
-
-
-        # Store rotation angles
-        self.rotation = rotation.copy()
-
         # Get the Green's functions
         Gss = self.G[data.name]['strikeslip']
         Gds = self.G[data.name]['dipslip']
 
-        # Rotate them (ar: along-rake; rp: rake-perpendicular)
-        rotatedGar = Gss*np.cos(rotation) + Gds*np.sin(rotation)
-        rotatedGrp = -1.*Gss*np.sin(rotation) + Gds*np.cos(rotation)
+        # Do the rotation
+        rotatedGar, rotatedGrp = self._rotatedisp(Gss, Gds, azimuth)
+
+        #Store it, it will be used to return the slip vector.
+        self.azimuth = azimuth
 
         # All done
         return rotatedGar, rotatedGrp
@@ -2480,4 +2383,177 @@ class Fault(SourceInv):
 
         # All done
         return          
+
+# Some building routines that should not be touched
+
+    def _buildGFsdict(self, data, Gss, Gds, Gts, 
+                            slipdir='sd', convergence=None, vertical=True):
+        '''
+        Some ordering of the Gfs to make the computation routines simpler.
+        '''
+
+        # Compute Coupling GFs
+        if 'c' in slipdir:
+            Gcs = self._disp4coupling(Gss, Gds, convergence)
+        else:
+            Gcs = np.zeros(Gss.shape)
+
+        # Verticals?
+        Ncomp = 3
+        if not vertical:
+            Ncomp = 2
+            if 'd' in slipdir:
+                Gds = Gds[:2,:,:]
+            if 's' in slipdir:
+                Gss = Gss[:2,:,:]
+                Nparm = Gss.shape[2]
+                Npoints = Gss.shape[1]
+            if 't' in slipdir:
+                Gts = Gts[:2,:,:]
+                Nparm = Gts.shape[2]
+                Npoints = Gts.shape[1]
+            if 'c' in slipdir:
+                Gcs = Gcs[:2,:,:]
+                Nparm = Gcs.shape[2]
+                Npoints = Gcs.shape[1]
+
+        # Get some size info
+        if 'd' in slipdir:
+                Nparm = Gds.shape[2]
+                Npoints = Gds.shape[1]
+        if 's' in slipdir:
+                Nparm = Gss.shape[2]
+                Npoints = Gss.shape[1]
+        if 't' in slipdir:
+                Nparm = Gts.shape[2]
+                Npoints = Gts.shape[1]
+        if 'c' in slipdir:
+                Nparm = Gcs.shape[2]
+                Npoints = Gcs.shape[1]
+        Ndata = Ncomp*Npoints
+
+        # Check format
+        if data.dtype in ['gps', 'opticorr', 'multigps']:
+            # Flat arrays with e, then n, then u (optional)
+            if 's' in slipdir:
+                Gss = Gss.reshape((Ndata, Nparm))
+            if 'd' in slipdir:
+                Gds = Gds.reshape((Ndata, Nparm))
+            if 't' in slipdir:
+                Gts = Gts.reshape((Ndata, Nparm))
+            if 'c' in slipdir:
+                Gcs = Gcs.reshape((Ndata, Nparm))
+        elif data.dtype == 'insar':
+            # If InSAR, do the dot product with the los
+            if 's' in slipdir:
+                Gss_los = []
+            if 'd' in slipdir:
+                Gds_los = []
+            if 't' in slipdir:
+                Gts_los = []
+            if 'c' in slipdir:
+                Gcs_los = []
+            for i in range(Npoints):
+                for j in range(Nparm):
+                    if 's' in slipdir:
+                        Gss_los.append(np.dot(data.los[i,:], Gss[:,i,j]))
+                    if 'd' in slipdir:
+                        Gds_los.append(np.dot(data.los[i,:], Gds[:,i,j]))
+                    if 't' in slipdir:
+                        Gts_los.append(np.dot(data.los[i,:], Gts[:,i,j]))
+                    if 'c' in slipdir:
+                        Gcs_los.append(np.dot(data.los[i,:], Gcs[:,i,j]))
+            if 's' in slipdir:
+                Gss = np.array(Gss_los).reshape((Npoints, Nparm))
+            if 'd' in slipdir:
+                Gds = np.array(Gds_los).reshape((Npoints, Nparm))
+            if 't' in slipdir:
+                Gts = np.array(Gts_los).reshape((Npoints, Nparm))
+            if 'c' in slipdir:
+                Gcs = np.array(Gcs_los).reshape((Npoints, Nparm))
+
+        # Create the dictionary
+        G = {'strikeslip':[], 'dipslip':[], 'tensile':[], 'coupling':[]}
+
+        # Reshape the Green's functions
+        if 's' in slipdir:
+            G['strikeslip'] = Gss
+        else:
+            G['strikeslip'] = None
+        if 'd' in slipdir:
+            G['dipslip'] = Gds
+        else:
+            G['dipslip'] = None
+        if 't' in slipdir:
+            G['tensile'] = Gts
+        else:
+            G['tensile'] = None
+        if 'c' in slipdir:
+            G['coupling'] = Gcs
+        else:
+            G['coupling'] = None
+
+        # All done
+        return G
+
+    def _rotatedisp(self, Gss, Gds, azimuth):
+        '''
+        A rotation function for Green function.
+        '''
+
+        # Make azimuth positive
+        if azimuth < 0.:
+            azimuth += 360.
+        
+        # Get strikes and dips
+        #if self.patchType is 'triangletent':
+        #    strike = super(self.__class__, self).getStrikes()
+        #    dip = super(self.__class__, self).getDips()
+        #else:
+        strike, dip = self.getStrikes(), self.getDips()
+
+        # Convert angle in radians
+        azimuth *= ((np.pi) / 180.)
+        rotation = np.arctan2(np.tan(strike) - np.tan(azimuth), 
+                            np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
+
+        # If azimuth within ]90, 270], change rotation
+        if azimuth > 90. and azimuth<=270.:
+            rotation += np.pi
+
+        # Store rotation angles
+        self.rotation = rotation.copy()
+
+        # Rotate them (ar: along-rake; rp: rake-perpendicular)
+        rotatedGar = Gss*np.cos(rotation) + Gds*np.sin(rotation)
+        rotatedGrp = -1.*Gss*np.sin(rotation) + Gds*np.cos(rotation)
+
+        # All done
+        return rotatedGar, rotatedGrp
+
+    def _disp4coupling(self, Gss, Gds, convergence):
+        '''
+        Converts the displacements into what we need to build coupling GFs
+        Gss and Gds are of a shape (3xnumber of sites, number of fault patches)
+        The 3 is for East, North and Up displacements
+        '''
+
+        # For now, convergence is constant alnog strike
+        azimuth, rate = convergence
+
+        # Create the holders
+        Gar = np.zeros(Gss.shape)
+        Grp = np.zeros(Gds.shape)
+
+        # Rotate the GFs
+        Gar[0,:,:], Grp[0,:,:] = self._rotatedisp(Gss[0,:,:], Gds[0,:,:], azimuth)
+        Gar[1,:,:], Grp[1,:,:] = self._rotatedisp(Gss[1,:,:], Gds[1,:,:], azimuth)
+        Gar[2,:,:], Grp[2,:,:] = self._rotatedisp(Gss[2,:,:], Gds[2,:,:], azimuth)
+
+        # Multiply and sum
+        Gar *= rate 
+        
+        # All done (we only retun Gar as Grp should be 0)
+        return Gar
+
 #EOF

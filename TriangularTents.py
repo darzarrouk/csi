@@ -573,6 +573,25 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
+    def patches2triangles(self, fault, numberOfTriangles=4):
+        '''
+        Takes a fault with rectangular patches and splits them into triangles to 
+        initialize self.
+        Args:
+            * fault             : instance of rectangular patches.
+            * numberOfTriangles : Split each patch in 2 or 4 (default) triangle
+        '''
+
+        # The method is in the parent class
+        super(TriangularTents, self).patches2triangles(fault, 
+                                                       numberOfTriangles=numberOfTriangles)
+
+        # We need the tents
+        self.vertices2tents()
+
+        # All done
+        return
+
     def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0,
                          factor_depth=1.0, box=None, verbose=False):
         """
@@ -603,7 +622,7 @@ class TriangularTents(TriangularPatches):
         # Initialize the lists of patches
         self.tent   = []
         self.tentll = []
-        self.tentid   = []
+        self.tentid = []
 
         # Get vertices
         vertices = self.Vertices

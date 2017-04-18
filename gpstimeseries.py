@@ -126,7 +126,8 @@ class gpstimeseries(SourceInv):
 
     def read_from_sql(self, filename, 
                       tables={'e': 'east', 'n': 'north', 'u': 'up'},
-                      sigma={'e': 'sigma_east', 'n': 'sigma_north', 'u': 'sigma_up'}):
+                      sigma={'e': 'sigma_east', 'n': 'sigma_north', 'u': 'sigma_up'},
+                      factor=1.):
         '''
         Reads the East, North and Up components of the station in a sql file.
         This follows the organization of M. Simons' group at Caltech.
@@ -172,12 +173,12 @@ class gpstimeseries(SourceInv):
         self.up.time = self.time
 
         # Set the values
-        self.north.value = north[self.name].values
-        self.north.error = sigmanorth[self.name].values
-        self.east.value = east[self.name].values
-        self.east.error = sigmaeast[self.name].values
-        self.up.value = up[self.name].values
-        self.up.error = sigmaup[self.name].values
+        self.north.value = north[self.name].values*factor
+        self.north.error = sigmanorth[self.name].values*factor
+        self.east.value = east[self.name].values*factor
+        self.east.error = sigmaeast[self.name].values*factor
+        self.up.value = up[self.name].values*factor
+        self.up.error = sigmaup[self.name].values*factor
         
         # All done
         return
@@ -577,7 +578,8 @@ class gpstimeseries(SourceInv):
         self.north.plot(figure=fig, subplot=axnorth, styles=styles, data=data, show=False)
         self.east.plot(figure=fig, subplot=axeast, styles=styles, data=data, show=False)
         self.up.plot(figure=fig, subplot=axup, styles=styles, data=data, show=False)
-        self.los.plot(figure=fig, subplot=axlos, styles=styles, data=data, show=False)
+        if nplot > 350:
+            self.los.plot(figure=fig, subplot=axlos, styles=styles, data=data, show=False)
 
         # show
         if show:
@@ -585,7 +587,5 @@ class gpstimeseries(SourceInv):
 
         # All done
         return
-
-
 
 #EOF

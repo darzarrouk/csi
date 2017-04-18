@@ -1056,6 +1056,8 @@ class gps(SourceInv):
         if len(los)==3:
             self.los = np.ones(self.vel_enu.shape)
             self.los *= los[np.newaxis,:]
+        else:
+            self.los = los
         assert self.los.shape==self.vel_enu.shape
 
         # Loop over 
@@ -2192,7 +2194,10 @@ class gps(SourceInv):
 
         # All done
 
-    def initializeTimeSeries(self, start=None, end=None, sqlfile=None, time=None,  interval=1, verbose=False, los=False):
+    def initializeTimeSeries(self, start=None, end=None, 
+                                   sqlfile=None, time=None,  
+                                   interval=1, verbose=False, los=False, 
+                                   factor=1.):
         '''
         Initializes a time series for all the stations.
         Args:
@@ -2218,7 +2223,7 @@ class gps(SourceInv):
                                                               interval=interval, 
                                                               los=los)
             elif sqlfile is not None:
-                self.timeseries[station].read_from_sql(sqlfile)
+                self.timeseries[station].read_from_sql(sqlfile, factor=factor)
 
         # All done
         return
