@@ -23,7 +23,8 @@ if major==2:
 
 class faultwithdip(RectangularPatches):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, 
+                        verbose=False):
         '''
         Args:
             * name          : Name of the fault.
@@ -35,7 +36,8 @@ class faultwithdip(RectangularPatches):
                                           utmzone=utmzone,
                                           ellps=ellps, 
                                           lon0=lon0,
-                                          lat0=lat0)
+                                          lat0=lat0, 
+                                          verbose=verbose)
         
         # All done
         return
@@ -50,9 +52,10 @@ class faultwithdip(RectangularPatches):
         '''
 
         # Print
-        print("Building a dipping fault")
-        print("         Dip Angle       : {} degrees".format(dip))
-        print("         Dip Direction   : {} degrees From North".format(dipdirection))
+        if self.verbose:
+            print("Building a dipping fault")
+            print("         Dip Angle       : {} degrees".format(dip))
+            print("         Dip Direction   : {} degrees From North".format(dipdirection))
 
         # Initialize the structures
         self.patch = []
