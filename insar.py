@@ -388,6 +388,8 @@ class insar(SourceInv):
         # Compute the LOS
         if type(incidence) in (float, np.float, np.float32, np.ndarray):
             self.inchd2los(incidence, heading, origin='binaryfloat')
+            self.los = self.los[::downsample,:]
+            self.los = self.los[iFinite,:]
         elif type(incidence) is str:
             self.inchd2los(incidence, heading, origin='binary')
             self.los = self.los[::downsample,:]
@@ -503,7 +505,7 @@ class insar(SourceInv):
         Su = np.cos(phi)
 
         # Store it
-        if origin in ('grd', 'GRD', 'binary', 'bin'):
+        if origin in ('grd', 'GRD', 'binary', 'bin', 'binaryfloat'):
             self.los = np.ones((alpha.shape[0],3))
         else:
             self.los = np.ones((self.lon.shape[0],3))

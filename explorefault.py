@@ -129,7 +129,7 @@ class explorefault(SourceInv):
             self.Priors = []
 
         # Create a likelihood function for each of the data set
-        for data in datas:
+        for data in self.datas:
 
             # Get the data type
             if data.dtype=='gps':
@@ -299,6 +299,26 @@ class explorefault(SourceInv):
         # All done
         return fault
     
+    def plot(self, model='mean'):
+        '''
+        Plots the PDFs and the desired model predictions and residuals.
+        '''
+
+        # Plot the pymc stuff
+        pymc.Matplot.plot(self.sampler)
+
+        # Get the model
+        fault = self.returnModel(model=model)
+
+        # Build predictions
+        for data in self.datas:
+
+            # Build the green's functions
+            fault.buildGFs(data, slipdir='sd', verbose=False)
+
+            # Buld the synthetics
+            data.buildsynth(fault)
+
     def save2h5(self, filename):
         '''
         Save the results to a h5 file.
