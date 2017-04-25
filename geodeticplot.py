@@ -398,7 +398,8 @@ class geodeticplot(object):
         return
 
     def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True,
-            plot_on_2d=False, revmap=False, linewidth=1.0, transparency=0.0, factor=1.0, zorder=0):
+                     plot_on_2d=False, revmap=False, linewidth=1.0, 
+                     transparency=0.0, factor=1.0, zorder=0):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -808,7 +809,9 @@ class geodeticplot(object):
         # All done
         return
 
-    def gpsverticals(self, gps, norm=None, colorbar=True, data=['data'], markersize=[50], linewidth=0.1, zorder=4, cmap='jet', marker='o'):
+    def gpsverticals(self, gps, norm=None, colorbar=True, 
+                     data=['data'], markersize=[50], linewidth=0.1, 
+                     zorder=4, cmap='jet', marker='o'):
         '''
         Scatter plot of the vertical displacement of the GPS.
         '''
@@ -871,7 +874,8 @@ class geodeticplot(object):
 
         # Colorbar
         if colorbar:
-            self.fig2.colorbar(sc, orientation='horizontal', shrink=0.3)
+            cbar = self.fig2.colorbar(sc, orientation='horizontal', shrink=0.3)
+            cbar.ax.tick_params(labelsize=4) 
 
         return
 

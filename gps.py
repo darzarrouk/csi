@@ -2228,26 +2228,34 @@ class gps(SourceInv):
         # All done
         return
 
-    def simulateTimeSeriesFromCMT(self, sismo, scale=1., verbose=True, elasticstructure='okada'):
+    def simulateTimeSeriesFromCMT(self, sismo, scale=1., verbose=True, elasticstructure='okada', sourceSpacing=0.1):
         '''
-        Takes a seismolocation object with CMT informations and computes the time series from these.
+        Takes a seismolocation object with CMT informations and computes the time 
+        series from these.
         Args:
-            * sismo     : seismiclocation object (needs to have CMTinfo object and the corresponding faults list of dislocations).
+            * sismo     : seismiclocation object (needs to have CMTinfo object and 
+                          the corresponding faults list of dislocations).
             * scale     : Scales the results (default is 1.).
         '''
 
         # Check sismo
-        assert hasattr(sismo, 'CMTinfo'), '{} object (seismiclocation class) needs a CMTinfo dictionary...'.format(sismo.name)
-        assert hasattr(sismo, 'faults'), '{} object (seismiclocation class) needs a list of faults. Please run Cmt2Dislocation...'.format(sismo.name)
+        assert hasattr(sismo, 'CMTinfo'),\
+                '{} object (seismiclocation class) needs a CMTinfo dictionary...'\
+                .format(sismo.name)
+        assert hasattr(sismo, 'faults'),\
+                '{} object (seismiclocation class) needs a list of faults. \
+                Please run Cmt2Dislocation...'.format(sismo.name)
             
         # Check self
-        assert hasattr(self, 'timeseries'), '{} object (gps class) needs a timeseries list. Please run initializeTimeSeries...'.format(self.name)
+        assert hasattr(self, 'timeseries'), \
+                '{} object (gps class) needs a timeseries list. \
+                Please run initializeTimeSeries...'.format(self.name)
 
         # Re-set the time series
         for station in self.station:
-            self.timeseries[station].east[:] = 0.0
-            self.timeseries[station].north[:] = 0.0
-            self.timeseries[station].up[:] = 0.0
+            self.timeseries[station].east.value[:] = 0.0
+            self.timeseries[station].north.value[:] = 0.0
+            self.timeseries[station].up.value[:] = 0.0
 
         # Loop over the earthquakes
         for i in range(len(sismo.CMTinfo)):
@@ -2280,7 +2288,7 @@ class gps(SourceInv):
                 fault.buildGFs(self, verbose=verbose, method='okada')
             else:
                 fault.kernelsEDKS = elasticstructure
-                fault.sourceSpacing = 0.1
+                fault.sourceSpacing = sourceSpacing
                 fault.buildGFs(self, verbose=verbose, method='edks')
 
             # Compute the synthetics
@@ -2304,9 +2312,9 @@ class gps(SourceInv):
                 e = step*e*scale
                 n = step*n*scale
                 u = step*u*scale
-                self.timeseries[station].east += e
-                self.timeseries[station].north += n
-                self.timeseries[station].up += u
+                self.timeseries[station].east.value += e
+                self.timeseries[station].north.value += n
+                self.timeseries[station].up.value += u
 
         # All done
         return
@@ -2399,13 +2407,18 @@ class gps(SourceInv):
                 fault.slip[:,2] = fault.slip[:,2] + fault.slip[:,2]*dmo/100.
 
             # Compute the simulation for that set of faults
-            self.simulateTimeSeriesFromCMT(earthquakes, scale=scale, elasticstructure=elasticstructure, verbose=False)
+            self.simulateTimeSeriesFromCMT(earthquakes, 
+                                           scale=scale, 
+                                           elasticstructure=elasticstructure, 
+                                           verbose=False)
 
             # Take these simulation and copy them
             for station in self.station:
-                self.timeseries['{}_{:03d}'.format(station,n)] = copy.deepcopy(self.timeseries['{}'.format(station)])
+                self.timeseries['{}_{:03d}'.format(station,n)] = \
+                        copy.deepcopy(self.timeseries['{}'.format(station)])
 
         if verbose:
+            print(' ')
             print('Done')
 
         # Compute the average and the standard deviation
@@ -2416,46 +2429,60 @@ class gps(SourceInv):
                 sys.stdout.write('\r {}'.format(station))
                 sys.stdout.flush()
 
+            # Get the time series 
+            timeseries = self.timeseries[station]
+
             # Re-set the time series
-            self.timeseries[station].east[:] = 0.0
-            self.timeseries[station].north[:] = 0.0
-            self.timeseries[station].up[:] = 0.0
-            self.timeseries[station].std_east[:] = 0.0
-            self.timeseries[station].std_north[:] = 0.0
-            self.timeseries[station].std_up[:] = 0.0
+            timeseries.east.value[:] = 0.0
+            timeseries.north.value[:] = 0.0
+            timeseries.up.value[:] = 0.0
+            timeseries.east.error[:] = 0.0
+            timeseries.north.error[:] = 0.0
+            timeseries.up.error[:] = 0.0
 
             # Loop over the samples to get the mean
             for n in range(N):
-                self.timeseries[station].east += self.timeseries['{}_{:03d}'.format(station,n)].east
-                self.timeseries[station].north += self.timeseries['{}_{:03d}'.format(station,n)].north
-                self.timeseries[station].up += self.timeseries['{}_{:03d}'.format(station,n)].up
+                name = '{}_{:03d}'.format(station,n)
+                nts = self.timeseries[name]
+                timeseries.east.value += nts.east.value
+                timeseries.north.value += nts.north.value
+                timeseries.up.value += nts.up.value
             # Mean
-            self.timeseries[station].east /= np.float(N)
-            self.timeseries[station].north /= np.float(N)
-            self.timeseries[station].up /= np.float(N)
+            timeseries.east.value /= np.float(N)
+            timeseries.north.value /= np.float(N)
+            timeseries.up.value /= np.float(N)
 
             # Loop over the samples to get the std
             for n in range(N):
-                self.timeseries[station].std_east += (self.timeseries['{}_{:03d}'.format(station,n)].east - self.timeseries[station].east)**2
-                self.timeseries[station].std_north += (self.timeseries['{}_{:03d}'.format(station,n)].north - self.timeseries[station].north)**2
-                self.timeseries[station].std_up += (self.timeseries['{}_{:03d}'.format(station,n)].up - self.timeseries[station].up)**2
+                name = '{}_{:03d}'.format(station,n)
+                nts = self.timeseries[name]
+                timeseries.east.error += (nts.east.value - \
+                                          timeseries.east.value)**2
+                timeseries.north.error += (nts.north.value - \
+                                           timeseries.north.value)**2
+                timeseries.up.error += (nts.up.value - \
+                                        timeseries.up.value)**2
             # Samples
-            self.timeseries[station].std_east /= np.float(N)
-            self.timeseries[station].std_north /= np.float(N)
-            self.timeseries[station].std_up /= np.float(N)
+            timeseries.east.error /= np.float(N)
+            timeseries.north.error /= np.float(N)
+            timeseries.up.error /= np.float(N)
+
             # Std
-            self.timeseries[station].std_east = np.sqrt(self.timeseries[station].std_east)
-            self.timeseries[station].std_north = np.sqrt(self.timeseries[station].std_north)
-            self.timeseries[station].std_up = np.sqrt(self.timeseries[station].std_up)
+            timeseries.east.error = np.sqrt(timeseries.east.error)
+            timeseries.north.error = np.sqrt(timeseries.north.error)
+            timeseries.up.error = np.sqrt(timeseries.up.error)
 
             # plot
             if plot in (station):
                 for n in range(N):
-                    self.timeseries['{}_{:03d}'.format(station,n)].plot(styles=['-k'], show=False)
+                    name = '{}_{:03d}'.format(station,n)
+                    self.timeseries[name].plot(styles=['-k'], show=False)
                 self.timeseries[station].plot(styles=['-r'])
 
         # Clean screen
-        print ('Done')
+        if verbose:
+            print(' ')
+            print ('Done')
 
         # all done
         return

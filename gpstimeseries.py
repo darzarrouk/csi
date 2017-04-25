@@ -346,6 +346,8 @@ class gpstimeseries(SourceInv):
                                   verbose=self.verbose)
 
         # Time
+        if type(self.time) is list:
+            self.time = np.array(self.time)
         self.north.time = self.time
         self.east.time = self.time
         self.up.time = self.time

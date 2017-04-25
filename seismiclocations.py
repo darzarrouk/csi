@@ -532,7 +532,8 @@ class seismiclocations(SourceInv):
         self.depth = np.array(self.depth)
 
         # Compute the magnitudes
-        self.Cmt2Dislocation(size=1e-1, mu=44e9, choseplane='nochoice', moment_from_tensor=True)
+        self.Cmt2Dislocation(size=1e-1, mu=44e9, choseplane='nochoice', 
+                             moment_from_tensor=True)
         self.Mo2mag()
 
         # Create the utm
@@ -1433,7 +1434,8 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-    def Cmt2Dislocation(self, size=1, mu=30e9, choseplane='nochoice', moment_from_tensor=False, verbose=True):
+    def Cmt2Dislocation(self, size=1, mu=30e9, choseplane='nochoice', 
+                              moment_from_tensor=False, verbose=True):
         '''
         Returns a single square patch fault from the cmt solutions.
         If no condition is given, it returns the first value.
@@ -1507,7 +1509,12 @@ class seismiclocations(SourceInv):
                 Mu = mu
 
             # Build a planar fault
-            fault = planarfault(event, utmzone=self.utmzone, verbose=False)
+            fault = planarfault(event, 
+                                utmzone=self.utmzone, 
+                                lon0=self.lon0, 
+                                lat0=self.lat0, 
+                                ellps=self.ellps,
+                                verbose=False)
             fault.buildPatches(self.lon[i], self.lat[i], depth, strike*180./np.pi, dip*180./np.pi, size, size, 1, 1, verbose=False)
 
             # Components of slip

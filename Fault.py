@@ -780,7 +780,8 @@ class Fault(SourceInv):
             Gds[:,:,p] = ds.T
             Gts[:,:,p] = ts.T
 
-        print(' ')
+        if verbose:
+            print(' ')
 
         # Build the dictionary 
         G = self._buildGFsdict(data, Gss, Gds, Gts, slipdir=slipdir, 

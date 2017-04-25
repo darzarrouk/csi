@@ -380,7 +380,7 @@ class timeseries(SourceInv):
         if data in ('data'):
             value = self.value
         elif data in ('std'):
-            value = self.std
+            value = self.error
 
         # all done
         return value[u2] - value[u1]
@@ -490,7 +490,8 @@ class timeseries(SourceInv):
 
         # Plot ts
         for v,style in zip(values, styles):
-            ax.plot(self.time, v, style)
+            u = np.argsort(self.time)
+            ax.plot(self.time[u], v[u], style)
 
         # show
         if show:
