@@ -298,7 +298,7 @@ class insar(SourceInv):
         self.vel = (np.array(self.vel)+step)*factor
         self.lon = np.array(self.lon)
         self.lat = np.array(self.lat)
-        self.err = np.array(self.err)*factor
+        self.err = np.array(self.err)*np.abs(factor)
         self.los = np.array(self.los)
         self.corner = np.array(self.corner)
 
@@ -321,7 +321,7 @@ class insar(SourceInv):
         # Read the covariance
         if cov:
             nd = self.vel.size
-            self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))*factor
+            self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))*np.abs(factor)
 
         # Store the factor
         self.factor = factor
@@ -360,7 +360,7 @@ class insar(SourceInv):
         if err is not None:
             if type(err) is str:
                 err = np.fromfile(err, dtype=dtype)[::downsample]
-            err = err * factor
+            err = err * np.abs(factor)
             assert vel.shape==err.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)
 
         # If zeros
@@ -548,7 +548,7 @@ class insar(SourceInv):
             self.vel = (np.array(fin.variables['z'][:]) + step) * factor
         else:
             self.vel = (np.array(fin.variables['z'][:,:]).flatten() + step)*factor
-        self.err = np.zeros((self.vel.shape)) * factor
+        self.err = np.zeros((self.vel.shape)) 
         self.err[np.where(np.isnan(self.vel))] = np.nan
         self.vel[np.where(np.isnan(self.err))] = np.nan
 
@@ -692,7 +692,8 @@ class insar(SourceInv):
         # All done
         return
 
-    def buildCd(self, sigma, lam, function='exp', diagonalVar=False):
+    def buildCd(self, sigma, lam, function='exp', diagonalVar=False, 
+                normalizebystd=False):
         '''
         Builds the full Covariance matrix from values of sigma and lambda.
 
@@ -713,7 +714,12 @@ class insar(SourceInv):
         '''
 
         # Assert
-        assert function in ('exp', 'gauss'), 'Unknown functional form for Covariance matrix'
+        assert function in ('exp', 'gauss'), \
+                'Unknown functional form for Covariance matrix'
+
+        # Check something
+        if normalizebystd:
+            diagonalVar = True
 
         # Get some size
         nd = self.vel.shape[0]
@@ -736,6 +742,11 @@ class insar(SourceInv):
 
                 # Make it symmetric
                 self.Cd[j,i] = self.Cd[i,j]
+
+                # Normalize
+                if normalizebystd:
+                    self.Cd[j,i] *= self.err[j]*self.err[i]/(sigma*sigma)
+                    self.Cd[i,j] *= self.err[j]*self.err[i]/(sigma*sigma)
 
             # Substitute variance?
             if diagonalVar:

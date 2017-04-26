@@ -55,12 +55,12 @@ class explorefault(SourceInv):
         # Keys to look for
         self.keys = ['lon', 'lat', 'depth', 'dip', 
                      'width', 'length', 'strike', 
-                     'dipslip', 'strikeslip']
+                     'strikeslip', 'dipslip']
 
         # All done
         return
 
-    def setPriors(self, bounds):
+    def setPriors(self, bounds, datas=None):
         '''
         Initializes the prior likelihood functions.
 
@@ -73,11 +73,14 @@ class explorefault(SourceInv):
                     'width'      -- Along-dip size in km (tuple or float)
                     'length'     -- Along-strike length in km (tuple or float)
                     'strike'     -- Azimuth of the strike (tuple or float)
-                    'dipslip'    -- Dip slip (tuple or float)
                     'strikeslip' -- Strike Slip (tuple or float)
+                    'dipslip'    -- Dip slip (tuple or float)
 
             If the specified bound is a tuple of 2 floats, the prior will be uniform
             If the specified bound is a float, this parameter will not be searched for
+
+            * datas         : Data sets that will be used. This is in case bounds has
+                              tuples or floats for reference of an InSAR data set
         '''
 
         # Make a list of priors
@@ -104,6 +107,34 @@ class explorefault(SourceInv):
 
             # Save it
             self.Priors.append(prior)
+
+        # Create a prior for the data set reference term
+        # Works only for InSAR data yet
+        if datas is not None:
+
+            # Check 
+            if type(datas) is not list:
+                datas = [datas]
+                
+            # Iterate over the data
+            for data in datas:
+                
+                # Get it
+                assert data.name in bounds, \
+                    'No bounds provided for prior for data {}'.format(data.name)
+                bound = bounds[data.name]
+
+                # Check
+                if type(bound) is tuple:
+                    prior = pymc.Uniform('Reference {}'.format(data.name), 
+                                         bound[0], bound[1])
+                elif type(bound) is float:
+                    prior = pymc.Degenerate('Reference {}'.format(data.name), 
+                                            bound)
+                # Store it
+                self.Priors.append(prior)
+                self.keys.append('Reference {}'.format(data.name))
+                data.refnumber = len(self.Priors)-1
 
         # All done
         return
@@ -171,22 +202,6 @@ class explorefault(SourceInv):
             # Save the likelihood function
             self.Likelihoods.append(likelihood)
 
-            # Create a prior for the data set reference term
-            if bounds is not None:
-                # Get it
-                assert data.name in bounds, 'No bounds provided for prior for data {}'.format(data.name)
-                bound = bounds[data.name]
-                # Check
-                if type(bound) is tuple:
-                    prior = pymc.Uniform('Reference {}'.format(data.name), 
-                                         bound[0], bound[1])
-                elif type(bound) is float:
-                    prior = pymc.Degenerate('Reference {}'.format(data.name), 
-                                            bound)
-                # Store it
-                self.Priors.append(prior)
-                self.keys.append('Reference {}'.format(data.name))
-
         # All done 
         return
 
@@ -203,7 +218,11 @@ class explorefault(SourceInv):
         def predict(theta, data):
 
             # Take the values in theta and distribute
-            lon, lat, depth, dip, width, length, strike, dipslip, strikeslip = theta
+            lon, lat, depth, dip, width, length, strike, strikeslip, dipslip = theta[:9]
+            if hasattr(data, 'refnumber'):
+                reference = theta[data.refnumber]
+            else:
+                reference = 0.
 
             # Build a planar fault
             fault = planarfault('mcmc fault', utmzone=self.utmzone, 
@@ -231,7 +250,7 @@ class explorefault(SourceInv):
                 else:
                     return data.synth[:,:-1].flatten()
             elif data.dtype=='insar':
-                return data.synth.flatten()
+                return data.synth.flatten()+reference
 
         # Save 
         self.fpred = predict
@@ -239,7 +258,7 @@ class explorefault(SourceInv):
         # All done
         return
 
-    def walk(self, niter=10000, nburn=5000):
+    def walk(self, niter=10000, nburn=5000, method='AdaptiveMetropolis'):
         '''
         March the MCMC.
 
@@ -251,9 +270,9 @@ class explorefault(SourceInv):
         # Create a sampler
         sampler = pymc.MCMC(self.Priors+self.Likelihoods)
 
-        # Make sure step method is Metropolis
+        # Make sure step method is what is asked for
         for prior in self.Priors:
-            sampler.use_step_method(pymc.Metropolis, prior)
+            sampler.use_step_method(getattr(pymc, method), prior)
 
         # Sample
         sampler.sample(iter=niter, burn=nburn)
@@ -341,8 +360,10 @@ class explorefault(SourceInv):
             data.buildsynth(fault)
 
             # Plot the data and synthetics
-            data.plot(data='data', show=False)
-            data.plot(data='synth', show=False)
+            cmin = np.min(data.vel)
+            cmax = np.max(data.vel)
+            data.plot(data='data',  show=False, norm=[cmin, cmax])
+            data.plot(data='synth', show=False, norm=[cmin, cmax])
         
         # Plot
         plt.show()
