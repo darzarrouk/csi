@@ -46,6 +46,9 @@ from .timeseries import timeseries
 ## Green's functions
 from . import okadafull
 
+## Fancy stuff
+from .explorefault import explorefault
+
 ## Pre-Proc
 from .imagedownsampling import imagedownsampling
 from .imagecovariance import *

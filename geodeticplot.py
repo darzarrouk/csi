@@ -359,6 +359,9 @@ class geodeticplot(object):
         self.faille.set_xlim(self.carte.ax.get_xlim())
         self.faille.set_ylim(self.carte.ax.get_ylim())
 
+        # Save coast 
+        self.coasts = coasts
+
         # All done
         return
     

@@ -10,6 +10,7 @@ R. Jolivet 2017
 
 # Externals
 import sys, os, copy
+import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -18,12 +19,14 @@ import pymc
 
 # Personals
 from .SourceInv import SourceInv
-from .faultwithdip import faultwithdip 
+from .planarfault import planarfault
 
 # Class explorefault
 class explorefault(SourceInv):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
+    def __init__(self, name, utmzone=None, 
+                 ellps='WGS84', lon0=None, lat0=None, 
+                 verbose=True):
 
         '''
         Creates an object that will solve for the best fault details.
@@ -41,11 +44,18 @@ class explorefault(SourceInv):
         if verbose:
             print ("---------------------------------")
             print ("---------------------------------")
-            print ("Initializing fault exploration {}".format(self.name))
+            print ("Initializing fault exploration {}".format(name))
         self.verbose = verbose
 
         # Base class init
-        super(explorefault,self).__init__(name, utmzone=utmzone, ellps=ellps, lon0=lon0, lat0=lat0)
+        super(explorefault,self).__init__(name, utmzone=utmzone, 
+                                          ellps=ellps, 
+                                          lon0=lon0, lat0=lat0)
+
+        # Keys to look for
+        self.keys = ['lon', 'lat', 'depth', 'dip', 
+                     'width', 'length', 'strike', 
+                     'dipslip', 'strikeslip']
 
         # All done
         return
@@ -69,11 +79,6 @@ class explorefault(SourceInv):
             If the specified bound is a tuple of 2 floats, the prior will be uniform
             If the specified bound is a float, this parameter will not be searched for
         '''
-
-        # Keys to look for
-        self.keys = ['lon', 'lat', 'depth', 'dip', 
-                     'width', 'length', 'strike', 
-                     'dipslip', 'strikeslip']
 
         # Make a list of priors
         if not hasattr(self, 'Priors'):
@@ -119,9 +124,12 @@ class explorefault(SourceInv):
                               if float, it will set a Degenerate prior as a reference
         '''
 
+        # Build the prediction method
+        self.buildPredictionMethod(vertical=vertical)
+
         # Initialize the object
         if type(datas) is not list:
-            self.datas = list(datas)
+            self.datas = [datas]
 
         # List of likelihoods
         self.Likelihoods = []
@@ -135,15 +143,16 @@ class explorefault(SourceInv):
             if data.dtype=='gps':
                 # Get data
                 if vertical:
-                    value = np.flatten(data.vel_enu)
+                    value = data.vel_enu.flatten()
                 else:
-                    value = np.flatten(data.vel_enu[:,:-1])
-            elif data.dtype='insar':
+                    value = data.vel_enu[:,:-1].flatten()
+            elif data.dtype=='insar':
                 # Get data
                 value = data.vel
 
             # Make sure Cd exists
-            assert hasattr(data, 'Cd'), 'No data covariance for data set {}'.format(data.name)
+            assert hasattr(data, 'Cd'), \
+                    'No data covariance for data set {}'.format(data.name)
             Cd = data.Cd
 
             # Create the forward method
@@ -178,9 +187,6 @@ class explorefault(SourceInv):
                 self.Priors.append(prior)
                 self.keys.append('Reference {}'.format(data.name))
 
-        # save the method 
-        self.fpred = predict
-
         # All done 
         return
 
@@ -200,7 +206,7 @@ class explorefault(SourceInv):
             lon, lat, depth, dip, width, length, strike, dipslip, strikeslip = theta
 
             # Build a planar fault
-            fault = planarfault('mcmc fault', utmzone=self.umtzone, 
+            fault = planarfault('mcmc fault', utmzone=self.utmzone, 
                                               lon0=self.lon0, 
                                               lat0=self.lat0,
                                               ellps=self.ellps, 
@@ -211,17 +217,24 @@ class explorefault(SourceInv):
             # Build the green's functions
             fault.buildGFs(data, vertical=vertical, slipdir='sd', verbose=False)
 
+            # Set slip 
+            fault.slip[:,0] = strikeslip
+            fault.slip[:,1] = dipslip
+
             # Build the synthetics
             data.buildsynth(fault)
 
             # check data type 
             if data.dtype=='gps':
                 if vertical: 
-                    return np.flatte(data.synth)
+                    return data.synth.flatten()
                 else:
-                    return np.flatten(data.synth[:,:-1])
+                    return data.synth[:,:-1].flatten()
             elif data.dtype=='insar':
-                return np.flatten(data.synth)
+                return data.synth.flatten()
+
+        # Save 
+        self.fpred = predict
 
         # All done
         return
@@ -243,7 +256,7 @@ class explorefault(SourceInv):
             sampler.use_step_method(pymc.Metropolis, prior)
 
         # Sample
-        sampler.sampler(iter=niter, burn=nburn)
+        sampler.sample(iter=niter, burn=nburn)
 
         # Save the sampler
         self.sampler = sampler
@@ -258,7 +271,8 @@ class explorefault(SourceInv):
 
         Kwargs:
             * model             : Can be 'mean', 'median', 
-                                  'rand' or an integer
+                                  'rand', an integer or a dictionary
+                                  with the appropriate keys
         '''
 
         # Create a dictionary
@@ -269,14 +283,17 @@ class explorefault(SourceInv):
 
             # Get it 
             if model=='mean':
-                value = self.sampler.trace(key).mean()
+                value = self.sampler.trace(key)[:].mean()
             elif model=='median':
-                value = self.sampler.trace(key).median()
+                value = self.sampler.trace(key)[:].median()
             elif model=='std':
-                value = self.sampler.trace(key).std()
+                value = self.sampler.trace(key)[:].std()
             else: 
-                assert type(model) is int, 'Model type unknown: {}'.format(model)
-                value = self.sampler.trace(key)[model]
+                if type(model) is int:
+                    assert type(model) is int, 'Model type unknown: {}'.format(model)
+                    value = self.sampler.trace(key)[model]
+                elif type(model) is dict:
+                    value = model[key]
 
             # Set it
             specs[key] = value
@@ -292,6 +309,10 @@ class explorefault(SourceInv):
                            specs['depth'], specs['strike'],
                            specs['dip'], specs['length'],
                            specs['width'], 1, 1, verbose=False)
+        
+        # Set slip values
+        fault.slip[:,0] = specs['strikeslip']
+        fault.slip[:,1] = specs['dipslip']
 
         # Save the desired model 
         self.model = specs
@@ -316,8 +337,18 @@ class explorefault(SourceInv):
             # Build the green's functions
             fault.buildGFs(data, slipdir='sd', verbose=False)
 
-            # Buld the synthetics
+            # Build the synthetics
             data.buildsynth(fault)
+
+            # Plot the data and synthetics
+            data.plot(data='data', show=False)
+            data.plot(data='synth', show=False)
+        
+        # Plot
+        plt.show()
+
+        # All done
+        return
 
     def save2h5(self, filename):
         '''
@@ -340,3 +371,4 @@ class explorefault(SourceInv):
         # All done
         return
 
+#EOF

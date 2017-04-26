@@ -1042,12 +1042,27 @@ class gps(SourceInv):
         # All done
         return
 
-    def project2InSAR(self, los):
+    def project2InSAR(self, los=None, incidence=None, heading=None):
         '''
         Projects the GPS data into the InSAR Line-Of-Sight provided.
         Args:
             * los       : list of three components of the line-of-sight vector.
+            * incidence : incidence angle (single float)
+            * heading   : heading (single float)
         '''
+
+        # Check something
+        if los is None:
+            assert incidence is not None, 'Specify incidence or heading'
+            # Convert angles
+            alpha = (heading+90.)*np.pi/180.
+            phi = incidence *np.pi/180.
+            # Compute LOS
+            Se = -1.0 * np.sin(alpha) * np.sin(phi)
+            Sn = -1.0 * np.cos(alpha) * np.sin(phi)
+            Su = np.cos(phi)
+            # save it 
+            los = np.array([Se, Sn, Su])
 
         # Create a variable for the projected gps rates
         self.vel_los = np.zeros((self.vel_enu.shape[0]))
