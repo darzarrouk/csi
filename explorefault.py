@@ -359,6 +359,10 @@ class explorefault(SourceInv):
             # Build the synthetics
             data.buildsynth(fault)
 
+            # Check ref
+            if 'Reference {}'.format(data.name) in self.keys:
+                data.synth += self.sampler.trace('Reference {}'.format(data.name))[:].mean()
+
             # Plot the data and synthetics
             cmin = np.min(data.vel)
             cmax = np.max(data.vel)
