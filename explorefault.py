@@ -139,7 +139,7 @@ class explorefault(SourceInv):
         # All done
         return
 
-    def setLikelihood(self, datas, bounds=None, vertical=True):
+    def setLikelihood(self, datas, vertical=True):
         '''
         Builds the data likelihood object from the list of geodetic data in datas.
 
@@ -150,14 +150,9 @@ class explorefault(SourceInv):
 
         KwArgs:
             * vertical      : Use the verticals for GPS?
-            * bounds        : dictionary with keys identical to data names
-                              if tuple, it will set a Uniform prior for a reference
-                              if float, it will set a Degenerate prior as a reference
         '''
 
         # Build the prediction method
-        self.buildPredictionMethod(vertical=vertical)
-
         # Initialize the object
         if type(datas) is not list:
             self.datas = [datas]
@@ -189,7 +184,7 @@ class explorefault(SourceInv):
             # Create the forward method
             @pymc.deterministic(plot=False)
             def forward(theta=self.Priors):
-                return self.fpred(theta, data)
+                return self.Predict(theta, data, vertical=vertical)
             data.forward = forward
 
             # Build likelihood function
@@ -205,55 +200,47 @@ class explorefault(SourceInv):
         # All done 
         return
 
-    def buildPredictionMethod(self, vertical=True):
+    # Define a function
+    def Predict(self, theta, data, vertical=True):
         '''
-        Builds the dictionary of prediction methods.
-
-        Args:   
-            * datas             : List of datasets
-            * vertical          : True/False
+        Calculates a prediction of the measurement from the theta vector
+        theta = [lon, lat, depth, dip, width, length, strike, strikeslip, dipslip]
         '''
 
-        # Define a function
-        def predict(theta, data):
+        # Take the values in theta and distribute
+        lon, lat, depth, dip, width, length, strike, strikeslip, dipslip = theta[:9]
+        if hasattr(data, 'refnumber'):
+            reference = theta[data.refnumber]
+        else:
+            reference = 0.
 
-            # Take the values in theta and distribute
-            lon, lat, depth, dip, width, length, strike, strikeslip, dipslip = theta[:9]
-            if hasattr(data, 'refnumber'):
-                reference = theta[data.refnumber]
+        # Build a planar fault
+        fault = planarfault('mcmc fault', utmzone=self.utmzone, 
+                                          lon0=self.lon0, 
+                                          lat0=self.lat0,
+                                          ellps=self.ellps, 
+                                          verbose=False)
+        fault.buildPatches(lon, lat, depth, strike, dip, 
+                       length, width, 1, 1, verbose=False)
+
+        # Build the green's functions
+        fault.buildGFs(data, vertical=vertical, slipdir='sd', verbose=False)
+
+        # Set slip 
+        fault.slip[:,0] = strikeslip
+        fault.slip[:,1] = dipslip
+
+        # Build the synthetics
+        data.buildsynth(fault)
+
+        # check data type 
+        if data.dtype=='gps':
+            if vertical: 
+                return data.synth.flatten()
             else:
-                reference = 0.
-
-            # Build a planar fault
-            fault = planarfault('mcmc fault', utmzone=self.utmzone, 
-                                              lon0=self.lon0, 
-                                              lat0=self.lat0,
-                                              ellps=self.ellps, 
-                                              verbose=False)
-            fault.buildPatches(lon, lat, depth, strike, dip, 
-                           length, width, 1, 1, verbose=False)
-
-            # Build the green's functions
-            fault.buildGFs(data, vertical=vertical, slipdir='sd', verbose=False)
-
-            # Set slip 
-            fault.slip[:,0] = strikeslip
-            fault.slip[:,1] = dipslip
-
-            # Build the synthetics
-            data.buildsynth(fault)
-
-            # check data type 
-            if data.dtype=='gps':
-                if vertical: 
-                    return data.synth.flatten()
-                else:
-                    return data.synth[:,:-1].flatten()
-            elif data.dtype=='insar':
-                return data.synth.flatten()+reference
-
-        # Save 
-        self.fpred = predict
+                return data.synth[:,:-1].flatten()
+        elif data.dtype=='insar':
+            return data.synth.flatten()+reference
 
         # All done
         return
