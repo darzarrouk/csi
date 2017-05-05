@@ -485,7 +485,11 @@ class gpstimeseries(SourceInv):
             es = self.east.value[i]
             ns = self.north.value[i]
             us = self.up.value[i]
-            fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
+            if hasattr(self, 'los'):
+                lo = self.los.value[i]
+            else:
+                lo = None
+            fout.write('{} {} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us, lo))
             if steplike:
                 e = self.east.value[i+1]
                 n = self.north.value[i+1]
@@ -502,7 +506,11 @@ class gpstimeseries(SourceInv):
         es = self.east.error[i]
         ns = self.north.error[i]
         us = self.up.error[i]
-        fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
+        if hasattr(self, 'los'):
+            lo = self.los.value[i]
+        else:
+            lo = None
+        fout.write('{} {} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us, lo))
 
         # Done 
         fout.close()
