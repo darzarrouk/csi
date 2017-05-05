@@ -499,18 +499,20 @@ class gpstimeseries(SourceInv):
                 us = self.up.error[i+1]
                 fout.write('{} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us))
 
-        t = self.time[i].isoformat()
-        e = self.east.value[i]
-        n = self.north.value[i]
-        u = self.up.value[i]
-        es = self.east.error[i]
-        ns = self.north.error[i]
-        us = self.up.error[i]
-        if hasattr(self, 'los'):
-            lo = self.los.value[i]
-        else:
-            lo = None
-        fout.write('{} {} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us, lo))
+        if not steplike:
+            i += 1
+            t = self.time[i].isoformat()
+            e = self.east.value[i]
+            n = self.north.value[i]
+            u = self.up.value[i]
+            es = self.east.error[i]
+            ns = self.north.error[i]
+            us = self.up.error[i]
+            if hasattr(self, 'los'):
+                lo = self.los.value[i]
+            else:
+                lo = None
+            fout.write('{} {} {} {} {} {} {} {} \n'.format(t, e, n, u, es, ns, us, lo))
 
         # Done 
         fout.close()

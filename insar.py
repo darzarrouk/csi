@@ -386,10 +386,12 @@ class insar(SourceInv):
         self.factor = factor
 
         # Compute the LOS
-        if type(incidence) in (float, np.float, np.float32, np.ndarray):
+        if type(incidence) is np.ndarray:
             self.inchd2los(incidence, heading, origin='binaryfloat')
             self.los = self.los[::downsample,:]
             self.los = self.los[iFinite,:]
+        elif type(incidence) in (float, np.float):
+            self.inchd2los(incidence, heading, origin='float')
         elif type(incidence) is str:
             self.inchd2los(incidence, heading, origin='binary')
             self.los = self.los[::downsample,:]
