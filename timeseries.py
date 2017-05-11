@@ -500,6 +500,39 @@ class timeseries(SourceInv):
         # All done
         return
 
+    def reference2timeseries(self, timeseries):
+        '''
+        Removes to another gps timeseries the difference between self and timeseries
+
+        Args:
+            * timeseries        : Another gpstimeseries
+        '''
+        
+        # Mean 
+        difference = 0.
+        elements = 0
+
+        # Find the common dates and compute the difference
+        for d, date in enumerate(self.time):
+            val = timeseries.value[timeseries.time==date]
+            assert len(val)<=1, 'Multiple dates for a measurement'
+            if len(val)>0:
+                diff = self.value[d] - val
+                if np.isfinite(diff):
+                    difference += self.value[d] - val
+                    elements += 1
+
+        # Average the difference
+        if elements>0:
+            difference /= float(elements)
+
+        # Remove the difference to the values
+        timeseries.value += difference
+
+        # All done
+        return difference
+
+
     def _keepDates(self, u):
         '''
         Keeps the dates corresponding to index u.
