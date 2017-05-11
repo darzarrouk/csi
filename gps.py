@@ -228,6 +228,8 @@ class gps(SourceInv):
             return self.vel_enu[u,0], self.vel_enu[u,1], self.vel_enu[u,2]
         elif data in ('synth'):
             return self.synth[u,0], self.synth[u,1], self.synth[u,2]
+        elif data in ('los'):
+            return self.vel_los[u]
 
     def geterr(self, station):
         '''
