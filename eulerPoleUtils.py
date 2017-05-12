@@ -75,7 +75,7 @@ def euler2gps(evec, Pxyz):
     Vxyz[:,2] = ex * py - px * ey
     Venu = geo2topo(Vxyz.T, Pxyz.T)
 
-    return Venu 
+    return Venu
 
 
 def rotmat2euler(R):

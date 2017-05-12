@@ -28,7 +28,7 @@ def exp_fn(t,sil,sig,lam):
 def gauss_fn(t, sil, sig, lam):
     return sil - (sig**2)*np.exp(-(t**2)/(2*(lam)**2))
 
-def covariance(t,sig,lam, covfn='exp', constant=0.):
+def covariance(t,sig,lam,covfn='exp',constant=0.):
     if covfn in ('exp'):
         return (sig**2)*np.exp(-t/lam)+constant
     elif covfn in ('gauss'):

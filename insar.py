@@ -180,6 +180,9 @@ class insar(SourceInv):
         self.lon = np.array(self.lon)
         self.lat = np.array(self.lat)
 
+        # set lon to (0, 360.)
+        self._checkLongitude()
+
         # Compute lon lat to utm
         self.x, self.y = self.ll2xy(self.lon,self.lat)
 
@@ -245,6 +248,9 @@ class insar(SourceInv):
         self.err = np.array(self.err)*factor
         self.los = np.array(self.los)
 
+        # set lon to (0, 360.)
+        self._checkLongitude()
+
         # Compute lon lat to utm
         self.x, self.y = self.ll2xy(self.lon,self.lat)
 
@@ -305,6 +311,9 @@ class insar(SourceInv):
         # Close file
         fin.close()
         fsp.close()
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
 
         # Compute lon lat to utm
         self.x, self.y = self.ll2xy(self.lon,self.lat)
@@ -399,6 +408,9 @@ class insar(SourceInv):
         else:
             self.los = None
 
+        # set lon to (0, 360.)
+        self._checkLongitude()
+
         # compute x, y
         self.x, self.y = self.ll2xy(self.lon, self.lat)
 
@@ -445,6 +457,9 @@ class insar(SourceInv):
         self.lat = self.lat[u]
         self.vel = self.vel[u]
         self.err = self.err[u]
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
 
         # Convert to utm
         self.x, self.y = self.ll2xy(self.lon, self.lat)
@@ -580,6 +595,9 @@ class insar(SourceInv):
             self.lat = self.lat[u]
             self.vel = self.vel[u]
             self.err = self.err[u]
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
 
         # Convert to utm
         self.x, self.y = self.ll2xy(self.lon, self.lat)

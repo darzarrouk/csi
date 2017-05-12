@@ -141,6 +141,9 @@ class opticorr(SourceInv):
         fin.close()
         fsp.close()
 
+        # set lon to (0, 360.)
+        self._checkLongitude()
+
         # Compute lon lat to utm
         self.x, self.y = self.lonlat2xy(self.lon, self.lat)
 
@@ -211,6 +214,9 @@ class opticorr(SourceInv):
         self.lat = np.array(self.lat)
         self.err_east = np.array(self.err_east) * factor
         self.err_north = np.array(self.err_north) * factor
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
 
         # Compute lon lat to utm
         self.x, self.y = self.lonlat2xy(self.lon, self.lat)
@@ -289,6 +295,9 @@ class opticorr(SourceInv):
         self.err_east = err_east[iFinite] * factor
         self.err_north = err_north[iFinite] * factor
 
+        # set lon to (0, 360.)
+        self._checkLongitude()
+
         # Compute lon lat to utm
         self.x, self.y = self.lonlat2xy(self.lon, self.lat)
 
@@ -357,6 +366,9 @@ class opticorr(SourceInv):
         if remove_nan:
             self.lon = self.lon[u]; self.lat = self.lat[u]
             self.x   = self.x[u]  ; self.y   = self.y[u]
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
 
         # Check size of arrays
         if self.north!=None and self.east!=None:
@@ -504,6 +516,9 @@ class opticorr(SourceInv):
             self.err_east = self.err_east[u]
             self.err_north = self.err_north[u]
 
+        # set lon to (0, 360.)
+        self._checkLongitude()
+
         # Convert to utm
         self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
 
@@ -530,6 +545,9 @@ class opticorr(SourceInv):
         self.north = factor * north
         self.err_east = factor * east_err
         self.err_north = factor * north_err
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
 
         # Convert to utm
         self.x, self.y = self.lonlat2xy(self.lon, self.lat) 

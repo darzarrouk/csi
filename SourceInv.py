@@ -85,4 +85,17 @@ class SourceInv(object):
         # All done
         return        
 
+    def _checkLongitude(self):
+        '''
+        Iterates over the longitude array and checks if longitude is between 
+        0 and 360
+        '''
+
+        # Check 
+        if len(self.lon[self.lon<0.])>0:
+            self.lon[self.lon<0.] += 360.
+
+        # All done
+        return
+
 #EOF
