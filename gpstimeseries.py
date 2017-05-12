@@ -557,6 +557,37 @@ class gpstimeseries(SourceInv):
         # All done
         return
 
+    def reference2timeseries(self, timeseries, verbose=True):
+        '''
+        Removes to another gps timeseries the difference between self and timeseries
+
+        Args:
+            * timeseries        : Another gpstimeseries
+        '''
+
+        # Verbose
+        if verbose:
+            print('---------------------------------')
+            print('Reference time series {} to {}'.format(timeseries.name,                                                           self.name))
+
+        # Do the reference for all the timeseries in there 
+        north = self.north.reference2timeseries(timeseries.north)
+        string = 'North offset: {} \n'.format(north) 
+        east = self.east.reference2timeseries(timeseries.east)
+        string += 'East offset: {} \n'.format(east)
+        up = self.up.reference2timeseries(timeseries.up)
+        string += 'Up offset: {} \n'.format(up)
+        if hasattr(self, 'los') and hasattr(timeseries, 'los'):
+            los = self.los.reference2timeseries(timeseries.los)
+            string += 'LOS offset: {} \n'.format(los)
+
+        # verbose
+        if verbose:
+            print(string)
+
+        # All done
+        return
+
     def plot(self, figure=1, styles=['.r'], show=True, data='data'):
         '''
         Plots the time series.

@@ -285,8 +285,11 @@ class gps(SourceInv):
         gpsNew.setStat(stations, Lon, Lat)
 
         # Set Velocity and Error
-        gpsNew.vel_enu = np.array(Vel)
-        gpsNew.err_enu = np.array(Err)
+        gpsNew.vel_enu = np.array(Vel).squeeze()
+        gpsNew.err_enu = np.array(Err).squeeze()
+
+        # Set factor
+        gpsNew.factor = self.factor
 
         # all done
         return gpsNew
@@ -688,6 +691,9 @@ class gps(SourceInv):
         self.station = np.array(self.station).squeeze()
         self.factor = factor
 
+        # set lon to (0, 360.)
+        self._checkLongitude()
+
         # Pass to xy 
         self.lonlat2xy()
 
@@ -754,6 +760,9 @@ class gps(SourceInv):
         self.err_enu = np.array(self.err_enu).squeeze()*factor
         self.station = np.array(self.station).squeeze()
         self.factor = factor
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
 
         # Pass to xy 
         self.lonlat2xy()
@@ -840,6 +849,9 @@ class gps(SourceInv):
         self.station = np.array(self.station)
         self.factor = factor
 
+        # set lon to (0, 360.)
+        self._checkLongitude()
+
         # Pass to xy 
         self.lonlat2xy()
 
@@ -902,6 +914,9 @@ class gps(SourceInv):
         self.err_enu = np.array(self.err_enu)*factor
         self.station = np.array(self.station)
         self.factor = factor
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
 
         # Pass to xy 
         self.lonlat2xy()
@@ -980,6 +995,9 @@ class gps(SourceInv):
         self.vel_enu = np.array(self.vel_enu)*factor
         self.err_enu = np.array(self.err_enu)*factor
         self.station = np.array(self.station)
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
 
         # Pass to xy 
         self.lonlat2xy()
@@ -1189,6 +1207,45 @@ class gps(SourceInv):
 
         # Update x and y
         self.lonlat2xy()
+
+        # All done
+        return
+
+    def reference2network(self, network, components=2):
+        '''
+        Removes a Helmert transform that best references the velocity
+        field from self to that of network.
+
+        Args:
+            * network   : gps instance 
+            * components: Number of components to use
+        '''
+
+        # Get the name of the stations in common
+        stations = []
+        for station in self.station:
+            if station in network.station: stations.append(station)
+
+        # Get the subnetworks
+        subself = self.getSubNetwork('Sub {}'.format(self.name), stations)
+        subnetwork = network.getSubNetwork('Sub {}'.format(network.name), stations)
+
+        # Compute the difference
+        subself.vel_enu -= subnetwork.vel_enu
+
+        # Fit the difference with a Helmert transformation
+        subself.computeBestHelmert(components=components)
+
+        # Get the Helmert material for this network
+        H = self.getHelmertMatrix(components=components, 
+                                  meanbase=subself.HelmertNormalizingFactor,
+                                  center=subself.HelmertCenter)
+        d = self.vel_enu[:,:components].T.flatten()
+
+        # Remove Helmert
+        m = subself.Helmert
+        self.vel_enu[:,:components] -= np.dot(H, m).reshape((components, 
+                                        self.vel_enu.shape[0])).T
 
         # All done
         return
@@ -1593,7 +1650,7 @@ class gps(SourceInv):
         # All done
         return Hout
 
-    def getHelmertMatrix(self, components=2):
+    def getHelmertMatrix(self, components=2, meanbase=None, center=None):
         '''
         Returns a Helmert matrix for a gps data set.
         '''
@@ -1611,8 +1668,11 @@ class gps(SourceInv):
             nc = 4
 
         # Get the position of the center of the network
-        x0 = np.mean(self.x)
-        y0 = np.mean(self.y)
+        if center is None: 
+            x0 = np.mean(self.x)
+            y0 = np.mean(self.y)
+        else:
+            x0, y0 = center
         z0 = 0              # We do not deal with the altitude of the stations yet (later)
 
         # Compute the baselines
@@ -1621,14 +1681,16 @@ class gps(SourceInv):
         base_z = 0
 
         # Normalize the baselines
-        base_x_max = np.abs(base_x).max()
-        base_y_max = np.abs(base_y).max()
-        meanbase = (base_x_max + base_y_max)/2.
+        if meanbase is None:
+            base_x_max = np.abs(base_x).max()
+            base_y_max = np.abs(base_y).max()
+            meanbase = (base_x_max + base_y_max)/2.
         base_x /= meanbase
         base_y /= meanbase
 
         # Store 
         self.HelmertNormalizingFactor = meanbase
+        self.HelmertCenter = [x0, y0]
 
         # Allocate a Helmert base
         H = np.zeros((components,nc))
@@ -1882,7 +1944,9 @@ class gps(SourceInv):
         self.epole = omega * evec_xyz / np.linalg.norm(evec_xyz)
         
         # Predicted station velocities
-        Pxyz = eu.llh2xyz(self.lat*np.pi/180., self.lon*np.pi/180., np.zeros(self.lon.shape))
+        Pxyz = eu.llh2xyz(self.lat*np.pi/180., self.lon*np.pi/180., 
+                          np.zeros(self.lon.shape))
+        self.Pxyz = Pxyz
         self.rot_enu = eu.euler2gps(self.epole, Pxyz.T)*self.factor
 
         # Correct the velocities from the prediction
@@ -1890,6 +1954,26 @@ class gps(SourceInv):
 
         # All done
         return 
+
+    def computeBestHelmert(self, components=2):
+        '''
+        Fits a full Helmert transform to a network and remove it
+
+        Args:
+            * components    : Take the 2 horizontal (default) or 3 enu
+        '''
+
+        # Get the Helmert matrix
+        Hf = self.getHelmertMatrix(components=2)
+
+        # Get the data to remove
+        d = self.vel_enu[:,:components].T.flatten()
+
+        # Run the estimation
+        self.Helmert, res, rank, s = np.linalg.lstsq(Hf, d)
+
+        # All done
+        return
 
     def makeDelaunay(self, plot=False):
         '''
