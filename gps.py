@@ -137,9 +137,51 @@ class gps(SourceInv):
         # All done
         return
 
+    def importNetwork(self, gpsdata, iftwo='keep'):
+        '''
+        Adds stations from gpsdata to the current network.
+        If station is already in here, it will:
+            if iftwo == 'keep': Keep both measures
+            if iftwo == gpsdata.name: Keep the incomcing measure
+            if iftwo == self.name: Keep the current one
+
+        Args:
+            * gpsdata           : A gps instance
+            * iftwo             : same station policy
+        '''
+
+        # Iterate over the stations to import
+        for station in gpsdata.station:
+
+            # Get velocity, errors, lon and lat
+            lon, lat, vel, err, synth, los = gpsdata.getstation(station)
+                
+            # Check if we have the station already
+            u = np.flatnonzero(self.station==station)
+    
+            # If we do not have it
+            if len(u)==0:
+                self.addstation(station, lon, lat, vel, err, 
+                                synth=synth, los=los)
+            else:
+                # Keep it if asked
+                if iftwo=='keep':
+                    self.addstation(station, lon, lat, vel, err, 
+                                    synth=synth, los=los)
+                # Replace it if asked
+                elif iftwo==gpsdata.name:
+                    self.deletestation(station)
+                    self.addstation(station, lon, lat, vel, err, 
+                                    synth=synth, los=los)
+                # Do nothing if asked
+
+        # All done
+        return
+                
+
     def combineNetworks(self, gpsdata, newNetworkName='Combined Network'):
         '''
-        Combine networks into the current network.
+        Combine networks into a new network.
         Args:
             * gpsdata           : List of gps instances.
             * newNetworkName    : Name of the returned network
@@ -211,6 +253,34 @@ class gps(SourceInv):
 
         # All done
         return    
+
+    def getstation(self, station):
+        '''
+        Gets informations for a station.
+
+        Args:
+            * station   : name of the station
+        '''
+
+        # Get lon, lat
+        lon = self.lon[self.station==station]
+        if len(lon)==0: lon = None
+        lat = self.lat[self.station==station]
+        if len(lat)==0: lat = None
+
+        # Get velocity
+        vel = self.vel_enu[self.station==station]
+        if len(vel)==0: vel = None
+        err = self.err_enu[self.station==station]
+        if len(err)==0: err = None
+
+        # Get synth and los if possible
+        synth = None; los = None
+        if self.synth is not None: synth = self.synth[self.station==station]
+        if hasattr(self, 'vel_los'): los = self.vel_los[self.station==station]
+
+        # All done
+        return lon, lat, vel, err, synth, los
 
     def getvelo(self, station, data='data'):
         '''
@@ -1126,6 +1196,46 @@ class gps(SourceInv):
         # All done
         return
 
+    def addstation(self, station, lon, lat, vel, err, synth=None, los=None):
+        '''
+        Add a station to a network.
+
+        Args:
+            * station   : name of the station
+            * lon       : Longitude
+            * lat       : Latitude
+            * vel       : velocity (3 numbers)
+            * err       : uncertainty (3 numbers)
+            * synth     : Synthetics (3 numbers)
+            * los       : Line-of-sight projection (1 number)
+        '''
+
+        # Append
+        self.station = np.append(self.station, station)
+        self.lon = np.append(self.lon, lon)
+        self.lat = np.append(self.lat, lat)
+
+        # Check
+        self._checkLongitude()
+
+        # X and Y 
+        x,y = self.ll2xy(lon, lat)
+        self.x = np.append(self.x, x)
+        self.y = np.append(self.y, y)
+
+        # Data
+        self.vel_enu = np.append(self.vel_enu, vel).reshape((self.lat.shape[0], 3))
+        self.err_enu = np.append(self.err_enu, err).reshape((self.lat.shape[0], 3))
+
+        # Check synth
+        if self.synth is not None and synth is not None:
+            self.synth = np.append(self.synth, synth).reshape((self.lat.shape[0], 3))
+        if hasattr(self, 'los') and los is not None:
+            self.los = np.append(self.los, los)
+
+        # All done
+        return
+
     def reject_stations_fault(self, dis, faults):
         ''' 
         Rejects the pixels that are dis km close to the fault.
@@ -1173,42 +1283,46 @@ class gps(SourceInv):
             * station   : name or list of names of station.
         '''
 
+        # This method is kind of studid and should be removed
         if station.__class__ is str:
-
-            # Get the concerned station
-            u = np.flatnonzero(self.station == station)
-
-            if u.size > 0:
-
-                # Delete
-                self.station = np.delete(self.station, u, axis=0)
-                self.lon = np.delete(self.lon, u, axis=0)
-                self.lat = np.delete(self.lat, u, axis=0)
-                self.vel_enu = np.delete(self.vel_enu, u, axis=0)
-                self.err_enu = np.delete(self.err_enu, u, axis=0)
-                if self.rot_enu is not None:
-                    self.rot_enu = np.delete(self.rot_enu, u, axis=0)
-
+            self.deletestation(station)
         elif station.__class__ is list:
-
             for sta in station:
-
-                u = np.flatnonzero(self.station == sta)
-
-                if u.size > 0:
-
-                    self.station = np.delete(self.station, u, axis=0)
-                    self.lon = np.delete(self.lon, u, axis=0)
-                    self.lat = np.delete(self.lat, u, axis=0)
-                    self.vel_enu = np.delete(self.vel_enu, u, axis=0)
-                    self.err_enu = np.delete(self.err_enu, u, axis=0)
-                    if self.rot_enu is not None:
-                        self.rot_enu = np.delete(self.rot_enu, u, axis=0)
+                self.deletestation(sta)
 
         # Update x and y
         self.lonlat2xy()
 
         # All done
+        return
+
+    def deletestation(self, station):
+        '''
+        Removes a station from the network
+
+        Args:
+            * station       : Name of the station
+        '''
+        
+        # get the index
+        u = np.flatnonzero(self.station == station)
+
+        # If it is there
+        if u.size > 0:
+
+            self.station = np.delete(self.station, u, axis=0)
+            self.lon = np.delete(self.lon, u, axis=0)
+            self.lat = np.delete(self.lat, u, axis=0)
+            self.vel_enu = np.delete(self.vel_enu, u, axis=0)
+            self.err_enu = np.delete(self.err_enu, u, axis=0)
+            if self.rot_enu is not None:
+                self.rot_enu = np.delete(self.rot_enu, u, axis=0)
+            if self.synth is not None:
+                self.synth = np.delete(self.synth, u, axis=0)
+            if hasattr(self, 'vel_los'):
+                self.vel_los = np.delete(self.vel_los, u, axis=0)
+
+        # All done 
         return
 
     def reference2network(self, network, components=2):
