@@ -2165,6 +2165,8 @@ class gps(SourceInv):
             north = True
         if not np.isnan(self.vel_enu[:,2]).any() and vertical:
             vertical = True
+        if np.isnan(self.vel_enu[:,2]).any():
+            vertical = False
 
         # Clean synth
         self.synth = np.zeros((Nd,3))

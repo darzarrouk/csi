@@ -648,23 +648,32 @@ class Fault(SourceInv):
         # All done
         return
     
-    def buildGFs(self, data, vertical=True, slipdir='sd', method='homogeneous', verbose=True, convergence=None):
+    def buildGFs(self, data, vertical=True, slipdir='sd', 
+                 method='homogeneous', verbose=True, convergence=None):
         '''
         Builds the Green's function matrix based on the discretized fault.
         Args:
-            * data          : data object from gps or insar.
-            * vertical      : if True, will produce green's functions for the vertical displacements in a gps object.
-            * slipdir       : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
+            * data          : Data object from gps or insar.
+            * vertical      : If True, will produce green's functions for the 
+                              vertical displacements in a gps object.
+            * slipdir       : Direction of the slip along the patches. 
+                              Can be any combination of s (strikeslip), 
+                                                        d (dipslip), 
+                                                        t (tensile) and 
+                                                        c (coupling)
             * method        : Can be okada (Okada, 1982) (rectangular patches only)
                                      meade (Meade 2007) (triangular patches only)
                                      edks (Zhao & Rivera, 2002) 
-                                     homogeneous (Okada for rectangles, Meade for triangles)
+                                     homogeneous (Okada for rectangles, 
+                                     Meade for triangles)
             * verbose       : Writes stuff to the screen 
-            * convergence   : If coupling case, needs convergence azimuth and rate (azimuth in deg, rate)
+            * convergence   : If coupling case, needs convergence azimuth 
+                              and rate (azimuth in deg, rate)
 
         The Green's function matrix is stored in a dictionary. 
         Each entry of the dictionary is named after the corresponding dataset. 
-        Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' and/or 'tensile'.
+        Each of these entry is a dictionary that contains 'strikeslip', 'dipslip' 
+        and/or 'tensile'.
 
         **********************
         TODO: Implement the homogeneous case for the Node-based triangular GFs
