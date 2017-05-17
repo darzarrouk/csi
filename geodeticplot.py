@@ -1187,11 +1187,11 @@ class geodeticplot(object):
                     if xi<0.:
                         xi += 360.
                     verts.append((xi,yi))
-                rect = colls.PolyCollection(verts)
+                rect = colls.PolyCollection([verts])
                 rect.set_color(scalarMap.to_rgba(disp))
                 rect.set_edgecolors('k')
                 rect.set_zorder(zorder)
-                self.carte.add_collection(rect)
+                self.carte.ax.add_collection(rect)
 
         elif plotType is 'scatter':
             lon = corr.lon; lon[lon<0.] += 360.

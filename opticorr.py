@@ -1445,10 +1445,11 @@ class opticorr(SourceInv):
 
         # Plot the decimation process, if asked
         if decim:
-            fig.cosicorr(self, norm=norm, colorbar=False, data=data, plotType='decimate')
+            fig.cosicorr(self, norm=norm, colorbar=True, data=data, plotType='decimate')
 
         # Plot the data
-        fig.cosicorr(self, norm=norm, colorbar=True, data=data, plotType='scatter')
+        if not decim:
+            fig.cosicorr(self, norm=norm, colorbar=True, data=data, plotType='scatter')
 
         # Show
         if show:
