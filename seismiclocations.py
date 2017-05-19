@@ -1701,7 +1701,7 @@ class seismiclocations(SourceInv):
         xc, yc = self.ll2xy(loncenter, latcenter)
 
         # Get the profile
-        Dalong, Mag, Depth, Dacros, boxll, xe1, ye1, xe2, ye2, lon, lat = self.coord2prof(
+        Dalong, Mag, Depth, Dacros, boxll, xe1, ye1, xe2, ye2, lon, lat, Bol = self.coord2prof(
                 xc, yc, length, azimuth, width)
 
         # Store it in the profile list
@@ -1722,6 +1722,7 @@ class seismiclocations(SourceInv):
         lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
         dic['EndPointsLL'] = [[lone1, late1],
                               [lone2, late2]]
+        dic['Indices'] = Bol                              
 
         # All done
         return
@@ -1854,7 +1855,7 @@ class seismiclocations(SourceInv):
         depth = depth[jj]
 
         # All done
-        return Dalong, mag, depth, Dacros, boxll, xe1, ye1, xe2, ye2, lon, lat
+        return Dalong, mag, depth, Dacros, boxll, xe1, ye1, xe2, ye2, lon, lat, Bol
 
     def writeProfile2File(self, name, filename, fault=None):
         '''
