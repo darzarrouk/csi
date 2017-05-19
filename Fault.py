@@ -2516,10 +2516,6 @@ class Fault(SourceInv):
             azimuth += 360.
         
         # Get strikes and dips
-        #if self.patchType is 'triangletent':
-        #    strike = super(self.__class__, self).getStrikes()
-        #    dip = super(self.__class__, self).getDips()
-        #else:
         strike, dip = self.getStrikes(), self.getDips()
 
         # Convert angle in radians
@@ -2528,7 +2524,7 @@ class Fault(SourceInv):
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
 
         # If azimuth within ]90, 270], change rotation
-        if azimuth > 90. and azimuth<=270.:
+        if azimuth*180./np.pi > 90. and azimuth*180./np.pi<=270.:
             rotation += np.pi
 
         # Store rotation angles

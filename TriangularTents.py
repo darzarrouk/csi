@@ -120,7 +120,9 @@ class TriangularTents(TriangularPatches):
             strike.append(stk)
             dip.append(dp)
 
-        strike = np.sum(np.array(strike) %(2*np.pi)) / len(strike)
+        # Compute the mean (beware of angle stuff)
+        j = np.complex(0., 1.)
+        strike = np.angle(np.sum([np.exp(j*s) for s in strike])/len(strike))
         dip = np.mean(dip)
 
         # All done

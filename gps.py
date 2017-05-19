@@ -2075,7 +2075,7 @@ class gps(SourceInv):
 
     def computeBestHelmert(self, components=2):
         '''
-        Fits a full Helmert transform to a network and remove it
+        Fits a full Helmert transform to the network 
 
         Args:
             * components    : Take the 2 horizontal (default) or 3 enu
@@ -2089,6 +2089,28 @@ class gps(SourceInv):
 
         # Run the estimation
         self.Helmert, res, rank, s = np.linalg.lstsq(Hf, d)
+
+        # All done
+        return
+
+    def removeBestHelmert(self, components=2):
+        '''
+        Fits a Helmert transform to the network and removes it.
+
+        Args:
+            * components    : Take the 2 horizontal (default) or 3 enu
+        '''
+
+        # Compute Helmert
+        self.computeBestHelmert(components=components)
+
+        # Get Matrix
+        H = self.getHelmertMatrix(components=components)
+
+        # Remove it
+        m = self.Helmert
+        self.vel_enu[:,:components] -= np.dot(H, m).reshape((components,
+                                                             self.vel_enu.shape[0])).T 
 
         # All done
         return
