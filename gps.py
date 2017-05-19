@@ -1163,11 +1163,15 @@ class gps(SourceInv):
             self.los *= los[np.newaxis,:]
         else:
             self.los = los
-        assert self.los.shape==self.vel_enu.shape
+        assert len(self.los)==self.vel_enu.shape[0]
 
         # Loop over 
         for i in range(self.vel_enu.shape[0]):
-            self.vel_los[i] = np.dot( self.vel_enu[i,:], self.los[i,:] )
+            l = self.los[i]
+            if l is not None:
+                self.vel_los[i] = np.dot( self.vel_enu[i,:], l )
+            else:
+                self.vel_los[i] = None
 
         # All done 
         return
