@@ -1050,10 +1050,7 @@ class Fault(SourceInv):
 
         # Check something
         if not hasattr(self, 'keepTrackOfSources'):  
-            if self.patchType == 'triangletent':
-                self.keepTrackOfSources = True
-            else:
-                self.keepTrackOfSources = False
+            self.keepTrackOfSources = True
 
         # If we have already done that step
         if self.keepTrackOfSources and hasattr(self, 'edksSources'):
@@ -1179,9 +1176,14 @@ class Fault(SourceInv):
             * dtype         : Type of binary data.
         '''
 
+        # Show me
         print('---------------------------------')
         print('---------------------------------')
-        print("Set up Green's functions for fault {} from files {}, {} and {}".format(self.name, strikeslip, dipslip, tensile))
+        print("Set up Green's functions for fault {}:".format(self.name))
+        if strikeslip is not None: print("         Strike slip         : {}".format(strikeslip))
+        if dipslip is not None:    print("         Dip slip            : {}".format(dipslip))
+        if tensile is not None:    print("         Tensile             : {}".format(tensile))
+        if coupling is not None:   print("         Coupling            : {}".format(coupling))
 
         # Get the number of patches
         if self.N_slip == None:

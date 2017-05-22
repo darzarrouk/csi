@@ -211,7 +211,7 @@ class multigps(gps):
         # All done
         return orb
 
-    def computeTransformation(self, fault):
+    def computeTransformation(self, fault, custom=False):
         '''
         Computes the transformation that is stored with a particular fault.
         Stores it in transformation.
@@ -267,6 +267,17 @@ class multigps(gps):
         self.transformation[:,1] = tmpsynth[no:2*no]
         if self.obs_per_station==3:
             self.transformation[:,2] = tmpsynth[2*no:]
+
+        # Add custom
+        if custom:
+            self.computeCustom(fault)
+            if self.obs_per_station==1:
+                self.transformation[:,2] += self.custompred[:,2]
+            if self.obs_per_station>=2:
+                self.transformation[:,0] += self.custompred[:,0]
+                self.transformation[:,1] += self.custompred[:,1]
+            if self.obs_per_station==3:
+                self.transformation[:,2] += self.custompred[:,2]
 
         # All done
         return
