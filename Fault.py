@@ -1012,7 +1012,7 @@ class Fault(SourceInv):
         
         # Check if we can find mention of the spacing between points
         if not hasattr(self, 'sourceSpacing') and not hasattr(self, 'sourceNumber')\
-                and not hasattr(self, 'sourceArea'):
+            and not hasattr(self, 'sourceArea') and not hasattr(self, 'edksSources'):
             print('---------------------------------')
             print('---------------------------------')
             print(' WARNING WARNING WARNING WARNING ')

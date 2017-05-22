@@ -771,7 +771,7 @@ class gps(SourceInv):
         # All done
         return
 
-    def read_from_enu(self, velfile, factor=1., minerr=1., header=0):
+    def read_from_enu(self, velfile, factor=1., minerr=1., header=0, checkNaNs=True):
         '''
         Reading velocities from a enu file:
         StationName | Lon | Lat | e_vel | n_vel | u_vel | e_err | n_err | u_err
@@ -802,7 +802,7 @@ class gps(SourceInv):
         for i in range(header,len(Vel)):
 
             A = Vel[i].split()
-            if 'nan' not in A:
+            if 'nan' not in A or not checkNaNs:
 
                 self.station.append(A[0])
                 self.lon.append(np.float(A[1]))
