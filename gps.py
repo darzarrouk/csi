@@ -20,7 +20,8 @@ from . import csiutils as utils
 
 class gps(SourceInv):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
+    def __init__(self, name, utmzone=None, 
+                       ellps='WGS84', lon0=None, lat0=None, verbose=True):
         '''
         Args:
             * name      : Name of the dataset.
@@ -2731,7 +2732,8 @@ class gps(SourceInv):
         return
 
     def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, 
-            plot_los=False, drawCoastlines=True, expand=0.2, show=True, vertical=False,
+            plot_los=False, drawCoastlines=True, expand=0.2, show=True, 
+            vertical=False, verticalsize=[30],
             data=['data'], color=['k']):
         '''
         Args:
@@ -2751,11 +2753,13 @@ class gps(SourceInv):
         latmax = self.lat.max()+expand
 
         # Create a figure
-        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, 
+                                     latmin=latmin, latmax=latmax)
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
+            fig.drawCoastlines(drawLand=True, parallels=5, 
+                               meridians=5, drawOnFault=True)
 
         # Plot the fault trace if asked
         if faults is not None:
@@ -2770,10 +2774,12 @@ class gps(SourceInv):
 
         # Plot verticals?
         if vertical:
-            fig.gpsverticals(self, colorbar=True, data=data)
+            fig.gpsverticals(self, colorbar=True, data=data, markersize=verticalsize)
 
         # Plot GPS velocities
-        fig.gps(self, data=data, name=name, legendscale=legendscale, scale=scale, color=color)
+        fig.gps(self, data=data, name=name, 
+                      legendscale=legendscale, scale=scale, 
+                      color=color)
 
         # Save fig
         self.fig = fig

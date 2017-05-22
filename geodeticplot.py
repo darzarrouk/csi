@@ -789,16 +789,22 @@ class geodeticplot(object):
         for dName in Data:
             values = Data[dName]['Values']
             c = Data[dName]['Color']
-            p = self.carte.quiver(lon, lat, values[:,0], values[:,1], width=0.005, color=c, scale=scale, scale_units=scale_units, linewidths=linewidths, zorder=zorder)
-#            if np.isfinite(self.err_enu[:,0]).all() and np.isfinite(self.err_enu[:,1]).all():
+            p = self.carte.quiver(lon, lat, 
+                                  values[:,0], values[:,1], 
+                                  width=0.005, color=c, 
+                                  scale=scale, scale_units=scale_units, 
+                                  linewidths=linewidths, zorder=zorder)
+            # TODO TODO TODO TODO TODO
+            #if np.isfinite(self.err_enu[:,0]).all() and np.isfinite(self.err_enu[:,1]).all():
                 # Extract the location of the arrow head
-
                 # Create an ellipse of the good size at that location
-
                 # Add it to collection, under the arrow
+            # TODO TODO TODO TODO TODO
 
         # Plot Legend
-        q = plt.quiverkey(p, 0.1, 0.1, legendscale, '{}'.format(legendscale), coordinates='axes', color='k', zorder=10)
+        q = plt.quiverkey(p, 0.1, 0.1, 
+                          legendscale, '{}'.format(legendscale), 
+                          coordinates='axes', color='k', zorder=10)
 
         # Plot the name of the stations if asked
         if name:
@@ -813,7 +819,7 @@ class geodeticplot(object):
         return
 
     def gpsverticals(self, gps, norm=None, colorbar=True, 
-                     data=['data'], markersize=[50], linewidth=0.1, 
+                     data=['data'], markersize=[10], linewidth=0.1, 
                      zorder=4, cmap='jet', marker='o'):
         '''
         Scatter plot of the vertical displacement of the GPS.

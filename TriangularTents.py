@@ -120,9 +120,10 @@ class TriangularTents(TriangularPatches):
             strike.append(stk)
             dip.append(dp)
 
-        # Compute the mean (beware of angle stuff)
+        # Compute the mean (beware of angle stuff), and we count from 0 to 2pi
         j = np.complex(0., 1.)
         strike = np.angle(np.sum([np.exp(j*s) for s in strike])/len(strike))
+        if strike<0.: strike += 2*np.pi
         dip = np.mean(dip)
 
         # All done
@@ -649,118 +650,118 @@ class TriangularTents(TriangularPatches):
         # All done
         return
 
-    def rotateGFs(self, G, convergence):
-        '''
-            For the data set data, returns the rotation operator so that dip slip motion is aligned with
-        the convergence vector.
-            These Greens' functions are stored in self.G or returned, given arguments.
+    #def rotateGFs(self, G, convergence):
+    #    '''
+    #        For the data set data, returns the rotation operator so that dip slip motion is aligned with
+    #    the convergence vector.
+    #        These Greens' functions are stored in self.G or returned, given arguments.
 
-        Args:
-            * G             : Dictionarry of strike and dip slip green's functions
-            * convergence   : Convergence vector, or list/array of convergence vector with
-                                shape = (Number of fault patches, 2). 
-        '''
-        
-        # Get the Green's functions
-        Gss = G['strikeslip']
-        Gds = G['dipslip']
+    #    Args:
+    #        * G             : Dictionarry of strike and dip slip green's functions
+    #        * convergence   : Convergence vector, or list/array of convergence vector with
+    #                            shape = (Number of fault patches, 2). 
+    #    '''
+    #    
+    #    # Get the Green's functions
+    #    Gss = G['strikeslip']
+    #    Gds = G['dipslip']
 
-        # Number of parameters
-        nSlip = Gss.shape[1]
+    #    # Number of parameters
+    #    nSlip = Gss.shape[1]
 
-        # Get the convergence vector
-        if len(convergence)==2:
-            Conv = np.ones((nSlip, 2))
-            Conv[:,0] *= convergence[0]
-            Conv[:,1] *= convergence[1]
-            self.convergence = Conv
-        elif len(convergence)==nSlip:
-            if type(convergence) is list:
-                self.convergence = np.array(convergence)
-        else:
-            print('Convergence vector is of wrong format...')
-            sys.exit()
+    #    # Get the convergence vector
+    #    if len(convergence)==2:
+    #        Conv = np.ones((nSlip, 2))
+    #        Conv[:,0] *= convergence[0]
+    #        Conv[:,1] *= convergence[1]
+    #        self.convergence = Conv
+    #    elif len(convergence)==nSlip:
+    #        if type(convergence) is list:
+    #            self.convergence = np.array(convergence)
+    #    else:
+    #        print('Convergence vector is of wrong format...')
+    #        sys.exit()
 
-        # Get the fault strike (for the facets)
-        ss = super(TriangularTents, self).getStrikes()
+    #    # Get the fault strike (for the facets)
+    #    ss = super(TriangularTents, self).getStrikes()
 
-        # Organize strike
-        strike = np.zeros((nSlip,))
-        for iNode in self.Nodes:
-            Triangles = self.Nodes[iNode]['idTriangles']
-            Sources = self.Nodes[iNode]['subSources']
-            for source,triangle in zip(Sources, Triangles):
-                strike[source] = ss[triangle]
+    #    # Organize strike
+    #    strike = np.zeros((nSlip,))
+    #    for iNode in self.Nodes:
+    #        Triangles = self.Nodes[iNode]['idTriangles']
+    #        Sources = self.Nodes[iNode]['subSources']
+    #        for source,triangle in zip(Sources, Triangles):
+    #            strike[source] = ss[triangle]
 
-        # Get the strike and dip vectors
-        strikeVec = np.vstack((np.sin(strike), np.cos(strike))).T
-        dipVec = np.vstack((np.sin(strike+np.pi/2.), np.cos(strike+np.pi/2.))).T
+    #    # Get the strike and dip vectors
+    #    strikeVec = np.vstack((np.sin(strike), np.cos(strike))).T
+    #    dipVec = np.vstack((np.sin(strike+np.pi/2.), np.cos(strike+np.pi/2.))).T
 
-        # Project the convergence along strike and dip
-        Sbr = (self.convergence*strikeVec).sum(axis=1)
-        Dbr = (self.convergence*dipVec).sum(axis=1)
+    #    # Project the convergence along strike and dip
+    #    Sbr = (self.convergence*strikeVec).sum(axis=1)
+    #    Dbr = (self.convergence*dipVec).sum(axis=1)
 
-        # Rotate the Green's functions
-        bigGss = np.multiply(-1.0*Gss, Sbr)
-        bigGds = np.multiply(Gds, Dbr)
+    #    # Rotate the Green's functions
+    #    bigGss = np.multiply(-1.0*Gss, Sbr)
+    #    bigGds = np.multiply(Gds, Dbr)
 
-        # All done
-        return bigGss, bigGds
+    #    # All done
+    #    return bigGss, bigGds
 
-    def buildCouplingGFs(self, data, convergence, initializeCoupling=True, vertical=True, verbose=True, keepRotatedGFs=True):
-        '''
-            For the data set data, computes the Green's Function for coupling, 
-            using the formula described in Francisco Ortega's PhD, pages 106 to 108.
-            This function re-computes the Green's functions. No need to pre-compute them.
+    #def buildCouplingGFs(self, data, convergence, initializeCoupling=True, vertical=True, verbose=True, keepRotatedGFs=True):
+    #    '''
+    #        For the data set data, computes the Green's Function for coupling, 
+    #        using the formula described in Francisco Ortega's PhD, pages 106 to 108.
+    #        This function re-computes the Green's functions. No need to pre-compute them.
 
-            The corresponding GFs are stored in the GFs dictionary, under 
-            the name of the data set and are named 'coupling'. 
-            When inverting for coupling, we suggest building these functions and 
-            assembling with slipdir='c'.
-        
-            Args:
-                * data                  : Name of the data set.
-                * convergence           : Convergence vector, or list/array of convergence vector with
-                                            shape = (Number of fault patches, 2). 
-                * initializeCoupling    : Do you initialize the coupling vector in fault (True/False)
-                * vertical              : Use the verticals?
-                * keepRotatedGFs        : Store the dip and strike rotated GFs?
-        '''
+    #        The corresponding GFs are stored in the GFs dictionary, under 
+    #        the name of the data set and are named 'coupling'. 
+    #        When inverting for coupling, we suggest building these functions and 
+    #        assembling with slipdir='c'.
+    #    
+    #        Args:
+    #            * data                  : Name of the data set.
+    #            * convergence           : Convergence vector, or list/array of convergence vector with
+    #                                        shape = (Number of fault patches, 2). 
+    #            * initializeCoupling    : Do you initialize the coupling vector in fault (True/False)
+    #            * vertical              : Use the verticals?
+    #            * keepRotatedGFs        : Store the dip and strike rotated GFs?
+    #    '''
 
-        # 0. Initialize?
-        if initializeCoupling:
-            self.coupling = np.zeros((len(self.tent),))
+    #    # 0. Initialize?
+    #    if initializeCoupling:
+    #        self.coupling = np.zeros((len(self.tent),))
 
-        # 1. Compute the Green's function by keeping triangles separated
-        G = self.edksGFs(data, vertical=vertical, slipdir='sd', verbose=verbose, TentCouplingCase=True)
+    #    # 1. Compute the Green's function by keeping triangles separated
+    #    G = self.edksGFs(data, vertical=vertical, slipdir='sd', verbose=verbose, TentCouplingCase=True)
 
-        # 2. Rotate these green's functions (this is the rotation matrix for the node based GFs)
-        bigGss, bigGds = self.rotateGFs(G, convergence)
+    #    # 2. Rotate these green's functions (this is the rotation matrix for the node based GFs)
+    #    bigGss, bigGds = self.rotateGFs(G, convergence)
 
-        # 3. Compute the coupling GFs
-        bigGc = -1.0*(bigGss + bigGds)
-        # Precision: (the -1.0* is because we use a different convention from that of Francisco)
+    #    # 3. Compute the coupling GFs
+    #    bigGc = -1.0*(bigGss + bigGds)
+    #    # Precision: (the -1.0* is because we use a different convention from that of Francisco)
 
-        # 3. Sum the triangles that need to be summed
-        Gc = []; Gss=[]; Gds=[]
-        for iNode in self.Nodes:
-            iTriangles = self.Nodes[iNode]['subSources']
-            Gc.append(bigGc[:,iTriangles].sum(axis=1))
-            Gss.append(bigGss[:,iTriangles].sum(axis=1))
-            Gds.append(bigGds[:,iTriangles].sum(axis=1))
-        Gc = np.array(Gc).T
-        Gss = np.array(Gss).T
-        Gds = np.array(Gds).T
+    #    # 3. Sum the triangles that need to be summed
+    #    Gc = []; Gss=[]; Gds=[]
+    #    for iNode in self.Nodes:
+    #        iTriangles = self.Nodes[iNode]['subSources']
+    #        Gc.append(bigGc[:,iTriangles].sum(axis=1))
+    #        Gss.append(bigGss[:,iTriangles].sum(axis=1))
+    #        Gds.append(bigGds[:,iTriangles].sum(axis=1))
+    #    Gc = np.array(Gc).T
+    #    Gss = np.array(Gss).T
+    #    Gds = np.array(Gds).T
 
-        # 6. Set the GFs
-        G = {'coupling': Gc}
-        if keepRotatedGFs:
-             G['strikeslip'] = Gss
-             G['dipslip'] = Gds
-        data.setGFsInFault(self, G, vertical=vertical)
+    #    # 6. Set the GFs
+    #    G = {'coupling': Gc}
+    #    if keepRotatedGFs:
+    #         G['strikeslip'] = Gss
+    #         G['dipslip'] = Gds
+    #    data.setGFsInFault(self, G, vertical=vertical)
 
-        # All done
-        return
+    #    # All done
+    #    return
 
     def Facet2Nodes(self, homogeneousStrike=False, homogeneousDip=False, keepFacetsSeparated=False):
         '''

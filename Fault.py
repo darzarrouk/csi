@@ -2519,7 +2519,7 @@ class Fault(SourceInv):
         strike, dip = self.getStrikes(), self.getDips()
 
         # Convert angle in radians
-        azimuth *= ((np.pi) / 180.)
+        azimuth *= np.pi / 180.
         rotation = np.arctan2(np.tan(strike) - np.tan(azimuth), 
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
 
@@ -2552,14 +2552,14 @@ class Fault(SourceInv):
         Grp = np.zeros(Gds.shape)
 
         # Rotate the GFs
-        Gar[0,:,:], Grp[0,:,:] = self._rotatedisp(Gss[0,:,:], Gds[0,:,:], azimuth)
-        Gar[1,:,:], Grp[1,:,:] = self._rotatedisp(Gss[1,:,:], Gds[1,:,:], azimuth)
-        Gar[2,:,:], Grp[2,:,:] = self._rotatedisp(Gss[2,:,:], Gds[2,:,:], azimuth)
+        Gar[0,:,:], Grp[0,:,:] = self._rotatedisp(Gss[0,:,:], Gds[0,:,:], azimuth+90.)
+        Gar[1,:,:], Grp[1,:,:] = self._rotatedisp(Gss[1,:,:], Gds[1,:,:], azimuth+90.)
+        Gar[2,:,:], Grp[2,:,:] = self._rotatedisp(Gss[2,:,:], Gds[2,:,:], azimuth+90.)
 
         # Multiply and sum
-        Gar *= rate 
+        Grp *= rate 
         
         # All done (we only retun Gar as Grp should be 0)
-        return Gar
+        return Grp
 
 #EOF
