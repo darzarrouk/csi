@@ -1456,10 +1456,6 @@ class Fault(SourceInv):
         Gss = self.G[data.name]['strikeslip']
         Gds = self.G[data.name]['dipslip']
 
-        # Make azimuth positive
-        if azimuth < 0.:
-            azimuth += 360.
-
         # Do the rotation
         rotatedGar, rotatedGrp = self._rotatedisp(Gss, Gds, azimuth)
 
@@ -2532,7 +2528,7 @@ class Fault(SourceInv):
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
 
         # If azimuth within ]90, 270], change rotation
-        if azimuth > 90. and azimuth<=270.:
+        if azimuth*(180./np.pi) > 90. and azimuth*(180./np.pi)<=270.:
             rotation += np.pi
 
         # Store rotation angles
