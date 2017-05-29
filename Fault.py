@@ -1012,7 +1012,7 @@ class Fault(SourceInv):
         
         # Check if we can find mention of the spacing between points
         if not hasattr(self, 'sourceSpacing') and not hasattr(self, 'sourceNumber')\
-            and not hasattr(self, 'sourceArea') and not hasattr(self, 'edksSources'):
+                and not hasattr(self, 'sourceArea'):
             print('---------------------------------')
             print('---------------------------------')
             print(' WARNING WARNING WARNING WARNING ')
@@ -1050,7 +1050,10 @@ class Fault(SourceInv):
 
         # Check something
         if not hasattr(self, 'keepTrackOfSources'):  
-            self.keepTrackOfSources = True
+            if self.patchType == 'triangletent':
+                self.keepTrackOfSources = True
+            else:
+                self.keepTrackOfSources = False
 
         # If we have already done that step
         if self.keepTrackOfSources and hasattr(self, 'edksSources'):
@@ -1176,14 +1179,9 @@ class Fault(SourceInv):
             * dtype         : Type of binary data.
         '''
 
-        # Show me
         print('---------------------------------')
         print('---------------------------------')
-        print("Set up Green's functions for fault {}:".format(self.name))
-        if strikeslip is not None: print("         Strike slip         : {}".format(strikeslip))
-        if dipslip is not None:    print("         Dip slip            : {}".format(dipslip))
-        if tensile is not None:    print("         Tensile             : {}".format(tensile))
-        if coupling is not None:   print("         Coupling            : {}".format(coupling))
+        print("Set up Green's functions for fault {} from files {}, {} and {}".format(self.name, strikeslip, dipslip, tensile))
 
         # Get the number of patches
         if self.N_slip == None:
@@ -1457,6 +1455,10 @@ class Fault(SourceInv):
         # Get the Green's functions
         Gss = self.G[data.name]['strikeslip']
         Gds = self.G[data.name]['dipslip']
+
+        # Make azimuth positive
+        if azimuth < 0.:
+            azimuth += 360.
 
         # Do the rotation
         rotatedGar, rotatedGrp = self._rotatedisp(Gss, Gds, azimuth)
@@ -2518,15 +2520,19 @@ class Fault(SourceInv):
             azimuth += 360.
         
         # Get strikes and dips
+        #if self.patchType is 'triangletent':
+        #    strike = super(self.__class__, self).getStrikes()
+        #    dip = super(self.__class__, self).getDips()
+        #else:
         strike, dip = self.getStrikes(), self.getDips()
 
         # Convert angle in radians
-        azimuth *= np.pi / 180.
+        azimuth *= ((np.pi) / 180.)
         rotation = np.arctan2(np.tan(strike) - np.tan(azimuth), 
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
 
         # If azimuth within ]90, 270], change rotation
-        if azimuth*180./np.pi > 90. and azimuth*180./np.pi<=270.:
+        if azimuth > 90. and azimuth<=270.:
             rotation += np.pi
 
         # Store rotation angles
@@ -2554,14 +2560,14 @@ class Fault(SourceInv):
         Grp = np.zeros(Gds.shape)
 
         # Rotate the GFs
-        Gar[0,:,:], Grp[0,:,:] = self._rotatedisp(Gss[0,:,:], Gds[0,:,:], azimuth+90.)
-        Gar[1,:,:], Grp[1,:,:] = self._rotatedisp(Gss[1,:,:], Gds[1,:,:], azimuth+90.)
-        Gar[2,:,:], Grp[2,:,:] = self._rotatedisp(Gss[2,:,:], Gds[2,:,:], azimuth+90.)
+        Gar[0,:,:], Grp[0,:,:] = self._rotatedisp(Gss[0,:,:], Gds[0,:,:], azimuth)
+        Gar[1,:,:], Grp[1,:,:] = self._rotatedisp(Gss[1,:,:], Gds[1,:,:], azimuth)
+        Gar[2,:,:], Grp[2,:,:] = self._rotatedisp(Gss[2,:,:], Gds[2,:,:], azimuth)
 
         # Multiply and sum
-        Grp *= rate 
+        Gar *= rate 
         
         # All done (we only retun Gar as Grp should be 0)
-        return Grp
+        return Gar
 
 #EOF
