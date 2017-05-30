@@ -482,7 +482,7 @@ class imagecovariance(object):
             res = sp.minimize(costFunction, mprior, 
                     args=(x, covariance, y, weights, function), 
                     method='L-BFGS-B',
-                    bounds=[[0., np.inf], [0., np.inf], [0., np.inf]], tol=tol)
+                    bounds=[[0., np.inf], [0., np.inf], [0.01, np.inf]], tol=tol)
             pars = res.x
 
             # Save parameters
