@@ -661,7 +661,7 @@ class RectangularPatchesKin(RectangularPatches):
             * slip:        slip amplitude (in m)
             * rake:        rake angle (in deg)
             * Mu:          Shear modulus (optional)
-            * filter_coef: Array of second-order filter coefficients (optional), see scipy.signal.sosfilt
+            * filter_coef: Array or dictionnary of second-order filter coefficients (optional), see scipy.signal.sosfilt
         '''        
         
         print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
@@ -732,7 +732,10 @@ class RectangularPatchesKin(RectangularPatches):
                     o_sac.npts -= 1
                 # GFs filtering
                 if filter_coef != None:
-                    sos = filter_coef
+                    if filter_coef.__class__ is dict:
+                        sos = filter_coef[dkey]
+                    else:
+                        sos = filter_coef
                     o_sac.depvar = signal.sosfilt(sos,o_sac.depvar)
                 # GFs time-windowing
                 b = data.d[dkey].b - data.d[dkey].o
