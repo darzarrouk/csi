@@ -650,7 +650,7 @@ class RectangularPatchesKin(RectangularPatches):
         return                        
                 
     
-    def buildKinGFsFromDB(self, data, wave_engine, slip, rake, Mu = None, filter_coef=None, differentiate=False):
+    def buildKinGFsFromDB(self, data, wave_engine, slip, rakes, rake_key = None, Mu = None, filter_coef=None, differentiate=False):
         '''
         Build Kinematic Green's functions based on the discretized fault and a pre-calculated GF database. 
         Green's functions will be calculated for a given shear modulus and a given slip (cf., slip) 
@@ -659,7 +659,8 @@ class RectangularPatchesKin(RectangularPatches):
             * data:        Seismic data object
             * wave_engine: waveform generator
             * slip:        slip amplitude (in m)
-            * rake:        rake angle (in deg)
+            * rakes:        rake angle (in deg). Can be a scalar or an array of len(self.patch)
+            * rake_key:    By default, GFs are stored in a dictionnarry 
             * Mu:          Shear modulus (optional)
             * filter_coef: Array or dictionnary of second-order filter coefficients (optional), see scipy.signal.sosfilt
         '''        
@@ -669,6 +670,18 @@ class RectangularPatchesKin(RectangularPatches):
 
         # Check the patch attribute
         assert self.patch != None, 'Patch object should be assigned'
+
+        # Check rakes
+        if type(rakes) is list:
+            rakes = np.array(rakes)
+        if type(rakes) is np.ndarray:
+            assert len(rakes) == len(self.patch), 'rakes must be a scalar or an array of length {}'.format(len(self.patch))
+            assert rake_key is not None, 'You must provide a keyword for this GFs (ex. AlongRake, RakePerp, etc...'
+        else: # If scalar rake
+            rake = rakes 
+            rake_key = rake # Set dictionnary keyword to rake value
+
+
 
         # Check Mu
         Np = len(self.patch)
@@ -680,7 +693,7 @@ class RectangularPatchesKin(RectangularPatches):
         # Init Green's functions
         if not self.G.has_key(data.name):
             self.G[data.name] = {}
-        self.G[data.name][rake] = []
+        self.G[data.name][rake_key] = []
         
         # Init station lat/lon
         assert len(data.lat)>0, 'Station lat must be assigned'
@@ -696,9 +709,13 @@ class RectangularPatchesKin(RectangularPatches):
         delta = data.d[data.sta_name[0]].delta
         
         # Loop over each patch
-        G = self.G[data.name][rake]
+        G = self.G[data.name][rake_key]
         for p in range(Np):
             
+            # Get rake of that patch
+            if type(rakes) is np.ndarray:
+                rake = rakes[p]
+
             # Get point source location and patch geometry
             p_x, p_y, p_z, width, length, strike_rad, dip_rad = self.getpatchgeometry(p,center=True)  
             p_lon,p_lat = self.xy2ll(p_x,p_y)
@@ -819,7 +836,7 @@ class RectangularPatchesKin(RectangularPatches):
         # All done
         return
         
-    def buildBigGD(self,eik_solver,seismic_data,rakes,vmax,Nt,Dt, dtype='float64',fastsweep=False,indexing='Altar'):
+    def buildBigGD(self,eik_solver,seismic_data,rakes,vmax,Nt,Dt,rakes_key=None,dtype='float64',fastsweep=False,indexing='Altar'):
         '''
         Build BigG and bigD matrices from Green's functions and data dictionaries
         Args:
@@ -829,6 +846,7 @@ class RectangularPatchesKin(RectangularPatches):
             vmax:       Maximum rupture velocity
             Nt:         Number of rupture time-steps
             Dt:         Rupture time-steps
+            rakes_key:  If GFs are stored under different keywords than rake value, provide them here
             fastsweep:  If True and vmax is set, solves min arrival time 
                         using fastsweep algo. If false, uses analytical solution.
         '''
@@ -837,7 +855,11 @@ class RectangularPatchesKin(RectangularPatches):
             data_list = [seismic_data]
         else:
             data_list = seismic_data
-            
+           
+        # set rake keywords for dictionnary
+        if rakes_key is None:
+            rakes_key = rakes
+         
         # Set eikonal solver grid for vmax
         Np = len(self.patch)
         if vmax != np.inf and vmax > 0.:
@@ -873,12 +895,12 @@ class RectangularPatchesKin(RectangularPatches):
         self.bigD = np.array(self.bigD)
         
         # Build Big G matrix
-        self.bigG = np.zeros((len(self.bigD),Nt*Np*len(rakes)))
+        self.bigG = np.zeros((len(self.bigD),Nt*Np*len(rakes_key)))
         j  = 0
         if indexing == 'Altar':
             for nt in range(Nt):
                 #print('Processing %d'%(nt))
-                for r in rakes:
+                for r in rakes_key:
                     for p in range(Np):                    
                         di = 0
                         for data in data_list:
@@ -894,7 +916,7 @@ class RectangularPatchesKin(RectangularPatches):
                                 di += npts
                         j += 1
         else:
-            for r in rakes:
+            for r in rakes_key:
                 for p in range(Np):                    
                     di = 0
                     for nt in range(Nt):                
@@ -976,12 +998,12 @@ class RectangularPatchesKin(RectangularPatches):
 
         # Check i_path
         assert os.path.exists(outputDir), '%s: No such directory'%(i_path)
-
+        
         # Main loop
         G = self.G[data.name]
         Np = len(self.patch)
         for r in G.keys():
-            o_dir = os.path.join(outputDir,'rake_%.1f'%(r))
+            o_dir = os.path.join(outputDir,'rake_{}'.format(r))
             if os.path.exists(o_dir) and rmdir:
                 sh.rmtree(o_dir)
             if not os.path.exists(o_dir):
@@ -1025,7 +1047,7 @@ class RectangularPatchesKin(RectangularPatches):
         for r in rakes:
 
             # Check subdirectories
-            i_dir = os.path.join(inputDir,'rake_%.1f'%(r))
+            i_dir = os.path.join(inputDir,'rake_{}'.format(r))
             assert os.path.exists(i_dir), '%s: no such directory'%(i_dir)
 
             self.G[data.name][r] = []

@@ -2536,7 +2536,7 @@ class Fault(SourceInv):
 
         # Rotate them (ar: along-rake; rp: rake-perpendicular)
         rotatedGar = Gss*np.cos(rotation) + Gds*np.sin(rotation)
-        rotatedGrp = -1.*Gss*np.sin(rotation) + Gds*np.cos(rotation)
+        rotatedGrp = Gss*np.sin(rotation) - Gds*np.cos(rotation)
 
         # All done
         return rotatedGar, rotatedGrp
