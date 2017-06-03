@@ -115,7 +115,7 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
         import matplotlib.path as path
 
         # Create the path
-        poly = path.Path([[lo, la] for lo, la in zip(olon.flatten(), olat.flatten())], 
+        poly = path.Path([[lo, la] for lo, la in zip(mask[:,0], mask[:,1])], 
                 closed=False)
 
         # Create the list of points
