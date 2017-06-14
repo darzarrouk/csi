@@ -493,8 +493,8 @@ class seismic(SourceInv):
                 plt.savefig(o_pdf_name,orientation='landscape')
                 pages += 1
                 count = 1
-                fig = plt.figure(figsize=[11.69,8.270])
-                fig.subplots_adjust(bottom=0.06,top=0.87,left=0.06,right=0.95,wspace=0.25,hspace=0.35)
+                fig = plt.figure(figsize=figsize)
+                fig.subplots_adjust(bottom=bottom,top=top,left=left,right=right,wspace=wspace,hspace=hspace)
             t1 = np.arange(nsamp,dtype='double')*self.d[dkey].delta + self.d[dkey].b - self.d[dkey].o
             ax = plt.subplot(nl,nc,count)
             if synth_vector is not None:   
