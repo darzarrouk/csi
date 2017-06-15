@@ -251,7 +251,7 @@ class seismic(SourceInv):
         '''
         
         Cd = np.fromfile(infile,dtype=dtype)
-        nd = np.sqrt(len(Cd))
+        nd = int(np.sqrt(len(Cd)))
         self.Cd = Cd.reshape(nd,nd)
 
         # All done
@@ -569,7 +569,8 @@ class seismic(SourceInv):
                 
                 pos  = ax.get_position().get_points()
                 W  = pos[1][0]-pos[0][0] ; H  = pos[1][1]-pos[0][1] ;		
-                ax2 = plt.axes([pos[1][0]-W*0.6,pos[0][1]+H*0.01,H*1.08,H*1.00])
+                #ax2 = plt.axes([pos[1][0]-W*0.6,pos[0][1]+H*0.01,H*1.08,H*1.00])
+                ax2 = plt.axes([pos[1][0]-W*0.2,pos[0][1]+H*0.01,W*0.2,H*1.00])
                 m.drawcoastlines(linewidth=0.5,zorder=900)
                 m.fillcontinents(color='0.75',lake_color=None)
                 m.drawparallels(np.arange(fault.hypo_lat-basemap_dlat,fault.hypo_lat+basemap_dlat,3.0),linewidth=0.2)
