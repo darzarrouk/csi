@@ -478,6 +478,13 @@ class seismic(SourceInv):
         npages = np.ceil(float(ntot)/float(perpage))
         # Main loop
         sa = 0.; sb = 0.
+
+        if basemap==True and fault is not None and globalbasemap==False:
+            m = Basemap(llcrnrlon=fault.hypo_lon-basemap_dlon, llcrnrlat=fault.hypo_lat-basemap_dlat,
+                        urcrnrlon=fault.hypo_lon+basemap_dlon, urcrnrlat=fault.hypo_lat+basemap_dlat,
+                        projection='lcc',lat_1=fault.hypo_lat-basemap_dlat/2.,lat_2=fault.hypo_lat+basemap_dlat/2.,
+                        lon_0=fault.hypo_lon, resolution ='h',area_thresh=50. )  
+        
         for dkey in sta_name:
             # Data vector
             data  = self.d[dkey].depvar
@@ -561,12 +568,8 @@ class seismic(SourceInv):
                 plt.xlim(xlims)
             if grid:
                 plt.grid()            
-            if basemap==True and fault is not None and globalbasemap==False:
-                m = Basemap(llcrnrlon=fault.hypo_lon-basemap_dlon, llcrnrlat=fault.hypo_lat-basemap_dlat,
-                            urcrnrlon=fault.hypo_lon+basemap_dlon, urcrnrlat=fault.hypo_lat+basemap_dlat,
-                            projection='lcc',lat_1=fault.hypo_lat-basemap_dlat/2.,lat_2=fault.hypo_lat+basemap_dlat/2.,
-                            lon_0=fault.hypo_lon, resolution ='h',area_thresh=50. )                
-                
+
+            if basemap==True and fault is not None and globalbasemap==False:      
                 pos  = ax.get_position().get_points()
                 W  = pos[1][0]-pos[0][0] ; H  = pos[1][1]-pos[0][1] ;		
                 #ax2 = plt.axes([pos[1][0]-W*0.6,pos[0][1]+H*0.01,H*1.08,H*1.00])
