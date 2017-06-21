@@ -737,7 +737,8 @@ class RectangularPatchesKin(RectangularPatches):
                 # Compute synthetics
                 #print(dkey,dist)
                 o_sac,L_sac,T_sac = wave_engine.synthSDR(p_z,az,dist,M0,strike,dip,rake)
-                if ( ori == 'N' or ori == 'E' or ori == '1' or ori == '2' ):                    
+                if ( ori == 'N' or ori == 'E' or ori == '1' or ori == '2' ): 
+                    assert (data.d[dkey].cmpaz>=-360 and data.d[dkey].cmpaz<=360.), '{} cmpaz must be within [-360,360]'.format(dkey)                   
                     o_sac = wave_engine.rotTraces(L_sac,T_sac,baz,data.d[dkey].cmpaz)
                 # Check delta
                 assert np.round(data.d[dkey].delta,4) == np.round(delta,4), 'Sampling frequency must be identical for each station'
