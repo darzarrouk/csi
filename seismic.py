@@ -439,24 +439,60 @@ class seismic(SourceInv):
         # All done
         return
         
-    def plot(self,synth_vector=None,plot_synt_mean=False,nc=3,nl=5, title = 'Seismic data', sta_lst=None, basename=None,
+    def plot(self,synth_vector=None,nc=3,nl=5, title = 'Seismic data', sta_lst=None, basename=None,
              figsize=[11.69,8.270],xlims=None,ylims=[-20.,20.],bottom=0.06,top=0.87,left=0.06,right=0.95,wspace=0.25,
              hspace=0.35,grid=True,axis_visible=True,inc=False,Y_max=False,Y_units='mm',fault=None,
-             basemap=True,globalbasemap=False,basemap_dlon=2.5,basemap_dlat=2.5,endclose=True):
+             basemap=True,globalbasemap=False,basemap_dlon=2.5,basemap_dlat=2.5,endclose=True,sort=None):
         '''
         Plot seismic traces
         Args:
-           synth_vector: concatenated synthetic waveforms
-           nc: number of collumns per page
-           nl: number of rows per page
-           title: figure title
-           sta_lst: station list
+           * synth_vector:      concatenated synthetic waveforms
+           * nc:                number of collumns per page
+           * nl:                number of rows per page
+           * title:             figure title
+           * sta_lst:           station list
+           * basename:          used as prefix for figure name
+           * fault:             fault object used for epicenter loc 
+           * basemap:           plot basemap with epicenter and stations location
+                                Can be tuned with basemap_dlon,basemap_dlat
+           * globalbasemap:     plot whole globe for teleseismic loc
+           * endclose:          if True, close figure
+           * sort:              ['distance' or 'azimuth'] you can choose to sort 
+                                the stations by distance to hypo. or by azimuth
         '''
+        
         # Station list
         if sta_lst==None:
-            sta_name=self.sta_name
+            sta_name=copy.deepcopy(self.sta_name)
         else:
-            sta_name=sta_lst
+            sta_name=copy.deepcopy(sta_lst)
+
+        # if sort, do it
+        if sort is not None:
+            par = []
+            names = []    
+            # Get list of names and associated parameter to sort along 
+            if sort.lower() in ['dist','distance']: # if can be distance...
+                for dkey in self.d.keys():
+                    par.append(self.d[dkey].dist)
+                    names.append(self.d[dkey].kstnm+'_'+self.d[dkey].kcmpnm)
+            elif sort.lower() in ['az','azimuth']: # ... or azimuth
+                for dkey in self.d.keys():
+                    par.append(self.d[dkey].az)
+                    names.append(self.d[dkey].kstnm+'_'+self.d[dkey].kcmpnm)
+
+            # Sort them by station name, then channel name (E,N,Z)
+            names = np.array(names)[np.argsort(par)]
+            sta_name = copy.deepcopy(names) 
+            for i in range(len(names)-1):
+                if sta_name[i][:-1]==sta_name[i+1][:-1]: 
+                    if sta_name[i][-1]>sta_name[i+1][-1]:# if N before E, or Z before N, of Z before E...
+                        sta_name[i],sta_name[i+1] = sta_name[i+1], sta_name[i] # ... invert their positions
+                    if sta_name[i][:-1]==sta_name[i-1][:-1]:
+                        if sta_name[i][-1]<sta_name[i-1][-1]: # second round to check previous element in list
+                            sta_name[i],sta_name[i-1] = sta_name[i-1], sta_name[i]
+            
+
         # Base name
         if basename==None:
             basename=self.name
@@ -479,6 +515,7 @@ class seismic(SourceInv):
         # Main loop
         sa = 0.; sb = 0.
 
+        # Make basemap object first to save time
         if basemap==True and fault is not None and globalbasemap==False:
             m = Basemap(llcrnrlon=fault.hypo_lon-basemap_dlon, llcrnrlat=fault.hypo_lat-basemap_dlat,
                         urcrnrlon=fault.hypo_lon+basemap_dlon, urcrnrlat=fault.hypo_lat+basemap_dlat,
