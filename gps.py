@@ -362,6 +362,9 @@ class gps(SourceInv):
         # Set factor
         gpsNew.factor = self.factor
 
+        # Lon/Lat
+        gpsNew.lonlat2xy()
+
         # all done
         return gpsNew
 
@@ -1214,6 +1217,16 @@ class gps(SourceInv):
             * synth     : Synthetics (3 numbers)
             * los       : Line-of-sight projection (1 number)
         '''
+
+        # Check something
+        if not hasattr(self, 'station'):
+            self.station = np.array([])
+            self.lon = np.array([])
+            self.lat = np.array([])
+            self.x = np.array([])
+            self.y = np.array([])
+            self.vel_enu = np.array([])
+            self.err_enu = np.array([])
 
         # Append
         self.station = np.append(self.station, station)
@@ -2469,9 +2482,71 @@ class gps(SourceInv):
             elif sqlfile is not None:
                 self.timeseries[station].read_from_sql(sqlfile, factor=factor)
 
+        # Save
+        self.factor = factor
+
         # All done
         return
 
+    def getNetworkAtDate(self, date):
+        '''
+        Returns a GPS object which displacements are the values at the desired date.
+
+        Args:
+            * date      : datetime.datetime instance
+
+        Return:
+            * gps       : a GPS instance
+        '''
+
+        # Check if some time series are available
+        assert hasattr(self, 'timeseries'), 'No timeseries available'
+
+        # Create the object
+        name = self.name + ' ' + date.isoformat()
+        gpsNew = gps(name, 
+                     utmzone=self.utmzone, 
+                     verbose=self.verbose, 
+                     lon0=self.lon0, 
+                     lat0=self.lat0)
+
+        # Iterate over the stations
+        for station in self.station:
+
+            # Get the time series
+            timeseries = self.timeseries[station]
+
+            # Get the index of the date
+            igps = np.flatnonzero(timeseries.time==date)
+
+            # Check if there is something to do
+            if len(igps)>0:
+
+                # Get the lon, lat
+                lon,lat = self.getstation(station)[:2]
+
+                # Get velocity
+                e = timeseries.east.value[igps]
+                n = timeseries.north.value[igps]
+                u = timeseries.up.value[igps]
+                vel = np.array([e,n,u])
+
+                # Get Error
+                e = timeseries.east.error[igps]
+                n = timeseries.north.error[igps]
+                u = timeseries.up.error[igps]
+                err = np.array([e,n,u])
+            
+                # Add the station
+                if np.nan not in vel:
+                    gpsNew.addstation(station, lon, lat, vel, err)
+
+        # Set factor
+        gpsNew.factor = self.factor
+
+        # all done
+        return gpsNew
+    
     def simulateTimeSeriesFromCMT(self, sismo, scale=1., verbose=True, elasticstructure='okada', sourceSpacing=0.1):
         '''
         Takes a seismolocation object with CMT informations and computes the time 
