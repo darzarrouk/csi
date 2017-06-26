@@ -170,14 +170,15 @@ class insartimeseries(insar):
         # All done
         return
 
-    def readFromGIAnT(self, h5file, 
+    def readFromGIAnT(self, h5file, setmaster2zero=None,
                             zfile=None, lonfile=None, latfile=None, 
                             incidence=None, heading=None, inctype='onefloat', 
-                            field='recons', keepnan=False, mask=None, readVel=None):
+                            field='recons', keepnan=False, mask=None, readModel=False):
         '''
         Read the output from a tipycal GIAnT h5 output file.
         Args:
             * h5file        : Input h5file
+            * setmaster2zero: If index is provided, master will be replaced by zeros (no substraction)
             * zfile         : File with elevation (float32)
             * lonfile       : File with longitudes (float32)
             * latfile       : File with latitudes (float32)
@@ -190,7 +191,7 @@ class insartimeseries(insar):
                                 mask is an array the same size as the data with nans and 1
                                 It can also be a tuple with a key word in 
                                 the h5file, a value and 'above' or 'under'
-            * readVel       : If not None, reads the values of parameter given.
+            * readModel     : Reads the model parameters
         '''
 
         # open the h5file
@@ -256,8 +257,13 @@ class insartimeseries(insar):
             if mask is not None:
                 dat *= mask
 
+            # check master date
+            if i is setmaster2zero:
+                dat[:,:] = 0.
+
             # Create an insar object
-            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+            sar = insar(date.isoformat(), utmzone=self.utmzone, 
+                        verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
             # Put thing in the insarrate object
             sar.vel = dat.flatten()
@@ -280,26 +286,8 @@ class insartimeseries(insar):
             self.timeseries.append(sar)
 
         # if readVel
-        if readVel is not None:
-            u = np.flatnonzero(self.h5in['mName'][:]==readVel)
-            if len(u)==1:
-                self.param = insar('Parameter {}'.format(readVel), 
-                                   utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps,
-                                   verbose=False)
-                self.param.vel = h5in['parms'][:,:,u[0]].flatten()
-                self.param.lon = self.lon
-                self.param.lat = self.lat
-                self.param.x = self.x
-                self.param.y = self.y
-                self.param.corner = None
-                self.param.err = None
-                self.param.factor=1.0
-                self.param.inchd2los(incidence, heading, origin=inctype)
-            else:
-                print('{}: No such parameter in {}'.format(readVel,h5file))
-                sys.exit()
-        else:
-            self.param = None
+        if readModel:
+            self.readModelFromGIAnT()
 
         # Make a common mask if asked
         if not keepnan:
@@ -315,12 +303,51 @@ class insartimeseries(insar):
                 sar.reject_pixel(uu)
             if zfile is not None:
                 elevation.reject_pixel(uu)
-            if self.param is not None:
-                self.param.reject_pixel(uu)
+            self.reject_pixel(uu)
+
+        # Keep incidence and heading
+        self.incidence = incidence
+        self.heading = heading
+        self.inctype = inctype
 
         # all done
         return
+ 
+    def readModelFromGIAnT(self):
+        '''
+        Read the model parameters from GIAnT after one has read the time series
+        '''
+
+        # This step needs tsinsar
+        import tsinsar
     
+        # Get the representation
+        self.rep = tsinsar.mName2rep(self.h5in['parms'].value)
+
+        # Iterate over the model parameters 
+        self.models = []
+        for u, mName in enumerate(self.h5in['mName']):
+            
+            # Build the guy
+            param = insar('Parameter {}'.format(readVel), 
+                          utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps,
+                          verbose=False)
+            param.vel = h5in['parms'][:,:,u].flatten()
+            param.lon = self.lon
+            param.lat = self.lat
+            param.x = self.x
+            param.y = self.y
+            param.corner = None
+            param.err = None
+            param.factor=1.0
+            param.inchd2los(self.incidence, self.heading, origin=self.inctype)
+
+            # Save it 
+            self.models.append(param)
+
+        # All done
+        return    
+
     def removeDate(self, date):
         '''
         Remove one date from the time series.
@@ -475,6 +502,75 @@ class insartimeseries(insar):
         # All done
         return out
         
+    def reference2timeseries(self, gpstimeseries, masterdate, distance=4.0, verbose=True):
+        '''
+        References the InSAR time series to the GPS time series.
+        We estimate a linear function of range and azimuth on the difference 
+        between InSAR and GPS at the date of the InSAR reference frame. 
+        This function is constant through time (one single function for the whole time series).
+
+        We solve for the a, b, c terms in the equation:
+            d_sar = d_gps + a*range + b*azimuth + c
+
+        Args:
+            * gpstimeseries     : A gpstimeseries instance.
+            * masterdate        : Date of the master image to reference
+
+        kwArgs:
+            * distance          : Diameter of the circle surrounding a gps station
+                                  to gather InSAR points
+            * verbose           : Talk to me
+
+        Returns:
+            * sar@gps           : a gpstimeseries instance with the InSAR values
+                                  around the GPS stations
+        '''
+
+        # Find which InSAR frame is the one we want
+        assert masterdate in self.dates, 'Master Date {} is not in our posession'.format(masterdate)
+        isar = np.flatnonzero(self.dates==masterdate)[0]
+        sar = self.timeseries[isar]
+
+        # Get the gps displacements at the masterdate
+        gps = gpstimeseries.getNetworkAtDate(masterdate)
+
+        # Extract the sar displacement around the GPS stations
+        saratgps = sar.extractAroundGPS(gps, distance, doprojection=True)
+
+        # Get the position of the GPS stations and SAR points
+        x = gps.x - np.mean(gps.x)
+        y = gps.y - np.mean(gps.y)
+
+        # Get the difference between the gps and sar
+        d = saratgps.vel_los - gps.vel_los
+
+        # Kick out the NaNs if there is some
+        u = np.flatnonzero(np.isnan(d))
+        x = np.delete(x,u)
+        y = np.delete(y,u)
+        d = np.delete(d,u).squeeze()
+
+        # Estimate a common transform to match them
+        G = np.vstack((x, y, np.ones(len(x),))).T
+        m, res, rank, s = np.linalg.lstsq(G, d)
+
+        # Correct the whole insar time series
+        for sar in self.timeseries:
+
+            # Get x and y
+            G = np.vstack((sar.x-np.mean(gps.x), sar.y-np.mean(gps.y), np.ones(sar.x.shape))).T
+
+            # Correct
+            sar.vel -= np.dot(G,self.m)
+
+        # Re-do the extraction to return it
+        saratgps = self.extractAroundGPS(gpstimeseries, distance, 
+                                         verbose=False, reference=False, 
+                                         doprojection=True)
+
+        # All done
+        return saratgps
+
     def getProfiles(self, prefix, loncenter, latcenter, length, azimuth, width, verbose=False):
         '''
         Get a profile for each time step
