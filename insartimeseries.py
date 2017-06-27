@@ -502,66 +502,92 @@ class insartimeseries(insar):
         # All done
         return out
         
-    def reference2timeseries(self, gpstimeseries, masterdate, distance=4.0, verbose=True):
+    def reference2timeseries(self, gpstimeseries, distance=4.0, verbose=True, parameters=1, 
+                                   propagate='mean'):
         '''
         References the InSAR time series to the GPS time series.
         We estimate a linear function of range and azimuth on the difference 
-        between InSAR and GPS at the date of the InSAR reference frame. 
-        This function is constant through time (one single function for the whole time series).
+        between InSAR and GPS at each insar epoch.
 
         We solve for the a, b, c terms in the equation:
-            d_sar = d_gps + a*range + b*azimuth + c
+            d_sar = d_gps + a + b*range + c*azimuth + d*azimuth*range 
 
         Args:
             * gpstimeseries     : A gpstimeseries instance.
-            * masterdate        : Date of the master image to reference
 
         kwArgs:
             * distance          : Diameter of the circle surrounding a gps station
                                   to gather InSAR points
             * verbose           : Talk to me
+            * parameters        : 1, 3 or 4
+            * propagate         : 'mean' if no gps data available
 
         Returns:
             * sar@gps           : a gpstimeseries instance with the InSAR values
                                   around the GPS stations
         '''
 
-        # Find which InSAR frame is the one we want
-        assert masterdate in self.dates, 'Master Date {} is not in our posession'.format(masterdate)
-        isar = np.flatnonzero(self.dates==masterdate)[0]
-        sar = self.timeseries[isar]
+        # Save the references
+        references = []
+        GPS = []
 
-        # Get the gps displacements at the masterdate
-        gps = gpstimeseries.getNetworkAtDate(masterdate)
+        # Iterate over the InSAR time series
+        for sar, date in zip(self.timeseries, self.dates):
 
-        # Extract the sar displacement around the GPS stations
-        saratgps = sar.extractAroundGPS(gps, distance, doprojection=True)
+            # Get the gps displacements at the masterdate
+            gps = gpstimeseries.getNetworkAtDate(date)
+            GPS.append(gps)
 
-        # Get the position of the GPS stations and SAR points
-        x = gps.x - np.mean(gps.x)
-        y = gps.y - np.mean(gps.y)
+            # Extract the sar displacement around the GPS stations
+            saratgps = sar.extractAroundGPS(gps, distance, doprojection=True)
 
-        # Get the difference between the gps and sar
-        d = saratgps.vel_los - gps.vel_los
+            # Get the position of the GPS stations and SAR points
+            x = gps.x - np.mean(gps.x)
+            y = gps.y - np.mean(gps.y)
 
-        # Kick out the NaNs if there is some
-        u = np.flatnonzero(np.isnan(d))
-        x = np.delete(x,u)
-        y = np.delete(y,u)
-        d = np.delete(d,u).squeeze()
+            # Get the difference between the gps and sar
+            d = saratgps.vel_los - gps.vel_los
 
-        # Estimate a common transform to match them
-        G = np.vstack((x, y, np.ones(len(x),))).T
-        m, res, rank, s = np.linalg.lstsq(G, d)
+            # Kick out the NaNs if there is some
+            u = np.flatnonzero(np.isnan(d))
+            x = np.delete(x,u)
+            y = np.delete(y,u)
+            d = np.delete(d,u)
+            print(d)
 
-        # Correct the whole insar time series
-        for sar in self.timeseries:
+            # Estimate a linear transform to match them
+            if len(d)>0:
+                G = np.ones((len(d), parameters))
+                if parameters>=3:
+                    G[:,1] = x
+                    G[:,2] = y
+                if parameters==4:
+                    G[:,2] = x*y
+                m, res, rank, s = np.linalg.lstsq(G, d, rcond=1e-8)
+            else:
+                m = None
+
+            # Save that
+            references.append(m)
+    
+        # Clean up references
+        if propagate=='mean':
+            
+            # Get mean
+            mmean = np.array([m for m in references if m is not None]).mean(axis=1)
+            references = [mmean if m is None else m for m in references]
+
+        else:
+            assert False, 'No other propagation method implemented yet'
+
+        # Iterate over the frames to reference
+        for sar, gps, ref in zip(self.timeseries, GPS, references): 
 
             # Get x and y
             G = np.vstack((sar.x-np.mean(gps.x), sar.y-np.mean(gps.y), np.ones(sar.x.shape))).T
 
             # Correct
-            sar.vel -= np.dot(G,self.m)
+            sar.vel -= np.dot(G,ref)
 
         # Re-do the extraction to return it
         saratgps = self.extractAroundGPS(gpstimeseries, distance, 
