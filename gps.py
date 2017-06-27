@@ -2488,7 +2488,7 @@ class gps(SourceInv):
         # All done
         return
 
-    def getNetworkAtDate(self, date):
+    def getNetworkAtDate(self, date, verbose=True):
         '''
         Returns a GPS object which displacements are the values at the desired date.
 
@@ -2506,7 +2506,7 @@ class gps(SourceInv):
         name = self.name + ' ' + date.isoformat()
         gpsNew = gps(name, 
                      utmzone=self.utmzone, 
-                     verbose=self.verbose, 
+                     verbose=verbose, 
                      lon0=self.lon0, 
                      lat0=self.lat0)
 

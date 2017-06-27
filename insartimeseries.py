@@ -503,7 +503,7 @@ class insartimeseries(insar):
         return out
         
     def reference2timeseries(self, gpstimeseries, distance=4.0, verbose=True, parameters=1, 
-                                   propagate='mean'):
+                                   daysaround=2, propagate='mean'):
         '''
         References the InSAR time series to the GPS time series.
         We estimate a linear function of range and azimuth on the difference 
@@ -516,6 +516,7 @@ class insartimeseries(insar):
             * gpstimeseries     : A gpstimeseries instance.
 
         kwArgs:
+            * daysaround        : How many days around the date do we consider
             * distance          : Diameter of the circle surrounding a gps station
                                   to gather InSAR points
             * verbose           : Talk to me
@@ -535,7 +536,7 @@ class insartimeseries(insar):
         for sar, date in zip(self.timeseries, self.dates):
 
             # Get the gps displacements at the masterdate
-            gps = gpstimeseries.getNetworkAtDate(date)
+            gps = gpstimeseries.getNetworkAtDate(date, verbose=False)
             GPS.append(gps)
 
             # Extract the sar displacement around the GPS stations
@@ -553,28 +554,34 @@ class insartimeseries(insar):
             x = np.delete(x,u)
             y = np.delete(y,u)
             d = np.delete(d,u)
-            print(d)
 
             # Estimate a linear transform to match them
-            if len(d)>0:
+            if len(d)>=parameters:
                 G = np.ones((len(d), parameters))
                 if parameters>=3:
                     G[:,1] = x
                     G[:,2] = y
                 if parameters==4:
-                    G[:,2] = x*y
-                m, res, rank, s = np.linalg.lstsq(G, d, rcond=1e-8)
+                    G[:,3] = x*y
+                m, res, rank, s = np.linalg.lstsq(G, d)
             else:
                 m = None
 
+            if m is not None:
+                plt.plot(d, '.k', np.dot(G,m), '.r')
+                plt.show()
+
             # Save that
             references.append(m)
-    
+ 
+        # Save
+        self.references = references
+
         # Clean up references
         if propagate=='mean':
             
             # Get mean
-            mmean = np.array([m for m in references if m is not None]).mean(axis=1)
+            mmean = np.array([m for m in references if m is not None]).mean(axis=0)
             references = [mmean if m is None else m for m in references]
 
         else:
@@ -583,8 +590,13 @@ class insartimeseries(insar):
         # Iterate over the frames to reference
         for sar, gps, ref in zip(self.timeseries, GPS, references): 
 
-            # Get x and y
-            G = np.vstack((sar.x-np.mean(gps.x), sar.y-np.mean(gps.y), np.ones(sar.x.shape))).T
+            # Build G
+            G = np.ones((len(sar.x), parameters))
+            if parameters>=3:
+                G[:,1] = sar.x - np.mean(gps.x)
+                G[:,2] = sar.y - np.mean(gps.y)
+            if parameters==4:
+                G[:,3] = G[:,1]*G[:,2]
 
             # Correct
             sar.vel -= np.dot(G,ref)
