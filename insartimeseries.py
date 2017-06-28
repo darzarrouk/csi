@@ -285,6 +285,11 @@ class insartimeseries(insar):
             # Store the object in the list
             self.timeseries.append(sar)
 
+        # Keep incidence and heading
+        self.incidence = incidence
+        self.heading = heading
+        self.inctype = inctype
+
         # if readVel
         if readModel:
             self.readModelFromGIAnT()
@@ -305,11 +310,6 @@ class insartimeseries(insar):
                 elevation.reject_pixel(uu)
             self.reject_pixel(uu)
 
-        # Keep incidence and heading
-        self.incidence = incidence
-        self.heading = heading
-        self.inctype = inctype
-
         # all done
         return
  
@@ -322,17 +322,17 @@ class insartimeseries(insar):
         import tsinsar
     
         # Get the representation
-        self.rep = tsinsar.mName2rep(self.h5in['parms'].value)
+        self.rep = tsinsar.mName2Rep(self.h5in['mName'].value)
 
         # Iterate over the model parameters 
         self.models = []
         for u, mName in enumerate(self.h5in['mName']):
             
             # Build the guy
-            param = insar('Parameter {}'.format(readVel), 
+            param = insar('Parameter {}'.format(mName), 
                           utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps,
                           verbose=False)
-            param.vel = h5in['parms'][:,:,u].flatten()
+            param.vel = self.h5in['parms'][:,:,u].flatten()
             param.lon = self.lon
             param.lat = self.lat
             param.x = self.x
@@ -539,6 +539,18 @@ class insartimeseries(insar):
             gps = gpstimeseries.getNetworkAtDate(date, verbose=False)
             GPS.append(gps)
 
+            # Days around
+            if daysaround>1:
+                ndates = np.ones((gps.vel_enu.shape[0], 3))
+                for i in range(1, daysaround):
+                    new = gpstimeseries.getNetworkAtDate(date+dt.timedelta(i), verbose=False)
+                    ndates[np.isfinite(new.vel_enu[:,0]),:] += 1.
+                    gps.vel_enu[np.isfinite(new.vel_enu[:,0]),:] += new.vel_enu[np.isfinite(new.vel_enu[:,0]),:]
+                    new = gpstimeseries.getNetworkAtDate(date-dt.timedelta(i), verbose=False)
+                    ndates[np.isfinite(new.vel_enu[:,0]),:] += 1.
+                    gps.vel_enu[np.isfinite(new.vel_enu[:,0]),:] += new.vel_enu[np.isfinite(new.vel_enu[:,0]),:]
+                gps.vel_enu /= ndates
+
             # Extract the sar displacement around the GPS stations
             saratgps = sar.extractAroundGPS(gps, distance, doprojection=True)
 
@@ -563,7 +575,7 @@ class insartimeseries(insar):
                     G[:,2] = y
                 if parameters==4:
                     G[:,3] = x*y
-                m, res, rank, s = np.linalg.lstsq(G, d)
+                m, res, rank, s = np.linalg.lstsq(G, d, rcond=1e-8)
             else:
                 m = None
 
