@@ -1273,7 +1273,7 @@ class Fault(SourceInv):
                     self.d[data.name] = data.vel_enu.T.flatten()
                 else:
                     self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
-                self.d[data.name]=self.d[data.name][-np.isnan(self.d[data.name])]
+                self.d[data.name]=self.d[data.name][np.isfinite(self.d[data.name])]
             elif data.dtype == 'opticorr':
                 self.d[data.name] = np.hstack((data.east.T.flatten(),
                                                data.north.T.flatten()))
