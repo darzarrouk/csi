@@ -39,6 +39,7 @@ class Fault(SourceInv):
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Initializing fault {}".format(self.name))
+        self.verbose = verbose
 
         # Specify the type of patch
         self.patchType = None
