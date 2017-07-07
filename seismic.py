@@ -119,7 +119,7 @@ class seismic(SourceInv):
             * n_ramp_param: number of nuisance parameters (e.g., InSAR orbits, used with a model file)
             * eik_solver: eikonal solver (to be used with an AlTar kinematic model file)
             * npt**2: numper of point sources per patch (to be used with an AlTar kinematic model file)
-            * relative_error: standard deviation = relative_error * max(data)
+            * relative_error: standard deviation = relative_error * max(data). It can be a dictionnary
             * add_to_previous_Cd: if True, will add Cd to previous Cd
             * average_correlation: Compute average correlation for the entire set of stations
             * exp_corr: Use an exponential correlation function
@@ -129,6 +129,14 @@ class seismic(SourceInv):
         print('Computing Cd from residuals')
         G = fault.bigG
         
+        # Make relative_error dictionnary
+        if type(relative_error) is not dict:
+            dic = {}
+            for dkey in self.sta_name:
+                dic[dkey] = relative_error
+            relative_error = copy.deepcopy(dic)
+
+
         if type(model)==str: # Use an AlTar Kin
             print('Use model file: %s to compute residuals for Cd'%(model))
             Dtriangles = 1. # HACK: We assume Dtriangles=1 !!!
@@ -206,6 +214,7 @@ class seismic(SourceInv):
             cor = np.exp(-np.abs(tcor)/(exp_cor_len))
             plt.plot(tcor,cor)
             plt.show()
+        
         for dkey in self.sta_name:
             npts = self.d[dkey].npts
             res  = R[n:n+npts]
@@ -216,7 +225,8 @@ class seismic(SourceInv):
                 Nc = npts
             else:
                 Nc = len(R)
-            std = obs.max()*relative_error
+            
+            std = obs.max()*relative_error[dkey]
             C = np.zeros((npts,npts))
             for k1 in range(npts):
                 for k2 in range(npts):
