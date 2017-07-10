@@ -55,6 +55,9 @@ class Fault(SourceInv):
         self.yi   = None
         self.loni = None # regularly spaced coordinates (geographical)
         self.lati = None
+        self.lon  = None
+        self.lat  = None
+
 
         # Allocate depth attributes
         self.top = None             # Depth of the top of the fault
