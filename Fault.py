@@ -1476,6 +1476,10 @@ class Fault(SourceInv):
             * datas         : list of the data object involved (from gps and insar).
         '''
 
+        # Check 
+        if type(datas) is not list:
+            datas = [datas]
+
         # print
         print ("---------------------------------")
         print ("---------------------------------")
@@ -1547,6 +1551,10 @@ class Fault(SourceInv):
                 if True, compute new OrbNormalizingFactor
                 if False, uses parameters in self.OrbNormalizingFactor 
         '''
+    
+        # Check 
+        if type(datas) is not list:
+            datas = [datas]
 
         # print
         if verbose:
@@ -1707,6 +1715,10 @@ class Fault(SourceInv):
         if self.Gassembled is None:
             print("You should assemble the Green's function matrix first")
             return
+
+        # Check
+        if type(datas) is not list:
+            datas = [datas]
 
         # Get the total number of data
         Nd = self.Gassembled.shape[0]
