@@ -326,7 +326,7 @@ class explorefault(SourceInv):
         # All done
         return fault
     
-    def plot(self, model='mean'):
+    def plot(self, model='mean', show=True):
         '''
         Plots the PDFs and the desired model predictions and residuals.
         '''
@@ -357,7 +357,8 @@ class explorefault(SourceInv):
             data.plot(data='synth', show=False, norm=[cmin, cmax])
         
         # Plot
-        plt.show()
+        if show:
+            plt.show()
 
         # All done
         return

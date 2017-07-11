@@ -755,6 +755,10 @@ class geodeticplot(object):
             * name          : Plot the name of the stations (True/False).
         '''
 
+        # Check
+        if scale is None: 
+            assert len(data)==1, 'If multiple data are plotted, need to provide scale'
+
         # Assert
         if (type(data) is not list) and (type(data) is str):
             data = [data]
