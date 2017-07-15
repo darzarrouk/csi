@@ -3086,7 +3086,8 @@ class RectangularPatches(Fault):
         """
 
         # Adjacency Matrix
-        self.computeAdjacencyMat(verbose=verbose)
+        if self.adjacencyMat is None:
+            self.computeAdjacencyMat(verbose=verbose)
         Jmat = self.adjacencyMat
         npatch = Jmat.shape[0]
         assert Jmat.shape[1] == npatch, 'adjacency matrix is not square'
