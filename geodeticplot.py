@@ -1051,12 +1051,17 @@ class geodeticplot(object):
         
         # Choose data type
         if data == 'data':
+            assert insar.vel is not None, 'No data to plot'
             d = insar.vel
         elif data == 'synth':
+            assert insar.synth is not None, 'No Synthetics to plot'
             d = insar.synth
         elif data == 'res':
+            assert insar.synth is not None and insar.vel is not None, \
+                    'Cannot compute residuals'
             d = insar.vel - insar.synth
         elif data == 'poly':
+            assert insar.orb is not None, 'No Orbital correction to plot'
             d = insar.orb
         else:
             print('Unknown data type')
