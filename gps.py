@@ -447,10 +447,10 @@ class gps(SourceInv):
             self.profiles[name]['data type'] = 'synth'
         elif data is 'res':
             value = self.vel_enu - self.synth
-            self.profile[name]['data_type'] = 'res'
+            self.profiles[name]['data_type'] = 'res'
         elif data is 'transformation':
             value = self.transformation
-            self.profile[name]['data_type'] = 'transformation'
+            self.profiles[name]['data_type'] = 'transformation'
 
         # Convert the lat/lon of the center into UTM.
         xc, yc = self.ll2xy(loncenter, latcenter)
