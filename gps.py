@@ -445,6 +445,12 @@ class gps(SourceInv):
         elif data is 'synth':
             values = self.synth
             self.profiles[name]['data type'] = 'synth'
+        elif data is 'res':
+            value = self.vel_enu - self.synth
+            self.profile[name]['data_type'] = 'res'
+        elif data is 'transformation':
+            value = self.transformation
+            self.profile[name]['data_type'] = 'transformation'
 
         # Convert the lat/lon of the center into UTM.
         xc, yc = self.ll2xy(loncenter, latcenter)
@@ -2087,7 +2093,7 @@ class gps(SourceInv):
         # All done
         return 
 
-    def computeBestHelmert(self, components=2):
+    def computeBestHelmert(self, components=2, data='data'):
         '''
         Fits a full Helmert transform to the network 
 
@@ -2099,7 +2105,15 @@ class gps(SourceInv):
         Hf = self.getHelmertMatrix(components=2)
 
         # Get the data to remove
-        d = self.vel_enu[:,:components].T.flatten()
+        if data=='data':
+            d = self.vel_enu[:,:components].T.flatten()
+        elif data == 'synth':
+            d = self.synth[:,:components].T.flatten()
+        elif data == 'res':
+            tmp = self.vel_enu - self.synth
+            d = tmp[:,:components].T.flatten()
+        elif data == 'transformation':
+            d = self.transformation[:,:components].T.flatten()
 
         # Run the estimation
         self.Helmert, res, rank, s = np.linalg.lstsq(Hf, d)
@@ -2107,24 +2121,38 @@ class gps(SourceInv):
         # All done
         return
 
-    def removeBestHelmert(self, components=2):
+    def removeBestHelmert(self, components=2, data='data'):
         '''
         Fits a Helmert transform to the network and removes it.
 
         Args:
             * components    : Take the 2 horizontal (default) or 3 enu
+            * data          : Which data to use to compute the transform
+                              'data'           : Corrects the data 
+                              'synth'          : Corrects the synthetics
+                              'res'            : Estimates the Helmert on the residuals
+                                                 and corrects the data
+                              'transformation' : Corrects the transformation
         '''
 
         # Compute Helmert
-        self.computeBestHelmert(components=components)
+        self.computeBestHelmert(components=components, data=data)
 
         # Get Matrix
         H = self.getHelmertMatrix(components=components)
 
         # Remove it
         m = self.Helmert
-        self.vel_enu[:,:components] -= np.dot(H, m).reshape((components,
-                                                             self.vel_enu.shape[0])).T 
+        if data == 'data' or data == 'res':
+            self.vel_enu[:,:components] -= np.dot(H, m).reshape((components,
+                                                                 self.vel_enu.shape[0])).T 
+        elif data == 'synth':
+            self.synth[:,:components] -= np.dot(H, m).reshape((components,
+                                                               self.synth.shape[0])).T
+
+        elif data == 'transformation':
+            self.transformation[:,:components] -= np.dot(H, m).reshape((components,
+                                                                        self.transformation.shape[0])).T
 
         # All done
         return
