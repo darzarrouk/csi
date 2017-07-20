@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.path as path
 import scipy.spatial.distance as scidis
 import copy
-import sys
+import sys, os
 
 # Personals
 from .SourceInv import SourceInv
@@ -2251,12 +2251,13 @@ class insar(SourceInv):
         return
 
 
-    def write2file(self, fname, data='data'):
+    def write2file(self, fname, data='data', outDir='./'):
         '''
         Uses surface to write the output to a grd file.
         Args:
             * fname     : Filename
             * data      : can be 'data', 'synth' or 'resid'
+            * outDir    : output Directory
         '''
 
         # Get variables
@@ -2271,8 +2272,8 @@ class insar(SourceInv):
         elif data is 'resid':
             z = self.vel - self.synth
 
-        # Write these to a dummy file
-        fout = open(fname, 'w')
+        # Write these to a file
+        fout = open(os.path.join(outDir, fname), 'w')
         for i in range(x.shape[0]):
             fout.write('{} {} {} \n'.format(x[i], y[i], z[i]))
         fout.close()
