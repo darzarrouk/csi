@@ -1035,7 +1035,7 @@ class geodeticplot(object):
 
     def insar(self, insar, norm=None, colorbar=True, data='data',
                        plotType='decimate', gmtCmap=None, 
-                       decim=1, zorder=3):
+                       decim=1, zorder=3, edgewidth=1):
         '''
         Args:
             * insar     : insar object from insar.
@@ -1108,7 +1108,7 @@ class geodeticplot(object):
                     if xi<0.:
                         xi += 360.
                     verts.append((xi,yi))
-                rect = colls.PolyCollection([verts])
+                rect = colls.PolyCollection([verts],linewidth=edgewidth)
                 rect.set_color(scalarMap.to_rgba(disp))
                 rect.set_edgecolors('k')
                 rect.set_zorder(zorder)
