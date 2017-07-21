@@ -1185,8 +1185,12 @@ class Fault(SourceInv):
 
         print('---------------------------------')
         print('---------------------------------')
-        print("Set up Green's functions for fault {} from files {}, {} and {}".format(self.name, strikeslip, dipslip, tensile))
-
+        print("Set up Green's functions for fault {} and data {} from files: ".format(self.name, data.name))
+        print("strike slip: {}".format(strikeslip))
+        print("dip slip:    {}".format(dipslip))
+        print("tensile:     {}".format(tensile))
+        print("coupling:    {}".format(coupling))
+            
         # Get the number of patches
         if self.N_slip == None:
             self.N_slip = self.slip.shape[0]

@@ -2174,7 +2174,8 @@ class insar(SourceInv):
         # All done
         return
 
-    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', tension=None, useGMT=False, verbose=False):
+    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', 
+                        tension=None, useGMT=False, verbose=False, outDir='./'):
         '''
         Uses surface to write the output to a grd file.
         Args:
@@ -2184,6 +2185,9 @@ class insar(SourceInv):
             * interp    : Number of points along lon and lat.
             * cmd       : command used for the conversion( i.e., surface or xyz2grd)
         '''
+
+        # Filename 
+        fname = os.path.join(outDir, fname)
 
         # Get variables
         x = self.lon
@@ -2280,7 +2284,49 @@ class insar(SourceInv):
 
         return
 
+    def writeDecim2file(self, filename, data='data', outDir='./'):
+        '''
+        Writes the decimation scheme to a file plottable by GMT psxy command.
 
+        Args:
+            * filename  : Name of the output file (ascii file)
+            * data      : Add the value with a -Z option for each rectangle
+                          Can be 'data', 'synth', 'res', 'transformation'
+        '''
+
+        # Open the file
+        fout = open(os.path.join(outDir, filename), 'w')
+
+        # Which data do we add as colors
+        if data in ('data', 'd', 'dat', 'Data'):
+            values = self.vel
+        elif data in ('synth', 's', 'synt', 'Synth'):
+            values = self.synth
+        elif data in ('res', 'resid', 'residuals', 'r'):
+            values = self.vel - self.synth
+        elif data in ('transformation', 'trans', 't'):
+            values = self.transformation
+
+        # Iterate over the data and corner
+        for corner, d in zip(self.corner, values):
+
+            # Make a line
+            string = '> -Z{} \n'.format(d)
+            fout.write(string)
+
+            # Write the corners
+            xmin, ymin, xmax, ymax = corner
+            fout.write('{} {} \n'.format(xmin, ymin))
+            fout.write('{} {} \n'.format(xmin, ymax))
+            fout.write('{} {} \n'.format(xmax, ymax))
+            fout.write('{} {} \n'.format(xmax, ymin))
+            fout.write('{} {} \n'.format(xmin, ymin))
+
+        # Close the file
+        fout.close()
+
+        # All done
+        return
     def _getazimuth(self, x, y, i, pad=2):
         '''
         Get the azimuth of a line.
