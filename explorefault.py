@@ -57,6 +57,13 @@ class explorefault(SourceInv):
                      'width', 'length', 'strike', 
                      'strikeslip', 'dipslip']
 
+        # Initialize the fault object
+        self.fault = planarfault('mcmc fault', utmzone=self.utmzone, 
+                                               lon0=self.lon0, 
+                                               lat0=self.lat0,
+                                               ellps=self.ellps, 
+                                               verbose=False)
+
         # All done
         return
 
@@ -104,6 +111,8 @@ class explorefault(SourceInv):
             elif type(bound) is float:
                 # Create a degenerate prior
                 prior = pymc.Degenerate(key, bound)
+            else:
+                assert False, 'Unknown bound type'
 
             # Save it
             self.Priors.append(prior)
@@ -214,12 +223,10 @@ class explorefault(SourceInv):
         else:
             reference = 0.
 
+        # Get the fault
+        fault = self.fault
+
         # Build a planar fault
-        fault = planarfault('mcmc fault', utmzone=self.utmzone, 
-                                          lon0=self.lon0, 
-                                          lat0=self.lat0,
-                                          ellps=self.ellps, 
-                                          verbose=False)
         fault.buildPatches(lon, lat, depth, strike, dip, 
                        length, width, 1, 1, verbose=False)
 
