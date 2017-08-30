@@ -3078,11 +3078,16 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def buildLaplacian(self, verbose=False, method=None):
+    def buildLaplacian(self, verbose=False, method=None, irregular=False):
         """
         Build normalized Laplacian smoothing array.
         This routine is not designed for unevenly paved faults.
         It does not account for the variations in size of the patches.
+            * irregular     : Can be used if the parametrisation is not 
+                              regular along dip (N patches above or below
+                              one patch). If True, the Laplacian takes 
+                              into account that there is not only one patch
+                              above (or below)
         """
 
         # Adjacency Matrix
@@ -3095,10 +3100,24 @@ class RectangularPatches(Fault):
         # Build Laplacian by looping over each patch
         D = np.zeros((npatch, npatch))
         for p in range(npatch):
+            d = round(self.getpatchgeometry(p,center=True)[2],2) # current patch depth
             adjacents = Jmat[p,:].nonzero()[0]
             nadj = len(adjacents)
-            for ind in adjacents:
-                D[p,ind] = 1.0
+            if not irregular:
+                for ind in adjacents:
+                    D[p,ind] = 1.0
+            else:
+                # Depth of ajacents patchs:
+                ds = np.array([round(self.getpatchgeometry(i,center=True)[2],2) for i in adjacents])
+                ntop = len(np.where(ds<d)[0]) # Number of patch at the top
+                nbot = len(np.where(ds>d)[0]) # Number of patch at the bottom
+                for ind in adjacents:
+                    if ntop>1 and self.getpatchgeometry(ind,center=True)[2] < d:
+                        D[p,ind] = 1.0/ntop
+                    elif nbot>1 and self.getpatchgeometry(ind,center=True)[2] > d:
+                        D[p,ind] = 1.0/nbot
+                    else:
+                        D[p,ind] = 1.0
             D[p,p] = -4.0
 
         return D

@@ -1302,9 +1302,11 @@ class TriangularPatches(Fault):
         return
 
 
-    def buildLaplacian(self, verbose=True, method=None):
+    def buildLaplacian(self, verbose=True, method=None, irregular=False):
         """
         Build a discrete Laplacian smoothing matrix.
+            * irregular     : Not used, here for consistency purposes
+        
         """
         
         if self.adjacencyMap is None or len(self.adjacencyMap) != len(self.patch):

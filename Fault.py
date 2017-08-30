@@ -1785,7 +1785,7 @@ class Fault(SourceInv):
         # all done
         return
 
-    def buildCmLaplacian(self, lam, diagFact=None, extra_params=None, sensitivity=True, method='distance', sensitivityNormalizing=False):
+    def buildCmLaplacian(self, lam, diagFact=None, extra_params=None, sensitivity=True, method='distance', sensitivityNormalizing=False, irregular=False):
         '''
         Implements the Laplacian smoothing with sensitivity (optional)
         Description can be found in F. Ortega-Culaciati's PhD thesis.
@@ -1793,6 +1793,8 @@ class Fault(SourceInv):
             * lam               : Damping factor (list of size of slipdirections)
             * extra_params      : what sigma to allow to ramp parameters.
             * sensitivity       : Weights the Laplacian by Sensitivity (default True)
+            * irregular         : Only used for rectangular patches. Allows to account 
+                                  for irregular meshing along dip.            
         '''
 
         # lambda
@@ -1815,7 +1817,7 @@ class Fault(SourceInv):
         Cm = np.zeros((Np, Np))
 
         # Build the laplacian
-        D = self.buildLaplacian(verbose=True, method=method)
+        D = self.buildLaplacian(verbose=True, method=method, irregular=irregular)
 
         Sensitivity = {}
 
