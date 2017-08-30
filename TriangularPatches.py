@@ -944,6 +944,39 @@ class TriangularPatches(Fault):
         # All done
         return
 
+    def refineMesh(self):
+        '''
+        Cuts all the patches in 4, based on the mid-point of each triangle and 
+        builds a new fault from that.
+        '''
+
+        # Iterate over the fault patches
+        newpatches = []
+        for patch in self.patch:
+            triangles = self.splitPatch(patch)
+            for triangle in triangles:
+                newpatches.append(triangle)
+
+        # Delete all the patches 
+        del self.patch
+        del self.patchll
+        del self.Vertices
+        del self.Vertices_ll
+        del self.Faces
+        self.patch = None
+        self.N_slip = None
+
+        # Add the new patches
+        self.addpatches(newpatches)
+
+        # Update the depth of the bottom of the fault
+        self.top   = np.min(self.Vertices[:,2])
+        self.depth = np.max(self.Vertices[:,2])
+        self.z_patches = np.linspace(self.depth, 0.0, 5)
+
+        # All done
+        return
+
     def addpatches(self, patches):
         '''
         Adds patches to the list.

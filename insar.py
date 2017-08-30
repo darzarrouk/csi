@@ -2114,7 +2114,7 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2):
+    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2152,7 +2152,7 @@ class insar(SourceInv):
 
         # Plot the decimation process, if asked
         if decim:
-            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='decimate')
+            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='decimate', edgewidth=edgewidth)
 
         # Plot the insar
         if not decim:
