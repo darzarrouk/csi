@@ -1403,6 +1403,27 @@ class Fault(SourceInv):
         # All done
         return
 
+    def dropPointSources(self):
+        '''
+        Drops point sources along the fault. This is controlled by the attributes:
+            self.sourceSpacing  : Distance between sources
+            self.sourceArea     : Area of the sources
+            self.sourceNumber   : Number of sources per patch
+        Sources are saved in self.plotSources and self.edksSources
+        '''
+
+        # Compute sources
+        Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(self, verbose=True)
+        
+        # Save them
+        self.plotSources = [Ids, xs, ys, zs, strike, dip, Areas]
+        self.edksSources = [Ids, xs*1e3, ys*1e3, zs*1e3, 
+                            strike*180/np.pi, dip*180/np.pi, Areas*1e6]
+
+        # All done
+        return
+
+
     #def buildCouplingGFs(self, data, convergence, initializeCoupling=True, method='homogeneous', vertical=False, keepRotatedGFs=True, verbose=True):
     #    '''
     #        For the data set data, computes the Green's Function for coupling, using the formula

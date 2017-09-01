@@ -24,7 +24,7 @@ from . import csiutils as utils
 
 class TriangularTents(TriangularPatches):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
         '''
         Args:
             * name          : Name of the fault.
@@ -33,7 +33,9 @@ class TriangularTents(TriangularPatches):
         '''
 
         # Base class init
-        super(TriangularTents, self).__init__(name, utmzone=utmzone, ellps=ellps, lon0=lon0, lat0=lat0)
+        super(TriangularTents, self).__init__(name, utmzone=utmzone, ellps=ellps, 
+                                              lon0=lon0, lat0=lat0, 
+                                              verbose=verbose)
 
         # Specify the type of patch
         self.patchType = 'triangletent'
