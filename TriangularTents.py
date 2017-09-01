@@ -938,7 +938,7 @@ class TriangularTents(TriangularPatches):
         # All don
         return
 
-    def buildLaplacian(self, verbose=True, method='distance'):
+    def buildLaplacian(self, verbose=True, method='distance', irregular=False):
         """
         Build a discrete Laplacian smoothing matrix.
         Args:
@@ -952,6 +952,7 @@ class TriangularTents(TriangularPatches):
                                 Mathieu Desbrun, Mark Meyer, Peter Schr\"oder, and Alan Barr, 1999. 
                                 Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow,  
                                 Proceedings of SIGGRAPH.
+            * irregular     : Not used, here for consistency purposes
         """
  
         # Build the tent adjacency map

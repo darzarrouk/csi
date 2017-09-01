@@ -1185,8 +1185,12 @@ class Fault(SourceInv):
 
         print('---------------------------------')
         print('---------------------------------')
-        print("Set up Green's functions for fault {} from files {}, {} and {}".format(self.name, strikeslip, dipslip, tensile))
-
+        print("Set up Green's functions for fault {} and data {} from files: ".format(self.name, data.name))
+        print("strike slip: {}".format(strikeslip))
+        print("dip slip:    {}".format(dipslip))
+        print("tensile:     {}".format(tensile))
+        print("coupling:    {}".format(coupling))
+            
         # Get the number of patches
         if self.N_slip == None:
             self.N_slip = self.slip.shape[0]
@@ -1802,7 +1806,7 @@ class Fault(SourceInv):
         # all done
         return
 
-    def buildCmLaplacian(self, lam, diagFact=None, extra_params=None, sensitivity=True, method='distance', sensitivityNormalizing=False):
+    def buildCmLaplacian(self, lam, diagFact=None, extra_params=None, sensitivity=True, method='distance', sensitivityNormalizing=False, irregular=False):
         '''
         Implements the Laplacian smoothing with sensitivity (optional)
         Description can be found in F. Ortega-Culaciati's PhD thesis.
@@ -1810,6 +1814,8 @@ class Fault(SourceInv):
             * lam               : Damping factor (list of size of slipdirections)
             * extra_params      : what sigma to allow to ramp parameters.
             * sensitivity       : Weights the Laplacian by Sensitivity (default True)
+            * irregular         : Only used for rectangular patches. Allows to account 
+                                  for irregular meshing along dip.            
         '''
 
         # lambda
@@ -1832,7 +1838,7 @@ class Fault(SourceInv):
         Cm = np.zeros((Np, Np))
 
         # Build the laplacian
-        D = self.buildLaplacian(verbose=True, method=method)
+        D = self.buildLaplacian(verbose=True, method=method, irregular=irregular)
 
         Sensitivity = {}
 
