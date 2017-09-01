@@ -928,7 +928,8 @@ class RectangularPatches(Fault):
             * patch         : Can be 'normal' or 'equiv'
         '''
         # Write something
-        print('Writing geometry to file {}'.format(filename))
+        if self.verbose:
+            print('Writing geometry to file {}'.format(filename))
 
         # Open the file
         fout = open(filename, 'w')
