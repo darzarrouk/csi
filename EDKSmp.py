@@ -121,12 +121,10 @@ class pointdropper(mp.Process):
             allSplitted += splittedPatches
 
         # Put in the Queue
-        self.queue.put([Ids, Xs, Ys, Zs, Strike, Dip, Area, splittedPatches])
+        self.queue.put([Ids, Xs, Ys, Zs, Strike, Dip, Area, allSplitted])
 
         # all done
         return
-
-
 
 def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
     '''
@@ -140,8 +138,8 @@ def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
     '''
 
     # Create lists
-    Ids, Xs, Ys, Zs, Strike, Dip, Area = [], [], [], [], [], [], []
-    allSplitted = []
+    Id, X, Y, Z, Strike, Dip, Area = [], [], [], [], [], [], []
+    Splitted = []
 
     # Check
     if (not hasattr(fault, 'sourceSpacing')) and (not hasattr(fault, 'sourceNumber')) and (not hasattr(fault, 'sourceArea')):
@@ -190,29 +188,32 @@ def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
     workers[-1].iend = npatches
 
     # Start them
-    for worker in workers: worker.start()
-    for worker in workers: worker.join()
+    for w in range(nworkers): workers[w].start()
+    # I don't understand why this guy does not work...
+    #for w in range(nworkers): workers[w].join()
 
     # Get things from the queue
     for i in range(nworkers):
         ids, xs, ys, zs, strike, dip, area, splitted = output.get()
-        Ids += ids
-        Xs += xs 
-        Ys += ys
-        Zs += zs 
-        Strike += strike
-        Dip += dip
-        Area += area
-        allSplitted += splitted
+        Id.extend(ids)
+        X.extend(xs) 
+        Y.extend(ys)
+        Z.extend(zs) 
+        Strike.extend(strike)
+        Dip.extend(dip)
+        Area.extend(area)
+        Splitted.extend(splitted)
 
     # Make arrays
-    Ids = np.array(Ids)
-    Xs = np.array(Xs)
-    Ys = np.array(Ys)
-    Zs = np.array(Zs)
-    Strike = np.array(Strike)
-    Dip = np.array(Dip)
-    Area = np.array(Area)
+    isort = np.argsort(Id)
+    Ids = np.array([Id[i] for i in isort])
+    Xs = np.array([X[i] for i in isort])
+    Ys = np.array([Y[i] for i in isort])
+    Zs = np.array([Z[i] for i in isort])
+    Strikes = np.array([Strike[i] for i in isort])
+    Dips = np.array([Dip[i] for i in isort])
+    Areas = np.array([Area[i] for i in isort])
+    allSplitted = [Splitted[i] for i in isort]
 
     # All done
     if returnSplittedPatches:
@@ -230,9 +231,9 @@ def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
         splitFault.setVerticesFromPatches()
         # Depth
         splitFault.setdepth()
-        return Ids, Xs, Ys, Zs, Strike, Dip, Area, splitFault
+        return Ids, Xs, Ys, Zs, Strikes, Dips, Areas, splitFault
     else:
-        return Ids, Xs, Ys, Zs, Strike, Dip, Area
+        return Ids, Xs, Ys, Zs, Strikes, Dips, Areas
 
 def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
                 npw, npy,\
