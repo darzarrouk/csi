@@ -582,7 +582,7 @@ class geodeticplot(object):
 
         # Plot the color for slip
         # 1. Get the subpoints for each triangle
-        from .EDKS import dropSourcesInPatches as Patches2Sources
+        from .EDKSmp import dropSourcesInPatches as Patches2Sources
         if hasattr(fault, 'edksSources') and not hasattr(fault, 'plotSources'):
             fault.plotSources = copy.deepcopy(fault.edksSources)
             fault.plotSources[1] /= 1e3

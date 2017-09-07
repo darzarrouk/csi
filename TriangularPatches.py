@@ -2122,7 +2122,7 @@ class TriangularPatches(Fault):
         '''
 
         # Import What is needed
-        from .EDKS import dropSourcesInPatches as Patches2Sources
+        from .EDKSmp import dropSourcesInPatches as Patches2Sources
 
         # Drop the sources in the patches and get the corresponding fault
         Ids, xs, ys, zs, strike, dip, Areas, fault = Patches2Sources(self, 

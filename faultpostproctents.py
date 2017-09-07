@@ -37,7 +37,7 @@ class faultpostproctents(object):
         if not hasattr(self.fault, 'sourceNumber'):
             self.fault.sourceNumber = npoints
         if not hasattr(self.fault, 'plotSources'):
-            from .EDKS import dropSourcesInPatches as Patches2Sources
+            from .EDKSmp import dropSourcesInPatches as Patches2Sources
             Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(self.fault, verbose=False)  
             self.fault.plotSources = [Ids, xs, ys, zs, strike, dip, Areas] 
 

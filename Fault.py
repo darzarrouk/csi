@@ -18,8 +18,8 @@ import os
 
 # Personals
 from .SourceInv import SourceInv
-from .EDKS import sum_layered
-from .EDKS import dropSourcesInPatches as Patches2Sources
+from .EDKSmp import sum_layered
+from .EDKSmp import dropSourcesInPatches as Patches2Sources
 
 class Fault(SourceInv):
 
