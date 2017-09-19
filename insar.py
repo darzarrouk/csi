@@ -2256,7 +2256,7 @@ class insar(SourceInv):
             fin = open('xyz.xyz', 'r')
 
             # Execute command
-            subp.call(com, stdin=fin, shell=True)
+            subp.call(com, stdin=fin, shell=False)
 
             # CLose the files
             fin.close()
