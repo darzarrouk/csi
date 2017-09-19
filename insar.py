@@ -374,22 +374,32 @@ class insar(SourceInv):
 
         # If zeros
         if remove_zeros:
-            vel[vel==0.] = np.nan
+            iZeros = np.flatnonzero(np.logical_or(vel!=0., 
+                                                  lon!=0.,
+                                                  lat!=0.))
+            vel = vel[iZeros]
+            if err is not None:
+                err = err[iZeros]
+            lon = lon[iZeros]
+            lat = lat[iZeros]
 
         # Check NaNs
         if remove_nan:
             iFinite = np.flatnonzero(np.isfinite(vel))
-        else:
-            iFinite = list(range(vel.shape[0]))
+            vel = vel[iFinite]
+            if err is not None:
+                err = err[iFinite]
+            lon = lon[iFinite]
+            lat = lat[iFinite]
 
         # Set things in self
-        self.vel = vel[iFinite]
+        self.vel = vel
         if err is not None:
-            self.err = err[iFinite]
+            self.err = err
         else:
             self.err = None
-        self.lon = lon[iFinite]
-        self.lat = lat[iFinite]
+        self.lon = lon
+        self.lat = lat
 
         # Keep track of factor
         self.factor = factor
