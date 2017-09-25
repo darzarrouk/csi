@@ -8,6 +8,9 @@ Written by R. Jolivet and Z. Duputel, April 2013.
 import numpy as np
 import scipy.interpolate as sciint
 
+# Os
+import os, copy, sys
+
 # Matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
