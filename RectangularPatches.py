@@ -1225,6 +1225,7 @@ class RectangularPatches(Fault):
         # Remove the patch
         if len(self.equivpatch)==len(self.patch): # Check if equivpatch exists
             del self.equivpatch[patch]
+            del self.equivpatchll[patch]
         del self.patch[patch]
         del self.patchll[patch]
         self.slip = np.delete(self.slip, patch, axis=0)
