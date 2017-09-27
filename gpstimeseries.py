@@ -568,7 +568,7 @@ class gpstimeseries(SourceInv):
         # Verbose
         if verbose:
             print('---------------------------------')
-            print('Reference time series {} to {}'.format(timeseries.name,                                                           self.name))
+            print('Reference time series {} to {}'.format(timeseries.name, self.name))
 
         # Do the reference for all the timeseries in there 
         north = self.north.reference2timeseries(timeseries.north)
