@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 class multifaultsolve(object):
 
-    def __init__(self, name, faults):
+    def __init__(self, name, faults, verbose=True):
         '''
         Class initialization routine.
 
@@ -23,9 +23,12 @@ class multifaultsolve(object):
             * name          : Name of the project.
             * faults        : List of faults from verticalfault.
         '''
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initializing solver object")
+
+        self.verbose = verbose
+        if self.verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initializing solver object")
 
         # Ready to compute?
         self.ready = False
@@ -177,7 +180,8 @@ class multifaultsolve(object):
         '''
 
         # Prepare the table
-        print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format('Fault Name', 'Strike Slip', 'Dip Slip', 'Tensile', 'Coupling', 'Extra Parms'))
+        if self.verbose:
+            print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format('Fault Name', 'Strike Slip', 'Dip Slip', 'Tensile', 'Coupling', 'Extra Parms'))
 
         # initialize the counters
         ns = 0
@@ -232,7 +236,8 @@ class multifaultsolve(object):
                 op = 'None'
 
             # print things
-            print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
+            if self.verbose:
+                print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
 
             # Store details
             self.paramDescription[fault.name] = {}
@@ -477,10 +482,11 @@ class multifaultsolve(object):
         # Import things
         import scipy.linalg as scilin
 
-        # Print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Computing the Unregularized Least Square Solution")
+        if self.verbose:
+            # Print
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Computing the Unregularized Least Square Solution")
 
         # Get the matrixes and vectors
         G = self.G
@@ -532,10 +538,11 @@ class multifaultsolve(object):
         # Import things
         import scipy.linalg as scilin
 
-        # Print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Computing the Generalized Inverse")
+        if self.verbose:
+            # Print
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Computing the Generalized Inverse")
 
         # Get the matrixes and vectors
         G = self.G
@@ -614,10 +621,11 @@ class multifaultsolve(object):
         # Check the provided method is valid
         assert method in ['SLSQP', 'COBYLA', 'nnls', 'TNC', 'L-BFGS-B'], 'unsupported minimizing method'
 
-        # Print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Computing the Constrained least squares solution")
+        if self.verbose:
+            # Print
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Computing the Constrained least squares solution")
 
         # Get the matrixes and vectors
         G = self.G
@@ -634,7 +642,8 @@ class multifaultsolve(object):
             return
 
         # Get the inverse of Cm
-        print ("Computing the inverse of the model covariance")
+        if self.verbose:
+            print ("Computing the inverse of the model covariance")
         if rcond is None:
             iCm = scilin.inv(Cm)
         else:
@@ -646,7 +655,8 @@ class multifaultsolve(object):
             return
 
         # Get the inverse of Cd
-        print ("Computing the inverse of the data covariance")
+        if self.verbose:
+            print ("Computing the inverse of the data covariance")
         if rcond is None:
             iCd = scilin.inv(Cd)
         else:
@@ -693,7 +703,8 @@ class multifaultsolve(object):
 
         # Call solver
         if method == 'nnls':
-            print("Performing non-negative least squares")
+            if self.verbose:
+                print("Performing non-negative least squares")
             # Compute cholesky decomposition of iCd and iCm
             L = np.linalg.cholesky(iCd)
             M = np.linalg.cholesky(iCm)
@@ -704,7 +715,8 @@ class multifaultsolve(object):
             m = nnls(F, b)[0] + mprior
         
         else:
-            print("Performing constrained minimzation")
+            if self.verbose:            
+                print("Performing constrained minimzation")
             options = {'disp': checkIter, 'maxiter': iterations}
             if method=='L-BFGS-B':
                 options['maxfun']= maxfun
@@ -743,12 +755,13 @@ class multifaultsolve(object):
         The variable mpost is the mean of the final sample set.
         '''
 
-        # Print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Running a Metropolis algorythm to")
-        print ("sample the posterior PDFs of the ")
-        print ("  model: P(m|d) = C P(m) P(d|m)  ")
+        if self.verbose:        
+            # Print
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Running a Metropolis algorythm to")
+            print ("sample the posterior PDFs of the ")
+            print ("  model: P(m|d) = C P(m) P(d|m)  ")
 
         # Import 
         import pymc

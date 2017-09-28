@@ -1494,7 +1494,7 @@ class Fault(SourceInv):
         # All done
         return rotatedGar, rotatedGrp
 
-    def assembled(self, datas):
+    def assembled(self, datas, verbose=True):
         '''
         Assembles the data vector corresponding to the stored green's functions.
         Args:
@@ -1505,10 +1505,11 @@ class Fault(SourceInv):
         if type(datas) is not list:
             datas = [datas]
 
-        # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Assembling d vector")
+        if verbose:
+            # print
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Assembling d vector")
 
         # Get the number of data
         Nd = 0
@@ -1523,7 +1524,8 @@ class Fault(SourceInv):
         for data in datas:
 
                 # print
-                print("Dealing with data {}".format(data.name))
+                if verbose:
+                    print("Dealing with data {}".format(data.name))
 
                 # Get the local d
                 dlocal = self.d[data.name]
