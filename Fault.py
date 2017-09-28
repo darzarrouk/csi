@@ -2498,7 +2498,7 @@ class Fault(SourceInv):
                 Gts = Gts.reshape((Ndata, Nparm))
             if 'c' in slipdir:
                 Gcs = Gcs.reshape((Ndata, Nparm))
-        elif data.dtype == 'insar':
+        elif data.dtype in ('insar', 'insartimeseries'):
             # If InSAR, do the dot product with the los
             if 's' in slipdir:
                 Gss_los = []

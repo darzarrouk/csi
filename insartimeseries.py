@@ -192,6 +192,37 @@ class insartimeseries(insar):
         # All done
         return
 
+    def write2h5file(self, h5file, field='recons'):
+        '''
+        Writes the time series in a h5file
+
+        Args:
+            * h5file        : Output h5file
+
+        Kwargs:
+            * field         : name of the field in the h5 file
+        '''
+
+        # Open the fike
+        h5out = h5py.File(h5file, 'w')
+
+        # Create the data field
+        time = h5out.create_dataset('dates', shape=(len(self.timeseries),))
+        data = h5out.create_dataset(field, shape=(len(self.timeseries), len(self.timeseries[0].lon)))
+
+        # Iterate over time
+        for itime, time in enumerate(self.time):
+
+            # Get the time series
+            data[itime,:] = self.timeseries[itime].vel
+            time[itime] = time.toordinal()
+
+        # Close the file
+        h5out.close()
+
+        # All done
+        return
+
     def readFromGIAnT(self, h5file, setmaster2zero=None,
                             zfile=None, lonfile=None, latfile=None, 
                             incidence=None, heading=None, inctype='onefloat', 
