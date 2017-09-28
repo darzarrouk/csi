@@ -211,11 +211,11 @@ class insartimeseries(insar):
         data = h5out.create_dataset(field, shape=(len(self.timeseries), len(self.timeseries[0].lon)))
 
         # Iterate over time
-        for itime, time in enumerate(self.time):
+        for itime, date in enumerate(self.time):
 
             # Get the time series
             data[itime,:] = self.timeseries[itime].vel
-            time[itime] = time.toordinal()
+            time[itime] = date.toordinal()
 
         # Close the file
         h5out.close()
