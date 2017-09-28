@@ -70,6 +70,70 @@ class gpstimeseries(SourceInv):
         # all done
         return
 
+    def read_from_file(self, filename):
+        '''
+        Reads the time series from a file which has been written by write2file
+        '''
+
+        # Open, read, close file
+        fin = open(filename, 'r')
+        Lines = fin.readlines() 
+        fin.close()
+
+        # Create values
+        time = []
+        east = []; north = []; up = []
+        stdeast = []; stdnorth = []; stdup = []
+
+        # Read these
+        for line in Lines:
+            values = line.split()
+            isotime = values[0]
+            year = isotime[:4]
+            month = isotime[5:7]
+            day = isotime[8:10]
+            hour = isotime[11:13]
+            mins = isotime[14:16]
+            secd = isotime[17:19]
+            time.append(dt.datetime(year, month, day, hour, mins, secd))
+            east.append(float(values[1]))
+            north.append(float(values[2]))
+            up.append(float(values[3]))
+            stdeast.append(float(values[4]))
+            stdnorth.append(float(values[5]))
+            stdup.append(float(values[6]))
+
+        # Initiate some timeseries
+        self.north = timeseries('North',
+                                utmzone=self.utmzone, 
+                                lon0=self.lon0, lat0=self.lat0, 
+                                ellps=self.ellps)
+        self.east = timeseries('East', 
+                               utmzone=self.utmzone, 
+                               lon0=self.lon0, 
+                               lat0=self.lat0, 
+                               ellps=self.ellps)
+        self.up = timeseries('Up', 
+                             utmzone=self.utmzone, 
+                             lon0=self.lon0, lat0=self.lat0, 
+                             ellps=self.ellps)
+
+        # Set time
+        self.time = np.array(time)
+        self.north.time = self.time
+        self.east.time = self.time
+        self.up.time = self.time
+
+        # Set values
+        self.north.value = np.array(north)
+        self.north.error = np.array(stdnorth)
+        self.east.value = np.array(east)
+        self.east.error = np.array(stdeast)
+        self.up.value = np.array(up)
+        self.up.error = np.array(stdup)
+
+        # All done
+        return
     def read_from_JPL(self, filename):
         '''
         Reads the time series from a file which has been sent from JPL.
@@ -400,6 +464,25 @@ class gpstimeseries(SourceInv):
         self.up.addPointInTime(time, value=up, std=std_up)
  
         # Time vector
+        self.time = self.up.time
+
+        # All done
+        return
+
+    def removePointsInTime(self, u):
+        '''
+        Remove points from the time series.
+
+        Args:
+            * u         : List or array of indexes to remove
+        '''
+
+        # Delete
+        self.east._deleteDates(u)
+        self.north._deleteDates(u)
+        self.up._deleteDates(u)
+
+        # Time
         self.time = self.up.time
 
         # All done

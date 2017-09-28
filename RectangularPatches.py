@@ -509,11 +509,15 @@ class RectangularPatches(Fault):
 
         # Loop on the patches
         for u in range(len(self.patch)):
+            
+            # Get the patch
             p = self.patch[u]
             p1, p2, p3, p4 = self.patch[u]
+        
             # 1. Get the two top points
             pt1 = p[0]; x1, y1, z1 = pt1 
             pt2 = p[1]; x2, y2, z2 = pt2
+            
             # 2. Get the strike of this patch
             vs = p2-p1
             vd = p4-p1
@@ -522,12 +526,14 @@ class RectangularPatches(Fault):
             if vnz<0.:
                 vs *= -1.
             strike = np.arctan2( vs[0],vs[1] )            
+            
             # 3. Get the dip of this patch 
             dip1 = np.arcsin((p4[2] - p1[2]) / np.sqrt((p1[0] - p4[0])**2 
                            + (p1[1] - p4[1])**2 + (p1[2] - p4[2])**2))
             dip2 = np.arcsin((p3[2] - p2[2]) / np.sqrt( (p2[0] - p3[0])**2 
                            + (p2[1] - p3[1])**2 + (p2[2] - p3[2])**2))
             dip = 0.5 * (dip1 + dip2)
+            
             # 4. compute the position of the bottom corners  
             width = np.sqrt((p1[0] - p4[0])**2 + (p1[1] - p4[1])**2 + (p1[2] - p4[2])**2)
             wc = width * np.cos(dip)
@@ -541,8 +547,10 @@ class RectangularPatches(Fault):
             z4 = z1 + ws
             pt3 = [x3, y3, z3]
             pt4 = [x4, y4, z4]            
+            
             # set up the patch
             self.equivpatch.append(np.array([pt1, pt2, pt3, pt4]))
+            
             # Deal with the lon lat
             lon1, lat1 = self.putm(x1*1000., y1*1000., inverse=True)
             lon2, lat2 = self.putm(x2*1000., y2*1000., inverse=True)
@@ -552,6 +560,7 @@ class RectangularPatches(Fault):
             pt2 = [lon2, lat2, z2]
             pt3 = [lon3, lat3, z3]
             pt4 = [lon4, lat4, z4]
+            
             # set up the patchll
             self.equivpatchll.append(np.array([pt1, pt2, pt3, pt4]))
 

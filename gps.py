@@ -2479,7 +2479,7 @@ class gps(SourceInv):
 
         # All done
 
-    def initializeTimeSeries(self, start=None, end=None, 
+    def initializeTimeSeries(self, start=None, end=None, stationfile=False,
                                    sqlfile=None, time=None,  
                                    interval=1, verbose=False, los=False, 
                                    factor=1.):
@@ -2509,9 +2509,40 @@ class gps(SourceInv):
                                                               los=los)
             elif sqlfile is not None:
                 self.timeseries[station].read_from_sql(sqlfile, factor=factor)
+            elif stationfile:
+                filename = '{}.dat'.format(station)
+                self.timeseries[station].read_from_file(filename)
 
         # Save
         self.factor = factor
+
+        # Create the time vector
+        self.time = np.unique(np.hstack([self.timeseries[station].time \
+                                for station in self.timeseries]))
+
+        # All done
+        return
+
+    def writeTimeSeries(self, verbose=False, outdir='./', steplike=False):
+        '''
+        Writes the time series of displacement in text files.
+        
+        Filenames are entirely determined from the name of the station
+
+                example: STAT.dat, COPO.dat, ISME.dat ...
+        '''
+
+        # Iterate over the time series
+        for station in self.timeseries:
+
+            # Get timeserues
+            timeseries = self.timeseries[station]
+
+            # Create a filename
+            filename = '{}.dat'.format(station)
+
+            # Write 2 file
+            timeseries.write2file(filename, steplike=steplike)
 
         # All done
         return

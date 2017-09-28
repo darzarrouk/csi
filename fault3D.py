@@ -150,7 +150,7 @@ class fault3D(RectangularPatches):
             xt = self.xi
             yt = self.yi
             lont, latt = self.putm(xt*1000., yt*1000., inverse=True)
-            zt = self.zi
+            zt = self.zi.round(decimals=10)
 
             # Compute the bottom row
             xb = xt + self.width*np.cos(self.dip)*sdr

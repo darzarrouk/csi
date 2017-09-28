@@ -547,4 +547,19 @@ class timeseries(SourceInv):
         # All done
         return
 
+    def _deleteDates(self, u):
+        '''
+        Remove the dates corresponding to index u.
+        '''
+
+        # Delete stuff
+        self.time = np.delete(self.time, u)
+        self.value = np.delete(self.value, u)
+        self.error = np.delete(self.error, u)
+        if hasattr(self, 'synth'):
+            self.synth = np.delete(self.synth, u)
+
+        # All done
+        return
+
 #EOF
