@@ -97,7 +97,6 @@ class gpstimeseries(SourceInv):
             hour = int(isotime[11:13])
             mins = int(isotime[14:16])
             secd = int(isotime[17:19])
-            print(year, month, day, hour, mins, secd)
             time.append(dt.datetime(year, month, day, hour, mins, secd))
             east.append(float(values[1]))
             north.append(float(values[2]))
