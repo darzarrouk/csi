@@ -80,12 +80,12 @@ class insartimeseries(insar):
 
         # Set up a list of Dates
         if Dates is not None:
-            self.time = Dates
+            self.time = np.array(Dates)
         else:
             assert Start is not None, 'Need a starting point...'
             assert Increment is not None, 'Need an increment in days...'
             assert Steps is not None, 'Need a number of steps...'
-            self.time = [dt.datetime.fromordinal(Start.toordinal()+Increment*i) for i in range(Steps)] 
+            self.time = np.array([dt.datetime.fromordinal(Start.toordinal()+Increment*i) for i in range(Steps)])
 
         # Get some size
         if type(lon) is str:
@@ -123,7 +123,7 @@ class insartimeseries(insar):
         '''
 
         # Find the right index
-        udate = np.flatnonzero(np.array(self.time)==date)
+        udate = np.flatnonzero(self.time==date)
 
         # All done 
         if udate.size==1:
@@ -295,6 +295,7 @@ class insartimeseries(insar):
         self.time = []
         for i in range(nDates):
             self.time.append(dt.datetime.fromordinal(int(dates[i])))
+        self.time = np.array(self.time)
 
         # Create a list to hold the dates
         self.timeseries = []
@@ -423,7 +424,7 @@ class insartimeseries(insar):
                 datetime.datetime object'
 
         # Find the date
-        i = np.flatnonzero(np.array(self.time)==date)
+        i = np.flatnonzero(self.time==date)
 
         # Remove it
         if len(i)>0:
@@ -496,7 +497,7 @@ class insartimeseries(insar):
         out = copy.deepcopy(gps)
 
         # Initialize time series
-        out.initializeTimeSeries(time=np.array(self.time), los=True, verbose=False)
+        out.initializeTimeSeries(time=self.time, los=True, verbose=False)
 
         # Line-of-sight
         los = {}
@@ -777,7 +778,7 @@ class insartimeseries(insar):
                 datetime.datetime object'
 
         # Get the profile
-        i = np.flatnonzero(np.array(self.time)==date)[0]
+        i = np.flatnonzero(self.time==date)[0]
         pname = '{} {}'.format(prefix, date.isoformat())
         refProfile = self.timeseries[i].profiles[pname]
 
