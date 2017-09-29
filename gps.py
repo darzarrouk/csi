@@ -2878,11 +2878,8 @@ class gps(SourceInv):
         '''
         # Get lons lats
         lonmin = self.lon.min()-expand
-        if lonmin<0.:
-            lonmin += 360.
         lonmax = self.lon.max()+expand
-        if lonmax<0.:
-            lonmax += 360.
+        print(lonmin, lonmax)
         latmin = self.lat.min()-expand
         latmax = self.lat.max()+expand
 
