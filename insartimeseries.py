@@ -129,8 +129,8 @@ class insartimeseries(insar):
         if udate.size==1:
             # Speak to me
             if verbose:
-                print('Returning insar image at date {}'.format(self.time[udate]))
-            return self.timeseries[udate]
+                print('Returning insar image at date {}'.format(self.time[udate[0]]))
+            return self.timeseries[udate[0]]
         else:
             if verbose:
                 print('No date found')
