@@ -2511,7 +2511,7 @@ class gps(SourceInv):
                 self.timeseries[station].read_from_sql(sqlfile, factor=factor)
             elif stationfile:
                 filename = '{}.dat'.format(station)
-                self.timeseries[station].read_from_file(filename)
+                self.timeseries[station].read_from_file(filename, verbose=verbose)
 
         # Save
         self.factor = factor

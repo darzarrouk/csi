@@ -70,7 +70,7 @@ class gpstimeseries(SourceInv):
         # all done
         return
 
-    def read_from_file(self, filename):
+    def read_from_file(self, filename, verbose=False):
         '''
         Reads the time series from a file which has been written by write2file
         '''
@@ -109,16 +109,16 @@ class gpstimeseries(SourceInv):
         self.north = timeseries('North',
                                 utmzone=self.utmzone, 
                                 lon0=self.lon0, lat0=self.lat0, 
-                                ellps=self.ellps)
+                                ellps=self.ellps, verbose=verbose)
         self.east = timeseries('East', 
                                utmzone=self.utmzone, 
                                lon0=self.lon0, 
                                lat0=self.lat0, 
-                               ellps=self.ellps)
+                               ellps=self.ellps, verbose=verbose)
         self.up = timeseries('Up', 
                              utmzone=self.utmzone, 
                              lon0=self.lon0, lat0=self.lat0, 
-                             ellps=self.ellps)
+                             ellps=self.ellps, verbose=verbose)
 
         # Set time
         self.time = np.array(time)
@@ -136,6 +136,7 @@ class gpstimeseries(SourceInv):
 
         # All done
         return
+
     def read_from_JPL(self, filename):
         '''
         Reads the time series from a file which has been sent from JPL.
