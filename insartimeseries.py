@@ -114,6 +114,35 @@ class insartimeseries(insar):
         # All done
         return
  
+    def buildCd(self, sigma, lam, function='exp', diagonalVar=False,
+                      normalizebystd=False):
+        '''
+        Builds the full Covariance matrix from values of sigma and lambda.
+
+        If function='exp':
+
+            Cov(i,j) = sigma*sigma * exp(-d[i,j] / lam)
+
+        elif function='gauss':
+
+            Cov(i,j) = sigma*sigma * exp(-(d[i,j]*d[i,j])/(2*lam))
+
+        Args:
+            * sigma             : Sigma term of the covariance
+            * lam               : Caracteristic length of the covariance
+            * function          : Can be 'gauss' or 'exp'
+            * diagonalVar       : Substitute the diagonal by the standard deviation
+                                  of the measurement squared
+        '''
+
+        # Iterate over the time serie
+        for sar in self.timeseries:
+            sar.buildCd(sigma, lam, function=function, 
+                        diagonalVar=diagonalVar, normalizebystd=normalizebystd)
+
+        # All done
+        return
+
     def getInsarAtDate(self, date, verbose=True):
         '''
         Given a datetime instance, returns the corresponding insar instance.

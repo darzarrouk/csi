@@ -2603,6 +2603,9 @@ class gps(SourceInv):
         # Set factor
         gpsNew.factor = self.factor
 
+        # Build Cd
+        gpsNew.buildCd()
+
         # all done
         return gpsNew
     
@@ -2879,7 +2882,6 @@ class gps(SourceInv):
         # Get lons lats
         lonmin = self.lon.min()-expand
         lonmax = self.lon.max()+expand
-        print(lonmin, lonmax)
         latmin = self.lat.min()-expand
         latmax = self.lat.max()+expand
 

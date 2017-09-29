@@ -568,9 +568,9 @@ class gpstimeseries(SourceInv):
             e = self.east.value[i]
             n = self.north.value[i]
             u = self.up.value[i]
-            es = self.east.value[i]
-            ns = self.north.value[i]
-            us = self.up.value[i]
+            es = self.east.error[i]
+            ns = self.north.error[i]
+            us = self.up.error[i]
             if hasattr(self, 'los'):
                 lo = self.los.value[i]
             else:
