@@ -127,7 +127,7 @@ class timebayes(object):
         self.bfMap = np.array(list(map(int,self.time/self.dt)))
         # Knot vector (i.e., discrete time knots)
         Nfirst = int((self.nbasis-1)/2)     # Number of basis functions starting before zeros
-        self.knots = self.dt * (np.arange(self.bfMap.max()+self.nbasis)-Nfirst) # Knot vector 
+        self.knots = self.dt * (np.arange(self.bfMap.max()+self.nbasis)-Nfirst) # Knot vector (To be checked)
 
         # All done
         return
@@ -235,15 +235,17 @@ class timebayes(object):
     def walkWithTime(self, chainLength=1000):
         '''
         Advance throught time.
+        Args:
+            chainLength: MCMC chain length
         '''
 
         # Model sample set
         self.samples = []
 
-        # Create data <-> triangle map
+        # Create map of data time <-> basis function knot 
         self.initializeBasisFunctionMap()
 
-        # Chain length 
+        # MCMC chain length 
         self.chainlength = chainLength
 
         # Iterate over the data

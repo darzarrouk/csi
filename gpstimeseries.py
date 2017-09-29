@@ -88,13 +88,16 @@ class gpstimeseries(SourceInv):
         # Read these
         for line in Lines:
             values = line.split()
+            if values[0][0] == '#':
+                continue
             isotime = values[0]
-            year = isotime[:4]
-            month = isotime[5:7]
-            day = isotime[8:10]
-            hour = isotime[11:13]
-            mins = isotime[14:16]
-            secd = isotime[17:19]
+            year  = int(isotime[:4])
+            month = int(isotime[5:7])
+            day   = int(isotime[8:10])
+            hour = int(isotime[11:13])
+            mins = int(isotime[14:16])
+            secd = int(isotime[17:19])
+            print(year, month, day, hour, mins, secd)
             time.append(dt.datetime(year, month, day, hour, mins, secd))
             east.append(float(values[1]))
             north.append(float(values[2]))
