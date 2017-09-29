@@ -1119,7 +1119,7 @@ class geodeticplot(object):
         elif plotType is 'scatter':
             lon = insar.lon
             lat = insar.lat
-            xloc, yloc = self.carte(lon[::decim, lat[::decim])
+            xloc, yloc = self.carte(lon[::decim], lat[::decim])
             sc = self.carte.scatter(xloc, yloc, s=30, c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=zorder)
 
         else:
