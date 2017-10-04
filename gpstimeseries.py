@@ -339,71 +339,37 @@ class gpstimeseries(SourceInv):
             * interval:         In days.
         '''
     
-        # check start and end
-        if (start.__class__ is float) or (start.__class__ is int) :
-            st = dt.datetime(start, 1, 1)
-        if (start.__class__ is list):
-            if len(start) == 1:
-                st = dt.datetime(start[0], 1, 1)
-            elif len(start) == 2:
-                st = dt.datetime(start[0], start[1], 1)
-            elif len(start) == 3:
-                st = dt.datetime(start[0], start[1], start[2])
-            elif len(start) == 4:
-                st = dt.datetime(start[0], start[1], start[2], start[3])
-            elif len(start) == 5:
-                st = dt.datetime(start[0], start[1], start[2], start[3], start[4])
-            elif len(start) == 6:
-                st = dt.datetime(start[0], start[1], start[2], start[3], start[4], start[5])
-        if start.__class__ is dt.datetime:
-            st = start
-
-        if (end.__class__ is float) or (end.__class__ is int) :
-            ed = dt.datetime(np.int(end), 1, 1)
-        if (end.__class__ is list):
-            if len(end) == 1:
-                ed = dt.datetime(end[0], 1, 1)
-            elif len(end) == 2:
-                ed = dt.datetime(end[0], end[1], 1)
-            elif len(end) == 3:
-                ed = dt.datetime(end[0], end[1], end[2])
-            elif len(end) == 4:
-                ed = dt.datetime(end[0], end[1], end[2], end[3])
-            elif len(end) == 5:
-                ed = dt.datetime(end[0], end[1], end[2], end[3], end[4])
-            elif len(end) == 6:
-                ed = dt.datetime(end[0], end[1], end[2], end[3], end[4], end[5])
-        if end.__class__ is dt.datetime:
-            ed = end
-
-        # Initialize a time vector
-        if end is not None:
-            delta = ed - st
-            delta_sec = np.int(np.floor(delta.days * 24 * 60 * 60 + delta.seconds))
-            time_step = np.int(np.floor(interval * 24 * 60 * 60))
-            self.time = [st + dt.timedelta(0, t) for t in range(0, delta_sec, time_step)]
-        if time is not None:
-            self.time = time
-
-        # Initialize timeseries instances
+        # North-south time series
         self.north = timeseries('North', 
                                 utmzone=self.utmzone, 
                                 lon0=self.lon0, 
                                 lat0=self.lat0, 
                                 ellps=self.ellps, 
                                 verbose=self.verbose)
+        self.north.initialize(time=time, 
+                              start=start, end=end, increment=interval)
+
+        # East-west time series
         self.east = timeseries('East', 
                                utmzone=self.utmzone, 
                                lon0=self.lon0, 
                                lat0=self.lat0, 
                                ellps=self.ellps, 
                                verbose=self.verbose)
+        self.east.initialize(time=time, 
+                             start=start, end=end, increment=interval)
+
+        # Vertical time series 
         self.up = timeseries('Up', 
                              utmzone=self.utmzone, 
                              lon0=self.lon0, 
                              lat0=self.lat0, 
                              ellps=self.ellps, 
                              verbose=self.verbose)
+        self.up.initialize(time=time, 
+                           start=start, end=end, increment=interval)
+
+        # LOS time series
         if los:
             self.los = timeseries('LOS', 
                                   utmzone=self.utmzone, 
@@ -411,29 +377,11 @@ class gpstimeseries(SourceInv):
                                   lat0=self.lat0, 
                                   ellps=self.ellps,
                                   verbose=self.verbose)
+            self.los.initialize(time=time, 
+                                start=start, end=end, increment=interval)
 
         # Time
-        if type(self.time) is list:
-            self.time = np.array(self.time)
-        self.north.time = self.time
-        self.east.time = self.time
-        self.up.time = self.time
-        if los:
-            self.los.time = self.time
-
-        # Values
-        self.north.value = np.zeros(self.time.shape)
-        self.east.value = np.zeros(self.time.shape)
-        self.up.value = np.zeros(self.time.shape)
-        if los:
-            self.los.value = np.zeros(self.time.shape)
-
-        # Initialize uncertainties
-        self.north.error = np.zeros(len(self.time))
-        self.east.error = np.zeros(len(self.time))
-        self.up.error = np.zeros(len(self.time))
-        if los:
-            self.los.error = np.zeros(len(self.time))
+        self.time = self.north.time
 
         # All done
         return

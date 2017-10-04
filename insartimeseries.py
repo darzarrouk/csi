@@ -60,32 +60,17 @@ class insartimeseries(insar):
         # All done
         return
 
-    def initializeTimeSeries(self, lon, lat, incidence=None, heading=None, elevation=None, Dates=None, Start=None, Increment=None, Steps=None, dtype='f'):
+    def setLonLat(self, lon, lat, incidence=None, heading=None, elevation=None):
         '''
-        Initializes the time series object using a series of dates.
+        Sets the lon and lat array and initialize things.
+
         Args:
             * lon           : Can be an array or a string.
             * lat           : Can be an array or a string.
             * incidence     : Can be an array or a string.
             * heading       : Can be an array or a string.
             * elevation     : Can be an array or a string.
-        Can give different inputs:
-        Mode 1
-            * Dates         : List of dates (datetime object)
-        Mode 2
-            * Start         : Starting date (datetime object)
-            * Increment     : Increment in days
-            * Steps         : How many steps
         '''
-
-        # Set up a list of Dates
-        if Dates is not None:
-            self.time = np.array(Dates)
-        else:
-            assert Start is not None, 'Need a starting point...'
-            assert Increment is not None, 'Need an increment in days...'
-            assert Steps is not None, 'Need a number of steps...'
-            self.time = np.array([dt.datetime.fromordinal(Start.toordinal()+Increment*i) for i in range(Steps)])
 
         # Get some size
         if type(lon) is str:
@@ -102,13 +87,43 @@ class insartimeseries(insar):
             self.elevation.read_from_binary(elevation, lon, lat, incidence=None, heading=None, remove_nan=False, remove_zeros=False)
             self.z = self.elevation.vel
 
+        # All done
+        return
+
+    def initializeTimeSeries(self, time=None, start=None, end=None, increment=None,
+                                   steps=None, dtype='f'):
+        '''
+        Initializes the time series object using a series of dates.
+        Can give different inputs:
+        Mode 1
+            * time          : List of dates (datetime object)
+        Mode 2
+            * start         : Starting date (datetime object)
+            * end           : Ending date
+            * increment     : Increment of time in days
+            * steps         : How many steps
+        '''
+
+        # Set up a list of Dates
+        if dates is not None:
+            self.time = np.array(dates)
+        else:
+            assert start is not None, 'Need a starting point...'
+            assert increment is not None, 'Need an increment in days...'
+            assert steps is not None, 'Need a number of steps...'
+            self.time = np.array([dt.datetime.fromordinal(start.toordinal()+increment*i)\
+                    for i in range(Steps)])
+
         # Create timeseries
         self.timeseries = []
 
         # Create an insarrate instance for each step
         for date in self.time:
-            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
-            sar.read_from_binary(np.zeros((nSamples,)), lon, lat, incidence=incidence, heading=heading, dtype=dtype, remove_nan=False, remove_zeros=False)
+            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False, 
+                        lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+            sar.read_from_binary(np.zeros((nSamples,)), self.lon, self.lat, 
+                                 incidence=self.incidence, heading=self.heading, 
+                                 dtype=dtype, remove_nan=False, remove_zeros=False)
             self.timeseries.append(sar)
 
         # All done

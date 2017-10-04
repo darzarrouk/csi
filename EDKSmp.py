@@ -3,6 +3,7 @@ A bunch of routines to handle EDKS
 
 Written by F. Ortega in 2010.
 Modified by R. Jolivet in 2014.
+Modified by R. Jolivet in 2017 (multiprocessing added for point dropping)
 '''
 
 # Externals
@@ -15,16 +16,19 @@ import multiprocessing as mp
 # Initialize a class to allow multiprocessing
 class pointdropper(mp.Process):
 
+    # ----------------------------------------------------------------------
+    # Initialize
     def __init__(self, fault, queue, charArea, istart, iend):
         '''
-        Initialize the multiprocessing class to run the point dropper
+        Initialize the multiprocessing class to run the point dropper.
+        This class drops point sources in the triangular or rectangular mesh.
 
         Args:
-            * fault     : Instance of Fault.py
-            * queue     : INstance of mp.Queue
-            * charArea  : Characteristic area of the subfaults
-            * istart    : Index of the first patch to deal with
-            * iend      : Index of the last pacth to deal with
+            * fault             : Instance of Fault.py
+            * queue             : Instance of mp.Queue
+            * charArea          : Characteristic area of the subfaults
+            * istart            : Index of the first patch to deal with
+            * iend              : Index of the last pacth to deal with
         '''
 
         # Save the fault
@@ -41,7 +45,10 @@ class pointdropper(mp.Process):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Run routine needed by multiprocessing
     def run(self):
         '''
         Run the subpatch construction
@@ -125,16 +132,32 @@ class pointdropper(mp.Process):
 
         # all done
         return
+    # ----------------------------------------------------------------------
+# end of pointdropper
 
+# ----------------------------------------------------------------------
 def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
     '''
     From a fault object, returns sources to be given to sum_layered_sub.
     The number of sources is determined by the spacing provided in fault.
+
     Args:
-        fault                   : instance of Fault (Rectangular or Triangular).
-        verbose                 : Talk to me
-        returnSplittedPactches  : Returns a triangularPatches object with the splitted 
+        * fault                   : instance of Fault (Rectangular or Triangular).
+        * verbose                 : Talk to me
+        * returnSplittedPactches  : Returns a triangularPatches object with the splitted 
                                   patches.
+
+    Return:
+        * Ids                   : Id of the subpatches
+        * Xs                    : UTM x-coordinate of the subpatches (km)
+        * Ys                    : UTM y-coordinate of the subpatches (km)
+        * Zs                    : UTM z-coordinate of the subpatches (km)
+        * Strikes               : Strike angles of the subpatches (rad)
+        * Dips                  : Dip angles of the subpatches (rad)
+        * Areas                 : Area of the subpatches (km^2)
+        
+        if returnSplittedPatches:
+        * splitFault            : Fault object with the subpatches
     '''
 
     # Create lists
@@ -234,7 +257,10 @@ def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
         return Ids, Xs, Ys, Zs, Strikes, Dips, Areas, splitFault
     else:
         return Ids, Xs, Ys, Zs, Strikes, Dips, Areas
+# ----------------------------------------------------------------------
 
+# ----------------------------------------------------------------------
+# Compute the Green's functions for the patches
 def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
                 npw, npy,\
                 xr, yr, edks,\
@@ -242,34 +268,48 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
                 BIN_EDKS = 'EDKS_BIN',
                 cleanUp=True, verbose=True):
     '''
-    --- INPUT ---
-    --- SOURCE INFO
-    --- 1D NUMPY arrays, length = number of fault patches
-    xs       m, east coord to center of fault patch
-    ys       m, north coord to center of fault patch
-    zs       m,depth coord to center of fault patch (+ down) 
-    strike   deg, clockwise from north 
-    dip      deg, 90 is vertical 
-    rake     deg, 0 left lateral strike slip, 90 up-dip slip 
-    slip     m, slip in the rake direction
-    width    m, width of the patch
-    length   m, length of the patch
-    npw      integers, number of sources along strike
-    npy      integers, number of sources along dip 
-    --- RECEIVER INFO
-    1D arrays, length = number of receivers
-    xr       m, east coordinate of receivers 
-    yr       m, north coordinate of receivers 
-    --- ELASTIC STRUCTURE INFO
-    edks     string, full name of edks file, e.g., halfspace.edks
-    --- FILE NAMING 
-    prefix   string, prefix for the IO files generated by sum_layered
-    BIN_EDKS Name of the environement variable where EDKS executables are.
-    --- OUTPUT ---
-    --- 2D arrays, (receivers, fault patches)
-    ux     m, east displacement
-    uy     m, west displacement
-    uz     m, up displacement (+ up)
+    Compute the Green's functions for the given patches
+
+    Args:
+
+        <-- Sources --> 1-D numpy arrays
+
+            * xs                : m, east coord to center of fault patch
+            * ys                : m, north coord to center of fault patch
+            * zs                : m,depth coord to center of fault patch (+ down) 
+            * strike            : deg, clockwise from north 
+            * dip               : deg, 90 is vertical 
+            * rake              : deg, 0 left lateral strike slip, 90 up-dip slip 
+            * slip              : m, slip in the rake direction
+            * width             : m, width of the patch
+            * length            : m, length of the patch
+            * npw               : integers, number of sources along strike
+            * npy               : integers, number of sources along dip 
+    
+        <-- Receivers --> 1-D numpy arrays
+
+            * xr                : m, east coordinate of receivers 
+            * yr                : m, north coordinate of receivers 
+
+        <-- Elastic structure -->
+
+            * edks              : string, full name of edks file, e.g., halfspace.edks
+
+        <-- File Naming -->
+
+            * prefix            : string, prefix for the files generated by sum_layered
+    
+    Kwargs:
+
+            * BIN_EDKS          : Environement variable where EDKS executables are.
+            * cleanUp           : Remove the intermediate files
+            * verbose           : Talk to me
+
+    Return:
+        <-- 2D arrays (#receivers, #fault patches) -->
+            * ux                : m, east displacement
+            * uy                : m, west displacement
+            * uz                : m, up displacement (+ up)
     '''
 
     # Get executables
@@ -383,188 +423,191 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
  
     # return the GF matrices
     return [ux, uy, uz]
+# ----------------------------------------------------------------------
 
-def sum_layered_sub(IDs, xs, ys, zs, strike, dip, rake, slip, A, \
-                       xr, yr, edks,\
-                       prefix, \
-                       BIN_EDKS = 'EDKS_BIN', tensile=False,
-                       cleanUp=True):
-    '''
-    --- INPUT ---
-    --- SOURCE INFO
-    --- 1D NUMPY arrays, length = number of fault patches
-    IDs      list of strings,IDs of  point sources (see below for a detailed explanation)
-    xs       m, east coord to center of fault patch
-    ys       m, north coord to center of fault patch
-    zs       m,depth coord to center of fault patch (+ down) 
-    strike   deg, clockwise from north 
-    dip      deg, 90 is vertical 
-    rake     deg, 0 left lateral strike slip, 90 up-dip slip 
-    slip     m, slip in the rake direction
-    A        m2, surface area of fault patch 
-    --- RECEIVER INFO
-    1D arrays, length = number of receivers
-    xr       m, east coordinate of receivers 
-    yr       m, north coordinate of receivers 
-    --- ELASTIC STRUCTURE INFO
-    edks     string, full name of edks file, e.g., halfspace.edks
-    --- FILE NAMING 
-    prefix   string, prefix for the IO files generated by sum_layered
-    BIN_EDKS Name of environement variable pointing to EDKS binaries
-    --- OPTIONS
-    tensile  boolean specifying whether to compute tensile displacements
-    --- OUTPUT ---
-    --- 2D arrays, (receivers, fault patches)
-    ux     m, east displacement
-    uy     m, west displacement
-    uz     m, up displacement (+ up)
-
-    Explanation of IDs:
-      the source ID (IDs) is used to be able to represent a finite source by a set
-      of "well defined" point sources (ex: point sources modeling a triangular or 
-      rectangular finite source). 
-      - If you want to use this code only to calculate independent point sources, just
-      give a different ID to all the sources.
-      - If you want to use this code to approximate several finite dislocations, you need
-      to define and assign a different ID to each finite source. The sources with 
-      equal IDs will be added to compute the surface displacements of the finite 
-      dislocation. Then the code will return only the displacements corresponding to 
-      the one of the finite dislocation, in the same order as the specified IDs.
-      IMPORTANT: The equal IDs must be contiguous in order to ensure that the order
-      in which the output is computed is the same. 
-      Ex: -  a good list of source IDs is 
-             [id1, id1,..., id1, id2, id2,..., id2, idj,..., idj, ..., idN,..,idN] 
-          - a BAD list of source (you should not do this) would be:
-             [id1,id2, id3, ... , idN, id1, id2, .. idN, id1, id3, id8] 
-
-    NOTE ON THE NUMBER OF CORES USED BY sum_layered_sub:
-       in order to set the number of cores used (by default openMP uses all the 
-       available cores) you must set the environment variable OMP_NUM_THREADS
-       with the number of cores (threads) that you want. 
-
-    '''
-
-    # Get where the binaries are
-    BIN_EDKS = os.environ[BIN_EDKS]
-
-    # Define a few things 
-    nrec = len(xr)          # number of receivers
-    Np = len(set(IDs))      # total number of finite faults 
-    ntsp = len(xs)          # total number of point sources (sub sources)
-
-    # compute mapping between the string IDs and non decreasing positive integer number
-    setOfAlreadyStoredIDs = set() # this is just for testing the right order of the IDs.
-    sortedListOfFiniteFaultIDs = []
-    ident = []
-    i = 1
-    IDprev = IDs[0]
-    ident.append(i)
-    sortedListOfFiniteFaultIDs.append(IDprev)
-    setOfAlreadyStoredIDs.add(IDprev)
-    NumSubSources = {}
-    NumSubSources[IDprev] = 1
-    for k in range(1, ntsp):
-        if IDs[k] == IDprev:
-            ident.append(i)
-            NumSubSources[IDprev] += 1
-        else: # the current ID is a new one.
-            if IDs[k] in setOfAlreadyStoredIDs: # this is an error
-                raise ValueError('Source IDs are not in the right order...')
-            else:
-                IDprev = IDs[k]
-                i += 1
-                ident.append(i)
-                sortedListOfFiniteFaultIDs.append(IDs[k])
-                setOfAlreadyStoredIDs.add(IDs[k])
-                NumSubSources[IDs[k]] = 1
-    nspp = np.max(list(NumSubSources.values())) # maximum number of subsources
-
-    # Some format
-    BIN_FILE_FMT_real4 = 'f' # python float = C/C++ float = Fortran 'real*4' 
-    BIN_FILE_FMT_int4 = 'i' # python int, fortran 'integer*4''
-    NBYTES_FILE_FMT = 4  # a Fortran (real*4) uses 4 bytes.
-
-    # Define filenames:
-    file_rec = prefix + '.rec'
-    file_pat = prefix + '.pat'
-    file_dux = prefix + '_ux.dis'
-    file_duy = prefix + '_uy.dis'
-    file_duz = prefix + '_uz.dis'
-
-    # Clean files if they exist
-    cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
-    os.system(cmd)
-   
-    # write receiver location file (observation points)
-    temp = [xr, yr]
-    file = open(file_rec, 'wb') 
-    for k in range(0, nrec):
-        for i in range(0, len(temp)):
-            file.write( struct.pack( BIN_FILE_FMT_real4, temp[i][k] ) )       
-    file.close() 
- 
-    # write point sources information
-    temp = [xs, ys, zs, strike, dip, rake, A, slip, ident]
-    file = open(file_pat, 'wb');
-    for k in range(0, ntsp):
-        for i in range(0, len(temp)-1):
-            file.write( struct.pack( BIN_FILE_FMT_real4, temp[i][k] ) )
-        file.write( struct.pack( BIN_FILE_FMT_int4, temp[-1][k] ) )
-    file.close()
- 
-    # call sum_layered
-    if tensile:
-        cmd = '{}/sum_layered_tensile {} {} {} {} {} {} '.format(BIN_EDKS, 
-                                    edks, prefix, nrec, Np, ntsp, nspp)
-    else:
-        cmd = '{}/sum_layered_sub {} {} {} {} {} {} '.format(BIN_EDKS,
-                                    edks, prefix, nrec, Np, ntsp, nspp)
-    print(cmd)
-    os.system(cmd)
-    
-    # read sum_layered output Greens function
-    
-    # ux
-    file = open(file_dux, 'rb')
-    ux = np.zeros((nrec, Np))
-    for j in range(0, Np):
-        for i in range(0, nrec):
-            byteVal = file.read(NBYTES_FILE_FMT)
-            if byteVal != '':
-                ux[i][j] = struct.unpack('f', byteVal)[0]
-            else:
-                raise ValueError(' Premature EOF in %s, something nasty happened'%(file_dux))
-    file.close()
-
-    # uy
-    file = open(file_duy, 'rb')
-    uy = np.zeros((nrec, Np))
-    for j in range(0, Np):
-        for i in range(0, nrec):
-            byteVal = file.read(NBYTES_FILE_FMT)
-            if byteVal != '':
-                uy[i][j] = struct.unpack('f', byteVal)[0]
-            else:
-                raise ValueError('Premature EOF in %s, something nasty happened'%(file_duy))
-    file.close()
-
-    # uz
-    file = open(file_duz, 'rb')
-    uz = np.zeros((nrec, Np))
-    for j in range(0, Np):
-        for i in range(0, nrec):
-            byteVal = file.read(NBYTES_FILE_FMT)
-            if byteVal != '':
-                uz[i][j] = struct.unpack('f', byteVal)[0]
-            else:
-                raise ValueError('Premature EOF in %s, something nasty happened'%(file_duz))
-    file.close()
-
-    # remove IO files.
-    if cleanUp:
-        cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
-        os.system(cmd)  
-
-    # return the computed displacements for each sources
-    return [ux, uy, uz]
+# ----------------------------------------------------------------------
+# Obsolete routine, kept just in case
+#def sum_layered_sub(IDs, xs, ys, zs, strike, dip, rake, slip, A, \
+#                       xr, yr, edks,\
+#                       prefix, \
+#                       BIN_EDKS = 'EDKS_BIN', tensile=False,
+#                       cleanUp=True):
+#    '''
+#    --- INPUT ---
+#    --- SOURCE INFO
+#    --- 1D NUMPY arrays, length = number of fault patches
+#    IDs      list of strings,IDs of  point sources (see below for a detailed explanation)
+#    xs       m, east coord to center of fault patch
+#    ys       m, north coord to center of fault patch
+#    zs       m,depth coord to center of fault patch (+ down) 
+#    strike   deg, clockwise from north 
+#    dip      deg, 90 is vertical 
+#    rake     deg, 0 left lateral strike slip, 90 up-dip slip 
+#    slip     m, slip in the rake direction
+#    A        m2, surface area of fault patch 
+#    --- RECEIVER INFO
+#    1D arrays, length = number of receivers
+#    xr       m, east coordinate of receivers 
+#    yr       m, north coordinate of receivers 
+#    --- ELASTIC STRUCTURE INFO
+#    edks     string, full name of edks file, e.g., halfspace.edks
+#    --- FILE NAMING 
+#    prefix   string, prefix for the IO files generated by sum_layered
+#    BIN_EDKS Name of environement variable pointing to EDKS binaries
+#    --- OPTIONS
+#    tensile  boolean specifying whether to compute tensile displacements
+#    --- OUTPUT ---
+#    --- 2D arrays, (receivers, fault patches)
+#    ux     m, east displacement
+#    uy     m, west displacement
+#    uz     m, up displacement (+ up)
+#
+#    Explanation of IDs:
+#      the source ID (IDs) is used to be able to represent a finite source by a set
+#      of "well defined" point sources (ex: point sources modeling a triangular or 
+#      rectangular finite source). 
+#      - If you want to use this code only to calculate independent point sources, just
+#      give a different ID to all the sources.
+#      - If you want to use this code to approximate several finite dislocations, you need
+#      to define and assign a different ID to each finite source. The sources with 
+#      equal IDs will be added to compute the surface displacements of the finite 
+#      dislocation. Then the code will return only the displacements corresponding to 
+#      the one of the finite dislocation, in the same order as the specified IDs.
+#      IMPORTANT: The equal IDs must be contiguous in order to ensure that the order
+#      in which the output is computed is the same. 
+#      Ex: -  a good list of source IDs is 
+#             [id1, id1,..., id1, id2, id2,..., id2, idj,..., idj, ..., idN,..,idN] 
+#          - a BAD list of source (you should not do this) would be:
+#             [id1,id2, id3, ... , idN, id1, id2, .. idN, id1, id3, id8] 
+#
+#    NOTE ON THE NUMBER OF CORES USED BY sum_layered_sub:
+#       in order to set the number of cores used (by default openMP uses all the 
+#       available cores) you must set the environment variable OMP_NUM_THREADS
+#       with the number of cores (threads) that you want. 
+#
+#    '''
+#
+#    # Get where the binaries are
+#    BIN_EDKS = os.environ[BIN_EDKS]
+#
+#    # Define a few things 
+#    nrec = len(xr)          # number of receivers
+#    Np = len(set(IDs))      # total number of finite faults 
+#    ntsp = len(xs)          # total number of point sources (sub sources)
+#
+#    # compute mapping between the string IDs and non decreasing positive integer number
+#    setOfAlreadyStoredIDs = set() # this is just for testing the right order of the IDs.
+#    sortedListOfFiniteFaultIDs = []
+#    ident = []
+#    i = 1
+#    IDprev = IDs[0]
+#    ident.append(i)
+#    sortedListOfFiniteFaultIDs.append(IDprev)
+#    setOfAlreadyStoredIDs.add(IDprev)
+#    NumSubSources = {}
+#    NumSubSources[IDprev] = 1
+#    for k in range(1, ntsp):
+#        if IDs[k] == IDprev:
+#            ident.append(i)
+#            NumSubSources[IDprev] += 1
+#        else: # the current ID is a new one.
+#            if IDs[k] in setOfAlreadyStoredIDs: # this is an error
+#                raise ValueError('Source IDs are not in the right order...')
+#            else:
+#                IDprev = IDs[k]
+#                i += 1
+#                ident.append(i)
+#                sortedListOfFiniteFaultIDs.append(IDs[k])
+#                setOfAlreadyStoredIDs.add(IDs[k])
+#                NumSubSources[IDs[k]] = 1
+#    nspp = np.max(list(NumSubSources.values())) # maximum number of subsources
+#
+#    # Some format
+#    BIN_FILE_FMT_real4 = 'f' # python float = C/C++ float = Fortran 'real*4' 
+#    BIN_FILE_FMT_int4 = 'i' # python int, fortran 'integer*4''
+#    NBYTES_FILE_FMT = 4  # a Fortran (real*4) uses 4 bytes.
+#
+#    # Define filenames:
+#    file_rec = prefix + '.rec'
+#    file_pat = prefix + '.pat'
+#    file_dux = prefix + '_ux.dis'
+#    file_duy = prefix + '_uy.dis'
+#    file_duz = prefix + '_uz.dis'
+#
+#    # Clean files if they exist
+#    cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
+#    os.system(cmd)
+#   
+#    # write receiver location file (observation points)
+#    temp = [xr, yr]
+#    file = open(file_rec, 'wb') 
+#    for k in range(0, nrec):
+#        for i in range(0, len(temp)):
+#            file.write( struct.pack( BIN_FILE_FMT_real4, temp[i][k] ) )       
+#    file.close() 
+# 
+#    # write point sources information
+#    temp = [xs, ys, zs, strike, dip, rake, A, slip, ident]
+#    file = open(file_pat, 'wb');
+#    for k in range(0, ntsp):
+#        for i in range(0, len(temp)-1):
+#            file.write( struct.pack( BIN_FILE_FMT_real4, temp[i][k] ) )
+#        file.write( struct.pack( BIN_FILE_FMT_int4, temp[-1][k] ) )
+#    file.close()
+# 
+#    # call sum_layered
+#    if tensile:
+#        cmd = '{}/sum_layered_tensile {} {} {} {} {} {} '.format(BIN_EDKS, 
+#                                    edks, prefix, nrec, Np, ntsp, nspp)
+#    else:
+#        cmd = '{}/sum_layered_sub {} {} {} {} {} {} '.format(BIN_EDKS,
+#                                    edks, prefix, nrec, Np, ntsp, nspp)
+#    print(cmd)
+#    os.system(cmd)
+#    
+#    # read sum_layered output Greens function
+#    
+#    # ux
+#    file = open(file_dux, 'rb')
+#    ux = np.zeros((nrec, Np))
+#    for j in range(0, Np):
+#        for i in range(0, nrec):
+#            byteVal = file.read(NBYTES_FILE_FMT)
+#            if byteVal != '':
+#                ux[i][j] = struct.unpack('f', byteVal)[0]
+#            else:
+#                raise ValueError(' Premature EOF in %s, something nasty happened'%(file_dux))
+#    file.close()
+#
+#    # uy
+#    file = open(file_duy, 'rb')
+#    uy = np.zeros((nrec, Np))
+#    for j in range(0, Np):
+#        for i in range(0, nrec):
+#            byteVal = file.read(NBYTES_FILE_FMT)
+#            if byteVal != '':
+#                uy[i][j] = struct.unpack('f', byteVal)[0]
+#            else:
+#                raise ValueError('Premature EOF in %s, something nasty happened'%(file_duy))
+#    file.close()
+#
+#    # uz
+#    file = open(file_duz, 'rb')
+#    uz = np.zeros((nrec, Np))
+#    for j in range(0, Np):
+#        for i in range(0, nrec):
+#            byteVal = file.read(NBYTES_FILE_FMT)
+#            if byteVal != '':
+#                uz[i][j] = struct.unpack('f', byteVal)[0]
+#            else:
+#                raise ValueError('Premature EOF in %s, something nasty happened'%(file_duz))
+#    file.close()
+#
+#    # remove IO files.
+#    if cleanUp:
+#        cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
+#        os.system(cmd)  
+#
+#    # return the computed displacements for each sources
+#    return [ux, uy, uz]
 

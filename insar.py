@@ -338,7 +338,10 @@ class insar(SourceInv):
         # All done
         return
 
-    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14, dtype=np.float32, remove_nan=True, downsample=1, remove_zeros=True):
+    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, 
+                               step=0.0, incidence=35.8, heading=-13.14, 
+                               dtype=np.float32, remove_nan=True, downsample=1, 
+                               remove_zeros=True):
         '''
         Read from binary file or from array.
         '''

@@ -71,6 +71,9 @@ from . import csiutils as utils
 
 #from timefnutils import *
 
+## Slip time series stuff 
+from .slipHistory import slipHistory
+
 ## New time modeling stuff
 import probabilisticInterpolation as bayestimemod
 

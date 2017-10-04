@@ -47,6 +47,74 @@ class timeseries(SourceInv):
         # All done
         return
 
+    def initialize(self, time=None, start=None, end=None, increment=1):
+        '''
+        Initialize the time series.
+
+        Kwargs:
+            * time          : list of datetime instances
+            * start         : datetime instance of the first period
+            * end           : datetime instance of the ending period
+            * increment     : increment of time between periods
+        '''
+
+        # check start and end
+        if (start.__class__ is float) or (start.__class__ is int) :
+            st = dt.datetime(start, 1, 1)
+        if (start.__class__ is list):
+            if len(start) == 1:
+                st = dt.datetime(start[0], 1, 1)
+            elif len(start) == 2:
+                st = dt.datetime(start[0], start[1], 1)
+            elif len(start) == 3:
+                st = dt.datetime(start[0], start[1], start[2])
+            elif len(start) == 4:
+                st = dt.datetime(start[0], start[1], start[2], 
+                                 start[3])
+            elif len(start) == 5:
+                st = dt.datetime(start[0], start[1], start[2], 
+                                 start[3], start[4])
+            elif len(start) == 6:
+                st = dt.datetime(start[0], start[1], start[2], 
+                                 start[3], start[4], start[5])
+        if start.__class__ is dt.datetime:
+            st = start
+
+        if (end.__class__ is float) or (end.__class__ is int) :
+            ed = dt.datetime(np.int(end), 1, 1)
+        if (end.__class__ is list):
+            if len(end) == 1:
+                ed = dt.datetime(end[0], 1, 1)
+            elif len(end) == 2:
+                ed = dt.datetime(end[0], end[1], 1)
+            elif len(end) == 3:
+                ed = dt.datetime(end[0], end[1], end[2])
+            elif len(end) == 4:
+                ed = dt.datetime(end[0], end[1], end[2], end[3])
+            elif len(end) == 5:
+                ed = dt.datetime(end[0], end[1], end[2], end[3], end[4])
+            elif len(end) == 6:
+                ed = dt.datetime(end[0], end[1], end[2], end[3], end[4], end[5])
+        if end.__class__ is dt.datetime:
+            ed = end
+
+        # Initialize a time vector
+        if end is not None:
+            delta = ed - st
+            delta_sec = np.int(np.floor(delta.days * 24 * 60 * 60 + delta.seconds))
+            time_step = np.int(np.floor(increment * 24 * 60 * 60))
+            self.time = np.array([st + dt.timedelta(0, t) \
+                    for t in range(0, delta_sec, time_step)])
+        if time is not None:
+            self.time = time
+
+        # Values and errors
+        self.value = np.zeros(self.time.shape)
+        self.error = np.zeros(self.time.shape)
+
+        # All done
+        return
+
     def lonlat2xy(self):
         '''
         Pass the position into the utm coordinate system.
