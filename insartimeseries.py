@@ -105,14 +105,14 @@ class insartimeseries(insar):
         '''
 
         # Set up a list of Dates
-        if dates is not None:
-            self.time = np.array(dates)
+        if time is not None:
+            self.time = np.array(time)
         else:
             assert start is not None, 'Need a starting point...'
             assert increment is not None, 'Need an increment in days...'
             assert steps is not None, 'Need a number of steps...'
             self.time = np.array([dt.datetime.fromordinal(start.toordinal()+increment*i)\
-                    for i in range(Steps)])
+                    for i in range(steps)])
 
         # Create timeseries
         self.timeseries = []
@@ -121,7 +121,7 @@ class insartimeseries(insar):
         for date in self.time:
             sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False, 
                         lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
-            sar.read_from_binary(np.zeros((nSamples,)), self.lon, self.lat, 
+            sar.read_from_binary(np.zeros(self.lon.shape), self.lon, self.lat, 
                                  incidence=self.incidence, heading=self.heading, 
                                  dtype=dtype, remove_nan=False, remove_zeros=False)
             self.timeseries.append(sar)
