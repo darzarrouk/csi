@@ -1566,7 +1566,7 @@ class Fault(SourceInv):
                               'strainnotranslation' -> Estimates the strain tensor + rotation
                               'translation'         -> Estimates the translation
                               'translationrotation  -> Estimates the translation + rotation
-
+            
             * slipdir       : directions of slip to include. can be any combination of s, d, t, c or x 
                               s: strike slip
                               d: dip slip
@@ -1643,7 +1643,10 @@ class Fault(SourceInv):
 
         # Custom?
         if custom:
-            Npc = self.G[data.name]['custom'].shape[1]
+            Npc = 0
+            for data in datas:
+                if 'custom' in self.G[data.name].keys():
+                    Npc += self.G[data.name]['custom'].shape[1]
             Np += Npc
             self.NumberCustom = Npc
         else:
@@ -1673,7 +1676,8 @@ class Fault(SourceInv):
 
         # loop over the datasets
         el = 0
-        polstart = Nps + Npc
+        custstart = Nps # custom indices
+        polstart = Nps + Npc # poly indices
         for data in datas:
 
             # Keep data name
@@ -1701,8 +1705,12 @@ class Fault(SourceInv):
 
             # Custom
             if custom:
-                G[el:el+Ndlocal,Nps:Nps+Npc] = self.G[data.name]['custom']
-                ec += Nclocal
+                # Check if data has custom GFs
+                if 'custom' in self.G[data.name].keys():
+                    nc = self.G[data.name]['custom'].shape[1] # Nb of custom param
+                    custend = custstart + nc
+                    G[el:el+Ndlocal,custstart:custend] = self.G[data.name]['custom']
+                    custstart += nc
 
             # Polynomes and strain
             if self.poly[data.name] is not None:

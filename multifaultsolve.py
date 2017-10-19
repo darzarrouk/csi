@@ -357,9 +357,14 @@ class multifaultsolve(object):
 
             # check
             if hasattr(fault, 'NumberCustom'):
-                se = st + fault.NumberCustom
-                fault.custom = fault.mpost[st:se]
-                st += fault.NumberCustom
+                fault.custom = {} # Initialize dictionnary
+                # Get custom params for each dataset
+                for dset in fault.datanames:
+                    if 'custom' in fault.G[dset].keys():
+                        nc = fault.G[dset]['custom'].shape[1] # Get number of param for this dset
+                        se = st + nc
+                        fault.custom[dset] = fault.mpost[st:se]
+                        st += nc
 
             # Get the polynomial/orbital/helmert values if they exist
             fault.polysol = {}

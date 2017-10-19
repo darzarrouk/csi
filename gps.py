@@ -1677,7 +1677,7 @@ class gps(SourceInv):
 
         # Get GFs and parameters
         G = fault.G[self.name]['custom']
-        custom = fault.custom
+        custom = fault.custom[self.name]
 
         # Compute
         self.custompred = np.dot(G,custom)
@@ -2304,7 +2304,7 @@ class gps(SourceInv):
 
             if custom:
                 Gc = G['custom']
-                Sc = fault.custom
+                Sc = fault.custom[self.name]
                 cu_synth = np.dot(G, Sc)
                 N = 0
                 if east:

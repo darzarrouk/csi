@@ -1089,7 +1089,7 @@ class insar(SourceInv):
 
         # Get GFs and parameters
         G = fault.G[self.name]['custom']
-        custom = fault.custom
+        custom = fault.custom[self.name]
 
         # Compute
         self.custompred = np.dot(G,custom)
@@ -1203,7 +1203,7 @@ class insar(SourceInv):
 
             if custom:
                 Gc = G['custom']
-                Sc = fault.custom
+                Sc = fault.custom[self.name]
                 losdc_synth = np.dot(Gc, Sc)
                 self.synth += losdc_synth
 

@@ -1099,7 +1099,7 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def getEllipse(self,patch,ellipseCenter=None,Npoints=10,factor=1.0,nsigma=1.):
+    def getEllipse(self,patch,ellipseCenter=None,Npoints=100,factor=1.0,nsigma=1.):
         '''
         Compute the ellipse error given Cm for a given patch
         args:
