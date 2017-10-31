@@ -182,8 +182,12 @@ class slipHistory(SourceInv):
             slipKnots['tensile'] = np.zeros((npatches, nbf))
             errorKnots['tensile'] = np.zeros((npatches, nbf))
 
+        # Compute the basis function from tbayes given the time vector in self 
+        tbayes.initBase(tbayes.bfDates, self.time)
+        self.Base = tbayes.Base
+        
         # Iterate over the slipState vector
-        for iknot, knot in enumerate(tbayes.slipState):
+        for iknot, knot in enumerate(tbayes.slipState): # This will not work (slipState is a dictionary)
             if 's' in self.direction:
                 strikeslip = self._state2model(tbayes.slipState[knot][:,iStrikeslip], 
                                                model)
@@ -200,10 +204,6 @@ class slipHistory(SourceInv):
                 error = self._state2model(tbayes.slipState[knot][:,iTensile], model)
                 slipKnots['tensile'][:,iknot] = tensile
                 errorKnots['tensile'][:,iknot] = error
-
-        # Compute the basis function from tbayes given the time vector in self
-        tbayes.initBase(tbayes.bfDates, self.time)
-        self.Base = tbayes.Base
 
         # Multiply the base by the slip model to get the full time series
         if 's' in self.direction:
