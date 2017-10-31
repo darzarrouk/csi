@@ -247,7 +247,7 @@ class insartimeseries(insar):
             * field         : name of the field in the h5 file
         '''
 
-        # Open the fike
+        # Open the file
         h5out = h5py.File(h5file, 'w')
 
         # Create the data field
@@ -407,6 +407,7 @@ class insartimeseries(insar):
             if zfile is not None:
                 elevation.reject_pixel(uu)
             self.reject_pixel(uu)
+        h5in.close()
 
         # all done
         return

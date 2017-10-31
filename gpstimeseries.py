@@ -128,10 +128,13 @@ class gpstimeseries(SourceInv):
 
         # Set values
         self.north.value = np.array(north)
+        self.north.synth = None        
         self.north.error = np.array(stdnorth)
         self.east.value = np.array(east)
+        self.east.synth = None        
         self.east.error = np.array(stdeast)
         self.up.value = np.array(up)
+        self.up.synth = None        
         self.up.error = np.array(stdup)
 
         # All done
@@ -182,10 +185,13 @@ class gpstimeseries(SourceInv):
 
         # Set values
         self.north.value = np.array(north)
+        self.north.synth = None
         self.north.error = np.array(stdnorth)
         self.east.value = np.array(east)
+        self.east.synth = None        
         self.east.error = np.array(stdeast)
         self.up.value = np.array(up)
+        self.up.synth = None        
         self.up.error = np.array(stdup)
 
         # All done
@@ -241,10 +247,13 @@ class gpstimeseries(SourceInv):
 
         # Set the values
         self.north.value = north[self.name].values*factor
+        self.north.synth = None        
         self.north.error = sigmanorth[self.name].values*factor
         self.east.value = east[self.name].values*factor
+        self.east.synth = None        
         self.east.error = sigmaeast[self.name].values*factor
-        self.up.value = up[self.name].values*factor
+        self.up.value = up[self.name].values*factornorth
+        self.up.synth = None
         self.up.error = sigmaup[self.name].values*factor
         
         # All done
@@ -298,11 +307,15 @@ class gpstimeseries(SourceInv):
 
         # Set values
         self.north.value = np.array(north)
-        self.north.error = np.array(stdnorth)
+        self.north.synth = None
+        self.north.error = np.array(stdnorth)        
         self.east.value = np.array(east)
+        self.east.synth = None        
         self.east.error = np.array(stdeast)
         self.up.value = np.array(up)
+        self.up.synth = None                
         self.up.error = np.array(stdup)
+
 
         # All done
         return

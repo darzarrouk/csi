@@ -2719,12 +2719,12 @@ class gps(SourceInv):
             station = self.station[i]
             e, n, u = self.timeseries[station].getOffset(date1, date2, data='data')
             es, ns, us = self.timeseries[station].getOffset(date1, date2, data='std')
-            vel[i,0] = e
-            vel[i,1] = n
-            vel[i,2] = u
-            err[i,0] = es
-            err[i,1] = ns
-            err[i,2] = us
+            vel[i,0] = e[0]
+            vel[i,1] = n[0]
+            vel[i,2] = u[0]
+            err[i,0] = es[0]
+            err[i,1] = ns[0]
+            err[i,2] = us[0]
 
         # Get destination
         if destination in ('data'):
@@ -2923,5 +2923,5 @@ class gps(SourceInv):
 
         # All done
         return
-
+    
 #EOF

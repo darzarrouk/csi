@@ -111,6 +111,7 @@ class timeseries(SourceInv):
         # Values and errors
         self.value = np.zeros(self.time.shape)
         self.error = np.zeros(self.time.shape)
+        self.synth = None        
 
         # All done
         return

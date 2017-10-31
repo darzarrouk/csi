@@ -5,6 +5,7 @@ Written by Z. Duputel, November 2013.
 '''
 
 # Import external stuff
+import copy
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
@@ -144,5 +145,7 @@ class SourceInv(object):
         # All done
         return
     # ----------------------------------------------------------------------
+
+    
 
 #EOF
