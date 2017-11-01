@@ -270,8 +270,7 @@ class geodeticplot(object):
             lon = self.lonmin + (self.lonmax-self.lonmin)/6.
             lat = self.latmin + (self.latmax-self.latmin)/6.
             try:
-                xlocal, ylocal = self.carte(lon,lat)
-                self.carte.drawmapscale(xlocal, ylocal,
+                self.carte.drawmapscale(lon, lat,
                                         self.lonmin + (self.lonmax-self.lonmin)/2., 
                                         self.latmin + (self.latmax-self.latmin)/2., 
                                         drawMapScale, units='km', barstyle='simple', zorder=zorder)
@@ -389,9 +388,9 @@ class geodeticplot(object):
                     self.faille.plot(f[0], f[1], '-k')
 
         # Plot the surface trace
-        xloc,yloc = self.carte(lon,lat)
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         self.faille.plot(lon, lat, '-{}'.format(color), linewidth=2)
-        self.carte.plot(xloc, yloc, '-{}'.format(color), linewidth=2, zorder=2)
+        self.carte.plot(lon, lat, '-{}'.format(color), linewidth=2, zorder=2)
 
         # All done
         return
@@ -622,14 +621,14 @@ class geodeticplot(object):
                     cols[i,j] = scalarMap.to_rgba(slip[i,j])
 
             lon, lat = fault.xy2ll(x, y)
-            lon[lon<0.] += 360.
+            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             self.faille.plot_surface(lon, lat, -1.0*z, facecolors=cols, rstride=1, cstride=1, antialiased=True, linewidth=0)
 
             # On 2D?
             if plot_on_2d:
                 lon, lat = fault.xy2ll(X, Y)
-                xloc, yloc = self.carte(lon, lat)
-                self.carte.scatter(xloc, yloc, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder) 
+                lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+                self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder) 
 
             # Color Bar
             if colorbar:
@@ -639,13 +638,12 @@ class geodeticplot(object):
         elif method is 'scatter':
             # Do the scatter ploto
             lon, lat = fault.xy2ll(X, Y)
-            lon[lon<0.] += 360.
+            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             cb = self.faille.scatter3D(lon, lat, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax)
 
             # On 2D?
             if plot_on_2d:
-                xloc, yloc = self.carte(lon, lat)
-                self.carte.scatter(xloc, yloc, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder) 
+                self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder) 
 
             # put up a colorbar
             if colorbar:
@@ -728,7 +726,9 @@ class geodeticplot(object):
             vmax = val.max()
 
         # Plot
-        xloc, yloc = self.carte(stress.lon, stress.lat)
+        lon = stress.lon
+        lat = stress.lat
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         sc = self.carte.scatter(xloc, yloc, s=20, c=val, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
 
         # colorbar
@@ -767,6 +767,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = gps.lon
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Make the dictionary of the things to plot
@@ -797,8 +798,7 @@ class geodeticplot(object):
         for dName in Data:
             values = Data[dName]['Values']
             c = Data[dName]['Color']
-            xloc, yloc = self.carte(lon, lat)
-            p = self.carte.quiver(xloc, yloc,
+            p = self.carte.quiver(lon, lat,
                                   values[:,0], values[:,1], 
                                   width=0.005, color=c, 
                                   scale=scale, scale_units=scale_units, 
@@ -822,8 +822,7 @@ class geodeticplot(object):
                     'weight' : 'normal',
                     'size'   : 15}
             for lo, la, sta in zip(lon.tolist(), lat.tolist(), gps.station):
-                xloc, yloc = self.carte(lo, la)
-                self.carte.ax.text(xloc, yloc, sta, fontdict=font)
+                self.carte.ax.text(lo, la, sta, fontdict=font)
 
         # All done
         return
@@ -845,6 +844,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = gps.lon
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Initiate
@@ -888,8 +888,7 @@ class geodeticplot(object):
         for dName in Data:
             mark = Data[dName]['Markersize']
             V = Data[dName]['Values']
-            xloc, yloc = self.carte(lon, lat)
-            sc = self.carte.scatter(xloc, yloc, s=mark, c=V, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth, zorder=zorder)
+            sc = self.carte.scatter(lon, lat, s=mark, c=V, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth, zorder=zorder)
 
         # Colorbar
         if colorbar:
@@ -910,6 +909,7 @@ class geodeticplot(object):
         # Get the data
         d = gps.vel_los
         lon = gps.lon;
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Prepare the color limits
@@ -924,8 +924,7 @@ class geodeticplot(object):
         cmap = plt.get_cmap(cmap)
 
         # Plot
-        xloc, yloc = self.carte(lon, lat)
-        sc = self.carte.scatter(xloc, yloc, s=100, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.5, zorder=zorder)
+        sc = self.carte.scatter(lon, lat, s=100, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.5, zorder=zorder)
 
         # plot colorbar
         if colorbar:
@@ -966,12 +965,12 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = earthquakes.lon
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = earthquakes.lat
 
         # plot the earthquakes on the map if ask
         if '2d' in plot:
-            xloc, yloc = self.carte(lon, lat)
-            sc = self.carte.scatter(xloc, yloc, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1, zorder=zorder)
+            sc = self.carte.scatter(lon, lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1, zorder=zorder)
             if colorbar:
                 self.fig2.colorbar(sc, shrink=0.3, orientation='horizontal')
 
@@ -1022,11 +1021,11 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = fault.sim.lon
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = fault.sim.lat
 
         # Plot the insar
-        xloc, yloc = self.carte(lon, lat)
-        sc = self.carte.scatter(xloc, yloc, s=30, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.1)
+        sc = self.carte.scatter(lon, lat, s=30, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.1)
 
         # plot colorbar
         if colorbar:
@@ -1118,9 +1117,11 @@ class geodeticplot(object):
 
         elif plotType is 'scatter':
             lon = insar.lon
+            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             lat = insar.lat
-            xloc, yloc = self.carte(lon[::decim], lat[::decim])
-            sc = self.carte.scatter(xloc, yloc, s=30, c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=zorder)
+            sc = self.carte.scatter(lon[::decim], lat[::decim], s=30, 
+                                    c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, 
+                                    linewidth=0.0, zorder=zorder)
 
         else:
             print('Unknown plot type: {}'.format(plotType))
@@ -1220,9 +1221,9 @@ class geodeticplot(object):
 
         elif plotType is 'scatter':
             lon = corr.lon
+            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             lat = corr.lat
-            xloc, yloc = self.carte(lon[::decim], lat[::decim])
-            self.carte.scatter(xloc, yloc, s=10., c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=zorder)
+            self.carte.scatter(lon[::decim], lat[::decim], s=10., c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=zorder)
 
         else:
             assert False, 'unsupported plot type. Must be rect or scatter'
