@@ -1707,6 +1707,14 @@ class gps(SourceInv):
         Returns the matrix to estimate the full 2d strain tensor.
         Positive is clockwise for the rotation.
         Only works with 2D.
+
+        When buildin gthe estimator:
+        First column is translation along the x-axis
+        Second column is translation along the y-axis
+        Third column is the Epsilon_xx component
+        Fourth column is the Epsilon_xy component
+        Fifth column is the Epsilon_yy component
+        Sixth column is the Rotation term
         '''
 
         # Get the number of gps stations
