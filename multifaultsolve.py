@@ -737,7 +737,7 @@ class multifaultsolve(object):
         return
 
     def simpleSampler(self, priors, initialSample, nSample, nBurn, plotSampler=False,
-                            writeSamples=False, dryRun=False):
+                            writeSamples=False, dryRun=False, adaptiveDelay=300):
         '''
         Uses a Metropolis algorithme to sample the posterior distribution of the model 
         following Bayes's rule. This is exactly what is done in AlTar, but using an 
@@ -755,6 +755,8 @@ class multifaultsolve(object):
             * writeSamples  : Write the samples to a binary file.
             * dryRun        : If True, builds the sampler, saves it, but does not run.
                               This can be used for debugging.
+            * adaptiveDelay : Recompute the covariance of the proposal every adaptiveDelay 
+                              steps
 
         The result is stored in self.samples
         The variable mpost is the mean of the final sample set.
@@ -791,7 +793,7 @@ class multifaultsolve(object):
                 sys.exit(1)
 
         # Build the prior PDFs
-        Priors = []
+        priorFunctions = []
         for prior, init in zip(priors, initialSample):
             name = prior[0]
             function = prior[1]
@@ -808,25 +810,34 @@ class multifaultsolve(object):
                 print('This prior type has not been implemented yet...')
                 print('Although... You can do it :-)')
                 sys.exit(1)
-            Priors.append(p)
+            priorFunctions.append(p)
+
+        # Build the prior function
+        @pymc.stochastic
+        def prior(value=initialSample):
+            prob = 0.
+            for prior, val in zip(priorFunctions, value):
+                prior.set_value(val)
+                prob += prior.logp
+            return prob
 
         # Build the forward model
         @pymc.deterministic(plot=False)
-        def forward(theta=Priors):
-            return np.dot(G, np.array(theta))
+        def forward(theta=[prior]):
+            return G.dot(np.array(theta).squeeze())
 
         # Build the observation
         likelihood = pymc.MvNormalCov('Data', mu=forward, C=Cd, value=dobs, observed=True)
 
         # PDFs
-        PDFs = Priors + [likelihood]
+        PDFs = [prior,likelihood]
     
         # Create a sampler
         sampler = pymc.MCMC(PDFs)
 
         # Make sure we use Metropolis
-        for p in Priors:
-            sampler.use_step_method(pymc.Metropolis, p)
+        sampler.use_step_method(pymc.AdaptiveMetropolis, prior, delay=adaptiveDelay, 
+                                shrink_if_necessary=True)
 
         # if dryRun:
         if dryRun:
@@ -843,15 +854,15 @@ class multifaultsolve(object):
         # Recover data
         mpost = []
         samples = {}
-        for prior in priors:
+        for iprior, prior in enumerate(priors):
             name = prior[0]
-            samples[name] = sampler.trace(name)[:]
+            samples[name] = sampler.trace('prior')[:,iprior]
             mpost.append(np.mean(samples[name]))
 
         # Save things
         self.samples = samples
         self.sampler = sampler
-        self.priors = Priors
+        self.priors = priorFunctions
         self.likelihood = likelihood
         self.mpost = np.array(mpost)
 
@@ -861,7 +872,18 @@ class multifaultsolve(object):
             
         # Plot
         if plotSampler:
-            pymc.Matplot.plot(sampler, path=self.figurePath)
+            for iprior, prior in enumerate(priors):
+                trace = sampler.trace('prior')[:][:,iprior]
+                fig = plt.figure()
+                plt.subplot2grid((1,4), (0,0), colspan=3)
+                plt.plot([0, len(trace)], [trace.mean(), trace.mean()], 
+                         '--', linewidth=2)
+                plt.plot(trace, 'o-')
+                plt.title(prior[0])
+                plt.subplot2grid((1,4), (0,3), colspan=1)
+                plt.hist(trace, orientation='horizontal')
+                plt.savefig('{}.png'.format(prior[0]))
+            plt.show()
 
         # All done
         return
