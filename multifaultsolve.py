@@ -685,24 +685,33 @@ class multifaultsolve(object):
             return 0.5 * dataLikely + 0.5 * priorLikely
 
         # Define the moment magnitude inequality constraint function
-        def computeMwDiff(m, Mw_thresh, patchAreas):
+        def computeMwDiff(m, Mw_thresh, patchAreas, mu):
             """
             Ahhhhh hard coded shear modulus.
             """
             Npatch = len(self.patchAreas)
-            shearModulus = 22.5e9
-            moment = shearModulus * np.abs(np.dot(patchAreas, m[:Npatch]))
+            shearModulus = mu #22.5e9
+            slip = np.sqrt(m[:Npatch]**2+m[Npatch:2*Npatch]**2)
+            moment =  np.abs(np.dot(shearModulus * patchAreas, slip))
             if moment>0.:
-                Mw = 2.0 / 3.0 * np.log10(moment) - 6.0
+                Mw = 2.0 / 3.0 * (np.log10(moment) - 9.1)
+                print Mw
             else:
                 Mw = -6.0
             return np.array([Mw_thresh - Mw])
 
         # Define the constraints dictionary
         if Mw_thresh is not None:
+            # Get shear modulus values
+            mu = np.array(())
+            for fault in self.faults:
+                mu = np.append(mu,fault.mu)
+            if None in mu.tolist(): # If mu not set in one fault, fix it for all of them
+                mu = 22.5e9
+                
             constraints = {'type': 'ineq',
                            'fun': computeMwDiff,
-                           'args': (Mw_thresh, self.patchAreas)}
+                           'args': (Mw_thresh, self.patchAreas*1.e6, mu)}
         else:
             constraints = ()
 
