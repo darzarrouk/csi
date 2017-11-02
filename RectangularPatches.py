@@ -3050,10 +3050,15 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def computeAdjacencyMat(self, verbose=False):
+    def computeAdjacencyMat(self, verbose=False, patchinc='alongstrike'):
         """
         Computes the adjacency matrix for the fault geometry provided by ndip x nstrike. Values of 0
         indicate no adjacency while values of 1 indicate patches share an edge.
+        
+            * patchinc : For a patch N, if patch N+1 is located along-strike, patchinc 
+                         should be set to 'alongstrike' (default). If patch N+1 is located 
+                         along-dip, patchinc should be set to 'alongdip'.
+
         """
         if verbose:
             print('Computing adjacency matrix for fault %s' % self.name)
@@ -3066,23 +3071,42 @@ class RectangularPatches(Fault):
             depths = [ [p[j][2] for j in range(4)] for p in self.patch]
             depthRange = np.max(depths)-np.min(depths)
             self.numz = np.rint(depthRange/width)
+            print('The guess is that there is {} patches along dip'.format(np.int(self.numz)))
+            print('If that is not correct, please provide self.numz')
 
         # Get number of Patches along strike
         nstrike = np.int(npatch // self.numz)
+        self.numz = np.int(self.numz)
 
         # Create the matrix
         Jmat = np.zeros((npatch,npatch), dtype=int)
+        
+        if 'strike' in patchinc:
+            # Set diagonal k = 1
+            template = np.ones((nstrike,), dtype=int)
+            template[-1] = 0
+            repvec = np.tile(template, (1,self.numz)).flatten()[:-1]
+            Jmat[range(0,npatch-1),range(1,npatch)] = repvec
+        
+            # Set diagonal k = nstrike
+            nd = np.diag(Jmat, k=nstrike).size
+            Jmat[range(0,npatch-nstrike),range(nstrike,npatch)] = np.ones((nd,), dtype=int)
 
-        # Set diagonal k = 1
-        template = np.ones((nstrike,), dtype=int)
-        template[-1] = 0
-        repvec = np.tile(template, (1,self.numz)).flatten()[:-1]
-        Jmat[range(0,npatch-1),range(1,npatch)] = repvec
+        elif 'dip' in patchinc:
+            # Set diagonal k = 1
+            template = np.ones((self.numz,), dtype=int)
+            template[-1] = 0
+            repvec = np.tile(template, (1,nstrike)).flatten()[:-1]
+            Jmat[range(0,npatch-1),range(1,npatch)] = repvec
         
-        # Set diagonal k = nstrike
-        nd = np.diag(Jmat, k=nstrike).size
-        Jmat[range(0,npatch-nstrike),range(nstrike,npatch)] = np.ones((nd,), dtype=int)
-        
+            # Set diagonal k = nstrike
+            nd = np.diag(Jmat, k=self.numz).size
+            Jmat[range(0,npatch-self.numz),range(self.numz,npatch)] = np.ones((nd,), dtype=int)
+
+        else:
+            print('patchinc should either be ''alongstrike'' or ''alongdip''')
+            sys.exit(1)
+
         # Return symmetric part to fill lower triangular part
         self.adjacencyMat = Jmat + Jmat.T
 
