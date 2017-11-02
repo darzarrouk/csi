@@ -388,7 +388,8 @@ class geodeticplot(object):
                     self.faille.plot(f[0], f[1], '-k')
 
         # Plot the surface trace
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        lon[lon<0] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         self.faille.plot(lon, lat, '-{}'.format(color), linewidth=2)
         self.carte.plot(lon, lat, '-{}'.format(color), linewidth=2, zorder=2)
 
