@@ -941,7 +941,7 @@ class Fault(SourceInv):
         if verbose:
             print('---------------------------------')
             print('---------------------------------')
-            print("Building Green's functions for the data set ")\
+            print("Building Green's functions for the data set ")
             print("{} of type {} in a homogeneous half-space".format(data.name, 
                                                                      data.dtype))
 
