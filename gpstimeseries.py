@@ -147,6 +147,9 @@ class gpstimeseries(SourceInv):
         Format xyz
         '''
 
+        # Get months description
+        from .csiutils import months
+
         # Open, read, close file
         fin = open(filename, 'r')
         Lines = fin.readlines() 
@@ -162,20 +165,19 @@ class gpstimeseries(SourceInv):
             values = line.split()
             if values[0][0] == '#':
                 continue
-            isotime = values[0]
-            year  = int(isotime[:4])
-            month = int(isotime[5:7])
-            day   = int(isotime[8:10])
-            hour = int(isotime[11:13])
-            mins = int(isotime[14:16])
-            secd = int(isotime[17:19])
-            time.append(dt.datetime(year, month, day, hour, mins, secd))
-            east.append(float(values[1]))
-            north.append(float(values[2]))
-            up.append(float(values[3]))
-            stdeast.append(float(values[4]))
-            stdnorth.append(float(values[5]))
-            stdup.append(float(values[6]))
+            isotime = values[1]
+            yd = int(isotime[:2])
+            if yd<80: year = yd + 2000
+            if yd>=90: year = yd + 1900
+            month = months[isotime[2:5]]
+            day   = int(isotime[5:7])
+            time.append(dt.datetime(year, month, day, 0, 0, 0))
+            east.append(float(values[3]))
+            north.append(float(values[4]))
+            up.append(float(values[5]))
+            stdeast.append(float(values[6]))
+            stdnorth.append(float(values[7]))
+            stdup.append(float(values[8]))
 
         # Initiate some timeseries
         self.north = timeseries('North',
@@ -211,6 +213,7 @@ class gpstimeseries(SourceInv):
 
         # All done
         return
+
     def read_from_JPL(self, filename):
         '''
         Reads the time series from a file which has been sent from JPL.

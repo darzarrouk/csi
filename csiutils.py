@@ -10,7 +10,7 @@ except:
 # A Dictionary with the months
 
 months = {'JAN': 1,
-          'FEV': 2,
+          'FEB': 2,
           'MAR': 3, 
           'APR': 4, 
           'MAY': 5,
