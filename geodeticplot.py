@@ -380,8 +380,7 @@ class geodeticplot(object):
         # Plot the added faults before
         if add:
             for f in fault.addfaults:
-                if f[0]<0.:
-                    f += 360.
+                f[0][f[0]<0.] += 360.
                 self.carte.plot(f[0], f[1], '-k', zorder=zorder)
             for f in fault.addfaults:
                 if self.faille_flag:
@@ -397,7 +396,7 @@ class geodeticplot(object):
         return
 
     def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True,
-                     plot_on_2d=False, revmap=False, linewidth=1.0, 
+                     plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
                      transparency=0.0, factor=1.0, zorder=0):
         '''
         Args:
@@ -438,9 +437,9 @@ class geodeticplot(object):
 
         # set color business
         if revmap:
-            cmap = plt.get_cmap('jet_r')
+            cmap = plt.get_cmap(cmap)
         else:
-            cmap = plt.get_cmap('jet')
+            cmap = plt.get_cmap(cmap)
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
@@ -457,8 +456,7 @@ class geodeticplot(object):
                 z.append(-1.0*fault.patchll[p][i][2])
             verts = []
             for xi,yi,zi in zip(x,y,z):
-                if xi<0.:
-                    xi += 360.
+                if xi<0.: xi += 360.
                 verts.append((xi,yi,zi))
             rect = art3d.Poly3DCollection([verts])
             rect.set_facecolor(scalarMap.to_rgba(slip[p]))
@@ -483,8 +481,7 @@ class geodeticplot(object):
                     y.append(patch[i][1])
                 verts = []
                 for xi,yi in zip(x,y):
-                    if xi<0.:
-                        xi += 360.
+                    if xi<0.: xi += 360.
                     verts.append((xi,yi))
                 rect = colls.PolyCollection([verts])
                 rect.set_facecolor(scalarMap.to_rgba(slip[p]))
@@ -1110,8 +1107,7 @@ class geodeticplot(object):
                 y.append(corner[3])
                 verts = []
                 for xi,yi in zip(x,y):
-                    if xi<0.:
-                        xi += 360.
+                    if xi<0.: xi += 360.
                     verts.append((xi,yi))
                 rect = colls.PolyCollection([verts],linewidth=edgewidth)
                 rect.set_color(scalarMap.to_rgba(disp))
@@ -1214,8 +1210,7 @@ class geodeticplot(object):
                 y.append(corner[3])
                 verts = []
                 for xi,yi in zip(x,y):
-                    if xi<0.:
-                        xi += 360.
+                    if xi<0.: xi += 360.
                     verts.append((xi,yi))
                 rect = colls.PolyCollection([verts])
                 rect.set_color(scalarMap.to_rgba(disp))
