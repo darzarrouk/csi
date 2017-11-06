@@ -67,7 +67,7 @@ class explorefault(SourceInv):
         # All done
         return
 
-    def setPriors(self, bounds, datas=None):
+    def setPriors(self, bounds, datas=None, initialSample=None):
         '''
         Initializes the prior likelihood functions.
 
@@ -88,11 +88,22 @@ class explorefault(SourceInv):
 
             * datas         : Data sets that will be used. This is in case bounds has
                               tuples or floats for reference of an InSAR data set
+
+            * initialSample : An array the size of the list of bounds
+                              default is None and will be randomly set from the 
+                              prior PDFs
         '''
 
         # Make a list of priors
         if not hasattr(self, 'Priors'):
             self.Priors = []
+
+        # Check initialSample
+        if initialSample is None:
+            initialSample = []
+        else:
+            assert len(initialSample)==len(bounds), \
+                'Inconsistent size for initialSample: {}'.format(len(initialSample))
 
         # Iterate over the keys
         for key in self.keys:
@@ -113,6 +124,10 @@ class explorefault(SourceInv):
                 prior = pymc.Degenerate(key, bound)
             else:
                 assert False, 'Unknown bound type'
+
+            # Initial Sample
+            if len(initialSample)<len(bounds):
+                initialSample.append(prior.rand())
 
             # Save it
             self.Priors.append(prior)
@@ -140,10 +155,17 @@ class explorefault(SourceInv):
                 elif type(bound) is float:
                     prior = pymc.Degenerate('Reference {}'.format(data.name), 
                                             bound)
+                # Initial Sample
+                if len(initialSample)<len(bounds):
+                    initialSample.append(prior.rand())
+
                 # Store it
                 self.Priors.append(prior)
                 self.keys.append('Reference {}'.format(data.name))
                 data.refnumber = len(self.Priors)-1
+
+        # Save initial sample
+        self.initialSample = initialSample
 
         # All done
         return
@@ -228,7 +250,7 @@ class explorefault(SourceInv):
 
         # Build a planar fault
         fault.buildPatches(lon, lat, depth, strike, dip, 
-                       length, width, 1, 1, verbose=False)
+                           length, width, 1, 1, verbose=False)
 
         # Build the green's functions
         fault.buildGFs(data, vertical=vertical, slipdir='sd', verbose=False)
@@ -261,8 +283,17 @@ class explorefault(SourceInv):
             * nburn             : Numbero of steps to burn
         '''
 
+        # Define the stochastic function
+        @pymc.stochastic
+        def prior(value=self.initialSample):
+            prob = 0.
+            for prior, val in zip(self.Priors, value):
+                prior.set_value(val)
+                prob += prior.logp
+            return prob
+
         # Create a sampler
-        sampler = pymc.MCMC(self.Priors+self.Likelihoods)
+        sampler = pymc.MCMC([prior]+self.Likelihoods)
 
         # Make sure step method is what is asked for
         for prior in self.Priors:
@@ -292,19 +323,19 @@ class explorefault(SourceInv):
         specs = {}
 
         # Iterate over the keys
-        for key in self.keys:
+        for ikey, key in enumerate(self.keys):
 
             # Get it 
             if model=='mean':
-                value = self.sampler.trace(key)[:].mean()
+                value = self.sampler.trace('prior')[:][:,ikey].mean()
             elif model=='median':
-                value = self.sampler.trace(key)[:].median()
-            elif model=='std':
-                value = self.sampler.trace(key)[:].std()
+                value = self.sampler.trace('prior')[:][:,ikey].median()
+            elif model=='std':                     
+                value = self.sampler.trace('prior')[:][:,ikey].std()
             else: 
                 if type(model) is int:
                     assert type(model) is int, 'Model type unknown: {}'.format(model)
-                    value = self.sampler.trace(key)[model]
+                    value = self.sampler.trace('prior')[model,ikey]
                 elif type(model) is dict:
                     value = model[key]
 
@@ -339,7 +370,20 @@ class explorefault(SourceInv):
         '''
 
         # Plot the pymc stuff
-        pymc.Matplot.plot(self.sampler)
+        #pymc.Matplot.plot(self.sampler)
+        for iprior, prior in enumerate(self.Priors):
+            trace = self.sampler.trace('prior')[:][:,iprior]
+            fig = plt.figure()
+            plt.subplot2grid((1,4), (0,0), colspan=3)
+            plt.plot([0, len(trace)], [trace.mean(), trace.mean()], 
+                     '--', linewidth=2)
+            plt.plot(trace, 'o-')
+            plt.title(prior[0])
+            plt.subplot2grid((1,4), (0,3), colspan=1)
+            plt.hist(trace, orientation='horizontal')
+            #plt.savefig('{}.png'.format(prior[0]))
+        plt.show()
+
 
         # Get the model
         fault = self.returnModel(model=model)
@@ -355,7 +399,7 @@ class explorefault(SourceInv):
 
             # Check ref
             if 'Reference {}'.format(data.name) in self.keys:
-                data.synth += self.sampler.trace('Reference {}'.format(data.name))[:].mean()
+                data.synth += self.model['Reference {}'.format(data.name)]
 
             # Plot the data and synthetics
             cmin = np.min(data.vel)
@@ -382,8 +426,8 @@ class explorefault(SourceInv):
         fout = h5py.File(filename, 'w')
 
         # Create the data sets for the keys
-        for key in self.keys:
-            fout.create_dataset(key, data=self.sampler.trace(key)[:])
+        for ikey, key in enumerate(self.keys):
+            fout.create_dataset(key, data=self.sampler.trace('prior')[:][:,ikey])
 
         # Close file
         fout.close()

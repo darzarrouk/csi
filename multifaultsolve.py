@@ -836,7 +836,8 @@ class multifaultsolve(object):
             return G.dot(np.array(theta).squeeze())
 
         # Build the observation
-        likelihood = pymc.MvNormalCov('Data', mu=forward, C=Cd, value=dobs, observed=True)
+        likelihood = pymc.MvNormal('Data', mu=forward, tau=np.linalg.inv(Cd), 
+                                           value=dobs, observed=True)
 
         # PDFs
         PDFs = [prior,likelihood]

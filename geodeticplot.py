@@ -501,8 +501,11 @@ class geodeticplot(object):
         # All done
         return 
 
-    def faultTents(self, fault, slip='strikeslip', Norm=None, colorbar=True, method='surface', cmap='jet',
-            plot_on_2d=False, revmap=False, factor=1.0, npoints=10, xystrides=[100, 100], zorder=0):
+    def faultTents(self, fault, 
+                   slip='strikeslip', Norm=None, colorbar=True, 
+                   method='surface', cmap='jet', plot_on_2d=False, 
+                   revmap=False, factor=1.0, npoints=10, 
+                   xystrides=[100, 100], zorder=0):
         '''
         Args:
             * fault         : Fault class from verticalfault.
