@@ -351,8 +351,11 @@ class explorefault(SourceInv):
         specs = {}
 
         # Iterate over the keys
-        for ikey, key in enumerate(self.sampledKeys):
-
+        for key in self.sampledKeys:
+            
+            # Get index
+            ikey = self.sampledKeys[key]
+        
             # Get it 
             if model=='mean':
                 value = self.sampler.trace('prior')[:][:,ikey].mean()
@@ -414,8 +417,6 @@ class explorefault(SourceInv):
             plt.subplot2grid((1,4), (0,3), colspan=1)
             plt.hist(trace, orientation='horizontal')
             #plt.savefig('{}.png'.format(prior[0]))
-        plt.show()
-
 
         # Get the model
         fault = self.returnModel(model=model)
@@ -458,7 +459,8 @@ class explorefault(SourceInv):
         fout = h5py.File(filename, 'w')
 
         # Create the data sets for the keys
-        for ikey, key in enumerate(self.sampledKeys):
+        for key in self.sampledKeys:
+            ikey = self.sampledKeys[key]
             fout.create_dataset(key, data=self.sampler.trace('prior')[:][:,ikey])
 
         # Close file
