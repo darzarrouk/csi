@@ -576,7 +576,8 @@ class imagecovariance(object):
 
             # Get data 
             data = self.datasets[dname]
-
+            print('writing covariance output for {}'.format(dname)) # without this line, output was not written in some cases
+            
             # continue if nothing has been done
             if 'Covariogram' not in data.keys():
                 print('Nothing to be written for data set {}'.format(dname))
