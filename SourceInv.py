@@ -4,18 +4,27 @@ A base class for faults and datasets
 Written by Z. Duputel, November 2013.
 '''
 
+# Import external stuff
+import copy
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
 
+#class SourceInv
 class SourceInv(object):
     
+    # ----------------------------------------------------------------------
+    # Initialize class #
     def __init__(self,name,utmzone=None,ellps='WGS84',lon0=None, lat0=None):
         '''
+        Class implementing the geographical transform. This class will
+        be parent to almost all the classes in csi.
+
         Args:
             * name      : Instance Name 
             * utmzone   : UTM zone  (optional, default=None)
             * ellps     : ellipsoid (optional, default='WGS84')
+
         '''
 
         # Initialization
@@ -33,10 +42,22 @@ class SourceInv(object):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Lon lat Transform
     def ll2xy(self, lon, lat):
         '''
-        Do the lat/lon 2 utm transform
+        Do the lat/lon to UTM transform. 
+        Input is in degrees. UTM coordinates are returned in km.
+
+        Args:
+            * lon       : Longitude (deg)
+            * lat       : Latitude (deg)
+
+        Return:
+            * x         : UTM coordinate x (km)
+            * y         : UTM coordinate y (km)
         '''
 
         # Transpose 
@@ -48,21 +69,44 @@ class SourceInv(object):
 
         # All done
         return x, y
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # UTM transform
     def xy2ll(self, x, y):
         '''
-        Do the utm to lat/lon transform
+        Do the UTm to lat/lon transform.
+        Input is in km. Output is in degrees.
+
+        Args:
+            * x         : UTM longitude (km).
+            * y         : UTM latitude (km)
+
+        Return: 
+            * lon       : Longitude (degrees)
+            * lat       : Latitude (degree)
         '''
 
         # Transpose and return
         return self.putm(x*1000., y*1000., inverse=True)
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Set the UTM zone
     def set_utmzone(self, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
         '''
-        Set the utm zone of the fault.
+        Sets the UTM zone in the class.
+        Zone can be specified via its international number or 
+        one can specify the center of a custom UTM zone via lon0, lat0.
 
-        Args:
-            * utm           : UTM zone of the fault.
+        Kwargs:
+            * ellps         : Reference Ellipsoid
+
+            Method 1:
+                * utmzone       : International UTM zone number
+            Method 2: 
+                * lon0          : Longitude of the center of the custom UTM zone (deg)
+                * lat0          : Latitude of the center of the custom UTM zone (deg)
         '''
 
         # Cases
@@ -84,7 +128,10 @@ class SourceInv(object):
 
         # All done
         return        
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Checks that longitude is between 0 and 360 (kind of useless)
     def _checkLongitude(self):
         '''
         Iterates over the longitude array and checks if longitude is between 
@@ -97,5 +144,8 @@ class SourceInv(object):
 
         # All done
         return
+    # ----------------------------------------------------------------------
+
+    
 
 #EOF

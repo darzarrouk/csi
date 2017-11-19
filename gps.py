@@ -1677,7 +1677,7 @@ class gps(SourceInv):
 
         # Get GFs and parameters
         G = fault.G[self.name]['custom']
-        custom = fault.custom
+        custom = fault.custom[self.name]
 
         # Compute
         self.custompred = np.dot(G,custom)
@@ -1707,6 +1707,14 @@ class gps(SourceInv):
         Returns the matrix to estimate the full 2d strain tensor.
         Positive is clockwise for the rotation.
         Only works with 2D.
+
+        When buildin gthe estimator:
+        First column is translation along the x-axis
+        Second column is translation along the y-axis
+        Third column is the Epsilon_xx component
+        Fourth column is the Epsilon_xy component
+        Fifth column is the Epsilon_yy component
+        Sixth column is the Rotation term
         '''
 
         # Get the number of gps stations
@@ -2304,7 +2312,7 @@ class gps(SourceInv):
 
             if custom:
                 Gc = G['custom']
-                Sc = fault.custom
+                Sc = fault.custom[self.name]
                 cu_synth = np.dot(G, Sc)
                 N = 0
                 if east:
@@ -2479,7 +2487,7 @@ class gps(SourceInv):
 
         # All done
 
-    def initializeTimeSeries(self, start=None, end=None, 
+    def initializeTimeSeries(self, start=None, end=None, stationfile=False,
                                    sqlfile=None, time=None,  
                                    interval=1, verbose=False, los=False, 
                                    factor=1.):
@@ -2509,9 +2517,40 @@ class gps(SourceInv):
                                                               los=los)
             elif sqlfile is not None:
                 self.timeseries[station].read_from_sql(sqlfile, factor=factor)
+            elif stationfile:
+                filename = '{}.dat'.format(station)
+                self.timeseries[station].read_from_file(filename, verbose=verbose)
 
         # Save
         self.factor = factor
+
+        # Create the time vector
+        self.time = np.unique(np.hstack([self.timeseries[station].time \
+                                for station in self.timeseries]))
+
+        # All done
+        return
+
+    def writeTimeSeries(self, verbose=False, outdir='./', steplike=False):
+        '''
+        Writes the time series of displacement in text files.
+        
+        Filenames are entirely determined from the name of the station
+
+                example: STAT.dat, COPO.dat, ISME.dat ...
+        '''
+
+        # Iterate over the time series
+        for station in self.timeseries:
+
+            # Get timeserues
+            timeseries = self.timeseries[station]
+
+            # Create a filename
+            filename = '{}.dat'.format(station)
+
+            # Write 2 file
+            timeseries.write2file(filename, steplike=steplike)
 
         # All done
         return
@@ -2572,8 +2611,102 @@ class gps(SourceInv):
         # Set factor
         gpsNew.factor = self.factor
 
+        # Build Cd
+        gpsNew.buildCd()
+
         # all done
         return gpsNew
+
+    def simulateTimeSeriesFromSlipHistory(self, slip, scale=1., verbose=True, elasticstructure='okada', sourceSpacing=0.1):
+        '''
+        Takes a seismolocation object with CMT informations and computes the time 
+        series from these.
+        Args:
+            * sismo     : seismiclocation object (needs to have CMTinfo object and 
+                          the corresponding faults list of dislocations).
+            * scale     : Scales the results (default is 1.).
+        '''
+
+        # Check sismo
+        assert hasattr(sismo, 'CMTinfo'),\
+                '{} object (seismiclocation class) needs a CMTinfo dictionary...'\
+                .format(sismo.name)
+        assert hasattr(sismo, 'faults'),\
+                '{} object (seismiclocation class) needs a list of faults. \
+                Please run Cmt2Dislocation...'.format(sismo.name)
+            
+        # Check self
+        assert hasattr(self, 'timeseries'), \
+                '{} object (gps class) needs a timeseries list. \
+                Please run initializeTimeSeries...'.format(self.name)
+
+        # Re-set the time series
+        for station in self.station:
+            self.timeseries[station].east.value[:] = 0.0
+            self.timeseries[station].north.value[:] = 0.0
+            self.timeseries[station].up.value[:] = 0.0
+
+        # Loop over the earthquakes
+        for i in range(len(sismo.CMTinfo)):
+
+            # Get the time of the earthquake
+            eqTime = sismo.time[i]
+
+            # Get the fault
+            fault = sismo.faults[i]
+
+            # Verbose
+            if verbose:
+                name = sismo.CMTinfo[i]['event name']
+                mag = sismo.mag[i]
+                strike = sismo.CMTinfo[i]['strike']
+                dip = sismo.CMTinfo[i]['dip']
+                rake = sismo.CMTinfo[i]['rake']
+                depth = sismo.CMTinfo[i]['depth']
+                print('Running for event {}:'.format(name))
+                print('                 Mw : {}'.format(mag))
+                print('               Time : {}'.format(eqTime.isoformat()))
+                print('             strike : {}'.format(strike*180./np.pi))
+                print('                dip : {}'.format(dip*180./np.pi))
+                print('               rake : {}'.format(rake*180./np.pi))
+                print('              depth : {}'.format(depth))
+                print('        slip vector : {}'.format(fault.slip))
+                
+            # Compute the Green's functions
+            if elasticstructure in ('okada'):
+                fault.buildGFs(self, verbose=verbose, method='okada')
+            else:
+                fault.kernelsEDKS = elasticstructure
+                fault.sourceSpacing = sourceSpacing
+                fault.buildGFs(self, verbose=verbose, method='edks')
+
+            # Compute the synthetics
+            self.buildsynth([fault])
+
+            # Loop over the stations to add the step
+            for station in self.station:
+
+                # Get some informations
+                TStime = np.array(self.timeseries[station].time)
+                TSlength = len(TStime)
+            
+                # Create the time vector
+                step = np.zeros(TSlength)
+
+                # Put ones where needed
+                step[TStime>eqTime] = 1.0
+
+                # Add step to the time series
+                e, n, u = self.getvelo(station, data='synth')
+                e = step*e*scale
+                n = step*n*scale
+                u = step*u*scale
+                self.timeseries[station].east.value += e
+                self.timeseries[station].north.value += n
+                self.timeseries[station].up.value += u
+
+        # All done
+        return
     
     def simulateTimeSeriesFromCMT(self, sismo, scale=1., verbose=True, elasticstructure='okada', sourceSpacing=0.1):
         '''
@@ -2685,12 +2818,12 @@ class gps(SourceInv):
             station = self.station[i]
             e, n, u = self.timeseries[station].getOffset(date1, date2, data='data')
             es, ns, us = self.timeseries[station].getOffset(date1, date2, data='std')
-            vel[i,0] = e
-            vel[i,1] = n
-            vel[i,2] = u
-            err[i,0] = es
-            err[i,1] = ns
-            err[i,2] = us
+            vel[i,0] = e[0]
+            vel[i,1] = n[0]
+            vel[i,2] = u[0]
+            err[i,0] = es[0]
+            err[i,1] = ns[0]
+            err[i,2] = us[0]
 
         # Get destination
         if destination in ('data'):
@@ -2847,11 +2980,7 @@ class gps(SourceInv):
         '''
         # Get lons lats
         lonmin = self.lon.min()-expand
-        if lonmin<0.:
-            lonmin += 360.
         lonmax = self.lon.max()+expand
-        if lonmax<0.:
-            lonmax += 360.
         latmin = self.lat.min()-expand
         latmax = self.lat.max()+expand
 
@@ -2893,5 +3022,5 @@ class gps(SourceInv):
 
         # All done
         return
-
+    
 #EOF

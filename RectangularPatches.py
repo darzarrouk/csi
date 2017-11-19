@@ -509,11 +509,15 @@ class RectangularPatches(Fault):
 
         # Loop on the patches
         for u in range(len(self.patch)):
+            
+            # Get the patch
             p = self.patch[u]
             p1, p2, p3, p4 = self.patch[u]
+        
             # 1. Get the two top points
             pt1 = p[0]; x1, y1, z1 = pt1 
             pt2 = p[1]; x2, y2, z2 = pt2
+            
             # 2. Get the strike of this patch
             vs = p2-p1
             vd = p4-p1
@@ -522,12 +526,14 @@ class RectangularPatches(Fault):
             if vnz<0.:
                 vs *= -1.
             strike = np.arctan2( vs[0],vs[1] )            
+            
             # 3. Get the dip of this patch 
             dip1 = np.arcsin((p4[2] - p1[2]) / np.sqrt((p1[0] - p4[0])**2 
                            + (p1[1] - p4[1])**2 + (p1[2] - p4[2])**2))
             dip2 = np.arcsin((p3[2] - p2[2]) / np.sqrt( (p2[0] - p3[0])**2 
                            + (p2[1] - p3[1])**2 + (p2[2] - p3[2])**2))
             dip = 0.5 * (dip1 + dip2)
+            
             # 4. compute the position of the bottom corners  
             width = np.sqrt((p1[0] - p4[0])**2 + (p1[1] - p4[1])**2 + (p1[2] - p4[2])**2)
             wc = width * np.cos(dip)
@@ -541,8 +547,10 @@ class RectangularPatches(Fault):
             z4 = z1 + ws
             pt3 = [x3, y3, z3]
             pt4 = [x4, y4, z4]            
+            
             # set up the patch
             self.equivpatch.append(np.array([pt1, pt2, pt3, pt4]))
+            
             # Deal with the lon lat
             lon1, lat1 = self.putm(x1*1000., y1*1000., inverse=True)
             lon2, lat2 = self.putm(x2*1000., y2*1000., inverse=True)
@@ -552,6 +560,7 @@ class RectangularPatches(Fault):
             pt2 = [lon2, lat2, z2]
             pt3 = [lon3, lat3, z3]
             pt4 = [lon4, lat4, z4]
+            
             # set up the patchll
             self.equivpatchll.append(np.array([pt1, pt2, pt3, pt4]))
 
@@ -1090,7 +1099,7 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def getEllipse(self,patch,ellipseCenter=None,Npoints=10,factor=1.0,nsigma=1.):
+    def getEllipse(self,patch,ellipseCenter=None,Npoints=100,factor=1.0,nsigma=1.):
         '''
         Compute the ellipse error given Cm for a given patch
         args:
@@ -1223,10 +1232,11 @@ class RectangularPatches(Fault):
         '''
 
         # Remove the patch
+        if len(self.equivpatch)==len(self.patch): # Check if equivpatch exists
+            del self.equivpatch[patch]
+            del self.equivpatchll[patch]
         del self.patch[patch]
         del self.patchll[patch]
-        if len(self.equivpatch)==len(self.patch):
-            del self.equivpatch[patch]
         self.slip = np.delete(self.slip, patch, axis=0)
         if hasattr(self, 'index_parameter'):
             self.index_parameter = np.delete(self.index_parameter, patch, axis=0)
@@ -3040,10 +3050,15 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def computeAdjacencyMat(self, verbose=False):
+    def computeAdjacencyMat(self, verbose=False, patchinc='alongstrike'):
         """
         Computes the adjacency matrix for the fault geometry provided by ndip x nstrike. Values of 0
         indicate no adjacency while values of 1 indicate patches share an edge.
+        
+            * patchinc : For a patch N, if patch N+1 is located along-strike, patchinc 
+                         should be set to 'alongstrike' (default). If patch N+1 is located 
+                         along-dip, patchinc should be set to 'alongdip'.
+
         """
         if verbose:
             print('Computing adjacency matrix for fault %s' % self.name)
@@ -3056,23 +3071,42 @@ class RectangularPatches(Fault):
             depths = [ [p[j][2] for j in range(4)] for p in self.patch]
             depthRange = np.max(depths)-np.min(depths)
             self.numz = np.rint(depthRange/width)
+            print('The guess is that there is {} patches along dip'.format(np.int(self.numz)))
+            print('If that is not correct, please provide self.numz')
 
         # Get number of Patches along strike
         nstrike = np.int(npatch // self.numz)
+        self.numz = np.int(self.numz)
 
         # Create the matrix
         Jmat = np.zeros((npatch,npatch), dtype=int)
+        
+        if 'strike' in patchinc:
+            # Set diagonal k = 1
+            template = np.ones((nstrike,), dtype=int)
+            template[-1] = 0
+            repvec = np.tile(template, (1,self.numz)).flatten()[:-1]
+            Jmat[range(0,npatch-1),range(1,npatch)] = repvec
+        
+            # Set diagonal k = nstrike
+            nd = np.diag(Jmat, k=nstrike).size
+            Jmat[range(0,npatch-nstrike),range(nstrike,npatch)] = np.ones((nd,), dtype=int)
 
-        # Set diagonal k = 1
-        template = np.ones((nstrike,), dtype=int)
-        template[-1] = 0
-        repvec = np.tile(template, (1,self.numz)).flatten()[:-1]
-        Jmat[range(0,npatch-1),range(1,npatch)] = repvec
+        elif 'dip' in patchinc:
+            # Set diagonal k = 1
+            template = np.ones((self.numz,), dtype=int)
+            template[-1] = 0
+            repvec = np.tile(template, (1,nstrike)).flatten()[:-1]
+            Jmat[range(0,npatch-1),range(1,npatch)] = repvec
         
-        # Set diagonal k = nstrike
-        nd = np.diag(Jmat, k=nstrike).size
-        Jmat[range(0,npatch-nstrike),range(nstrike,npatch)] = np.ones((nd,), dtype=int)
-        
+            # Set diagonal k = nstrike
+            nd = np.diag(Jmat, k=self.numz).size
+            Jmat[range(0,npatch-self.numz),range(self.numz,npatch)] = np.ones((nd,), dtype=int)
+
+        else:
+            print('patchinc should either be ''alongstrike'' or ''alongdip''')
+            sys.exit(1)
+
         # Return symmetric part to fill lower triangular part
         self.adjacencyMat = Jmat + Jmat.T
 

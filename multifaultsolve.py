@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 class multifaultsolve(object):
 
-    def __init__(self, name, faults):
+    def __init__(self, name, faults, verbose=True):
         '''
         Class initialization routine.
 
@@ -23,9 +23,12 @@ class multifaultsolve(object):
             * name          : Name of the project.
             * faults        : List of faults from verticalfault.
         '''
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initializing solver object")
+
+        self.verbose = verbose
+        if self.verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initializing solver object")
 
         # Ready to compute?
         self.ready = False
@@ -177,7 +180,8 @@ class multifaultsolve(object):
         '''
 
         # Prepare the table
-        print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format('Fault Name', 'Strike Slip', 'Dip Slip', 'Tensile', 'Coupling', 'Extra Parms'))
+        if self.verbose:
+            print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format('Fault Name', 'Strike Slip', 'Dip Slip', 'Tensile', 'Coupling', 'Extra Parms'))
 
         # initialize the counters
         ns = 0
@@ -232,7 +236,8 @@ class multifaultsolve(object):
                 op = 'None'
 
             # print things
-            print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
+            if self.verbose:
+                print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
 
             # Store details
             self.paramDescription[fault.name] = {}
@@ -352,9 +357,14 @@ class multifaultsolve(object):
 
             # check
             if hasattr(fault, 'NumberCustom'):
-                se = st + fault.NumberCustom
-                fault.custom = fault.mpost[st:se]
-                st += fault.NumberCustom
+                fault.custom = {} # Initialize dictionnary
+                # Get custom params for each dataset
+                for dset in fault.datanames:
+                    if 'custom' in fault.G[dset].keys():
+                        nc = fault.G[dset]['custom'].shape[1] # Get number of param for this dset
+                        se = st + nc
+                        fault.custom[dset] = fault.mpost[st:se]
+                        st += nc
 
             # Get the polynomial/orbital/helmert values if they exist
             fault.polysol = {}
@@ -477,10 +487,11 @@ class multifaultsolve(object):
         # Import things
         import scipy.linalg as scilin
 
-        # Print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Computing the Unregularized Least Square Solution")
+        if self.verbose:
+            # Print
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Computing the Unregularized Least Square Solution")
 
         # Get the matrixes and vectors
         G = self.G
@@ -532,10 +543,11 @@ class multifaultsolve(object):
         # Import things
         import scipy.linalg as scilin
 
-        # Print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Computing the Generalized Inverse")
+        if self.verbose:
+            # Print
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Computing the Generalized Inverse")
 
         # Get the matrixes and vectors
         G = self.G
@@ -614,10 +626,11 @@ class multifaultsolve(object):
         # Check the provided method is valid
         assert method in ['SLSQP', 'COBYLA', 'nnls', 'TNC', 'L-BFGS-B'], 'unsupported minimizing method'
 
-        # Print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Computing the Constrained least squares solution")
+        if self.verbose:
+            # Print
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Computing the Constrained least squares solution")
 
         # Get the matrixes and vectors
         G = self.G
@@ -634,7 +647,8 @@ class multifaultsolve(object):
             return
 
         # Get the inverse of Cm
-        print ("Computing the inverse of the model covariance")
+        if self.verbose:
+            print ("Computing the inverse of the model covariance")
         if rcond is None:
             iCm = scilin.inv(Cm)
         else:
@@ -646,7 +660,8 @@ class multifaultsolve(object):
             return
 
         # Get the inverse of Cd
-        print ("Computing the inverse of the data covariance")
+        if self.verbose:
+            print ("Computing the inverse of the data covariance")
         if rcond is None:
             iCd = scilin.inv(Cd)
         else:
@@ -670,30 +685,40 @@ class multifaultsolve(object):
             return 0.5 * dataLikely + 0.5 * priorLikely
 
         # Define the moment magnitude inequality constraint function
-        def computeMwDiff(m, Mw_thresh, patchAreas):
+        def computeMwDiff(m, Mw_thresh, patchAreas, mu):
             """
             Ahhhhh hard coded shear modulus.
             """
             Npatch = len(self.patchAreas)
-            shearModulus = 22.5e9
-            moment = shearModulus * np.abs(np.dot(patchAreas, m[:Npatch]))
+            shearModulus = mu #22.5e9
+            slip = np.sqrt(m[:Npatch]**2+m[Npatch:2*Npatch]**2)
+            moment =  np.abs(np.dot(shearModulus * patchAreas, slip))
             if moment>0.:
-                Mw = 2.0 / 3.0 * np.log10(moment) - 6.0
+                Mw = 2.0 / 3.0 * (np.log10(moment) - 9.1)
+                print Mw
             else:
                 Mw = -6.0
             return np.array([Mw_thresh - Mw])
 
         # Define the constraints dictionary
         if Mw_thresh is not None:
+            # Get shear modulus values
+            mu = np.array(())
+            for fault in self.faults:
+                mu = np.append(mu,fault.mu)
+            if None in mu.tolist(): # If mu not set in one fault, fix it for all of them
+                mu = 22.5e9
+                
             constraints = {'type': 'ineq',
                            'fun': computeMwDiff,
-                           'args': (Mw_thresh, self.patchAreas)}
+                           'args': (Mw_thresh, self.patchAreas*1.e6, mu)}
         else:
             constraints = ()
 
         # Call solver
         if method == 'nnls':
-            print("Performing non-negative least squares")
+            if self.verbose:
+                print("Performing non-negative least squares")
             # Compute cholesky decomposition of iCd and iCm
             L = np.linalg.cholesky(iCd)
             M = np.linalg.cholesky(iCm)
@@ -704,7 +729,8 @@ class multifaultsolve(object):
             m = nnls(F, b)[0] + mprior
         
         else:
-            print("Performing constrained minimzation")
+            if self.verbose:            
+                print("Performing constrained minimzation")
             options = {'disp': checkIter, 'maxiter': iterations}
             if method=='L-BFGS-B':
                 options['maxfun']= maxfun
@@ -720,7 +746,7 @@ class multifaultsolve(object):
         return
 
     def simpleSampler(self, priors, initialSample, nSample, nBurn, plotSampler=False,
-                            writeSamples=False, dryRun=False):
+                            writeSamples=False, dryRun=False, adaptiveDelay=300):
         '''
         Uses a Metropolis algorithme to sample the posterior distribution of the model 
         following Bayes's rule. This is exactly what is done in AlTar, but using an 
@@ -738,17 +764,20 @@ class multifaultsolve(object):
             * writeSamples  : Write the samples to a binary file.
             * dryRun        : If True, builds the sampler, saves it, but does not run.
                               This can be used for debugging.
+            * adaptiveDelay : Recompute the covariance of the proposal every adaptiveDelay 
+                              steps
 
         The result is stored in self.samples
         The variable mpost is the mean of the final sample set.
         '''
 
-        # Print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Running a Metropolis algorythm to")
-        print ("sample the posterior PDFs of the ")
-        print ("  model: P(m|d) = C P(m) P(d|m)  ")
+        if self.verbose:        
+            # Print
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Running a Metropolis algorythm to")
+            print ("sample the posterior PDFs of the ")
+            print ("  model: P(m|d) = C P(m) P(d|m)  ")
 
         # Import 
         import pymc
@@ -773,7 +802,7 @@ class multifaultsolve(object):
                 sys.exit(1)
 
         # Build the prior PDFs
-        Priors = []
+        priorFunctions = []
         for prior, init in zip(priors, initialSample):
             name = prior[0]
             function = prior[1]
@@ -790,25 +819,35 @@ class multifaultsolve(object):
                 print('This prior type has not been implemented yet...')
                 print('Although... You can do it :-)')
                 sys.exit(1)
-            Priors.append(p)
+            priorFunctions.append(p)
+
+        # Build the prior function
+        @pymc.stochastic
+        def prior(value=initialSample):
+            prob = 0.
+            for prior, val in zip(priorFunctions, value):
+                prior.set_value(val)
+                prob += prior.logp
+            return prob
 
         # Build the forward model
         @pymc.deterministic(plot=False)
-        def forward(theta=Priors):
-            return np.dot(G, np.array(theta))
+        def forward(theta=[prior]):
+            return G.dot(np.array(theta).squeeze())
 
         # Build the observation
-        likelihood = pymc.MvNormalCov('Data', mu=forward, C=Cd, value=dobs, observed=True)
+        likelihood = pymc.MvNormal('Data', mu=forward, tau=np.linalg.inv(Cd), 
+                                           value=dobs, observed=True)
 
         # PDFs
-        PDFs = Priors + [likelihood]
+        PDFs = [prior,likelihood]
     
         # Create a sampler
         sampler = pymc.MCMC(PDFs)
 
         # Make sure we use Metropolis
-        for p in Priors:
-            sampler.use_step_method(pymc.Metropolis, p)
+        sampler.use_step_method(pymc.AdaptiveMetropolis, prior, delay=adaptiveDelay, 
+                                shrink_if_necessary=True)
 
         # if dryRun:
         if dryRun:
@@ -825,15 +864,15 @@ class multifaultsolve(object):
         # Recover data
         mpost = []
         samples = {}
-        for prior in priors:
+        for iprior, prior in enumerate(priors):
             name = prior[0]
-            samples[name] = sampler.trace(name)[:]
+            samples[name] = sampler.trace('prior')[:,iprior]
             mpost.append(np.mean(samples[name]))
 
         # Save things
         self.samples = samples
         self.sampler = sampler
-        self.priors = Priors
+        self.priors = priorFunctions
         self.likelihood = likelihood
         self.mpost = np.array(mpost)
 
@@ -843,7 +882,18 @@ class multifaultsolve(object):
             
         # Plot
         if plotSampler:
-            pymc.Matplot.plot(sampler, path=self.figurePath)
+            for iprior, prior in enumerate(priors):
+                trace = sampler.trace('prior')[:][:,iprior]
+                fig = plt.figure()
+                plt.subplot2grid((1,4), (0,0), colspan=3)
+                plt.plot([0, len(trace)], [trace.mean(), trace.mean()], 
+                         '--', linewidth=2)
+                plt.plot(trace, 'o-')
+                plt.title(prior[0])
+                plt.subplot2grid((1,4), (0,3), colspan=1)
+                plt.hist(trace, orientation='horizontal')
+                plt.savefig('{}.png'.format(prior[0]))
+            plt.show()
 
         # All done
         return

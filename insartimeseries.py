@@ -60,32 +60,17 @@ class insartimeseries(insar):
         # All done
         return
 
-    def initializeTimeSeries(self, lon, lat, incidence=None, heading=None, elevation=None, Dates=None, Start=None, Increment=None, Steps=None, dtype='f'):
+    def setLonLat(self, lon, lat, incidence=None, heading=None, elevation=None):
         '''
-        Initializes the time series object using a series of dates.
+        Sets the lon and lat array and initialize things.
+
         Args:
             * lon           : Can be an array or a string.
             * lat           : Can be an array or a string.
             * incidence     : Can be an array or a string.
             * heading       : Can be an array or a string.
             * elevation     : Can be an array or a string.
-        Can give different inputs:
-        Mode 1
-            * Dates         : List of dates (datetime object)
-        Mode 2
-            * Start         : Starting date (datetime object)
-            * Increment     : Increment in days
-            * Steps         : How many steps
         '''
-
-        # Set up a list of Dates
-        if Dates is not None:
-            self.dates = Dates
-        else:
-            assert Start is not None, 'Need a starting point...'
-            assert Increment is not None, 'Need an increment in days...'
-            assert Steps is not None, 'Need a number of steps...'
-            self.dates = [dt.datetime.fromordinal(Start.toordinal()+Increment*i) for i in range(Steps)] 
 
         # Get some size
         if type(lon) is str:
@@ -102,18 +87,99 @@ class insartimeseries(insar):
             self.elevation.read_from_binary(elevation, lon, lat, incidence=None, heading=None, remove_nan=False, remove_zeros=False)
             self.z = self.elevation.vel
 
+        # All done
+        return
+
+    def initializeTimeSeries(self, time=None, start=None, end=None, increment=None,
+                                   steps=None, dtype='f'):
+        '''
+        Initializes the time series object using a series of dates.
+        Can give different inputs:
+        Mode 1
+            * time          : List of dates (datetime object)
+        Mode 2
+            * start         : Starting date (datetime object)
+            * end           : Ending date
+            * increment     : Increment of time in days
+            * steps         : How many steps
+        '''
+
+        # Set up a list of Dates
+        if time is not None:
+            self.time = np.array(time)
+        else:
+            assert start is not None, 'Need a starting point...'
+            assert increment is not None, 'Need an increment in days...'
+            assert steps is not None, 'Need a number of steps...'
+            self.time = np.array([dt.datetime.fromordinal(start.toordinal()+increment*i)\
+                    for i in range(steps)])
+
         # Create timeseries
         self.timeseries = []
 
         # Create an insarrate instance for each step
-        for date in self.dates:
-            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
-            sar.read_from_binary(np.zeros((nSamples,)), lon, lat, incidence=incidence, heading=heading, dtype=dtype, remove_nan=False, remove_zeros=False)
+        for date in self.time:
+            sar = insar(date.isoformat(), utmzone=self.utmzone, verbose=False, 
+                        lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+            sar.read_from_binary(np.zeros(self.lon.shape), self.lon, self.lat, 
+                                 incidence=self.incidence, heading=self.heading, 
+                                 dtype=dtype, remove_nan=False, remove_zeros=False)
             self.timeseries.append(sar)
 
         # All done
         return
-    
+ 
+    def buildCd(self, sigma, lam, function='exp', diagonalVar=False,
+                      normalizebystd=False):
+        '''
+        Builds the full Covariance matrix from values of sigma and lambda.
+
+        If function='exp':
+
+            Cov(i,j) = sigma*sigma * exp(-d[i,j] / lam)
+
+        elif function='gauss':
+
+            Cov(i,j) = sigma*sigma * exp(-(d[i,j]*d[i,j])/(2*lam))
+
+        Args:
+            * sigma             : Sigma term of the covariance
+            * lam               : Caracteristic length of the covariance
+            * function          : Can be 'gauss' or 'exp'
+            * diagonalVar       : Substitute the diagonal by the standard deviation
+                                  of the measurement squared
+        '''
+
+        # Iterate over the time serie
+        for sar in self.timeseries:
+            sar.buildCd(sigma, lam, function=function, 
+                        diagonalVar=diagonalVar, normalizebystd=normalizebystd)
+
+        # All done
+        return
+
+    def getInsarAtDate(self, date, verbose=True):
+        '''
+        Given a datetime instance, returns the corresponding insar instance.
+
+        Args:
+            * date          : datetime instance.
+        '''
+
+        # Find the right index
+        udate = np.flatnonzero(self.time==date)
+
+        # All done 
+        if udate.size==1:
+            # Speak to me
+            if verbose:
+                print('Returning insar image at date {}'.format(self.time[udate[0]]))
+            return self.timeseries[udate[0]]
+        else:
+            if verbose:
+                print('No date found')
+            return None
+
     def setTimeSeries(self, timeseries):
         '''
         Sets the values in the time series.
@@ -154,18 +220,49 @@ class insartimeseries(insar):
             elif len(date)==1:
                 print('Unknow date format...')
                 sys.exit(1)
-        assert (type(date) is type(self.dates[0])), 'Provided date can be \n \
+        assert (type(date) is type(self.time[0])), 'Provided date can be \n \
                 tuple of (year, month, day), \n \
                 tuple of (year, month, day ,hour, min,s), \n \
                 datetime.datetime object'
 
         # Get the reference
-        i = np.flatnonzero(np.array(self.dates)==date)[0]
+        i = np.flatnonzero(np.array(self.time)==date)[0]
         reference = copy.deepcopy(self.timeseries[i].vel)
 
         # Reference
         for ts in self.timeseries:
             ts.vel -= reference
+
+        # All done
+        return
+
+    def write2h5file(self, h5file, field='recons'):
+        '''
+        Writes the time series in a h5file
+
+        Args:
+            * h5file        : Output h5file
+
+        Kwargs:
+            * field         : name of the field in the h5 file
+        '''
+
+        # Open the file
+        h5out = h5py.File(h5file, 'w')
+
+        # Create the data field
+        time = h5out.create_dataset('dates', shape=(len(self.timeseries),))
+        data = h5out.create_dataset(field, shape=(len(self.timeseries), len(self.timeseries[0].lon), 1))
+
+        # Iterate over time
+        for itime, date in enumerate(self.time):
+
+            # Get the time series
+            data[itime,:,0] = self.timeseries[itime].vel
+            time[itime] = date.toordinal()
+
+        # Close the file
+        h5out.close()
 
         # All done
         return
@@ -239,9 +336,10 @@ class insartimeseries(insar):
 
         # Get the time
         dates = h5in['dates']
-        self.dates = []
+        self.time = []
         for i in range(nDates):
-            self.dates.append(dt.datetime.fromordinal(int(dates[i])))
+            self.time.append(dt.datetime.fromordinal(int(dates[i])))
+        self.time = np.array(self.time)
 
         # Create a list to hold the dates
         self.timeseries = []
@@ -250,7 +348,7 @@ class insartimeseries(insar):
         for i in range(nDates):
             
             # Get things
-            date = self.dates[i]
+            date = self.time[i]
             dat = data[i,:,:]
 
             # Mask?
@@ -262,7 +360,7 @@ class insartimeseries(insar):
                 dat[:,:] = 0.
 
             # Create an insar object
-            sar = insar(date.isoformat(), utmzone=self.utmzone, 
+            sar = insar('{} {}'.format(self.name,date.isoformat()), utmzone=self.utmzone, 
                         verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
             # Put thing in the insarrate object
@@ -309,6 +407,7 @@ class insartimeseries(insar):
             if zfile is not None:
                 elevation.reject_pixel(uu)
             self.reject_pixel(uu)
+        h5in.close()
 
         # all done
         return
@@ -364,18 +463,18 @@ class insartimeseries(insar):
             elif len(date)==1:
                 print('Unknow date format...')
                 sys.exit(1)
-        assert (type(date) is type(self.dates[0])), 'Provided date can be \n \
+        assert (type(date) is type(self.time[0])), 'Provided date can be \n \
                 tuple of (year, month, day), \n \
                 tuple of (year, month, day ,hour, min,s), \n \
                 datetime.datetime object'
 
         # Find the date
-        i = np.flatnonzero(np.array(self.dates)==date)
+        i = np.flatnonzero(self.time==date)
 
         # Remove it
         if len(i)>0:
             del self.timeseries[i[0]]
-            del self.dates[i[0]]
+            del self.time[i[0]]
         else:
             print('No date to remove')
 
@@ -407,7 +506,7 @@ class insartimeseries(insar):
         Time = []
 
         # Iterate over the dates
-        for date in self.dates:
+        for date in self.time:
             Time.append(date.toordinal())
 
         # Convert to years
@@ -416,11 +515,8 @@ class insartimeseries(insar):
         # Reference
         Time -= Time[start]
 
-        # Set
-        self.time = Time
-
         # All done
-        return
+        return Time
 
     def extractAroundGPS(self, gps, distance, doprojection=True, reference=False, verbose=False):
         '''
@@ -446,7 +542,7 @@ class insartimeseries(insar):
         out = copy.deepcopy(gps)
 
         # Initialize time series
-        out.initializeTimeSeries(time=np.array(self.dates), los=True, verbose=False)
+        out.initializeTimeSeries(time=self.time, los=True, verbose=False)
 
         # Line-of-sight
         los = {}
@@ -454,7 +550,7 @@ class insartimeseries(insar):
         # Iterate over time
         for idate,insar in enumerate(self.timeseries):
             if verbose:
-                sys.stdout.write('\r Date: {}'.format(self.dates[idate].isoformat()))
+                sys.stdout.write('\r Date: {}'.format(self.time[idate].isoformat()))
             # Extract the values at this date
             tmp = insar.extractAroundGPS(gps, distance, doprojection=False)
             # Iterate over the station names to store correctly
@@ -533,7 +629,7 @@ class insartimeseries(insar):
         GPS = []
 
         # Iterate over the InSAR time series
-        for sar, date in zip(self.timeseries, self.dates):
+        for sar, date in zip(self.timeseries, self.time):
 
             # Get the gps displacements at the masterdate
             gps = gpstimeseries.getNetworkAtDate(date, verbose=False)
@@ -633,7 +729,7 @@ class insartimeseries(insar):
             print('Get Profile for each time step of time series {}: '.format(self.name))
 
         # Simply iterate over the steps
-        for date, sar in zip(self.dates, self.timeseries):
+        for date, sar in zip(self.time, self.timeseries):
 
             # Make a name
             pname = '{} {}'.format(prefix, date.isoformat())
@@ -674,7 +770,7 @@ class insartimeseries(insar):
             print('Runing Average on profiles: ')
 
         # Simply iterate over the steps
-        for date, sar in zip(self.dates, self.timeseries):
+        for date, sar in zip(self.time, self.timeseries):
 
             # make a name
             pname = '{} {}'.format(prefix, date.isoformat())
@@ -721,13 +817,13 @@ class insartimeseries(insar):
             elif len(date)==1:
                 print('Unknow date format...')
                 sys.exit(1)
-        assert (type(date) is type(self.dates[0])), 'Provided date can be \n \
+        assert (type(date) is type(self.time[0])), 'Provided date can be \n \
                 tuple of (year, month, day), \n \
                 tuple of (year, month, day ,hour, min,s), \n \
                 datetime.datetime object'
 
         # Get the profile
-        i = np.flatnonzero(np.array(self.dates)==date)[0]
+        i = np.flatnonzero(self.time==date)[0]
         pname = '{} {}'.format(prefix, date.isoformat())
         refProfile = self.timeseries[i].profiles[pname]
 
@@ -737,7 +833,7 @@ class insartimeseries(insar):
         intProf = sciint.interp1d(x, y, kind='linear', bounds_error=False)
 
         # Iterate on the profiles
-        for date, sar in zip(self.dates, self.timeseries):
+        for date, sar in zip(self.time, self.timeseries):
 
             # Get profile
             pname = '{} {}'.format(prefix, date.isoformat())
@@ -770,7 +866,7 @@ class insartimeseries(insar):
             print('Referencing profiles:')
 
         # Simply iterate over the steps
-        for date, sar in zip(self.dates, self.timeseries):
+        for date, sar in zip(self.time, self.timeseries):
 
             # make a name
             pname = '{} {}'.format(prefix, date.isoformat())
@@ -799,7 +895,7 @@ class insartimeseries(insar):
             print('Clean the profiles:')
 
         # Simply iterate over the steps
-        for date, sar in zip(self.dates, self.timeseries):
+        for date, sar in zip(self.time, self.timeseries):
 
             # Make a name
             pname = '{} {}'.format(prefix, date.isoformat())
@@ -828,7 +924,7 @@ class insartimeseries(insar):
             print('Write Profile to text files:')
 
         # Simply iterate over the steps
-        for date, sar in zip(self.dates, self.timeseries):
+        for date, sar in zip(self.time, self.timeseries):
 
             # make a name
             pname = '{} {}'.format(profileprefix, date.isoformat())
@@ -868,7 +964,7 @@ class insartimeseries(insar):
         fout = open(filename, 'w')
 
         # Iterate over the profiles
-        for date, sar in zip(self.dates, self.timeseries):
+        for date, sar in zip(self.time, self.timeseries):
 
             # make a name
             pname = '{} {}'.format(profileprefix, date.isoformat())  
@@ -915,7 +1011,7 @@ class insartimeseries(insar):
 
         # Simply iterate over the insar
         i = 1
-        for sar, date in zip(self.timeseries, self.dates):
+        for sar, date in zip(self.timeseries, self.time):
 
             # Make a filename
             d = '{}{}{}.grd'.format(date.isoformat()[:4], date.isoformat()[5:7], date.isoformat()[8:])
@@ -923,7 +1019,7 @@ class insartimeseries(insar):
 
             # Write things
             if verbose:
-                sys.stdout.write('\r {:3d} / {:3d}    Writing to file {}'.format(i, len(self.dates), filename))
+                sys.stdout.write('\r {:3d} / {:3d}    Writing to file {}'.format(i, len(self.time), filename))
                 sys.stdout.flush()
 
             # Use the insar routine to write the GRD
@@ -948,7 +1044,7 @@ class insartimeseries(insar):
         ax = fig.add_subplot(111, projection='3d')
 
         # loop over the profiles to plot these
-        for date, sar in zip(self.dates, self.timeseries):
+        for date, sar in zip(self.time, self.timeseries):
 
             # Profile name
             pname = '{} {}'.format(prefix, date.isoformat())

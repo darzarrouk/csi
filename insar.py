@@ -338,7 +338,10 @@ class insar(SourceInv):
         # All done
         return
 
-    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, step=0.0, incidence=35.8, heading=-13.14, dtype=np.float32, remove_nan=True, downsample=1, remove_zeros=True):
+    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, 
+                               step=0.0, incidence=35.8, heading=-13.14, 
+                               dtype=np.float32, remove_nan=True, downsample=1, 
+                               remove_zeros=True):
         '''
         Read from binary file or from array.
         '''
@@ -1086,7 +1089,7 @@ class insar(SourceInv):
 
         # Get GFs and parameters
         G = fault.G[self.name]['custom']
-        custom = fault.custom
+        custom = fault.custom[self.name]
 
         # Compute
         self.custompred = np.dot(G,custom)
@@ -1200,7 +1203,7 @@ class insar(SourceInv):
 
             if custom:
                 Gc = G['custom']
-                Sc = fault.custom
+                Sc = fault.custom[self.name]
                 losdc_synth = np.dot(Gc, Sc)
                 self.synth += losdc_synth
 

@@ -780,7 +780,7 @@ class opticorr(SourceInv):
 
         # Get the GFs and the parameters
         G = fault.G[self.name]['custom']
-        custom = fault.custom
+        custom = fault.custom[self.name]
 
         # Compute
         custompred = np.dot(G, custom)
@@ -948,7 +948,7 @@ class opticorr(SourceInv):
 
             if custom:
                 Gc = G['custom']
-                Sc = fault.custom
+                Sc = fault.custom[self.name]
                 dc_synth = np.dot(Gc, Sc)
                 self.east_synth += dc_synth[:Nd]
                 self.north_synth += dc_synth[Nd:2*Nd]

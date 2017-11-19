@@ -38,12 +38,6 @@ class geodeticplot(object):
             * ref           : 'utm' or 'lonlat'.
         '''
 
-        # Check longitude
-        if lonmin is not None:
-           if lonmin < 0.:
-               lonmin += 360.
-               lonmax += 360.
-
         # Save 
         self.lonmin = lonmin
         self.lonmax = lonmax
@@ -65,8 +59,6 @@ class geodeticplot(object):
                                 urcrnrlon=lonmax, 
                                 urcrnrlat=latmax, 
                                 resolution=resolution, ax=ax)
-
-        # Just a test
 
         # Set the axes
         faille.set_xlabel('Longitude')
@@ -278,7 +270,7 @@ class geodeticplot(object):
             lon = self.lonmin + (self.lonmax-self.lonmin)/6.
             lat = self.latmin + (self.latmax-self.latmin)/6.
             try:
-                self.carte.drawmapscale(lon, lat, 
+                self.carte.drawmapscale(lon, lat,
                                         self.lonmin + (self.lonmax-self.lonmin)/2., 
                                         self.latmin + (self.latmax-self.latmin)/2., 
                                         drawMapScale, units='km', barstyle='simple', zorder=zorder)
@@ -388,15 +380,15 @@ class geodeticplot(object):
         # Plot the added faults before
         if add:
             for f in fault.addfaults:
-                if f[0]<0.:
-                    f += 360.
+                f[0][f[0]<0.] += 360.
                 self.carte.plot(f[0], f[1], '-k', zorder=zorder)
             for f in fault.addfaults:
                 if self.faille_flag:
                     self.faille.plot(f[0], f[1], '-k')
 
         # Plot the surface trace
-        lon[lon<0.] += 360.
+        lon[lon<0] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         self.faille.plot(lon, lat, '-{}'.format(color), linewidth=2)
         self.carte.plot(lon, lat, '-{}'.format(color), linewidth=2, zorder=2)
 
@@ -404,7 +396,7 @@ class geodeticplot(object):
         return
 
     def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True,
-                     plot_on_2d=False, revmap=False, linewidth=1.0, 
+                     plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
                      transparency=0.0, factor=1.0, zorder=0):
         '''
         Args:
@@ -445,9 +437,9 @@ class geodeticplot(object):
 
         # set color business
         if revmap:
-            cmap = plt.get_cmap('jet_r')
+            cmap = plt.get_cmap(cmap)
         else:
-            cmap = plt.get_cmap('jet')
+            cmap = plt.get_cmap(cmap)
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
@@ -464,8 +456,7 @@ class geodeticplot(object):
                 z.append(-1.0*fault.patchll[p][i][2])
             verts = []
             for xi,yi,zi in zip(x,y,z):
-                if xi<0.:
-                    xi += 360.
+                if xi<0.: xi += 360.
                 verts.append((xi,yi,zi))
             rect = art3d.Poly3DCollection([verts])
             rect.set_facecolor(scalarMap.to_rgba(slip[p]))
@@ -490,8 +481,7 @@ class geodeticplot(object):
                     y.append(patch[i][1])
                 verts = []
                 for xi,yi in zip(x,y):
-                    if xi<0.:
-                        xi += 360.
+                    if xi<0.: xi += 360.
                     verts.append((xi,yi))
                 rect = colls.PolyCollection([verts])
                 rect.set_facecolor(scalarMap.to_rgba(slip[p]))
@@ -508,8 +498,11 @@ class geodeticplot(object):
         # All done
         return 
 
-    def faultTents(self, fault, slip='strikeslip', Norm=None, colorbar=True, method='surface', cmap='jet',
-            plot_on_2d=False, revmap=False, factor=1.0, npoints=10, xystrides=[100, 100], zorder=0):
+    def faultTents(self, fault, 
+                   slip='strikeslip', Norm=None, colorbar=True, 
+                   method='surface', cmap='jet', plot_on_2d=False, 
+                   revmap=False, factor=1.0, npoints=10, 
+                   xystrides=[100, 100], zorder=0):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -629,13 +622,13 @@ class geodeticplot(object):
                     cols[i,j] = scalarMap.to_rgba(slip[i,j])
 
             lon, lat = fault.xy2ll(x, y)
-            lon[lon<0.] += 360.
+            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             self.faille.plot_surface(lon, lat, -1.0*z, facecolors=cols, rstride=1, cstride=1, antialiased=True, linewidth=0)
 
             # On 2D?
             if plot_on_2d:
                 lon, lat = fault.xy2ll(X, Y)
-                lon[lon<0.] += 360.
+                lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
                 self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder) 
 
             # Color Bar
@@ -646,7 +639,7 @@ class geodeticplot(object):
         elif method is 'scatter':
             # Do the scatter ploto
             lon, lat = fault.xy2ll(X, Y)
-            lon[lon<0.] += 360.
+            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             cb = self.faille.scatter3D(lon, lat, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax)
 
             # On 2D?
@@ -734,7 +727,10 @@ class geodeticplot(object):
             vmax = val.max()
 
         # Plot
-        sc = self.carte.scatter(stress.lon, stress.lat, s=20, c=val, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
+        lon = stress.lon
+        lat = stress.lat
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        sc = self.carte.scatter(xloc, yloc, s=20, c=val, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
 
         # colorbar
         if colorbar:
@@ -772,8 +768,8 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = gps.lon
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
-        lon[lon<0.] += 360.
 
         # Make the dictionary of the things to plot
         Data = {}
@@ -803,7 +799,7 @@ class geodeticplot(object):
         for dName in Data:
             values = Data[dName]['Values']
             c = Data[dName]['Color']
-            p = self.carte.quiver(lon, lat, 
+            p = self.carte.quiver(lon, lat,
                                   values[:,0], values[:,1], 
                                   width=0.005, color=c, 
                                   scale=scale, scale_units=scale_units, 
@@ -849,8 +845,8 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = gps.lon
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
-        lon[lon<0.] += 360.
 
         # Initiate
         vmin = 999999999.
@@ -913,7 +909,8 @@ class geodeticplot(object):
 
         # Get the data
         d = gps.vel_los
-        lon = gps.lon; lon[lon<0.] += 360.
+        lon = gps.lon;
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Prepare the color limits
@@ -968,7 +965,8 @@ class geodeticplot(object):
             cmap = None
 
         # Get lon lat
-        lon = earthquakes.lon; lon[lon<0.] += 360.
+        lon = earthquakes.lon
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = earthquakes.lat
 
         # plot the earthquakes on the map if ask
@@ -1023,7 +1021,8 @@ class geodeticplot(object):
         cmap = plt.get_cmap('jet')
 
         # Get lon lat
-        lon = fault.sim.lon; lon[lon<0.] += 360.
+        lon = fault.sim.lon
+        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = fault.sim.lat
 
         # Plot the insar
@@ -1108,8 +1107,7 @@ class geodeticplot(object):
                 y.append(corner[3])
                 verts = []
                 for xi,yi in zip(x,y):
-                    if xi<0.:
-                        xi += 360.
+                    if xi<0.: xi += 360.
                     verts.append((xi,yi))
                 rect = colls.PolyCollection([verts],linewidth=edgewidth)
                 rect.set_color(scalarMap.to_rgba(disp))
@@ -1118,9 +1116,12 @@ class geodeticplot(object):
                 self.carte.ax.add_collection(rect)
 
         elif plotType is 'scatter':
-            lon = insar.lon; lon[lon<0.] += 360.
+            lon = insar.lon
+            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             lat = insar.lat
-            sc = self.carte.scatter(lon[::decim], lat[::decim], s=30, c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=zorder)
+            sc = self.carte.scatter(lon[::decim], lat[::decim], s=30, 
+                                    c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, 
+                                    linewidth=0.0, zorder=zorder)
 
         else:
             print('Unknown plot type: {}'.format(plotType))
@@ -1209,8 +1210,7 @@ class geodeticplot(object):
                 y.append(corner[3])
                 verts = []
                 for xi,yi in zip(x,y):
-                    if xi<0.:
-                        xi += 360.
+                    if xi<0.: xi += 360.
                     verts.append((xi,yi))
                 rect = colls.PolyCollection([verts])
                 rect.set_color(scalarMap.to_rgba(disp))
@@ -1219,7 +1219,8 @@ class geodeticplot(object):
                 self.carte.ax.add_collection(rect)
 
         elif plotType is 'scatter':
-            lon = corr.lon; lon[lon<0.] += 360.
+            lon = corr.lon
+            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             lat = corr.lat
             self.carte.scatter(lon[::decim], lat[::decim], s=10., c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=zorder)
 

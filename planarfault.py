@@ -105,7 +105,6 @@ class planarfault(RectangularPatches):
         p_width = f_width/float(n_dip)
         self.setdepth(nump=n_dip,top=dep)
         
-        
         # Initialize the structures
         self.patch        = []        
         self.patchll      = []

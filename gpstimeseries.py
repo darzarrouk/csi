@@ -70,6 +70,150 @@ class gpstimeseries(SourceInv):
         # all done
         return
 
+    def read_from_file(self, filename, verbose=False):
+        '''
+        Reads the time series from a file which has been written by write2file
+        '''
+
+        # Open, read, close file
+        fin = open(filename, 'r')
+        Lines = fin.readlines() 
+        fin.close()
+
+        # Create values
+        time = []
+        east = []; north = []; up = []
+        stdeast = []; stdnorth = []; stdup = []
+
+        # Read these
+        for line in Lines:
+            values = line.split()
+            if values[0][0] == '#':
+                continue
+            isotime = values[0]
+            year  = int(isotime[:4])
+            month = int(isotime[5:7])
+            day   = int(isotime[8:10])
+            hour = int(isotime[11:13])
+            mins = int(isotime[14:16])
+            secd = int(isotime[17:19])
+            time.append(dt.datetime(year, month, day, hour, mins, secd))
+            east.append(float(values[1]))
+            north.append(float(values[2]))
+            up.append(float(values[3]))
+            stdeast.append(float(values[4]))
+            stdnorth.append(float(values[5]))
+            stdup.append(float(values[6]))
+
+        # Initiate some timeseries
+        self.north = timeseries('North',
+                                utmzone=self.utmzone, 
+                                lon0=self.lon0, lat0=self.lat0, 
+                                ellps=self.ellps, verbose=verbose)
+        self.east = timeseries('East', 
+                               utmzone=self.utmzone, 
+                               lon0=self.lon0, 
+                               lat0=self.lat0, 
+                               ellps=self.ellps, verbose=verbose)
+        self.up = timeseries('Up', 
+                             utmzone=self.utmzone, 
+                             lon0=self.lon0, lat0=self.lat0, 
+                             ellps=self.ellps, verbose=verbose)
+
+        # Set time
+        self.time = np.array(time)
+        self.north.time = self.time
+        self.east.time = self.time
+        self.up.time = self.time
+
+        # Set values
+        self.north.value = np.array(north)
+        self.north.synth = None        
+        self.north.error = np.array(stdnorth)
+        self.east.value = np.array(east)
+        self.east.synth = None        
+        self.east.error = np.array(stdeast)
+        self.up.value = np.array(up)
+        self.up.synth = None        
+        self.up.error = np.array(stdup)
+
+        # All done
+        return
+
+    def read_from_renoxyz(self, filename, verbose=False):
+        '''
+        Reads the time series from a file which has been downloaded on
+        http://geodesy.unr.edu/NGLStationPages/gpsnetmap/GPSNetMap.html
+        Format xyz
+        '''
+
+        # Get months description
+        from .csiutils import months
+
+        # Open, read, close file
+        fin = open(filename, 'r')
+        Lines = fin.readlines() 
+        fin.close()
+
+        # Create values
+        time = []
+        east = []; north = []; up = []
+        stdeast = []; stdnorth = []; stdup = []
+
+        # Read these
+        for line in Lines:
+            values = line.split()
+            if values[0][0] == '#':
+                continue
+            isotime = values[1]
+            yd = int(isotime[:2])
+            if yd<80: year = yd + 2000
+            if yd>=90: year = yd + 1900
+            month = months[isotime[2:5]]
+            day   = int(isotime[5:7])
+            time.append(dt.datetime(year, month, day, 0, 0, 0))
+            east.append(float(values[3]))
+            north.append(float(values[4]))
+            up.append(float(values[5]))
+            stdeast.append(float(values[6]))
+            stdnorth.append(float(values[7]))
+            stdup.append(float(values[8]))
+
+        # Initiate some timeseries
+        self.north = timeseries('North',
+                                utmzone=self.utmzone, 
+                                lon0=self.lon0, lat0=self.lat0, 
+                                ellps=self.ellps, verbose=verbose)
+        self.east = timeseries('East', 
+                               utmzone=self.utmzone, 
+                               lon0=self.lon0, 
+                               lat0=self.lat0, 
+                               ellps=self.ellps, verbose=verbose)
+        self.up = timeseries('Up', 
+                             utmzone=self.utmzone, 
+                             lon0=self.lon0, lat0=self.lat0, 
+                             ellps=self.ellps, verbose=verbose)
+
+        # Set time
+        self.time = np.array(time)
+        self.north.time = self.time
+        self.east.time = self.time
+        self.up.time = self.time
+
+        # Set values
+        self.north.value = np.array(north)
+        self.north.synth = None        
+        self.north.error = np.array(stdnorth)
+        self.east.value = np.array(east)
+        self.east.synth = None        
+        self.east.error = np.array(stdeast)
+        self.up.value = np.array(up)
+        self.up.synth = None        
+        self.up.error = np.array(stdup)
+
+        # All done
+        return
+
     def read_from_JPL(self, filename):
         '''
         Reads the time series from a file which has been sent from JPL.
@@ -115,10 +259,13 @@ class gpstimeseries(SourceInv):
 
         # Set values
         self.north.value = np.array(north)
+        self.north.synth = None
         self.north.error = np.array(stdnorth)
         self.east.value = np.array(east)
+        self.east.synth = None        
         self.east.error = np.array(stdeast)
         self.up.value = np.array(up)
+        self.up.synth = None        
         self.up.error = np.array(stdup)
 
         # All done
@@ -174,10 +321,13 @@ class gpstimeseries(SourceInv):
 
         # Set the values
         self.north.value = north[self.name].values*factor
+        self.north.synth = None        
         self.north.error = sigmanorth[self.name].values*factor
         self.east.value = east[self.name].values*factor
+        self.east.synth = None        
         self.east.error = sigmaeast[self.name].values*factor
-        self.up.value = up[self.name].values*factor
+        self.up.value = up[self.name].values*factornorth
+        self.up.synth = None
         self.up.error = sigmaup[self.name].values*factor
         
         # All done
@@ -231,11 +381,15 @@ class gpstimeseries(SourceInv):
 
         # Set values
         self.north.value = np.array(north)
-        self.north.error = np.array(stdnorth)
+        self.north.synth = None
+        self.north.error = np.array(stdnorth)        
         self.east.value = np.array(east)
+        self.east.synth = None        
         self.east.error = np.array(stdeast)
         self.up.value = np.array(up)
+        self.up.synth = None                
         self.up.error = np.array(stdup)
+
 
         # All done
         return
@@ -272,71 +426,37 @@ class gpstimeseries(SourceInv):
             * interval:         In days.
         '''
     
-        # check start and end
-        if (start.__class__ is float) or (start.__class__ is int) :
-            st = dt.datetime(start, 1, 1)
-        if (start.__class__ is list):
-            if len(start) == 1:
-                st = dt.datetime(start[0], 1, 1)
-            elif len(start) == 2:
-                st = dt.datetime(start[0], start[1], 1)
-            elif len(start) == 3:
-                st = dt.datetime(start[0], start[1], start[2])
-            elif len(start) == 4:
-                st = dt.datetime(start[0], start[1], start[2], start[3])
-            elif len(start) == 5:
-                st = dt.datetime(start[0], start[1], start[2], start[3], start[4])
-            elif len(start) == 6:
-                st = dt.datetime(start[0], start[1], start[2], start[3], start[4], start[5])
-        if start.__class__ is dt.datetime:
-            st = start
-
-        if (end.__class__ is float) or (end.__class__ is int) :
-            ed = dt.datetime(np.int(end), 1, 1)
-        if (end.__class__ is list):
-            if len(end) == 1:
-                ed = dt.datetime(end[0], 1, 1)
-            elif len(end) == 2:
-                ed = dt.datetime(end[0], end[1], 1)
-            elif len(end) == 3:
-                ed = dt.datetime(end[0], end[1], end[2])
-            elif len(end) == 4:
-                ed = dt.datetime(end[0], end[1], end[2], end[3])
-            elif len(end) == 5:
-                ed = dt.datetime(end[0], end[1], end[2], end[3], end[4])
-            elif len(end) == 6:
-                ed = dt.datetime(end[0], end[1], end[2], end[3], end[4], end[5])
-        if end.__class__ is dt.datetime:
-            ed = end
-
-        # Initialize a time vector
-        if end is not None:
-            delta = ed - st
-            delta_sec = np.int(np.floor(delta.days * 24 * 60 * 60 + delta.seconds))
-            time_step = np.int(np.floor(interval * 24 * 60 * 60))
-            self.time = [st + dt.timedelta(0, t) for t in range(0, delta_sec, time_step)]
-        if time is not None:
-            self.time = time
-
-        # Initialize timeseries instances
+        # North-south time series
         self.north = timeseries('North', 
                                 utmzone=self.utmzone, 
                                 lon0=self.lon0, 
                                 lat0=self.lat0, 
                                 ellps=self.ellps, 
                                 verbose=self.verbose)
+        self.north.initialize(time=time, 
+                              start=start, end=end, increment=interval)
+
+        # East-west time series
         self.east = timeseries('East', 
                                utmzone=self.utmzone, 
                                lon0=self.lon0, 
                                lat0=self.lat0, 
                                ellps=self.ellps, 
                                verbose=self.verbose)
+        self.east.initialize(time=time, 
+                             start=start, end=end, increment=interval)
+
+        # Vertical time series 
         self.up = timeseries('Up', 
                              utmzone=self.utmzone, 
                              lon0=self.lon0, 
                              lat0=self.lat0, 
                              ellps=self.ellps, 
                              verbose=self.verbose)
+        self.up.initialize(time=time, 
+                           start=start, end=end, increment=interval)
+
+        # LOS time series
         if los:
             self.los = timeseries('LOS', 
                                   utmzone=self.utmzone, 
@@ -344,29 +464,11 @@ class gpstimeseries(SourceInv):
                                   lat0=self.lat0, 
                                   ellps=self.ellps,
                                   verbose=self.verbose)
+            self.los.initialize(time=time, 
+                                start=start, end=end, increment=interval)
 
         # Time
-        if type(self.time) is list:
-            self.time = np.array(self.time)
-        self.north.time = self.time
-        self.east.time = self.time
-        self.up.time = self.time
-        if los:
-            self.los.time = self.time
-
-        # Values
-        self.north.value = np.zeros(self.time.shape)
-        self.east.value = np.zeros(self.time.shape)
-        self.up.value = np.zeros(self.time.shape)
-        if los:
-            self.los.value = np.zeros(self.time.shape)
-
-        # Initialize uncertainties
-        self.north.error = np.zeros(len(self.time))
-        self.east.error = np.zeros(len(self.time))
-        self.up.error = np.zeros(len(self.time))
-        if los:
-            self.los.error = np.zeros(len(self.time))
+        self.time = self.north.time
 
         # All done
         return
@@ -400,6 +502,25 @@ class gpstimeseries(SourceInv):
         self.up.addPointInTime(time, value=up, std=std_up)
  
         # Time vector
+        self.time = self.up.time
+
+        # All done
+        return
+
+    def removePointsInTime(self, u):
+        '''
+        Remove points from the time series.
+
+        Args:
+            * u         : List or array of indexes to remove
+        '''
+
+        # Delete
+        self.east._deleteDates(u)
+        self.north._deleteDates(u)
+        self.up._deleteDates(u)
+
+        # Time
         self.time = self.up.time
 
         # All done
@@ -482,9 +603,9 @@ class gpstimeseries(SourceInv):
             e = self.east.value[i]
             n = self.north.value[i]
             u = self.up.value[i]
-            es = self.east.value[i]
-            ns = self.north.value[i]
-            us = self.up.value[i]
+            es = self.east.error[i]
+            ns = self.north.error[i]
+            us = self.up.error[i]
             if hasattr(self, 'los'):
                 lo = self.los.value[i]
             else:
@@ -568,7 +689,7 @@ class gpstimeseries(SourceInv):
         # Verbose
         if verbose:
             print('---------------------------------')
-            print('Reference time series {} to {}'.format(timeseries.name,                                                           self.name))
+            print('Reference time series {} to {}'.format(timeseries.name, self.name))
 
         # Do the reference for all the timeseries in there 
         north = self.north.reference2timeseries(timeseries.north)
