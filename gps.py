@@ -1359,31 +1359,27 @@ class gps(SourceInv):
             * components: Number of components to use
         '''
 
-        # Get the name of the stations in common
-        stations = []
-        for station in self.station:
-            if station in network.station: stations.append(station)
-
-        # Get the subnetworks
-        subself = self.getSubNetwork('Sub {}'.format(self.name), stations)
-        subnetwork = network.getSubNetwork('Sub {}'.format(network.name), stations)
-
-        # Compute the difference
-        subself.vel_enu -= subnetwork.vel_enu
+        # Difference
+        difference = self - network
 
         # Fit the difference with a Helmert transformation
-        subself.computeBestHelmert(components=components)
+        difference.computeBestHelmert(components=components)
 
         # Get the Helmert material for this network
         H = self.getHelmertMatrix(components=components, 
-                                  meanbase=subself.HelmertNormalizingFactor,
-                                  center=subself.HelmertCenter)
+                                  meanbase=difference.HelmertNormalizingFactor,
+                                  center=difference.HelmertCenter)
         d = self.vel_enu[:,:components].T.flatten()
 
         # Remove Helmert
-        m = subself.Helmert
+        m = difference.Helmert
         self.vel_enu[:,:components] -= np.dot(H, m).reshape((components, 
                                         self.vel_enu.shape[0])).T
+
+        # Save the transform
+        self.referencingHelmert = m
+        self.HelmertNormalizingFactor = difference.HelmertNormalizingFactor
+        self.HelmertCenter = difference.HelmertCenter
 
         # All done
         return
@@ -3023,4 +3019,49 @@ class gps(SourceInv):
         # All done
         return
     
+    def __add__(self, network):
+        '''
+        Defines the addition for a network. This returns a network with the 
+        vel_enu summed for the common stations
+        '''
+
+        # Get the name of the stations in common
+        stations = []
+        for station in self.station:
+            if station in network.station: stations.append(station)
+
+        # Get the subnetworks
+        subself = self.getSubNetwork('Sum {} + {}'.format(self.name, 
+                                    network.name), stations)
+        subnetw = network.getSubNetwork('Sub {}'.format(network.name), stations)
+
+        # Add 
+        subself.vel_enu += subnetw.vel_enu
+
+        # All done
+        return subself
+
+    def __sub__(self, network):
+        '''
+        Defines the substraction for a network. This returns a network with the 
+        vel_enu summed for the common stations
+        '''
+
+        # Get the name of the stations in common
+        stations = []
+        for station in self.station:
+            if station in network.station: stations.append(station)
+
+        # Get the subnetworks
+        subself = self.getSubNetwork('Diff {} - {}'.format(self.name, 
+                                     network.name), stations)
+        subnetw = network.getSubNetwork('Sub {}'.format(network.name), 
+                                        stations)
+
+        # Add 
+        subself.vel_enu -= subnetw.vel_enu
+
+        # All done
+        return subself
+
 #EOF
