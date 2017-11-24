@@ -326,7 +326,7 @@ class gpstimeseries(SourceInv):
         self.east.value = east[self.name].values*factor
         self.east.synth = None        
         self.east.error = sigmaeast[self.name].values*factor
-        self.up.value = up[self.name].values*factornorth
+        self.up.value = up[self.name].values*factor
         self.up.synth = None
         self.up.error = sigmaup[self.name].values*factor
         
