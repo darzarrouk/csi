@@ -1099,6 +1099,9 @@ class imagedownsampling(object):
             plt.scatter(x, y, s=20, c=self.Gradient, linewidth=0.1)
             plt.title('Gradient')
             plt.colorbar(orientation='horizontal')
+            plt.figure()
+            plt.hist(self.Gradient, bins=10)
+            plt.title('Gradient')
 
         # Curvature
         if hasattr(self, 'Curvature'):
@@ -1109,6 +1112,9 @@ class imagedownsampling(object):
             plt.scatter(x, y, s=20, c=self.Curvature, linewidth=0.1)
             plt.title('Curvature')
             plt.colorbar(orientation='horizontal')
+            plt.figure()
+            plt.hist(self.Curvature, bins=10)
+            plt.title('Curvature')
         
         # Resolution
         if hasattr(self, 'Resolution'):
@@ -1119,6 +1125,9 @@ class imagedownsampling(object):
             plt.scatter(x, y, s=20, c=self.Rd, linewidth=0.1)
             plt.title('Resolution')
             plt.colorbar(orientation='horizontal')
+            plt.figure()
+            plt.hist(self.Resolution, bins=10)
+            plt.title('Resolution')
 
         # All done
         if show:
