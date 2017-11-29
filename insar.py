@@ -538,7 +538,6 @@ class insar(SourceInv):
 
         self.Incidence = incidence
         self.Azimuth = azimuth
-        print(incidence[:10], azimuth[:10])
 
         # Convert angles
         alpha = -1.0*azimuth*np.pi/180.
