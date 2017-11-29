@@ -434,8 +434,6 @@ class imagedownsampling(object):
         # Initialize blocks
         blocks, blocksll = [], []
 
-        print('')
-
         # Collect
         for w in range(nworkers):
             if self.datatype is 'insar':
@@ -644,9 +642,6 @@ class imagedownsampling(object):
             # Do the downsampling
             self.downsample(plot=plot, decimorig=decimorig)
 
-        if self.verbose:
-            print(" ")
-
         # All done
         return
 
@@ -765,8 +760,7 @@ class imagedownsampling(object):
             # Iteration #
             it += 1
             if self.verbose: 
-                sys.stdout.write('\r Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
-                sys.stdout.flush()
+                print('Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
 
             # Compute resolution
             self.computeGradientCurvature(smooth=smooth)
@@ -786,9 +780,6 @@ class imagedownsampling(object):
             # Plot at the end of that iteration
             if plot:
                 self.plotDownsampled(decimorig=decimorig)
-
-        if self.verbose:
-            print(" ")
 
         # All done
         return
@@ -859,8 +850,7 @@ class imagedownsampling(object):
             # Iteration #
             it += 1
             if self.verbose: 
-                sys.stdout.write('\r Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
-                sys.stdout.flush()
+                print('Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
 
             # Compute resolution
             self.computeResolution(slipdirection, damping, vertical=vertical)
