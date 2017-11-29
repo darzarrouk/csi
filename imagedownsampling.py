@@ -451,6 +451,7 @@ class imagedownsampling(object):
             newimage.y.extend(y)
             newimage.lat.extend(lat)
             newimage.lon.extend(lon)
+            newimage.wgt.extend(wgt)
             blocks.extend(block)
             blocksll.extend(blockll)
 
