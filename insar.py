@@ -339,7 +339,7 @@ class insar(SourceInv):
         return
 
     def read_from_binary(self, data, lon, lat, err=None, factor=1.0, 
-                               step=0.0, incidence=35.8, heading=-13.14, 
+                               step=0.0, incidence=None, heading=None, azimuth=None,
                                dtype=np.float32, remove_nan=True, downsample=1, 
                                remove_zeros=True):
         '''
@@ -408,16 +408,30 @@ class insar(SourceInv):
         self.factor = factor
 
         # Compute the LOS
-        if type(incidence) is np.ndarray:
-            self.inchd2los(incidence, heading, origin='binaryfloat')
-            self.los = self.los[::downsample,:]
-            self.los = self.los[iFinite,:]
-        elif type(incidence) in (float, np.float):
-            self.inchd2los(incidence, heading, origin='float')
-        elif type(incidence) is str:
-            self.inchd2los(incidence, heading, origin='binary')
-            self.los = self.los[::downsample,:]
-            self.los = self.los[iFinite,:]
+        if heading is not None:
+            if type(incidence) is np.ndarray:
+                self.inchd2los(incidence, heading, origin='binaryfloat')
+                self.los = self.los[::downsample,:]
+                self.los = self.los[iFinite,:]
+            elif type(incidence) in (float, np.float):
+                self.inchd2los(incidence, heading, origin='float')
+            elif type(incidence) is str:
+                self.inchd2los(incidence, heading, origin='binary')
+                self.los = self.los[::downsample,:]
+                self.los = self.los[iFinite,:]
+        elif azimuth is not None:
+            if type(incidence) is np.ndarray:
+                self.incaz2los(incidence, azimuth, origin='binaryfloat', 
+                        dtype=dtype)
+                self.los = self.los[::downsample,:]
+                self.los = self.los[iFinite,:]
+            elif type(incidence) in (float, np.float):
+                self.incaz2los(incidence, azimuth, origin='float')
+            elif type(incidence) is str:
+                self.incaz2los(incidence, azimuth, origin='binary', 
+                                dtype=dtype)
+                self.los = self.los[::downsample,:]
+                self.los = self.los[iFinite,:]
         else:
             self.los = None
 
@@ -484,6 +498,67 @@ class insar(SourceInv):
         self.factor = factor
 
         # All done
+        return
+
+    def incaz2los(self, incidence, azimuth, origin='onefloat', dtype=np.float32):
+        '''
+        From the incidence and the heading, defines the LOS vector.
+        Args:
+            * incidence : Incidence angle.
+            * azimuth   : Azimuth angle of the LOS
+            * origin    : What are these numbers onefloat: One number
+                                                      grd: grd files
+                                                   binary: Binary files
+                                              binaryfloat: Arrays of float
+        '''
+
+        # Save values
+        self.incidence = incidence
+        self.azimuth = azimuth
+
+        # Read the files if needed
+        if origin in ('grd', 'GRD'):
+            try:
+                from netCDF4 import Dataset as netcdf
+                fincidence = netcdf(incidence, 'r', format='NETCDF4')
+                fazimuth = netcdf(azimuth, 'r', format='NETCDF4')
+            except:
+                import scipy.io.netcdf as netcdf
+                fincidence = netcdf.netcdf_file(incidence)
+                fazimuth = netcdf.netcdf_file(azimuth)
+            incidence = np.array(fincidence.variables['z'][:]).flatten()
+            azimuth = np.array(fazimuth.variables['z'][:]).flatten()
+            self.origininchd = origin
+        elif origin in ('binary', 'bin'):
+            incidence = np.fromfile(incidence, dtype=dtype)
+            azimuth = np.fromfile(azimuth, dtype=dtype)
+            self.origininchd = origin
+        elif origin in ('binaryfloat'):
+            self.origininchd = origin
+
+        self.Incidence = incidence
+        self.Azimuth = azimuth
+        print(incidence[:10], azimuth[:10])
+
+        # Convert angles
+        alpha = -1.0*azimuth*np.pi/180.
+        phi = incidence*np.pi/180.
+
+        # Compute LOS
+        Se = np.sin(alpha) * np.sin(phi)
+        Sn = np.cos(alpha) * np.sin(phi)
+        Su = np.cos(phi)
+
+        # Store it
+        if origin in ('grd', 'GRD', 'binary', 'bin', 'binaryfloat'):
+            self.los = np.ones((alpha.shape[0],3))
+        else:
+            self.los = np.ones((self.lon.shape[0],3))
+        self.los[:,0] *= Se
+        self.los[:,1] *= Sn
+        self.los[:,2] *= Su
+
+        # all done
         return
 
     def inchd2los(self, incidence, heading, origin='onefloat'):
