@@ -1054,22 +1054,22 @@ class insar(SourceInv):
         return
 
 
-    def setTransNormalizingFactor(self, x0, y0, normX, normY, base):
+    def setTransformNormalizingFactor(self, x0, y0, normX, normY, base):
         '''
         Set orbit normalizing factors in insar object.
         '''
 
-        self.TransNormalizingFactor = {}
-        self.TransNormalizingFactor['x'] = normX
-        self.TransNormalizingFactor['y'] = normY
-        self.TransNormalizingFactor['ref'] = [x0, y0]
-        self.TransNormalizingFactor['base'] = base
+        self.TransformNormalizingFactor = {}
+        self.TransformNormalizingFactor['x'] = normX
+        self.TransformNormalizingFactor['y'] = normY
+        self.TransformNormalizingFactor['ref'] = [x0, y0]
+        self.TransformNormalizingFactor['base'] = base
 
         # All done
         return
 
 
-    def computeTransNormalizingFactor(self):
+    def computeTransformNormalizingFactor(self):
         '''
         Compute orbit normalizing factors and store them in insar object.
         '''
@@ -1080,11 +1080,11 @@ class insar(SourceInv):
         normY = np.abs(self.y - y0).max()
         base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
 
-        self.TransNormalizingFactor = {}
-        self.TransNormalizingFactor['x'] = normX
-        self.TransNormalizingFactor['y'] = normY
-        self.TransNormalizingFactor['ref'] = [x0, y0]
-        self.TransNormalizingFactor['base'] = base_max
+        self.TransformNormalizingFactor = {}
+        self.TransformNormalizingFactor['x'] = normX
+        self.TransformNormalizingFactor['y'] = normY
+        self.TransformNormalizingFactor['ref'] = [x0, y0]
+        self.TransformNormalizingFactor['base'] = base_max
 
         # All done
         return
@@ -1128,23 +1128,23 @@ class insar(SourceInv):
         '''
 
         # Get the number of gps stations
-        ns = self.vel_enu.shape[0]
+        ns = self.vel.shape[0]
 
         # Parameter size
         nc = 3
 
         # Get the reference
         if computeNormFact:
-            self.computeTransNormalizingFactor()
-        x0,y0 = self.TransNormalizingFactor['ref']
-        base = self.TransNormalizingFactor['base']
+            self.computeTransformNormalizingFactor()
+        x0,y0 = self.TransformNormalizingFactor['ref']
+        base = self.TransformNormalizingFactor['base']
 
         # Compute the baselines
         base_x = (self.x - x0)/base
         base_y = (self.y - y0)/base
 
         # Store the normalizing factor
-        self.StrainNormalizingFactor = base_max
+        self.StrainNormalizingFactor = base
 
         # Allocate a Base
         H = np.zeros((2,nc))
@@ -1178,8 +1178,8 @@ class insar(SourceInv):
                     constant, linear term and cross term.
 
             * computeNormFact : bool
-                if True, compute new TransNormalizingFactor
-                if False, uses parameters in self.TransNormalizingFactor
+                if True, compute new TransformNormalizingFactor
+                if False, uses parameters in self.TransformNormalizingFactor
         '''
 
         # number of data points
@@ -1192,13 +1192,13 @@ class insar(SourceInv):
         if ptype >= 3:
             # Compute normalizing factors
             if computeNormFact:
-                self.computeTransNormalizingFactor()
+                self.computeTransformNormalizingFactor()
             else:
-                assert hasattr(self, 'TransNormalizingFactor'), 'You must set TransNormalizingFactor first'
+                assert hasattr(self, 'TransformNormalizingFactor'), 'You must set TransformNormalizingFactor first'
 
-            normX = self.TransNormalizingFactor['x']
-            normY = self.TransNormalizingFactor['y']
-            x0, y0 = self.TransNormalizingFactor['ref']
+            normX = self.TransformNormalizingFactor['x']
+            normY = self.TransformNormalizingFactor['y']
+            x0, y0 = self.TransformNormalizingFactor['ref']
 
             # Fill in functionals
             orb[:,1] = (self.x - x0) / normX
@@ -1293,7 +1293,7 @@ class insar(SourceInv):
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
-            * computeNormFact : if False, uses TransNormalizingFactor set with self.setTransNormalizingFactor
+            * computeNormFact : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
         '''
 
         # Build synthetics
@@ -1314,7 +1314,7 @@ class insar(SourceInv):
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
-            * computeNormFact : if False, uses TransNormalizingFactor set with self.setTransNormalizingFactor
+            * computeNormFact : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
         '''
 
         # Check list

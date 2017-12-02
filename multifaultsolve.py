@@ -121,7 +121,8 @@ class multifaultsolve(object):
             # Store the G matrix
             self.G[:,st:se] = fault.Gassembled
             # Keep track of indexing
-            self.affectIndexParameters(fault)
+            if fault.patchType not in ('notafault', 'transformation'):
+                self.affectIndexParameters(fault)
 
         # self ready
         self.ready = True

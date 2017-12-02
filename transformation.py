@@ -14,6 +14,9 @@ import copy
 import sys
 import os
 
+# Personals
+from .SourceInv import SourceInv
+
 #class transformation
 class transformation(SourceInv):
 
@@ -34,8 +37,7 @@ class transformation(SourceInv):
                                             utmzone = utmzone,
                                             ellps = ellps, 
                                             lon0 = lon0, 
-                                            lat0 = lat0, 
-                                            verbose = verbose)
+                                            lat0 = lat0)
         # Initialize the class
         if verbose:
             print ("---------------------------------")
@@ -98,7 +100,7 @@ class transformation(SourceInv):
         '''
 
         # Pre compute Normalizing factors
-        self.computeNormFactors(data)
+        self.computeNormFactors(datas)
 
         # Iterate over the data
         for data, transformation in zip(datas, transformations):
@@ -117,8 +119,11 @@ class transformation(SourceInv):
             # Iterate over the transformations
             for trans in transformation:
                 
-                # Get the transformation estimator for this guy
-                T = data.getTransformEstimator(trans, computeNormFact=False)
+                # A case that will need to change in the future
+                if data.dtype in ('gps', 'multigps') and trans=='strain':
+                    T = data.getTransformEstimator('strainonly', computeNormFact=False)
+                else:
+                    T = data.getTransformEstimator(trans, computeNormFact=False)
                 self.G[data.name][trans] = T
 
             # Set data in the GFs
@@ -196,11 +201,14 @@ class transformation(SourceInv):
         # Calculate
         x0 = np.mean(data.x)
         y0 = np.mean(data.y)
-        normX = np.abs(data.x - x0).max()
-        normY = np.abs(data.y - y0).max()
+        base_x = data.x - x0
+        base_y = data.y - y0
+        normX = np.abs(base_x).max()
+        normY = np.abs(base_y).max()
         base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
 
         # Set in place
+        data.TransformNormalizingFactor = {}
         data.TransformNormalizingFactor['x'] = normX
         data.TransformNormalizingFactor['y'] = normY
         data.TransformNormalizingFactor['ref'] = [x0, y0]
@@ -247,7 +255,7 @@ class transformation(SourceInv):
                 dlocal = self.d[data.name].tolist()
 
                 # Store it in d
-                d.append(dlocal)
+                d += dlocal
 
         # Store d in self
         self.dassembled = np.array(d)
@@ -358,8 +366,8 @@ class transformation(SourceInv):
             Np += Nplocal
 
             # Data
-            assert np.where([self.G[dname][trans].shape[0]==Ndlocal \
-                    for trans in self.G[dname]]).all(),\
+            assert all([self.G[dname][trans].shape[0]==Ndlocal \
+                    for trans in self.G[dname]]),\
                     'GFs size issue for data set {}'.format(dname)
             Nd += Ndlocal
 
@@ -439,7 +447,7 @@ class transformation(SourceInv):
 
     # ----------------------------------------------------------------------
     # Build synthetics from self.m
-    def buildPrediction(self, datas, verbose=True):
+    def buildPredictions(self, datas, verbose=True):
         '''
         Given a list of data, predicts the surface displacements from what
         is stored in the self.m dictionary
@@ -466,7 +474,7 @@ class transformation(SourceInv):
         
             # Predict
             T = np.hstack(T)
-            m = np.array(m)
+            m = np.hstack(m)
             prediction = np.dot(T,m)
 
             # Store
@@ -474,12 +482,12 @@ class transformation(SourceInv):
                 data.transformation = prediction
             elif data.dtype in ('gps', 'multigps'):
                 data.transformation = np.zeros((data.vel_enu.shape[0], 3))
-                data.transformation[:,0] = predict[:data.vel_enu.shape[0]]
+                data.transformation[:,0] = prediction[:data.vel_enu.shape[0]]
                 data.transformation[:,1] = \
-                        predict[data.vel_enu.shape[0]:data.vel_enu.shape[0]*2]
-                if len(predict)==3*data.vel_enu.shape[0]:
+                        prediction[data.vel_enu.shape[0]:data.vel_enu.shape[0]*2]
+                if len(prediction)==3*data.vel_enu.shape[0]:
                     data.transformation[:,2] = \
-                            predict[data.vel_enu.shape[0]*2:data.vel_enu.shape[0]*3]
+                            prediction[data.vel_enu.shape[0]*2:data.vel_enu.shape[0]*3]
 
         # All done
         return
@@ -500,7 +508,7 @@ class transformation(SourceInv):
         '''
 
         # Predict
-        self.computePredictions(datas, verbose=verbose)
+        self.buildPredictions(datas, verbose=verbose)
 
         # remove
         for data in datas:
@@ -534,11 +542,30 @@ class transformation(SourceInv):
                 'Wrong size for mpost: {}. Should be {}'.\
                 format(self.mpost.shape[0],self.Gassembled.shape[1])
 
+        # Check
+        start = 0
+
+        # Check strain case
+        if self.transOrder[0]=='strain':
+            start += 1
+            index = self.transIndices[0]
+            for dname in self.G:
+                if dname not in self.m:
+                    self.m[dname] = {}
+                self.m[dname]['strain'] = self.mpost[index[0]:index[1]]
+
+
         # Iterate over transOrder
-        for datatrans, index in zip(self.transOrder, self.transIndices):
+        for datatrans, index in zip(self.transOrder[start:], self.transIndices[start:]):
             
             # Get names
-            dname, trans = data.trans.split(' --/-- ')
+            dname, trans = datatrans.split(' --//-- ')
+
+            # Convert to int if possible
+            try:
+                trans = int(trans)
+            except:
+                trans = trans
 
             # Check
             if dname not in self.m:

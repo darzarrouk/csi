@@ -28,6 +28,9 @@ from .planarfault import planarfault
 from .RectangularPatchesKin import RectangularPatchesKin
 from .planarfaultkinematic import planarfaultkinematic
 
+##Transformation
+from .transformation import transformation
+
 ## Data
 from .gps import gps
 from .multigps import multigps

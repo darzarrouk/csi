@@ -1575,12 +1575,13 @@ class gps(SourceInv):
         # All done
         return Npo
 
-    def getTransformEstimator(self, transformation):
+    def getTransformEstimator(self, transformation, computeNormFact=True):
         '''
         Returns the estimator for the transform.
         Args:
             * transformation : String. Can be
-                        'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly', 'translation'
+                        'strain', 'full', 'strainnorotation', 
+                        'strainnotranslation', 'strainonly', 'translation'
                         or 'translationrotation'
         '''
         
@@ -1589,22 +1590,22 @@ class gps(SourceInv):
             orb = self.getHelmertMatrix(components=self.obs_per_station)
         # Strain + Rotation + Translation
         elif transformation is 'strain':
-            orb = self.get2DstrainEst()
+            orb = self.get2DstrainEst(computeNormFact=computeNormFact)
         # Strain + Translation
         elif transformation is 'strainnorotation':
-            orb = self.get2DstrainEst(rotation=False)
+            orb = self.get2DstrainEst(rotation=False, computeNormFact=computeNormFact)
         # Strain
         elif transformation is 'strainonly':
-            orb = self.get2DstrainEst(rotation=False, translation=False)
+            orb = self.get2DstrainEst(rotation=False, translation=False, computeNormFact=computeNormFact)
         # Strain + Rotation
         elif transformation is 'strainnotranslation':
-            orb = self.get2DstrainEst(translation=False)
+            orb = self.get2DstrainEst(translation=False, computeNormFact=computeNormFact)
         # Translation
         elif transformation is 'translation':
-            orb = self.get2DstrainEst(strain=False, rotation=False)
+            orb = self.get2DstrainEst(strain=False, rotation=False, computeNormFact=computeNormFact)
         # Translation and Rotation
         elif transformation is 'translationrotation': 
-            orb = self.get2DstrainEst(strain=False)
+            orb = self.get2DstrainEst(strain=False, computeNormFact=computeNormFact)
         # Unknown case
         else:
             print('No Transformation asked for object {}'.format(self.name))
@@ -1698,7 +1699,7 @@ class gps(SourceInv):
         # All done
         return
 
-    def get2DstrainEst(self, strain=True, rotation=True, translation=True):
+    def get2DstrainEst(self, strain=True, rotation=True, translation=True, computeNormFact=True):
         '''
         Returns the matrix to estimate the full 2d strain tensor.
         Positive is clockwise for the rotation.
@@ -1719,18 +1720,32 @@ class gps(SourceInv):
         # Parameter size
         nc = 6
 
-        # Get the center of the network
-        x0 = np.mean(self.x)
-        y0 = np.mean(self.y)
+        if computeNormFact:
+            # Get the center of the network
+            x0 = np.mean(self.x)
+            y0 = np.mean(self.y)
 
-        # Compute the baselines
-        base_x = self.x - x0
-        base_y = self.y - y0
+            # Compute the baselines
+            base_x = self.x - x0
+            base_y = self.y - y0
 
-        # Normalize the baselines
-        base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
-        base_x /= base_max
-        base_y /= base_max
+            # Normalize the baselines
+            base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
+            base_x /= base_max
+            base_y /= base_max
+
+            # Save
+            self.TransformNormalizingFactor = {}
+            self.TransformNormalizingFactor['ref'] = [x0, y0]
+            self.TransformNormalizingFactor['base'] = base_max
+
+        else:
+            x0,y0 = self.TransformNormalizingFactor['ref']
+            base_max = self.TransformNormalizingFactor['base']
+            base_x = self.x - x0
+            base_y = self.y - y0
+            base_x /= base_max 
+            base_y /= base_max 
 
         # Store the normalizing factor
         self.StrainNormalizingFactor = base_max
