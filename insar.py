@@ -380,20 +380,49 @@ class insar(SourceInv):
             iZeros = np.flatnonzero(np.logical_or(vel!=0., 
                                                   lon!=0.,
                                                   lat!=0.))
-            vel = vel[iZeros]
-            if err is not None:
-                err = err[iZeros]
-            lon = lon[iZeros]
-            lat = lat[iZeros]
+        else:
+            iZeros = range(len(vel))
 
         # Check NaNs
         if remove_nan:
             iFinite = np.flatnonzero(np.isfinite(vel))
-            vel = vel[iFinite]
-            if err is not None:
-                err = err[iFinite]
-            lon = lon[iFinite]
-            lat = lat[iFinite]
+        else:
+            iFinite = range(len(vel))
+
+        # Compute the LOS
+        if heading is not None:
+            if type(incidence) is np.ndarray:
+                self.inchd2los(incidence, heading, origin='binaryfloat')
+                self.los = self.los[::downsample,:]
+            elif type(incidence) in (float, np.float):
+                self.inchd2los(incidence, heading, origin='float')
+            elif type(incidence) is str:
+                self.inchd2los(incidence, heading, origin='binary')
+                self.los = self.los[::downsample,:]
+        elif azimuth is not None:
+            if type(incidence) is np.ndarray:
+                self.incaz2los(incidence, azimuth, origin='binaryfloat', 
+                        dtype=dtype)
+                self.los = self.los[::downsample,:]
+            elif type(incidence) in (float, np.float):
+                self.incaz2los(incidence, azimuth, origin='float')
+            elif type(incidence) is str:
+                self.incaz2los(incidence, azimuth, origin='binary', 
+                                dtype=dtype)
+                self.los = self.los[::downsample,:]
+        else:
+            self.los = None
+
+        # Who to keep
+        iKeep = np.intersect1d(iZeros, iFinite)
+
+        # Remove unwanted pixels
+        vel = vel[iKeep]
+        if err is not None:
+            err = err[iKeep]
+        lon = lon[iKeep]
+        lat = lat[iKeep]
+        self.los = self.los[iKeep,:]
 
         # Set things in self
         self.vel = vel
@@ -406,34 +435,6 @@ class insar(SourceInv):
 
         # Keep track of factor
         self.factor = factor
-
-        # Compute the LOS
-        if heading is not None:
-            if type(incidence) is np.ndarray:
-                self.inchd2los(incidence, heading, origin='binaryfloat')
-                self.los = self.los[::downsample,:]
-                self.los = self.los[iFinite,:]
-            elif type(incidence) in (float, np.float):
-                self.inchd2los(incidence, heading, origin='float')
-            elif type(incidence) is str:
-                self.inchd2los(incidence, heading, origin='binary')
-                self.los = self.los[::downsample,:]
-                self.los = self.los[iFinite,:]
-        elif azimuth is not None:
-            if type(incidence) is np.ndarray:
-                self.incaz2los(incidence, azimuth, origin='binaryfloat', 
-                        dtype=dtype)
-                self.los = self.los[::downsample,:]
-                self.los = self.los[iFinite,:]
-            elif type(incidence) in (float, np.float):
-                self.incaz2los(incidence, azimuth, origin='float')
-            elif type(incidence) is str:
-                self.incaz2los(incidence, azimuth, origin='binary', 
-                                dtype=dtype)
-                self.los = self.los[::downsample,:]
-                self.los = self.los[iFinite,:]
-        else:
-            self.los = None
 
         # set lon to (0, 360.)
         self._checkLongitude()
@@ -1053,38 +1054,116 @@ class insar(SourceInv):
         return
 
 
-    def setOrbNormalizingFactor(self, x0, y0, normX, normY):
+    def setTransNormalizingFactor(self, x0, y0, normX, normY, base):
         '''
         Set orbit normalizing factors in insar object.
         '''
 
-        self.OrbNormalizingFactor = {}
-        self.OrbNormalizingFactor['x'] = normX
-        self.OrbNormalizingFactor['y'] = normY
-        self.OrbNormalizingFactor['ref'] = [x0, y0]
+        self.TransNormalizingFactor = {}
+        self.TransNormalizingFactor['x'] = normX
+        self.TransNormalizingFactor['y'] = normY
+        self.TransNormalizingFactor['ref'] = [x0, y0]
+        self.TransNormalizingFactor['base'] = base
 
         # All done
         return
 
 
-    def computeOrbNormalizingFactor(self):
+    def computeTransNormalizingFactor(self):
         '''
         Compute orbit normalizing factors and store them in insar object.
         '''
 
-        x0 = self.x[0]
-        y0 = self.y[0]
+        x0 = np.mean(self.x)
+        y0 = np.mean(self.y)
         normX = np.abs(self.x - x0).max()
         normY = np.abs(self.y - y0).max()
+        base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
 
-        self.OrbNormalizingFactor = {}
-        self.OrbNormalizingFactor['x'] = normX
-        self.OrbNormalizingFactor['y'] = normY
-        self.OrbNormalizingFactor['ref'] = [x0, y0]
+        self.TransNormalizingFactor = {}
+        self.TransNormalizingFactor['x'] = normX
+        self.TransNormalizingFactor['y'] = normY
+        self.TransNormalizingFactor['ref'] = [x0, y0]
+        self.TransNormalizingFactor['base'] = base_max
 
         # All done
         return
 
+    def getTransformEstimator(self, trans, computeNormFact=True):
+        '''
+        Returns the Estimator for the transformation to estimate in the InSAR data.
+
+        Args:
+            * trans     : Transformation type
+                trans can be an integer
+                    if trans==1:
+                        constant offset to the data
+                    if trans==3:
+                        constant and linear function of x and y
+                    if trans==4:
+                        constant, linear term and cross term.
+                trans can be 'strain'
+
+        Kwargs:
+            * computeNormFact   : Recompute the normalization factor
+        '''
+        
+        # Several cases
+        if type(trans) is int:
+            T = self.getPolyEstimator(trans, computeNormFact=computeNormFact)
+        elif type(trans) is str:
+            T = self.get2DstrainEst(computeNormFact=computeNormFact)
+
+        # All done
+        return T
+
+    def get2DstrainEst(self, computeNormFact=True):
+        '''
+        Returns the matrix to estimate the 2d aerial strain tensor.
+
+        When buildin gthe estimator:
+        Third column is the Epsilon_xx component
+        Fourth column is the Epsilon_xy component
+        Fifth column is the Epsilon_yy component
+        '''
+
+        # Get the number of gps stations
+        ns = self.vel_enu.shape[0]
+
+        # Parameter size
+        nc = 3
+
+        # Get the reference
+        if computeNormFact:
+            self.computeTransNormalizingFactor()
+        x0,y0 = self.TransNormalizingFactor['ref']
+        base = self.TransNormalizingFactor['base']
+
+        # Compute the baselines
+        base_x = (self.x - x0)/base
+        base_y = (self.y - y0)/base
+
+        # Store the normalizing factor
+        self.StrainNormalizingFactor = base_max
+
+        # Allocate a Base
+        H = np.zeros((2,nc))
+
+        # Allocate the 2 full matrix
+        Hfe = np.zeros((ns,nc))
+        Hfn = np.zeros((ns,nc))
+
+        # Fill in 
+        Hfe[:,0] = base_x
+        Hfe[:,1] = 0.5*base_y
+        Hfn[:,1] = 0.5*base_x
+        Hfn[:,2] = base_y
+
+        # multiply by the los
+        Hout = self.los[:,0][:,np.newaxis]*Hfe + self.los[:,1][:,np.newaxis]*Hfn
+
+        # All done
+        return Hout
 
     def getPolyEstimator(self, ptype, computeNormFact=True):
         '''
@@ -1099,8 +1178,8 @@ class insar(SourceInv):
                     constant, linear term and cross term.
 
             * computeNormFact : bool
-                if True, compute new OrbNormalizingFactor
-                if False, uses parameters in self.OrbNormalizingFactor
+                if True, compute new TransNormalizingFactor
+                if False, uses parameters in self.TransNormalizingFactor
         '''
 
         # number of data points
@@ -1113,13 +1192,13 @@ class insar(SourceInv):
         if ptype >= 3:
             # Compute normalizing factors
             if computeNormFact:
-                self.computeOrbNormalizingFactor()
+                self.computeTransNormalizingFactor()
             else:
-                assert hasattr(self, 'OrbNormalizingFactor'), 'You must set OrbNormalizingFactor first'
+                assert hasattr(self, 'TransNormalizingFactor'), 'You must set TransNormalizingFactor first'
 
-            normX = self.OrbNormalizingFactor['x']
-            normY = self.OrbNormalizingFactor['y']
-            x0, y0 = self.OrbNormalizingFactor['ref']
+            normX = self.TransNormalizingFactor['x']
+            normY = self.TransNormalizingFactor['y']
+            x0, y0 = self.TransNormalizingFactor['ref']
 
             # Fill in functionals
             orb[:,1] = (self.x - x0) / normX
@@ -1214,7 +1293,7 @@ class insar(SourceInv):
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
-            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
+            * computeNormFact : if False, uses TransNormalizingFactor set with self.setTransNormalizingFactor
         '''
 
         # Build synthetics
@@ -1235,7 +1314,7 @@ class insar(SourceInv):
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
-            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
+            * computeNormFact : if False, uses TransNormalizingFactor set with self.setTransNormalizingFactor
         '''
 
         # Check list

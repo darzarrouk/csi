@@ -19,12 +19,15 @@ class transformation(SourceInv):
 
     # ----------------------------------------------------------------------
     # Initialize class 
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
+    def __init__(self, name, utmzone=None, ellps='WGS84', 
+                             lon0=None, lat0=None, verbose=True):
         '''
         Args:
-            * name          : Name of the fault.
-            * utmzone   : UTM zone  (optional, default=None)
-            * ellps     : ellipsoid (optional, default='WGS84')
+            * name          : Name of the object
+            * utmzone       : UTM zone  (optional, default=None)
+            * lon0/lat0     : Center of the custom UTM zone
+            * ellps         : ellipsoid (optional, default='WGS84')
+            * verbose       : talk to me
         '''
 
         super(transformation,self).__init__(name,
@@ -39,16 +42,18 @@ class transformation(SourceInv):
             print ("---------------------------------")
             print ("Initializing transformation {}".format(self.name))
 
-        # Create a dictionnary for the polysol
-        self.polysol = {}
-
         # Create a dictionary for the Green's functions and the data vector
         self.G = {}
         self.d = {}
+        self.m = {}
 
         # Create structure to store the GFs and the assembled d vector
         self.Gassembled = None
         self.dassembled = None
+
+        # Something important
+        self.patchType = 'transformation'
+        self.slipdir = ''
 
         # All done
         return
@@ -62,8 +67,8 @@ class transformation(SourceInv):
 
         The GFs are stored in a dictionary. 
         Each entry of the dictionary is named after the corresponding dataset. 
-        Each of these entry is a dictionary that contains the different cases of 
-        transformations.
+        Each of these entry is a dictionary that contains the different cases 
+        of transformations.
 
         Args:   
             * datas             : List of datasets (gps, insar, optical, ...)
@@ -93,21 +98,88 @@ class transformation(SourceInv):
         '''
 
         # Pre compute Normalizing factors
-        for data in datas:
-            self.computeTransformNormFactor(data)
+        self.computeNormFactors(data)
 
         # Iterate over the data
         for data, transformation in zip(datas, transformations):
             
             # Check something
-            assert data.dtype in ('insar', 'gps', 'opticorr', 'tsunami'), \
+            assert data.dtype in ('insar', 'gps', 'tsunami'), \
                     'Unknown data type {}'.format(data.dtype)
 
-            # Get the transformation estimator for this guy
-            T = data.getTransformEstimator(transformation, computeNormFact=False)
+            # Check the GFs
+            if data.name not in self.G.keys(): self.G[data.name] = {}
+
+            # Check something
+            if type(transformation) is not list:
+                transformation = [transformation]
+
+            # Iterate over the transformations
+            for trans in transformation:
+                
+                # Get the transformation estimator for this guy
+                T = data.getTransformEstimator(trans, computeNormFact=False)
+                self.G[data.name][trans] = T
+
+            # Set data in the GFs
+            if data.dtype == 'insar':
+                self.d[data.name] = data.vel
+            elif data.dtype == 'tsunami':
+                self.d[data.name] = data.d
+            elif data.dtype in ('gps', 'multigps'):
+                if not np.isnan(data.vel_enu[:,2]).any():
+                    self.d[data.name] = data.vel_enu.T.flatten()
+                else:
+                    self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
+            elif data.dtype == 'opticorr':
+                self.d[data.name] = np.hstack((data.east.T.flatten(),
+                                               data.north.T.flatten()))
 
         # All done 
         return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # Compute the Normalization factors
+    def computeNormFactors(self, datas):
+        '''
+        Sets a common reference for the computation of the transformations
+
+        Args:
+            * datas         : list of data
+
+        Returns:
+            * None
+        '''
+
+        # Initialize
+        x, y, refx, base, refy = 0., 0., 0., 0., 0. 
+
+        # Iterate
+        for data in datas:
+            self.computeTransformNormFactor(data)
+            x += data.TransformNormalizingFactor['x']
+            y += data.TransformNormalizingFactor['y']
+            refx += data.TransformNormalizingFactor['ref'][0]
+            refy += data.TransformNormalizingFactor['ref'][1]
+            base += data.TransformNormalizingFactor['base']
+
+        # Average
+        x /= len(datas)
+        y /= len(datas)
+        refx /= len(datas)
+        refy /= len(datas)
+        base /= len(datas)
+
+        # Set
+        for data in datas:
+            data.TransformNormalizingFactor['x'] = x
+            data.TransformNormalizingFactor['y'] = y
+            data.TransformNormalizingFactor['ref'] = [refx, refy]
+            data.TransformNormalizingFactor['base'] = base
+
+        # All done
+        return 
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
@@ -139,7 +211,6 @@ class transformation(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    # Assemble the data vector
     def assembled(self, datas, verbose=True):
         '''
         Assembles a data vector for inversion using the list datas
@@ -161,6 +232,78 @@ class transformation(SourceInv):
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Assembling d vector")
+
+        # Create a data vector
+        d = []
+
+        # Loop over the datasets
+        for data in datas:
+
+                # print
+                if verbose:
+                    print("Dealing with data {}".format(data.name))
+
+                # Get the local d
+                dlocal = self.d[data.name].tolist()
+
+                # Store it in d
+                d.append(dlocal)
+
+        # Store d in self
+        self.dassembled = np.array(d)
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def assembleCd(self, datas, add_prediction=None, verbose=False):
+        '''
+        Assembles the data covariance matrices that have been built for each 
+        data structure.
+
+        Args:
+            * datas         : List of data instances or one data instance
+
+        Kwargs:
+            * add_prediction: Precentage of displacement to add to the Cd 
+                              diagonal to simulate a Cp (dirty version of 
+                              a prediction error covariance, see Duputel et
+                              al 2013, GJI).
+            * verbose       : Talk to me (overwrites self.verbose)
+
+        Returns:
+            * None
+        '''
+
+        # Check if the Green's function are ready
+        assert self.Gassembled is not None, \
+                "You should assemble the Green's function matrix first"
+
+        # Check
+        if type(datas) is not list:
+            datas = [datas]
+
+        # Get the total number of data
+        Nd = self.Gassembled.shape[0]
+        Cd = np.zeros((Nd, Nd))
+
+        # Loop over the data sets
+        st = 0
+        for data in datas:
+            # Fill in Cd
+            if verbose:
+                print("{0:s}: data vector shape {1:s}"\
+                        .format(data.name, self.d[data.name].shape))
+            se = st + self.d[data.name].shape[0]
+            Cd[st:se, st:se] = data.Cd
+            # Add some Cp if asked
+            if add_prediction is not None:
+                Cd[st:se, st:se] += np.diag((self.d[data.name]*add_prediction/100.)**2)
+            st += self.d[data.name].shape[0]
+
+        # Store Cd in self
+        self.Cd = Cd
 
         # All done
         return
@@ -195,8 +338,215 @@ class transformation(SourceInv):
             print ("---------------------------------")
             print("Assembling G for transformation {}".format(self.name))
 
+        # Checker
+        strainCase = False
+
+        # Sizes
+        Nd = 0; Np = 0
+        for dname in self.G:
+
+            # Parameters
+            Nplocal = 0
+            for trans in self.G[dname]:
+                Nplocal += self.G[dname][trans].shape[1]
+                Ndlocal = self.G[dname][trans].shape[0]
+
+            # Strain case
+            if 'strain' in self.G[dname]:
+                Nplocal -= 3
+                strainCase = True
+            Np += Nplocal
+
+            # Data
+            assert np.where([self.G[dname][trans].shape[0]==Ndlocal \
+                    for trans in self.G[dname]]).all(),\
+                    'GFs size issue for data set {}'.format(dname)
+            Nd += Ndlocal
+
+        # initialize counters
+        if strainCase: 
+            Np += 3
+            Npl = 3
+        else:
+            Npl = 0
+        Ndl = 0
+
+        # Create G
+        G = np.zeros((Nd, Np))
+
+        # Keep track of the transform orders
+        self.transOrder = []
+        self.transIndices = []
+        if strainCase: 
+            self.transOrder.append('strain')
+            self.transIndices.append((0,3))
+
+        # Iterate over the data and transforms
+        for dname in self.G:
+            for trans in self.G[dname]:
+                # Get G
+                Glocal = self.G[dname][trans]
+                # Place
+                Nde = Ndl + Glocal.shape[0]
+                # Strain case
+                if trans == 'strain':
+                    G[Ndl:Nde,:3] = Glocal
+                else:
+                    Npe = Npl + Glocal.shape[1]
+                    G[Ndl:Nde,Npl:Npe] = Glocal
+                    self.transOrder.append('{} --//-- {}'.format(dname, trans))
+                    self.transIndices.append((Npl,Npe))
+
+        # all done
+        self.Gassembled = G
+        self.TransformationParameters = G.shape[1]
+
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Build Cm
+    def buildCm(self, sigma):
+        '''
+        Builds a model covariance matrix from std deviation values.
+        The matrix is diagonal with sigma**2 values.
+        Requires an assembled Green's function matrix.
+
+        Args:
+            * sigma         : float, list or array
+        '''
+
+        # Check
+        assert hasattr(self, 'Gassembled'), 'Assemble Greens functions first'
+
+        # Get numbers
+        Np = self.Gassembled.shape[1]
+
+        # Create 
+        if type(sigma) is float:
+            self.Cm = np.diag(np.ones((Np,))*sigma)
+        else:
+            self.Cm = np.diag(np.array(sigma))
+
+        # Check
+        assert self.Cm.shape[0]==Np, \
+                "Something's wrong with the shape of Cm: {}".format(self.Cm.shape)
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # Build synthetics from self.m
+    def buildPrediction(self, datas, verbose=True):
+        '''
+        Given a list of data, predicts the surface displacements from what
+        is stored in the self.m dictionary
+
+        Args:
+            * datas         : list of data instances
+
+        Kwargs:
+            * verbose       : Talk to me
+        '''
+
+        # Check 
+        if type(datas) is not list:
+            datas = [datas]
+        
+        # Iterate over the data
+        for data in datas:
+            
+            # Get the design matrix and model
+            T = []; m = []
+            for trans in self.G[data.name]:
+                T.append(self.G[data.name][trans])
+                m.append(self.m[data.name][trans])
+        
+            # Predict
+            T = np.hstack(T)
+            m = np.array(m)
+            prediction = np.dot(T,m)
+
+            # Store
+            if data.dtype in ('insar', 'tsunami'):
+                data.transformation = prediction
+            elif data.dtype in ('gps', 'multigps'):
+                data.transformation = np.zeros((data.vel_enu.shape[0], 3))
+                data.transformation[:,0] = predict[:data.vel_enu.shape[0]]
+                data.transformation[:,1] = \
+                        predict[data.vel_enu.shape[0]:data.vel_enu.shape[0]*2]
+                if len(predict)==3*data.vel_enu.shape[0]:
+                    data.transformation[:,2] = \
+                            predict[data.vel_enu.shape[0]*2:data.vel_enu.shape[0]*3]
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # Remove synthetics
+    def removePredictions(self, datas, verbose=True):
+        '''
+        Given a list of data, predicts the surface displacements from what
+        is stored in the self.m dictionary and corrects the data
+
+        Args:
+            * datas         : list of data instances
+
+        Kwargs:
+            * verbose       : Talk to me
+        '''
+
+        # Predict
+        self.computePredictions(datas, verbose=verbose)
+
+        # remove
+        for data in datas:
+            if data.dtype=='insar':
+                data.vel -= data.transformation
+            elif data.dtype=='gps':
+                data.vel_enu -= data.transformation
+            elif data.dtype=='tsunami':
+                data.d -= data.transformation
+            
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # distribute mpost to self.m following what is in self.Gassembled
+    def distributem(self):
+        '''
+        Uses self.mpost to distribute the values to self.m following the 
+        organization of self.Gassembled.
+
+        Args:
+            * None
+
+        Returns:
+            * None
+        '''
+
+        # Check something
+        assert self.mpost.shape[0]==self.Gassembled.shape[1],\
+                'Wrong size for mpost: {}. Should be {}'.\
+                format(self.mpost.shape[0],self.Gassembled.shape[1])
+
+        # Iterate over transOrder
+        for datatrans, index in zip(self.transOrder, self.transIndices):
+            
+            # Get names
+            dname, trans = data.trans.split(' --/-- ')
+
+            # Check
+            if dname not in self.m:
+                self.m[dname] = {}
+            self.m[dname][trans] = self.mpost[index[0]:index[1]]
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
 
 #EOF

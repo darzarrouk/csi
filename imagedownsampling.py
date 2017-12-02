@@ -698,7 +698,7 @@ class imagedownsampling(object):
         # All done
         return
 
-    def dataBased(self, threshold, plot=False, verboseLevel='minimum', decimorig=10, quantity='curvature', smooth=None):
+    def dataBased(self, threshold, plot=False, verboseLevel='minimum', decimorig=10, quantity='curvature', smooth=None, itmax=100):
         '''
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
         Threshold is based on the gradient or curvature of the phase field inside the block.
@@ -731,7 +731,7 @@ class imagedownsampling(object):
         Bsize = self._is_minimum_size(self.blocks)
 
         # Loops until done
-        while not (testable<threshold).all():
+        while not (testable<threshold).all() and it<itmax:
 
             # Check 
             assert testable.shape[0]==len(self.blocks), 'Gradient vector has a size different than number of blocks'
