@@ -513,6 +513,11 @@ class stressfield(SourceInv):
             y = self.y.flatten()[i]
             lon = self.lon.flatten()[i]
             lat = self.lat.flatten()[i]
+        else:
+            x = self.x.flatten()
+            y = self.y.flatten()
+            lon = self.lon.flatten()
+            lat = self.lat.flatten()
 
         # Get min and max
         MM = np.abs(dplot).max()
