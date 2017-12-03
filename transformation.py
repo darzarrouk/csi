@@ -102,6 +102,10 @@ class transformation(SourceInv):
         # Pre compute Normalizing factors
         self.computeNormFactors(datas)
 
+        # Save
+        if not hasattr(self, 'transformations'):
+            self.transformations = {}
+
         # Iterate over the data
         for data, transformation in zip(datas, transformations):
             
@@ -115,6 +119,9 @@ class transformation(SourceInv):
             # Check something
             if type(transformation) is not list:
                 transformation = [transformation]
+
+            # Save
+            self.transformations[data.name] = transformation
 
             # Iterate over the transformations
             for trans in transformation:
@@ -350,7 +357,7 @@ class transformation(SourceInv):
         strainCase = False
 
         # Sizes
-        Nd = 0; Np = 0
+        Nd = 0; Np = 0; dindex = {}
         for dname in self.G:
 
             # Parameters
@@ -369,6 +376,7 @@ class transformation(SourceInv):
             assert all([self.G[dname][trans].shape[0]==Ndlocal \
                     for trans in self.G[dname]]),\
                     'GFs size issue for data set {}'.format(dname)
+            dindex[dname] = (Nd, Nd+Ndlocal)
             Nd += Ndlocal
 
         # initialize counters
@@ -390,20 +398,24 @@ class transformation(SourceInv):
             self.transIndices.append((0,3))
 
         # Iterate over the data and transforms
-        for dname in self.G:
+        for data in datas:
+            dname = data.name
+            # Which transform do we care about
+            transformations = self.transformations[dname]
+            # Which lines do we care about
+            Nds, Nde = dindex[dname]
             for trans in self.G[dname]:
                 # Get G
                 Glocal = self.G[dname][trans]
-                # Place
-                Nde = Ndl + Glocal.shape[0]
                 # Strain case
                 if trans == 'strain':
-                    G[Ndl:Nde,:3] = Glocal
+                    G[Nds:Nde,:3] = Glocal
                 else:
                     Npe = Npl + Glocal.shape[1]
-                    G[Ndl:Nde,Npl:Npe] = Glocal
+                    G[Nds:Nde,Npl:Npe] = Glocal
                     self.transOrder.append('{} --//-- {}'.format(dname, trans))
                     self.transIndices.append((Npl,Npe))
+                    Npl = Npe
 
         # all done
         self.Gassembled = G
