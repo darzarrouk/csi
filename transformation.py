@@ -63,7 +63,7 @@ class transformation(SourceInv):
 
     # ----------------------------------------------------------------------
     # Build the Green's functions for the transformations
-    def buildGFs(self, datas, transformations, verbose=True):
+    def buildGFs(self, datas, transformations, verbose=True, computeNormFact=True):
         '''
         Builds the design matrix for the datasets given. 
 
@@ -78,6 +78,7 @@ class transformation(SourceInv):
 
         Kwargs:
             * verbose           : Talk to me
+            * computeNormFact   : Compute the Normalization factors or not
 
         Returns:
             * None
@@ -100,7 +101,8 @@ class transformation(SourceInv):
         '''
 
         # Pre compute Normalizing factors
-        self.computeNormFactors(datas)
+        if computeNormFact:
+            self.computeNormFactors(datas)
 
         # Save
         if not hasattr(self, 'transformations'):
