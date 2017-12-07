@@ -502,7 +502,8 @@ class geodeticplot(object):
                    slip='strikeslip', Norm=None, colorbar=True, 
                    method='surface', cmap='jet', plot_on_2d=False, 
                    revmap=False, factor=1.0, npoints=10, 
-                   xystrides=[100, 100], zorder=0):
+                   xystrides=[100, 100], zorder=0, 
+                   vertIndex=False):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -521,6 +522,7 @@ class geodeticplot(object):
             * xystrides     : If method is 'surface', then xystrides is going to be the number of 
                               points along x and along y used to interpolate the surface in 3D and 
                               its color.
+            * vertIndex     : Writes the index of the vertices
         '''
 
         # Get slip
@@ -645,6 +647,12 @@ class geodeticplot(object):
             # On 2D?
             if plot_on_2d:
                 self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder) 
+                if vertIndex:
+                    for ivert,vert in enumerate(fault.Vertices_ll):
+                        x,y = self.carte(vert[0], vert[1])
+                        if x<360.: x+= 360.
+                        plt.annotate('{}'.format(ivert), xy=(x,y),
+                                     xycoords='data', xytext=(x,y), textcoords='data')
 
             # put up a colorbar
             if colorbar:
