@@ -1418,7 +1418,12 @@ class TriangularTents(TriangularPatches):
             # Compute the scalar product and get the angle
             angles = []
             for v in vecs:
-                angle = np.arccos(np.dot(vec,v)/(np.linalg.norm(v)*nvec))
+                value = np.dot(vec,v)/(np.linalg.norm(v)*nvec)
+                # Precision issue
+                if value<-1.0: value=-1.0
+                if value>1.0: value=1.0
+                # Get angle
+                angle = np.arccos(value)*180./np.pi
                 vprod = np.cross(vec, v)
                 if vprod<0.:
                     angle = 360. - angle
