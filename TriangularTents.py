@@ -523,13 +523,14 @@ class TriangularTents(TriangularPatches):
         # All done
         return iout
     
-    def slipIntegrate(self, slip=None):
+    def slipIntegrate(self, slip=None, factor=1.):
         '''
         Integrates slip on the patch.
         Args:
-            * slip  : slip vector
-                    Can be strikeslip, dipslip, tensile, coupling or
-                    a list/array of floats.
+            * slip   : slip vector
+                       Can be strikeslip, dipslip, tensile, coupling or
+                       a list/array of floats.
+            * factor : multiply slip vector 
         '''
 
         # Slip
@@ -549,7 +550,9 @@ class TriangularTents(TriangularPatches):
 
         # Compute Volumes
         self.computeTentArea()
-        self.volume = self.area_tent*slip/3.
+
+        # area_tent is in km**2
+        self.volume = self.area_tent*1e6*slip*factor/3.
 
         # All done
         return
