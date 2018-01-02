@@ -1078,7 +1078,7 @@ class insar(SourceInv):
         y0 = np.mean(self.y)
         normX = np.abs(self.x - x0).max()
         normY = np.abs(self.y - y0).max()
-        base_max = np.max([np.abs(base_x).max(), np.abs(base_y).max()])
+        base_max = np.max([normX, normY])
 
         self.TransformNormalizingFactor = {}
         self.TransformNormalizingFactor['x'] = normX
