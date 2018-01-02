@@ -330,7 +330,7 @@ class insar(SourceInv):
         # Read the covariance
         if cov:
             nd = self.vel.size
-            self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))*np.abs(factor)
+            self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))*factor*factor
 
         # Store the factor
         self.factor = factor
