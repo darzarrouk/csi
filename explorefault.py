@@ -281,7 +281,7 @@ class explorefault(SourceInv):
         # All done
         return
 
-    def walk(self, niter=10000, nburn=5000, method='AdaptiveMetropolis'):
+    def walk(self, niter=10000, nburn=5000, method='AdaptiveMetropolis', proposalSD=2.):
         '''
         March the MCMC.
 
@@ -325,7 +325,7 @@ class explorefault(SourceInv):
         sampler = pymc.MCMC(pdfs)
 
         # Make sure step method is what is asked for
-        sampler.use_step_method(getattr(pymc, method), prior)
+        sampler.use_step_method(getattr(pymc, method), prior, proposal_sd=proposalSD)
 
         # Sample
         sampler.sample(iter=niter, burn=nburn)
