@@ -160,7 +160,7 @@ class opticorr(SourceInv):
         if cov:
             nd = self.east.size + self.north.size
             self.Cd = np.fromfile(filename + '.cov', dtype=np.float32).reshape((nd,nd))
-            self.Cd *= factor
+            self.Cd *= factor*factor
 
         # Store the factor
         self.factor = factor

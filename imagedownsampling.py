@@ -906,7 +906,6 @@ class imagedownsampling(object):
                 G = fault.Gassembled
             else:
                 G = np.hstack((G, fault.Gassembled))
-
         # Compute the data resolution matrix
         Npar = G.shape[1]
         if self.datatype is 'opticorr':
