@@ -42,6 +42,7 @@ class insar(SourceInv):
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Initialize InSAR data set {}".format(self.name))
+        self.verbose = verbose
 
         # Initialize some things
         self.vel = None
@@ -271,7 +272,8 @@ class insar(SourceInv):
             * cov           : Read an additional covariance file (binary float32, Nd*Nd elements).
         '''
 
-        print ("Read from file {} into data set {}".format(filename, self.name))
+        if self.verbose:
+            print ("Read from file {} into data set {}".format(filename, self.name))
 
         # Open the file
         fin = open(filename+'.txt','r')
@@ -832,32 +834,27 @@ class insar(SourceInv):
         # Get some size
         nd = self.vel.shape[0]
 
-        # Cleans the existing covariance
-        self.Cd = np.zeros((nd, nd))
+        # positions
+        x = self.x
+        y = self.y
+        distance = np.sqrt( (x[:,None] - x[None,:])**2 + (y[:,None] - y[None,:])**2)
 
-        # Loop over Cd
-        for i in range(nd):
-            for j in range(i,nd):
+        # Compute Cd
+        if function is 'exp':
+            self.Cd = sigma*sigma*np.exp(-1.0*distance/lam)
+        elif function is 'gauss':
+            self.Cd = sigma*sigma*np.exp(-1.0*distance*distance/(2*lam))
 
-                # Get the distance
-                d = self.distancePixel2Pixel(i,j)
-
-                # Compute Cd
-                if function is 'exp':
-                    self.Cd[i,j] = sigma*sigma*np.exp(-1.0*d/lam)
-                elif function is 'gauss':
-                    self.Cd[i,j] = sigma*sigma*np.exp(-1.0*d*d/(2*lam))
-
-                # Make it symmetric
-                self.Cd[j,i] = self.Cd[i,j]
-
-                # Normalize
-                if normalizebystd:
+        # Normalize
+        if normalizebystd:
+            for i in range(nd):
+                for j in range(i,nd):
                     self.Cd[j,i] *= self.err[j]*self.err[i]/(sigma*sigma)
                     self.Cd[i,j] *= self.err[j]*self.err[i]/(sigma*sigma)
 
-            # Substitute variance?
-            if diagonalVar:
+        # Substitute variance?
+        if diagonalVar:
+            for i in range(nd):
                 self.Cd[i,i] = self.err[i]**2
 
         # All done
