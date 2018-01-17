@@ -705,7 +705,7 @@ class multifaultsolve(object):
             moment =  np.abs(np.dot(shearModulus * patchAreas, slip))
             if moment>0.:
                 Mw = 2.0 / 3.0 * (np.log10(moment) - 9.1)
-                print Mw
+                #print(Mw)
             else:
                 Mw = -6.0
             return np.array([Mw_thresh - Mw])
@@ -790,7 +790,10 @@ class multifaultsolve(object):
             print ("  model: P(m|d) = C P(m) P(d|m)  ")
 
         # Import 
-        import pymc
+        try:
+            import pymc
+        except:
+            print('This method uses pymc. Please install it')
 
         # Get the matrixes and vectors
         assert hasattr(self, 'G'), 'Need an assembled G matrix...'

@@ -2,7 +2,10 @@
 
 # Import stuff
 import numpy as np
-import pymc
+try:
+    import pymc
+except:
+    pass
 
 class resample(object):
     '''
