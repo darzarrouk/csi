@@ -523,13 +523,14 @@ class TriangularTents(TriangularPatches):
         # All done
         return iout
     
-    def slipIntegrate(self, slip=None):
+    def slipIntegrate(self, slip=None, factor=1.):
         '''
         Integrates slip on the patch.
         Args:
-            * slip  : slip vector
-                    Can be strikeslip, dipslip, tensile, coupling or
-                    a list/array of floats.
+            * slip   : slip vector
+                       Can be strikeslip, dipslip, tensile, coupling or
+                       a list/array of floats.
+            * factor : multiply slip vector 
         '''
 
         # Slip
@@ -549,7 +550,9 @@ class TriangularTents(TriangularPatches):
 
         # Compute Volumes
         self.computeTentArea()
-        self.volume = self.area_tent*slip/3.
+
+        # area_tent is in km**2
+        self.volume = self.area_tent*1e6*slip*factor/3.
 
         # All done
         return
@@ -1228,7 +1231,7 @@ class TriangularTents(TriangularPatches):
     def plot(self, figure=134, slip='total', equiv=False, 
              show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
              method='scatter', npoints=10, colorbar=True, cmap='jet',
-             drawCoastlines=True, expand=0.2):
+             drawCoastlines=True, expand=0.2, vertIndex=False):
         '''
         Plot the available elements of the fault.
         
@@ -1267,7 +1270,7 @@ class TriangularTents(TriangularPatches):
         # Draw the fault
         x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=colorbar, 
                 plot_on_2d=plot_on_2d, npoints=npoints, cmap=cmap,
-                method=method)
+                method=method, vertIndex=vertIndex)
 
         # show
         if show:
@@ -1418,7 +1421,12 @@ class TriangularTents(TriangularPatches):
             # Compute the scalar product and get the angle
             angles = []
             for v in vecs:
-                angle = np.arccos(np.dot(vec,v)/(np.linalg.norm(v)*nvec))
+                value = np.dot(vec,v)/(np.linalg.norm(v)*nvec)
+                # Precision issue
+                if value<-1.0: value=-1.0
+                if value>1.0: value=1.0
+                # Get angle
+                angle = np.arccos(value)*180./np.pi
                 vprod = np.cross(vec, v)
                 if vprod<0.:
                     angle = 360. - angle

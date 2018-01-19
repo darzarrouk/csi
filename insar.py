@@ -42,6 +42,7 @@ class insar(SourceInv):
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Initialize InSAR data set {}".format(self.name))
+        self.verbose = verbose
 
         # Initialize some things
         self.vel = None
@@ -271,7 +272,8 @@ class insar(SourceInv):
             * cov           : Read an additional covariance file (binary float32, Nd*Nd elements).
         '''
 
-        print ("Read from file {} into data set {}".format(filename, self.name))
+        if self.verbose:
+            print ("Read from file {} into data set {}".format(filename, self.name))
 
         # Open the file
         fin = open(filename+'.txt','r')
@@ -330,7 +332,7 @@ class insar(SourceInv):
         # Read the covariance
         if cov:
             nd = self.vel.size
-            self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))*np.abs(factor)
+            self.Cd = np.fromfile(filename+'.cov', dtype=np.float32).reshape((nd, nd))*factor*factor
 
         # Store the factor
         self.factor = factor
@@ -339,7 +341,7 @@ class insar(SourceInv):
         return
 
     def read_from_binary(self, data, lon, lat, err=None, factor=1.0, 
-                               step=0.0, incidence=35.8, heading=-13.14, 
+                               step=0.0, incidence=None, heading=None, azimuth=None,
                                dtype=np.float32, remove_nan=True, downsample=1, 
                                remove_zeros=True):
         '''
@@ -380,20 +382,49 @@ class insar(SourceInv):
             iZeros = np.flatnonzero(np.logical_or(vel!=0., 
                                                   lon!=0.,
                                                   lat!=0.))
-            vel = vel[iZeros]
-            if err is not None:
-                err = err[iZeros]
-            lon = lon[iZeros]
-            lat = lat[iZeros]
+        else:
+            iZeros = range(len(vel))
 
         # Check NaNs
         if remove_nan:
             iFinite = np.flatnonzero(np.isfinite(vel))
-            vel = vel[iFinite]
-            if err is not None:
-                err = err[iFinite]
-            lon = lon[iFinite]
-            lat = lat[iFinite]
+        else:
+            iFinite = range(len(vel))
+
+        # Compute the LOS
+        if heading is not None:
+            if type(incidence) is np.ndarray:
+                self.inchd2los(incidence, heading, origin='binaryfloat')
+                self.los = self.los[::downsample,:]
+            elif type(incidence) in (float, np.float):
+                self.inchd2los(incidence, heading, origin='float')
+            elif type(incidence) is str:
+                self.inchd2los(incidence, heading, origin='binary')
+                self.los = self.los[::downsample,:]
+        elif azimuth is not None:
+            if type(incidence) is np.ndarray:
+                self.incaz2los(incidence, azimuth, origin='binaryfloat', 
+                        dtype=dtype)
+                self.los = self.los[::downsample,:]
+            elif type(incidence) in (float, np.float):
+                self.incaz2los(incidence, azimuth, origin='float')
+            elif type(incidence) is str:
+                self.incaz2los(incidence, azimuth, origin='binary', 
+                                dtype=dtype)
+                self.los = self.los[::downsample,:]
+        else:
+            self.los = None
+
+        # Who to keep
+        iKeep = np.intersect1d(iZeros, iFinite)
+
+        # Remove unwanted pixels
+        vel = vel[iKeep]
+        if err is not None:
+            err = err[iKeep]
+        lon = lon[iKeep]
+        lat = lat[iKeep]
+        self.los = self.los[iKeep,:]
 
         # Set things in self
         self.vel = vel
@@ -406,20 +437,6 @@ class insar(SourceInv):
 
         # Keep track of factor
         self.factor = factor
-
-        # Compute the LOS
-        if type(incidence) is np.ndarray:
-            self.inchd2los(incidence, heading, origin='binaryfloat')
-            self.los = self.los[::downsample,:]
-            self.los = self.los[iFinite,:]
-        elif type(incidence) in (float, np.float):
-            self.inchd2los(incidence, heading, origin='float')
-        elif type(incidence) is str:
-            self.inchd2los(incidence, heading, origin='binary')
-            self.los = self.los[::downsample,:]
-            self.los = self.los[iFinite,:]
-        else:
-            self.los = None
 
         # set lon to (0, 360.)
         self._checkLongitude()
@@ -484,6 +501,66 @@ class insar(SourceInv):
         self.factor = factor
 
         # All done
+        return
+
+    def incaz2los(self, incidence, azimuth, origin='onefloat', dtype=np.float32):
+        '''
+        From the incidence and the heading, defines the LOS vector.
+        Args:
+            * incidence : Incidence angle.
+            * azimuth   : Azimuth angle of the LOS
+            * origin    : What are these numbers onefloat: One number
+                                                      grd: grd files
+                                                   binary: Binary files
+                                              binaryfloat: Arrays of float
+        '''
+
+        # Save values
+        self.incidence = incidence
+        self.azimuth = azimuth
+
+        # Read the files if needed
+        if origin in ('grd', 'GRD'):
+            try:
+                from netCDF4 import Dataset as netcdf
+                fincidence = netcdf(incidence, 'r', format='NETCDF4')
+                fazimuth = netcdf(azimuth, 'r', format='NETCDF4')
+            except:
+                import scipy.io.netcdf as netcdf
+                fincidence = netcdf.netcdf_file(incidence)
+                fazimuth = netcdf.netcdf_file(azimuth)
+            incidence = np.array(fincidence.variables['z'][:]).flatten()
+            azimuth = np.array(fazimuth.variables['z'][:]).flatten()
+            self.origininchd = origin
+        elif origin in ('binary', 'bin'):
+            incidence = np.fromfile(incidence, dtype=dtype)
+            azimuth = np.fromfile(azimuth, dtype=dtype)
+            self.origininchd = origin
+        elif origin in ('binaryfloat'):
+            self.origininchd = origin
+
+        self.Incidence = incidence
+        self.Azimuth = azimuth
+
+        # Convert angles
+        alpha = -1.0*azimuth*np.pi/180.
+        phi = incidence*np.pi/180.
+
+        # Compute LOS
+        Se = np.sin(alpha) * np.sin(phi)
+        Sn = np.cos(alpha) * np.sin(phi)
+        Su = np.cos(phi)
+
+        # Store it
+        if origin in ('grd', 'GRD', 'binary', 'bin', 'binaryfloat'):
+            self.los = np.ones((alpha.shape[0],3))
+        else:
+            self.los = np.ones((self.lon.shape[0],3))
+        self.los[:,0] *= Se
+        self.los[:,1] *= Sn
+        self.los[:,2] *= Su
+
+        # all done
         return
 
     def inchd2los(self, incidence, heading, origin='onefloat'):
@@ -757,32 +834,27 @@ class insar(SourceInv):
         # Get some size
         nd = self.vel.shape[0]
 
-        # Cleans the existing covariance
-        self.Cd = np.zeros((nd, nd))
+        # positions
+        x = self.x
+        y = self.y
+        distance = np.sqrt( (x[:,None] - x[None,:])**2 + (y[:,None] - y[None,:])**2)
 
-        # Loop over Cd
-        for i in range(nd):
-            for j in range(i,nd):
+        # Compute Cd
+        if function is 'exp':
+            self.Cd = sigma*sigma*np.exp(-1.0*distance/lam)
+        elif function is 'gauss':
+            self.Cd = sigma*sigma*np.exp(-1.0*distance*distance/(2*lam))
 
-                # Get the distance
-                d = self.distancePixel2Pixel(i,j)
-
-                # Compute Cd
-                if function is 'exp':
-                    self.Cd[i,j] = sigma*sigma*np.exp(-1.0*d/lam)
-                elif function is 'gauss':
-                    self.Cd[i,j] = sigma*sigma*np.exp(-1.0*d*d/(2*lam))
-
-                # Make it symmetric
-                self.Cd[j,i] = self.Cd[i,j]
-
-                # Normalize
-                if normalizebystd:
+        # Normalize
+        if normalizebystd:
+            for i in range(nd):
+                for j in range(i,nd):
                     self.Cd[j,i] *= self.err[j]*self.err[i]/(sigma*sigma)
                     self.Cd[i,j] *= self.err[j]*self.err[i]/(sigma*sigma)
 
-            # Substitute variance?
-            if diagonalVar:
+        # Substitute variance?
+        if diagonalVar:
+            for i in range(nd):
                 self.Cd[i,i] = self.err[i]**2
 
         # All done
@@ -979,38 +1051,116 @@ class insar(SourceInv):
         return
 
 
-    def setOrbNormalizingFactor(self, x0, y0, normX, normY):
+    def setTransformNormalizingFactor(self, x0, y0, normX, normY, base):
         '''
         Set orbit normalizing factors in insar object.
         '''
 
-        self.OrbNormalizingFactor = {}
-        self.OrbNormalizingFactor['x'] = normX
-        self.OrbNormalizingFactor['y'] = normY
-        self.OrbNormalizingFactor['ref'] = [x0, y0]
+        self.TransformNormalizingFactor = {}
+        self.TransformNormalizingFactor['x'] = normX
+        self.TransformNormalizingFactor['y'] = normY
+        self.TransformNormalizingFactor['ref'] = [x0, y0]
+        self.TransformNormalizingFactor['base'] = base
 
         # All done
         return
 
 
-    def computeOrbNormalizingFactor(self):
+    def computeTransformNormalizingFactor(self):
         '''
         Compute orbit normalizing factors and store them in insar object.
         '''
 
-        x0 = self.x[0]
-        y0 = self.y[0]
+        x0 = np.mean(self.x)
+        y0 = np.mean(self.y)
         normX = np.abs(self.x - x0).max()
         normY = np.abs(self.y - y0).max()
+        base_max = np.max([normX, normY])
 
-        self.OrbNormalizingFactor = {}
-        self.OrbNormalizingFactor['x'] = normX
-        self.OrbNormalizingFactor['y'] = normY
-        self.OrbNormalizingFactor['ref'] = [x0, y0]
+        self.TransformNormalizingFactor = {}
+        self.TransformNormalizingFactor['x'] = normX
+        self.TransformNormalizingFactor['y'] = normY
+        self.TransformNormalizingFactor['ref'] = [x0, y0]
+        self.TransformNormalizingFactor['base'] = base_max
 
         # All done
         return
 
+    def getTransformEstimator(self, trans, computeNormFact=True):
+        '''
+        Returns the Estimator for the transformation to estimate in the InSAR data.
+
+        Args:
+            * trans     : Transformation type
+                trans can be an integer
+                    if trans==1:
+                        constant offset to the data
+                    if trans==3:
+                        constant and linear function of x and y
+                    if trans==4:
+                        constant, linear term and cross term.
+                trans can be 'strain'
+
+        Kwargs:
+            * computeNormFact   : Recompute the normalization factor
+        '''
+        
+        # Several cases
+        if type(trans) is int:
+            T = self.getPolyEstimator(trans, computeNormFact=computeNormFact)
+        elif type(trans) is str:
+            T = self.get2DstrainEst(computeNormFact=computeNormFact)
+
+        # All done
+        return T
+
+    def get2DstrainEst(self, computeNormFact=True):
+        '''
+        Returns the matrix to estimate the 2d aerial strain tensor.
+
+        When buildin gthe estimator:
+        Third column is the Epsilon_xx component
+        Fourth column is the Epsilon_xy component
+        Fifth column is the Epsilon_yy component
+        '''
+
+        # Get the number of gps stations
+        ns = self.vel.shape[0]
+
+        # Parameter size
+        nc = 3
+
+        # Get the reference
+        if computeNormFact:
+            self.computeTransformNormalizingFactor()
+        x0,y0 = self.TransformNormalizingFactor['ref']
+        base = self.TransformNormalizingFactor['base']
+
+        # Compute the baselines
+        base_x = (self.x - x0)/base
+        base_y = (self.y - y0)/base
+
+        # Store the normalizing factor
+        self.StrainNormalizingFactor = base
+
+        # Allocate a Base
+        H = np.zeros((2,nc))
+
+        # Allocate the 2 full matrix
+        Hfe = np.zeros((ns,nc))
+        Hfn = np.zeros((ns,nc))
+
+        # Fill in 
+        Hfe[:,0] = base_x
+        Hfe[:,1] = 0.5*base_y
+        Hfn[:,1] = 0.5*base_x
+        Hfn[:,2] = base_y
+
+        # multiply by the los
+        Hout = self.los[:,0][:,np.newaxis]*Hfe + self.los[:,1][:,np.newaxis]*Hfn
+
+        # All done
+        return Hout
 
     def getPolyEstimator(self, ptype, computeNormFact=True):
         '''
@@ -1025,8 +1175,8 @@ class insar(SourceInv):
                     constant, linear term and cross term.
 
             * computeNormFact : bool
-                if True, compute new OrbNormalizingFactor
-                if False, uses parameters in self.OrbNormalizingFactor
+                if True, compute new TransformNormalizingFactor
+                if False, uses parameters in self.TransformNormalizingFactor
         '''
 
         # number of data points
@@ -1039,13 +1189,13 @@ class insar(SourceInv):
         if ptype >= 3:
             # Compute normalizing factors
             if computeNormFact:
-                self.computeOrbNormalizingFactor()
+                self.computeTransformNormalizingFactor()
             else:
-                assert hasattr(self, 'OrbNormalizingFactor'), 'You must set OrbNormalizingFactor first'
+                assert hasattr(self, 'TransformNormalizingFactor'), 'You must set TransformNormalizingFactor first'
 
-            normX = self.OrbNormalizingFactor['x']
-            normY = self.OrbNormalizingFactor['y']
-            x0, y0 = self.OrbNormalizingFactor['ref']
+            normX = self.TransformNormalizingFactor['x']
+            normY = self.TransformNormalizingFactor['y']
+            x0, y0 = self.TransformNormalizingFactor['ref']
 
             # Fill in functionals
             orb[:,1] = (self.x - x0) / normX
@@ -1140,7 +1290,7 @@ class insar(SourceInv):
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
-            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
+            * computeNormFact : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
         '''
 
         # Build synthetics
@@ -1161,7 +1311,7 @@ class insar(SourceInv):
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
-            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
+            * computeNormFact : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
         '''
 
         # Check list

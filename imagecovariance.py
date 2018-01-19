@@ -641,8 +641,6 @@ class imagecovariance(object):
         # Plot the data?
         if plotData:
             plt.figure(figure+1)
-            plt.clf()
-            plt.ion()
             self.image.plot(figure=figure+1, show=False)
             if hasattr(self, 'selectedZones'):
                 for zone in self.selectedZones:
@@ -708,9 +706,6 @@ class imagecovariance(object):
 
             # Increase 
             ii += 1
-
-        # Check
-        plt.ioff()
 
         # Save?
         if savefig:

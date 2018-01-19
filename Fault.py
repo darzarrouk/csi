@@ -594,7 +594,7 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def distance2trace(self, lon, lat, discretized=False):
+    def distance2trace(self, lon, lat, discretized=False, coord='ll'):
         '''
         Computes the distance between a point and the trace of a fault.
         This is a slow method, so it has been recoded in a few places 
@@ -606,6 +606,8 @@ class Fault(SourceInv):
 
         Kwargs:
             * discretized       : Uses the discretized trace.
+            * coord             : if 'll' or 'lonlat' --> input in degree
+                                  if 'xy' or 'utm'    --> input in km
 
         Returns:    
             * dalong            : Distance to the first point of the fault
@@ -618,7 +620,10 @@ class Fault(SourceInv):
         cumdis = self.cumdistance(discretized=discretized)
 
         # ll2xy
-        x, y = self.ll2xy(lon, lat)
+        if coord in ('ll', 'lonlat'):
+            x, y = self.ll2xy(lon, lat)
+        elif coord in ('xy', 'utm'):
+            x,y = lon, lat
 
         # Fault coordinates
         if discretized:

@@ -15,11 +15,215 @@ import matplotlib as mpl
 import copy
 import sys
 import os
+import multiprocessing as mp
 
 # Personals
 from .insar import insar
 from .opticorr import opticorr
 from .imagecovariance import imagecovariance as imcov
+from .csiutils import _split_seq
+
+# Initialize a class for multiprocessing gradient computation
+class mpgradcurv(mp.Process):
+
+    def __init__(self, downsampler, Bsize, indexes, queue):
+        '''
+        Initializes a multiprocessing class
+
+        Args:
+            * downsampler   : instance of imagedownsampling
+            * Bsize         : Size of blocks
+            * indexes       : indexes of blocks
+            * queue         : instance of mp.Queue
+        '''
+
+        # Save
+        self.downsampler = downsampler
+        self.Bsize = Bsize
+        self.indexes = indexes
+        self.queue = queue
+
+        # Initialize the process
+        super(mpgradcurv, self).__init__()
+
+        # All done
+        return
+
+    def run(self):
+        '''
+        Runs the gradient/curvature computation
+        '''
+
+        gradient = []
+        curvature = []
+
+        # Over each block, we average the position and the phase to have a new point
+        for i in self.indexes:
+
+            # If Bsize, then set to 0.
+            if self.Bsize[i]:
+
+                gradient.append(0.0)
+                curvature.append(0.0)
+
+            else:
+
+                # Get block
+                block = self.downsampler.blocks[i]
+                
+                # Split it in 4 blocks
+                subBlocks = self.downsampler.cutblockinfour(block)
+                
+                # Create list
+                xg = []; yg = []; means = []
+                
+                for subblock in subBlocks:
+                    # Create a path
+                    p = path.Path(subblock, closed=False)
+                    # Find those who are inside
+                    ii = p.contains_points(self.downsampler.PIXXY)
+                    # Check if total area is sufficient
+                    check = self.downsampler._isItAGoodBlock(block, 
+                            np.flatnonzero(ii).shape[0])
+                    if check:
+                        if self.downsampler.datatype is 'insar':
+                            vel = np.mean(self.downsampler.image.vel[ii])
+                            means.append(vel)
+                        elif self.datatype is 'opticorr':
+                            east = np.mean(self.downsampler.image.east[ii])
+                            north = np.mean(self.downsampler.image.north[ii])
+                            means.append(np.sqrt(east**2+north**2))
+                        xg.append(np.mean(self.downsampler.image.x[ii]))
+                        yg.append(np.mean(self.downsampler.image.y[ii]))
+                means = np.array(means)
+
+                # estimate gradient
+                if len(xg)>=2:
+                    A = np.zeros((len(xg),3))
+                    A[:,0] = 1.
+                    A[:,1] = xg
+                    A[:,2] = yg
+                    cffs = np.linalg.lstsq(A,means)
+                    gradient.append(np.abs(np.mean(cffs[0][1:])))
+                    curvature.append(np.std(means - np.dot(A,cffs[0])))
+                else:
+                    gradient.append(0.)
+                    curvature.append(0.)
+
+        # Save gradient
+        self.queue.put([gradient, curvature, self.indexes])
+
+        # All done
+        return
+
+# Initialize a class for multiprocessing downsampling
+class mpdownsampler(mp.Process):
+
+    def __init__(self, downsampler, blocks, blocksll, queue):
+        '''
+        Initialize the multiprocessing class.
+
+        Args:
+            * downsampler   : instance of imagedownsampling
+            * blocks        : list of blocks
+            * blocksll      : list of blocks
+            * queue         : Instance of mp.Queue
+
+        Kwargs:
+            * datatype  : 'insar' or 'opticorr'
+        '''
+
+        # Save 
+        self.downsampler = downsampler
+        self.blocks = blocks
+        self.blocksll = blocksll
+        self.queue = queue
+
+        # Initialize the process
+        super(mpdownsampler, self).__init__()
+
+        # All done
+        return
+
+    def run(self):
+        '''
+        Run the phase averaging.
+        '''
+
+        # Initialize lists 
+        X, Y, Lon, Lat, Wgt = [], [], [], [], []
+        if self.downsampler.datatype is 'insar':
+            Vel, Err, Los = [], [], []
+        elif self.downsampler.datatype is 'opticorr':
+            East, North, Err_east, Err_north = [], [], [], []
+        outBlocks = []
+        outBlocksll = []
+
+        # Over each block, we average the position and the phase to have a new point
+        for block, blockll in zip(self.blocks, self.blocksll):
+            
+            # Create a path
+            p = path.Path(block, closed=False)
+            
+            # Find those who are inside
+            ii = p.contains_points(self.downsampler.PIXXY)
+
+            # Check if total area is sufficient
+            check = self.downsampler._isItAGoodBlock(block, np.flatnonzero(ii).shape[0])
+
+            # If yes
+            if check:
+
+                # Save block
+                outBlocks.append(block)
+                outBlocksll.append(blockll)
+
+                # Get Mean, Std, x, y, ...
+                wgt = len(np.flatnonzero(ii))
+                if self.downsampler.datatype is 'insar':
+                    vel = np.mean(self.downsampler.image.vel[ii])
+                    err = np.std(self.downsampler.image.vel[ii])
+                    los0 = np.mean(self.downsampler.image.los[ii,0])
+                    los1 = np.mean(self.downsampler.image.los[ii,1])
+                    los2 = np.mean(self.downsampler.image.los[ii,2])
+                    norm = np.sqrt(los0*los0+los1*los1+los2*los2)
+                    los0 /= norm
+                    los1 /= norm
+                    los2 /= norm
+                elif self.downsampler.datatype is 'opticorr':
+                    east = np.mean(self.downsampler.image.east[ii])
+                    north = np.mean(self.downsampler.image.north[ii])
+                    err_east = np.std(self.downsampler.image.east[ii])
+                    err_north = np.std(self.downsampler.image.north[ii])
+                x = np.mean(self.downsampler.image.x[ii])
+                y = np.mean(self.downsampler.image.y[ii])
+                lon, lat = self.downsampler.xy2ll(x, y)
+
+                # Store that
+                if self.downsampler.datatype is 'insar':
+                    Vel.append(vel)
+                    Err.append(err)
+                    Los.append([los0, los1, los2])
+                elif self.downsampler.datatype is 'opticorr':
+                    East.append(east)
+                    North.append(north)
+                    Err_east.append(err_east)
+                    Err_north.append(err_north)
+                X.append(x)
+                Y.append(y)
+                Lon.append(lon)
+                Lat.append(lat)
+                Wgt.append(wgt)
+    
+        # Save
+        if self.downsampler.datatype is 'insar':
+            self.queue.put([X, Y, Lon, Lat, Wgt, Vel, Err, Los, outBlocks, outBlocksll])
+        elif self.downsampler.datatype is 'opticorr':
+            self.queue.put([X, Y, Lon, Lat, Wgt, East, North, Err_east, Err_north, blocks_to_remove, 
+                        outBlocks, outBlocksll])
+
+        # All done
+        return
 
 class imagedownsampling(object):
 
@@ -27,7 +231,7 @@ class imagedownsampling(object):
         '''
         Args:
             * name      : Name of the downsampler.
-            * image    : InSAR or Cosicorr data set to be downsampled.
+            * image     : InSAR or Cosicorr data set to be downsampled.
             * faults    : List of faults.
         '''
 
@@ -207,64 +411,53 @@ class imagedownsampling(object):
         newimage.factor = self.image.factor
 
         # Build the previous geometry
-        PIXXY = np.vstack((self.image.x, self.image.y)).T
+        self.PIXXY = np.vstack((self.image.x, self.image.y)).T
 
-        # Keep track of the blocks to trash
-        blocks_to_remove = []
+        # Create a queue to hold the results
+        output = mp.Queue()
 
-        # Over each block, we average the position and the phase to have a new point
-        for i in range(len(blocks)):
-            sys.stdout.write('\r Downsampling {}/{} '.format(i, len(blocks)))
-            sys.stdout.flush()
-            # Get block
-            block = blocks[i]
-            # Create a path
-            p = path.Path(block, closed=False)
-            # Find those who are inside
-            ii = p.contains_points(PIXXY)
-            # Check if total area is sufficient
-            check = self._isItAGoodBlock(block, np.flatnonzero(ii).shape[0])
-            if check:
-                # Get Mean, Std, x, y, ...
-                wgt = len(np.flatnonzero(ii))
-                if self.datatype is 'insar':
-                    vel = np.mean(self.image.vel[ii])
-                    err = np.std(self.image.vel[ii])
-                    los0 = np.mean(self.image.los[ii,0])
-                    los1 = np.mean(self.image.los[ii,1])
-                    los2 = np.mean(self.image.los[ii,2])
-                    norm = np.sqrt(los0*los0+los1*los1+los2*los2)
-                    los0 /= norm
-                    los1 /= norm
-                    los2 /= norm
-                elif self.datatype is 'opticorr':
-                    east = np.mean(self.image.east[ii])
-                    north = np.mean(self.image.north[ii])
-                    err_east = np.std(self.image.east[ii])
-                    err_north = np.std(self.image.north[ii])
-                x = np.mean(self.image.x[ii])
-                y = np.mean(self.image.y[ii])
-                lon, lat = self.xy2ll(x, y)
-                # Store that
-                if self.datatype is 'insar':
-                    newimage.vel.append(vel)
-                    newimage.err.append(err)
-                    newimage.los.append([los0, los1, los2])
-                elif self.datatype is 'opticorr':
-                    newimage.east.append(east)
-                    newimage.north.append(north)
-                    newimage.err_east.append(err_east)
-                    newimage.err_north.append(err_north)
-                newimage.x.append(x)
-                newimage.y.append(y)
-                newimage.lon.append(lon)
-                newimage.lat.append(lat)
-                newimage.wgt.append(wgt)
-            else:
-                blocks_to_remove.append(i)
+        # Check how many workers
+        try:
+            nworkers = int(os.environ['OMP_NUM_THREADS'])
+        except:
+            nworkers = mp.cpu_count()
 
-        # Clean up useless blocks
-        self.trashblocks(blocks_to_remove)
+        # Create the workers
+        seqblocks = _split_seq(blocks, nworkers)
+        seqblocksll = _split_seq(blocksll, nworkers)
+        workers = [mpdownsampler(self, seqblocks[i], seqblocksll[i], output)\
+                                 for i in range(nworkers)]
+
+        # Start
+        for w in range(nworkers): workers[w].start()
+
+        # Initialize blocks
+        blocks, blocksll = [], []
+
+        # Collect
+        for w in range(nworkers):
+            if self.datatype is 'insar':
+                x, y, lon, lat, wgt, vel, err, los, block, blockll  = output.get()
+                newimage.vel.extend(vel)
+                newimage.err.extend(err)
+                newimage.los.extend(los)
+            elif self.datatype is 'opticorr':
+                x, y, lon, lat, wgt, east, north, err_east, err_north, block, blockll = output.get()
+                newimage.east.extend(east)
+                newimage.north.extend(north)
+                newimage.err_east.extend(err_east)
+                newimage.err_north.extend(err_north)
+            newimage.x.extend(x)
+            newimage.y.extend(y)
+            newimage.lat.extend(lat)
+            newimage.lon.extend(lon)
+            newimage.wgt.extend(wgt)
+            blocks.extend(block)
+            blocksll.extend(blockll)
+
+        # Save blocks
+        self.blocks = blocks
+        self.blocksll = blocksll
 
         # Convert
         if self.datatype is 'insar':
@@ -403,7 +596,7 @@ class imagedownsampling(object):
         '''
 
         if self.verbose:
-            print ("\r---------------------------------")
+            print ("---------------------------------")
             print ("---------------------------------")
             print ("Distance-based downsampling ")
            
@@ -425,7 +618,7 @@ class imagedownsampling(object):
             # Iteration #
             it += 1
             if self.verbose: 
-                print('\r Iteration {}: Testing {} data samples \r'.format(it, len(self.blocks)))
+                print('Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
 
             # New list of blocks
             newblocks = []
@@ -450,9 +643,6 @@ class imagedownsampling(object):
             # Do the downsampling
             self.downsample(plot=plot, decimorig=decimorig)
 
-        if self.verbose:
-            print(" ")
-
         # All done
         return
 
@@ -466,51 +656,36 @@ class imagedownsampling(object):
         '''
 
         # Get the XY situation
-        PIXXY = np.vstack((self.image.x, self.image.y)).T
+        self.PIXXY = np.vstack((self.image.x, self.image.y)).T
 
         # Get minimum size
         Bsize = self._is_minimum_size(self.blocks)
 
         # Gradient (if we cannot compute the gradient, the value is zero, so the algo stops)
-        self.Gradient = np.zeros(len(self.blocks,))
-        self.Curvature = np.zeros(len(self.blocks,))
+        self.Gradient = np.ones(len(self.blocks,))*1e7
+        self.Curvature = np.ones(len(self.blocks,))*1e7
 
-        # Over each block, we average the position and the phase to have a new point
-        for i in range(len(self.blocks)):
-            if not Bsize[i]:
-                # Get block
-                block = self.blocks[i]
-                # Split it in 4 blocks
-                subBlocks = self.cutblockinfour(block)
-                # Create list
-                xg = []; yg = []; means = []
-                for subblock in subBlocks:
-                    # Create a path
-                    p = path.Path(subblock, closed=False)
-                    # Find those who are inside
-                    ii = p.contains_points(PIXXY)
-                    # Check if total area is sufficient
-                    check = self._isItAGoodBlock(block, np.flatnonzero(ii).shape[0])
-                    if check:
-                        if self.datatype is 'insar':
-                            vel = np.mean(self.image.vel[ii])
-                            means.append(vel)
-                        elif self.datatype is 'opticorr':
-                            east = np.mean(self.image.east[ii])
-                            north = np.mean(self.image.north[ii])
-                            means.append(np.sqrt(east**2+north**2))
-                        xg.append(np.mean(self.image.x[ii]))
-                        yg.append(np.mean(self.image.y[ii]))
-                means = np.array(means)
-                # estimate gradient
-                if len(xg)>=2:
-                    A = np.zeros((len(xg),3))
-                    A[:,0] = 1.
-                    A[:,1] = xg
-                    A[:,2] = yg
-                    cffs = np.linalg.lstsq(A,means)
-                    self.Gradient[i] = np.abs(np.mean(cffs[0][1:]))
-                    self.Curvature[i] = np.std(means - np.dot(A,cffs[0]))
+        # Create a queue to hold the results
+        output = mp.Queue()
+
+        # Check how many workers
+        try:
+            nworkers = int(os.environ['OMP_NUM_THREADS'])
+        except:
+            nworkers = mp.cpu_count()
+
+        # Create the workers
+        seqindices = _split_seq(range(len(self.blocks)), nworkers)
+        workers = [mpgradcurv(self, Bsize, seqindices[w], output) for w in range(nworkers)]
+
+        # start the workers
+        for w in range(nworkers): workers[w].start()  
+
+        # Collect
+        for w in range(nworkers):
+            gradient, curvature, igrad = output.get()
+            self.Gradient[igrad] = gradient
+            self.Curvature[igrad] = curvature
 
         # Smooth?
         if smooth is not None:
@@ -523,7 +698,7 @@ class imagedownsampling(object):
         # All done
         return
 
-    def dataBased(self, threshold, plot=False, verboseLevel='minimum', decimorig=10, quantity='curvature', smooth=None):
+    def dataBased(self, threshold, plot=False, verboseLevel='minimum', decimorig=10, quantity='curvature', smooth=None, itmax=100):
         '''
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
         Threshold is based on the gradient or curvature of the phase field inside the block.
@@ -556,7 +731,7 @@ class imagedownsampling(object):
         Bsize = self._is_minimum_size(self.blocks)
 
         # Loops until done
-        while not (testable<threshold).all():
+        while not (testable<threshold).all() and it<itmax:
 
             # Check 
             assert testable.shape[0]==len(self.blocks), 'Gradient vector has a size different than number of blocks'
@@ -586,8 +761,7 @@ class imagedownsampling(object):
             # Iteration #
             it += 1
             if self.verbose: 
-                sys.stdout.write('\r Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
-                sys.stdout.flush()
+                print('Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
 
             # Compute resolution
             self.computeGradientCurvature(smooth=smooth)
@@ -608,13 +782,10 @@ class imagedownsampling(object):
             if plot:
                 self.plotDownsampled(decimorig=decimorig)
 
-        if self.verbose:
-            print(" ")
-
         # All done
         return
 
-    def ResolutionBasedIterations(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum', decimorig=10, vertical=False):
+    def resolutionBased(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum', decimorig=10, vertical=False):
         '''
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
         Args:
@@ -680,8 +851,7 @@ class imagedownsampling(object):
             # Iteration #
             it += 1
             if self.verbose: 
-                sys.stdout.write('\r Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
-                sys.stdout.flush()
+                print('Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
 
             # Compute resolution
             self.computeResolution(slipdirection, damping, vertical=vertical)
@@ -736,7 +906,6 @@ class imagedownsampling(object):
                 G = fault.Gassembled
             else:
                 G = np.hstack((G, fault.Gassembled))
-
         # Compute the data resolution matrix
         Npar = G.shape[1]
         if self.datatype is 'opticorr':
@@ -929,6 +1098,9 @@ class imagedownsampling(object):
             plt.scatter(x, y, s=20, c=self.Gradient, linewidth=0.1)
             plt.title('Gradient')
             plt.colorbar(orientation='horizontal')
+            plt.figure()
+            plt.hist(self.Gradient, bins=10)
+            plt.title('Gradient')
 
         # Curvature
         if hasattr(self, 'Curvature'):
@@ -939,6 +1111,9 @@ class imagedownsampling(object):
             plt.scatter(x, y, s=20, c=self.Curvature, linewidth=0.1)
             plt.title('Curvature')
             plt.colorbar(orientation='horizontal')
+            plt.figure()
+            plt.hist(self.Curvature, bins=10)
+            plt.title('Curvature')
         
         # Resolution
         if hasattr(self, 'Resolution'):
@@ -949,6 +1124,9 @@ class imagedownsampling(object):
             plt.scatter(x, y, s=20, c=self.Rd, linewidth=0.1)
             plt.title('Resolution')
             plt.colorbar(orientation='horizontal')
+            plt.figure()
+            plt.hist(self.Resolution, bins=10)
+            plt.title('Resolution')
 
         # All done
         if show:

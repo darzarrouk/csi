@@ -78,6 +78,8 @@ class multifaultsolve(object):
                 fault.computeTentArea()
                 for tentIndex in range(fault.slip.shape[0]):
                     patchAreas.append(fault.area_tent[tentIndex])
+            elif fault.patchType in ('notafault', 'transformation'):
+                print('Not a fault detected')
             else:
                 fault.computeArea()
                 for patchIndex in range(fault.slip.shape[0]):
@@ -119,7 +121,8 @@ class multifaultsolve(object):
             # Store the G matrix
             self.G[:,st:se] = fault.Gassembled
             # Keep track of indexing
-            self.affectIndexParameters(fault)
+            if fault.patchType not in ('notafault', 'transformation'):
+                self.affectIndexParameters(fault)
 
         # self ready
         self.ready = True
@@ -333,71 +336,78 @@ class multifaultsolve(object):
             se = self.fault_indexes[fault.name][1]
             fault.mpost = self.mpost[st:se]
 
-            # Affect the indexes
-            self.affectIndexParameters(fault)
+            # case of a transformation object
+            if fault.patchType=='transformation':
 
-            # put the slip values in slip
-            st = 0
-            if 's' in fault.slipdir:
-                se = st + fault.slip.shape[0]
-                fault.slip[:,0] = fault.mpost[st:se]
-                st += fault.slip.shape[0]
-            if 'd' in fault.slipdir:
-                se = st + fault.slip.shape[0]
-                fault.slip[:,1] = fault.mpost[st:se]
-                st += fault.slip.shape[0]
-            if 't' in fault.slipdir:
-                se = st + fault.slip.shape[0]
-                fault.slip[:,2] = fault.mpost[st:se]
-                st += fault.slip.shape[0]
-            if 'c' in fault.slipdir:
-                se = st + fault.slip.shape[0]
-                fault.coupling = fault.mpost[st:se]
-                st += fault.slip.shape[0]
+                fault.distributem()
+            
+            else:
 
-            # check
-            if hasattr(fault, 'NumberCustom'):
-                fault.custom = {} # Initialize dictionnary
-                # Get custom params for each dataset
+                # Affect the indexes
+                self.affectIndexParameters(fault)
+
+                # put the slip values in slip
+                st = 0
+                if 's' in fault.slipdir:
+                    se = st + fault.slip.shape[0]
+                    fault.slip[:,0] = fault.mpost[st:se]
+                    st += fault.slip.shape[0]
+                if 'd' in fault.slipdir:
+                    se = st + fault.slip.shape[0]
+                    fault.slip[:,1] = fault.mpost[st:se]
+                    st += fault.slip.shape[0]
+                if 't' in fault.slipdir:
+                    se = st + fault.slip.shape[0]
+                    fault.slip[:,2] = fault.mpost[st:se]
+                    st += fault.slip.shape[0]
+                if 'c' in fault.slipdir:
+                    se = st + fault.slip.shape[0]
+                    fault.coupling = fault.mpost[st:se]
+                    st += fault.slip.shape[0]
+
+                # check
+                if hasattr(fault, 'NumberCustom'):
+                    fault.custom = {} # Initialize dictionnary
+                    # Get custom params for each dataset
+                    for dset in fault.datanames:
+                        if 'custom' in fault.G[dset].keys():
+                            nc = fault.G[dset]['custom'].shape[1] # Get number of param for this dset
+                            se = st + nc
+                            fault.custom[dset] = fault.mpost[st:se]
+                            st += nc
+
+                # Get the polynomial/orbital/helmert values if they exist
+                fault.polysol = {}
+                fault.polysolindex = {}
                 for dset in fault.datanames:
-                    if 'custom' in fault.G[dset].keys():
-                        nc = fault.G[dset]['custom'].shape[1] # Get number of param for this dset
-                        se = st + nc
-                        fault.custom[dset] = fault.mpost[st:se]
-                        st += nc
-
-            # Get the polynomial/orbital/helmert values if they exist
-            fault.polysol = {}
-            fault.polysolindex = {}
-            for dset in fault.datanames:
-                if dset in fault.poly.keys():
-                    if (fault.poly[dset].__class__ is not str) and (fault.poly[dset].__class__ is not list):
-                        if (fault.poly[dset] > 0):
-                            se = st + fault.poly[dset]
-                            fault.polysol[dset] = fault.mpost[st:se]
-                            fault.polysolindex[dset] = range(st,se)
-                            st += fault.poly[dset]
-                    elif (fault.poly[dset].__class__ is str):
-                        if fault.poly[dset] is 'full':
-                            nh = fault.helmert[dset]
+                    if dset in fault.poly.keys():
+                        if (fault.poly[dset].__class__ is not str) and (fault.poly[dset].__class__ is not list):
+                            if (fault.poly[dset] > 0):
+                                se = st + fault.poly[dset]
+                                fault.polysol[dset] = fault.mpost[st:se]
+                                fault.polysolindex[dset] = range(st,se)
+                                st += fault.poly[dset]
+                        elif (fault.poly[dset].__class__ is str):
+                            if fault.poly[dset] is 'full':
+                                nh = fault.helmert[dset]
+                                se = st + nh
+                                fault.polysol[dset] = fault.mpost[st:se]
+                                fault.polysolindex[dset] = range(st,se)
+                                st += nh
+                            if fault.poly[dset] in ('strain', 'strainnorotation', 'strainonly', 'strainnotranslation', 'translation', 'translationrotation'):
+                                nh = fault.strain[dset]
+                                se = st + nh
+                                fault.polysol[dset] = fault.mpost[st:se]
+                                fault.polysolindex[dset] = range(st,se)
+                                st += nh
+                        elif (fault.poly[dset].__class__ is list):
+                            nh = fault.transformation[dset]
                             se = st + nh
                             fault.polysol[dset] = fault.mpost[st:se]
                             fault.polysolindex[dset] = range(st,se)
                             st += nh
-                        if fault.poly[dset] in ('strain', 'strainnorotation', 'strainonly', 'strainnotranslation', 'translation', 'translationrotation'):
-                            nh = fault.strain[dset]
-                            se = st + nh
-                            fault.polysol[dset] = fault.mpost[st:se]
-                            fault.polysolindex[dset] = range(st,se)
-                            st += nh
-                    elif (fault.poly[dset].__class__ is list):
-                        nh = fault.transformation[dset]
-                        se = st + nh
-                        fault.polysol[dset] = fault.mpost[st:se]
-                        fault.polysolindex[dset] = range(st,se)
-                        st += nh
-                    else:
-                        fault.polysol[dset] = None
+                        else:
+                            fault.polysol[dset] = None
 
         # All done
         return
@@ -695,7 +705,7 @@ class multifaultsolve(object):
             moment =  np.abs(np.dot(shearModulus * patchAreas, slip))
             if moment>0.:
                 Mw = 2.0 / 3.0 * (np.log10(moment) - 9.1)
-                print Mw
+                #print(Mw)
             else:
                 Mw = -6.0
             return np.array([Mw_thresh - Mw])
@@ -780,7 +790,10 @@ class multifaultsolve(object):
             print ("  model: P(m|d) = C P(m) P(d|m)  ")
 
         # Import 
-        import pymc
+        try:
+            import pymc
+        except:
+            print('This method uses pymc. Please install it')
 
         # Get the matrixes and vectors
         assert hasattr(self, 'G'), 'Need an assembled G matrix...'

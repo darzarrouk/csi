@@ -15,7 +15,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # PyMC
-import pymc
+try:
+    import pymc
+except:
+    pass 
 
 # Personals
 from .SourceInv import SourceInv
