@@ -268,7 +268,7 @@ class insartimeseries(insar):
         return
 
     def readFromGIAnT(self, h5file, setmaster2zero=None,
-                            zfile=None, lonfile=None, latfile=None, 
+                            zfile=None, lonfile=None, latfile=None, filetype='d',
                             incidence=None, heading=None, inctype='onefloat', 
                             field='recons', keepnan=False, mask=None, readModel=False):
         '''
@@ -276,9 +276,10 @@ class insartimeseries(insar):
         Args:
             * h5file        : Input h5file
             * setmaster2zero: If index is provided, master will be replaced by zeros (no substraction)
-            * zfile         : File with elevation (float32)
-            * lonfile       : File with longitudes (float32)
-            * latfile       : File with latitudes (float32)
+            * zfile         : File with elevation 
+            * lonfile       : File with longitudes 
+            * latfile       : File with latitudes 
+            * filetype      : type of data in lon, lat and elevation file (default: 'f')
             * incidence     : Incidence angle (degree)
             * heading       : Heading angle (degree)
             * inctype       : Type of the incidence and heading values (see insar.py for details)
@@ -320,18 +321,22 @@ class insartimeseries(insar):
 
         # Read Lon Lat
         if lonfile is not None:
-            self.lon = np.fromfile(lonfile, dtype=np.float32)
+            self.lon = np.fromfile(lonfile, dtype=filetype)
         if latfile is not None:
-            self.lat = np.fromfile(latfile, dtype=np.float32)
+            self.lat = np.fromfile(latfile, dtype=filetype)
 
         # Compute utm
         self.x, self.y = self.ll2xy(self.lon, self.lat) 
 
         # Elevation
         if zfile is not None:
-            self.elevation = insar('Elevation', utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+            self.elevation = insar('Elevation', utmzone=self.utmzone, 
+                                   verbose=False, lon0=self.lon0, lat0=self.lat0,
+                                   ellps=self.ellps)
             self.elevation.read_from_binary(zfile, lonfile, latfile, 
-                    incidence=None, heading=None, remove_nan=False, remove_zeros=False)
+                                            incidence=None, heading=None, 
+                                            remove_nan=False, remove_zeros=False, 
+                                            dtype=filetype)
             self.z = self.elevation.vel
 
         # Get the time
