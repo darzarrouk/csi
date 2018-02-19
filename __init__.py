@@ -78,6 +78,6 @@ from . import csiutils as utils
 from .slipHistory import slipHistory
 
 ## New time modeling stuff
-import probabilisticInterpolation as bayestimemod
+#import probabilisticInterpolation as bayestimemod
 
 #EOF
