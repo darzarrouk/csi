@@ -106,13 +106,13 @@ class insartimeseries(insar):
 
         # Set up a list of Dates
         if time is not None:
-            self.time = np.array(time)
+            self.time = time
         else:
             assert start is not None, 'Need a starting point...'
             assert increment is not None, 'Need an increment in days...'
             assert steps is not None, 'Need a number of steps...'
-            self.time = np.array([dt.datetime.fromordinal(start.toordinal()+increment*i)\
-                    for i in range(steps)])
+            self.time = [dt.datetime.fromordinal(start.toordinal()+increment*i)\
+                    for i in range(steps)]
 
         # Create timeseries
         self.timeseries = []
@@ -167,18 +167,16 @@ class insartimeseries(insar):
         '''
 
         # Find the right index
-        udate = np.flatnonzero(self.time==date)
-
-        # All done 
-        if udate.size==1:
-            # Speak to me
-            if verbose:
-                print('Returning insar image at date {}'.format(self.time[udate[0]]))
-            return self.timeseries[udate[0]]
-        else:
-            if verbose:
-                print('No date found')
+        try:
+            udate = self.time.index(date)
+        except:
+            print('Date {} not available'.format(date.isoformat()))
             return None
+
+        # Speak to me
+        if verbose:
+            print('Returning insar image at date {}'.format(self.time[udate]))
+        return self.timeseries[udate]
 
     def setTimeSeries(self, timeseries):
         '''
@@ -226,7 +224,11 @@ class insartimeseries(insar):
                 datetime.datetime object'
 
         # Get the reference
-        i = np.flatnonzero(np.array(self.time)==date)[0]
+        try:
+            i = self.time.index(date)
+        except:
+            print('Date {} not available'.format(date.isformat()))
+
         reference = copy.deepcopy(self.timeseries[i].vel)
 
         # Reference
@@ -344,7 +346,6 @@ class insartimeseries(insar):
         self.time = []
         for i in range(nDates):
             self.time.append(dt.datetime.fromordinal(int(dates[i])))
-        self.time = np.array(self.time)
 
         # Create a list to hold the dates
         self.timeseries = []
@@ -474,14 +475,14 @@ class insartimeseries(insar):
                 datetime.datetime object'
 
         # Find the date
-        i = np.flatnonzero(self.time==date)
+        try:
+            i = self.time.index(date)
+        except:
+            print('Nothing to do')
 
         # Remove it
-        if len(i)>0:
-            del self.timeseries[i[0]]
-            del self.time[i[0]]
-        else:
-            print('No date to remove')
+        del self.timeseries[i]
+        del self.time[i]
 
         # All done
         return
@@ -828,9 +829,13 @@ class insartimeseries(insar):
                 datetime.datetime object'
 
         # Get the profile
-        i = np.flatnonzero(self.time==date)[0]
-        pname = '{} {}'.format(prefix, date.isoformat())
-        refProfile = self.timeseries[i].profiles[pname]
+        try:
+            i = self.time.index(date)
+            pname = '{} {}'.format(prefix, date.isoformat())
+            refProfile = self.timeseries[i].profiles[pname]
+        except:
+            print('Date not available')
+            return
 
         # Create a linear interpolator
         x = refProfile['Distance']

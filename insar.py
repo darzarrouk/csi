@@ -892,6 +892,20 @@ class insar(SourceInv):
         # compute distance
         return np.sqrt( (x-xp)**2 + (y-yp)**2 )
 
+    def returnAverage(self, u):
+        '''
+        Returns the average value, the los and the errors averaged for a given set 
+        of indices of pixels {u}.
+
+        Args:
+            * u         : Set of indices.
+        '''
+        vel = np.nanmean(self.vel[u])
+        err = np.nanstd(self.vel[u])
+        los = np.nanmean(self.los[u,:], axis=0)
+        los /= np.linalg.norm(los)
+        return vel, err, los
+
     def returnAverageNearPoint(self, lon, lat, distance):
         '''
         Returns the phase value, the los and the errors averaged over a distance
@@ -911,11 +925,7 @@ class insar(SourceInv):
 
         # return the values
         if len(u)>0:
-            vel = np.nanmean(self.vel[u])
-            err = np.nanstd(self.vel[u])
-            los = np.nanmean(self.los[u,:], axis=0)
-            los /= np.linalg.norm(los)
-            return vel, err, los
+            return self.returnAverage(u)
         else:
             return None, None, None
 
@@ -1682,9 +1692,9 @@ class insar(SourceInv):
 
                 # Get the mean
                 if method in ('mean'):
-                    m = vel[uu].mean()
+                    m = np.nanmean(vel[uu])
                 elif method in ('median'):
-                    m = np.median(vel[uu])
+                    m = np.nanmedian(vel[uu])
 
                 # Get the mean distance
                 d = dis[uu].mean()
