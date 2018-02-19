@@ -1042,7 +1042,8 @@ class RectangularPatches(Fault):
         self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse, flipstrike=flipstrike,nsigma=nsigma)
 
         # Write something
-        print('Writing slip direction to file {}'.format(filename))
+        if self.verbose:
+            print('Writing slip direction to file {}'.format(filename))
 
         # Open the file
         fout = open(filename, 'w')
