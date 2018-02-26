@@ -103,14 +103,14 @@ class timeseries(SourceInv):
             delta = ed - st
             delta_sec = np.int(np.floor(delta.days * 24 * 60 * 60 + delta.seconds))
             time_step = np.int(np.floor(increment * 24 * 60 * 60))
-            self.time = np.array([st + dt.timedelta(0, t) \
-                    for t in range(0, delta_sec, time_step)])
+            self.time = [st + dt.timedelta(0, t) \
+                    for t in range(0, delta_sec, time_step)]
         if time is not None:
             self.time = time
 
         # Values and errors
-        self.value = np.zeros(self.time.shape)
-        self.error = np.zeros(self.time.shape)
+        self.value = np.zeros((len(self.time),))
+        self.error = np.zeros((len(self.time),))
         self.synth = None        
 
         # All done
@@ -174,7 +174,7 @@ class timeseries(SourceInv):
                 error.append(0.0)
 
         # arrays
-        self.time = np.array(time)
+        self.time = time
         self.value = np.array(value)
         self.error = np.array(error)
 
@@ -201,7 +201,7 @@ class timeseries(SourceInv):
 
         self.value = np.delete(self.value, indexes)
         self.error = np.delete(self.error, indexes)
-        self.time = np.delete(self.time, indexes)
+        self.time = np.delete(np.array(self.time), indexes).tolist()
 
         # All done
         return
@@ -215,7 +215,7 @@ class timeseries(SourceInv):
         u = np.argsort(self.time)
 
         # Sort
-        self.time = self.time[u]
+        self.time = [self.time[i] for i in u]
         self.value = self.value[u]
         self.error = self.error[u]
 
@@ -233,8 +233,8 @@ class timeseries(SourceInv):
         assert type(end) is dt.datetime, 'Ending date must be datetime.datetime instance'
 
         # Get indexes
-        u1 = np.flatnonzero(self.time>=start)
-        u2 = np.flatnonzero(self.time<=end)
+        u1 = np.flatnonzero(np.array(self.time)>=start)
+        u2 = np.flatnonzero(np.array(self.time)<=end)
         u = np.intersect1d(u1, u2)
 
         # Keep'em
@@ -253,12 +253,12 @@ class timeseries(SourceInv):
         # Find the index
         u = 0
         t = self.time[u]
-        while t<time and u<self.time.shape[0]:
+        while t<time and u<len(self.time):
             t = self.time[u]
             u += 1
 
         # insert
-        self.time = np.insert(self.time, u, time)
+        self.time.insert(u, time)
         self.value = np.insert(self.value, u, value)
         self.error = np.insert(self.error, u, std)
         
@@ -273,11 +273,11 @@ class timeseries(SourceInv):
         # Get arrays
         up = self.value[2:]
         do = self.value[:-2]
-        tup = self.time[2:].tolist()
-        tdo = self.time[:-2].tolist()
+        tup = self.time[2:]
+        tdo = self.time[:-2]
 
         # Compute
-        self.derivative = np.zeros((self.time.shape[0],))
+        self.derivative = np.zeros((len(self.time),))
         timedelta = np.array([(tu-td).total_seconds() for tu,td in zip(tup, tdo)])
         self.derivative[1:-1] = (up - do)/timedelta
 
@@ -341,7 +341,7 @@ class timeseries(SourceInv):
             # Build the interpolator
             time = np.array([(self.time[t]-self.time[iInt[0]]).total_seconds() for t in iInt])
             value = np.array([self.value[t] for t in iInt])
-            interp = sciint.interp1d(time, self.value[iInt], kind=interpolation)
+            interp = sciint.interp1d(np.array(time), self.value[iInt], kind=interpolation)
 
             # Interpolate
             self.value[iGs] = np.array([interp((self.time[t]-self.time[iInt[0]]).total_seconds()) for t in iGs])
@@ -362,8 +362,8 @@ class timeseries(SourceInv):
             end = self.time[-1]
 
         # Get index
-        u1 = np.flatnonzero(self.time>=start)
-        u2 = np.flatnonzero(self.time<=end)
+        u1 = np.flatnonzero(np.array(self.time)>=start)
+        u2 = np.flatnonzero(np.array(self.time)<=end)
         u = np.intersect1d(u1, u2)
 
         # Get Mean
@@ -560,7 +560,8 @@ class timeseries(SourceInv):
         # Plot ts
         for v,style in zip(values, styles):
             u = np.argsort(self.time)
-            ax.plot(self.time[u], v[u], style)
+            for i in u:
+                ax.plot(self.time[i], v[i], style)
 
         # show
         if show:
@@ -583,7 +584,7 @@ class timeseries(SourceInv):
 
         # Find the common dates and compute the difference
         for d, date in enumerate(self.time):
-            val = timeseries.value[timeseries.time==date]
+            val = timeseries.value[timeseries.time.index(date)]
             assert len(val)<=1, 'Multiple dates for a measurement'
             if len(val)>0:
                 diff = self.value[d] - val
@@ -607,7 +608,7 @@ class timeseries(SourceInv):
         Keeps the dates corresponding to index u.
         '''
 
-        self.time = self.time[u]
+        self.time = [self.time[i] for i in u]
         self.value = self.value[u]
         self.error = self.error[u]
         if hasattr(self, 'synth'):
@@ -622,7 +623,7 @@ class timeseries(SourceInv):
         '''
 
         # Delete stuff
-        self.time = np.delete(self.time, u)
+        self.time = np.delete(np.array(self.time), u).tolist()
         self.value = np.delete(self.value, u)
         self.error = np.delete(self.error, u)
         if hasattr(self, 'synth'):
