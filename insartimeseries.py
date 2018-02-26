@@ -170,7 +170,8 @@ class insartimeseries(insar):
         try:
             udate = self.time.index(date)
         except:
-            print('Date {} not available'.format(date.isoformat()))
+            if verbose:
+                print('Date {} not available'.format(date.isoformat()))
             return None
 
         # Speak to me
