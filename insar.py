@@ -391,6 +391,12 @@ class insar(SourceInv):
         else:
             iFinite = range(len(vel))
 
+        # First try 
+        self.vel = vel
+        self.lon = lon
+        self.lat = lat
+        self.err = err
+
         # Compute the LOS
         if heading is not None:
             if type(incidence) is np.ndarray:
