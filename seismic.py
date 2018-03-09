@@ -584,14 +584,14 @@ class seismic(SourceInv):
                 #     self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm[-1], self.d[dkey].khole,
                 #     self.d[dkey].az, self.d[dkey].gcarc,b,Y_units)
                 label = r'%s %s %s $(\phi,\Delta, A) = %6.1f^{\circ}, %6.1f^{\circ}, %.0f%s$'%(
-                    self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm[-1], 
+                    self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm, 
                     self.d[dkey].az, self.d[dkey].gcarc,b,Y_units)                   
             elif len(self.d[dkey].kcmpnm)>2 and self.d[dkey].kcmpnm[2] == 'Z' or inc==False:
                  #label = r'%s %s %s %s $(\phi,\Delta) = %6.1f^{\circ}, %6.1f^{\circ}$'%(
                  #    self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm[-1], self.d[dkey].khole,
                  #    self.d[dkey].az, self.d[dkey].gcarc)
                 label = r'%s %s %s $(\phi,\Delta) = %6.1f^{\circ}, %6.1f^{\circ}$'%(
-                    self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm[-1], 
+                    self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm, 
                     self.d[dkey].az, self.d[dkey].gcarc)                
             else:
                 # label  = r'%s %s %s %s $(\phi,\Delta,\alpha) = %6.1f^{\circ},'
