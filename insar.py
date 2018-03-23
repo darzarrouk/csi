@@ -992,7 +992,8 @@ class insar(SourceInv):
         self.maxlat = maxlat
 
         # Select on latitude and longitude
-        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon))
+        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) \
+                & (self.lon>minlon) & (self.lon<maxlon))
     
         # Do it 
         self.keepPixels(u)
@@ -1010,7 +1011,8 @@ class insar(SourceInv):
         self.lat = self.lat[u]
         self.x = self.x[u]
         self.y = self.y[u]
-        self.vel = self.vel[u]
+        if self.vel is not None:
+            self.vel = self.vel[u]
         if self.err is not None:
             self.err = self.err[u]
         if self.los is not None:

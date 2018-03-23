@@ -179,6 +179,37 @@ class insartimeseries(insar):
             print('Returning insar image at date {}'.format(self.time[udate]))
         return self.timeseries[udate]
 
+    def select_pixels(self, minlon, maxlon, minlat, maxlat):
+        '''
+        Select the pixels in a box defined by min and max, lat and lon.
+
+        Args:
+            * minlon        : Minimum longitude.
+            * maxlon        : Maximum longitude.
+            * minlat        : Minimum latitude.
+            * maxlat        : Maximum latitude.
+        '''
+
+        # Store the corners
+        self.minlon = minlon
+        self.maxlon = maxlon
+        self.minlat = minlat
+        self.maxlat = maxlat
+
+        # Select on latitude and longitude
+        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) \
+                & (self.lon>minlon) & (self.lon<maxlon))
+    
+        # Keep pixels
+        self.keepPixels(u)
+
+        # Iterate over the timeseries
+        for sar in self.timeseries:
+            sar.keepPixels(u)
+
+        # All done
+        return
+
     def setTimeSeries(self, timeseries):
         '''
         Sets the values in the time series.
