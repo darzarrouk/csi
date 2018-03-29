@@ -162,12 +162,12 @@ class tidalfit(object):
 
         # Get the data indexes
         if chunks is None:
-            u = range(time.shape[0])
+            u = range(len(time))
         else:
             u = []
             for chunk in chunks:
-                u1 = np.flatnonzero(time>=chunk[0])
-                u2 = np.flatnonzero(time<=chunk[1])
+                u1 = np.flatnonzero(np.array(time)>=chunk[0])
+                u2 = np.flatnonzero(np.array(time)<=chunk[1])
                 uu = np.intersect1d(u1, u2)
                 u.append(uu)
             u = np.array(u).flatten().tolist()
@@ -204,7 +204,7 @@ class tidalfit(object):
             self.steps = steps
             for step in steps:
                 sline = np.zeros((self.data.shape[0],))
-                p = np.flatnonzero(time>=step)
+                p = np.flatnonzero(np.flatnonzero(time)>=step)
                 sline[p] = 1.0
                 G[:,iP] = sline
                 iP += 1

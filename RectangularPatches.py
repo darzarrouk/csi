@@ -27,6 +27,7 @@ from .stressfield import stressfield
 from . import okadafull
 from .geodeticplot import geodeticplot as geoplot
 from .gps import gps as gpsclass
+from .csiutils import colocated
 
 class RectangularPatches(Fault):
     
@@ -56,7 +57,7 @@ class RectangularPatches(Fault):
         # All done
         return
 
-    def setdepth(self, nump=None, top=0, width=None):
+    def setdepth(self, nump=None, top=None, width=None):
         '''
         Set depth patch attributes
 
@@ -67,8 +68,11 @@ class RectangularPatches(Fault):
 
         # If there is patches
         if self.patch is not None:
-            self.top = np.min([[p[2] for p in patch] for patch in self.patch])
-            self.numz = np.unique([[p[2] for p in patch] for patch in self.patch]).size - 1
+            depth = [[p[2] for p in patch] for patch in self.patch]
+            depth = np.unique(np.array(depth).flatten())
+            self.z_patches = depth.tolist()
+            self.top = np.min(depth)
+            self.depth = np.max(depth)            
             
         # Set depth
         if top is not None:
@@ -319,51 +323,19 @@ class RectangularPatches(Fault):
         # All done
         return p1, p2, p3, p4
 
-    def mergePatches(self, p1, p2, verbose=True):
+    def mergePatches(self, p1, p2, eps=None, verbose=True):
         '''
         Merges 2 patches that have common corners.
         Args:
             * p1    : index of the patch #1.
             * p2    : index of the patch #2.
+            * eps : tolerance value for the patch corners (in km)
         '''
 
         if verbose:
             print('Merging patches {} and {} into patch {}'.format(p1,p2,p1))
 
-        # Get the patches
-        patch1 = self.patch[p1]
-        patch2 = self.patch[p2]
-        patch1ll = self.patchll[p1]
-        patch2ll = self.patchll[p2]
-
-        # Create the newpatches
-        newpatch = np.zeros((4,3))
-        newpatchll = np.zeros((4,3))
-
-        # determine which corners are in common, needs at least two
-        if ((list(patch1[0])==list(patch2[3])) and (list(patch1[1])==list(patch2[2]))):     # patch2 is above patch1
-            newpatch[0] = patch2[0]; newpatchll[0] = patch2ll[0] 
-            newpatch[3] = patch1[3]; newpatchll[3] = patch1ll[3]
-            newpatch[2] = patch1[2]; newpatchll[2] = patch1ll[2]
-            newpatch[1] = patch2[1]; newpatchll[1] = patch2ll[1]
-        elif ((list(patch1[1])==list(patch2[0])) and (list(patch1[2])==list(patch2[3]))):   # patch2 is on the right of patch1
-            newpatch[0] = patch1[0]; newpatchll[0] = patch1ll[0]
-            newpatch[3] = patch1[3]; newpatchll[3] = patch1ll[3]
-            newpatch[2] = patch2[2]; newpatchll[2] = patch2ll[2]
-            newpatch[1] = patch2[1]; newpatchll[1] = patch2ll[1]
-        elif ((list(patch1[3])==list(patch2[0])) and (list(patch1[2])==list(patch2[1]))):   # patch2 is under patch1
-            newpatch[0] = patch1[0]; newpatchll[0] = patch1ll[0]
-            newpatch[3] = patch2[3]; newpatchll[3] = patch2ll[3]
-            newpatch[2] = patch2[2]; newpatchll[2] = patch2ll[2]
-            newpatch[1] = patch1[1]; newpatchll[1] = patch1ll[1]
-        elif ((list(patch1[0])==list(patch2[1])) and (list(patch1[3])==list(patch2[2]))):   # patch2 is on the left of patch1
-            newpatch[0] = patch2[0]; newpatchll[0] = patch2ll[0]
-            newpatch[3] = patch2[3]; newpatchll[3] = patch2ll[3]
-            newpatch[2] = patch1[2]; newpatchll[2] = patch1ll[2]
-            newpatch[1] = patch1[1]; newpatchll[1] = patch1ll[1]
-        else:
-            print('Patches do not have common corners...')
-            return
+        newpatch,newpatchll = self._mergePatches(self, p1, p2, eps=eps)   
 
         # Replace the patch 1 by the new patch
         self.patch[p1] = newpatch
@@ -1042,7 +1014,8 @@ class RectangularPatches(Fault):
         self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse, flipstrike=flipstrike,nsigma=nsigma)
 
         # Write something
-        print('Writing slip direction to file {}'.format(filename))
+        if self.verbose:
+            print('Writing slip direction to file {}'.format(filename))
 
         # Open the file
         fout = open(filename, 'w')
@@ -3193,5 +3166,52 @@ class RectangularPatches(Fault):
         
         # All done
         return
+
+    def _mergePatches(self, p1, p2, eps=0.):
+        '''
+        Return 1 patch consisting of 2 neighbor patches that have common corners.
+        Args:
+            * p1  : index of the patch #1.
+            * p2  : index of the patch #2.
+            * eps : tolerance value for the patch corners (in km)
+        '''
+
+        # Get the patches
+        patch1   = self.patch[p1]
+        patch2   = self.patch[p2]
+        patch1ll = self.patchll[p1]
+        patch2ll = self.patchll[p2]
+
+        # Create the newpatches
+        newpatch = np.zeros((4,3))
+        newpatchll = np.zeros((4,3))
+
+        # determine which corners are in common, needs at least two        
+        if colocated(patch1[0],patch2[3],eps) and colocated(patch1[1],patch2[2],eps): # patch2 is above patch1
+            newpatch[0] = patch2[0]; newpatchll[0] = patch2ll[0] 
+            newpatch[3] = patch1[3]; newpatchll[3] = patch1ll[3]
+            newpatch[2] = patch1[2]; newpatchll[2] = patch1ll[2]
+            newpatch[1] = patch2[1]; newpatchll[1] = patch2ll[1]
+        elif colocated(patch1[1],patch2[0],eps) and colocated(patch1[2],patch2[3],eps): # patch2 is on the right of patch1
+            newpatch[0] = patch1[0]; newpatchll[0] = patch1ll[0]
+            newpatch[3] = patch1[3]; newpatchll[3] = patch1ll[3]
+            newpatch[2] = patch2[2]; newpatchll[2] = patch2ll[2]
+            newpatch[1] = patch2[1]; newpatchll[1] = patch2ll[1]
+        elif colocated(patch1[3],patch2[0],eps) and colocated(patch1[2],patch2[1],eps): # patch2 is under patch1
+            newpatch[0] = patch1[0]; newpatchll[0] = patch1ll[0]
+            newpatch[3] = patch2[3]; newpatchll[3] = patch2ll[3]
+            newpatch[2] = patch2[2]; newpatchll[2] = patch2ll[2]
+            newpatch[1] = patch1[1]; newpatchll[1] = patch1ll[1]
+        elif colocated(patch1[0],patch2[1],eps) and colocated(patch1[3],patch2[2],eps): # patch2 is on the left of patch1
+            newpatch[0] = patch2[0]; newpatchll[0] = patch2ll[0]
+            newpatch[3] = patch2[3]; newpatchll[3] = patch2ll[3]
+            newpatch[2] = patch1[2]; newpatchll[2] = patch1ll[2]
+            newpatch[1] = patch1[1]; newpatchll[1] = patch1ll[1]
+        else:
+            return None
+        
+
+        # All done
+        return newpatch, newpatchll
 
 #EOF

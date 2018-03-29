@@ -557,7 +557,7 @@ class RectangularPatchesKin(RectangularPatches):
         # All done
         return
 
-    def buildKK(self,data,rakes=[0.,90.],Mu=None, slip=1.0, coord0 = None, causal=False):
+    def buildKK(self,data,rakes=[0.,90.],Mu=None, slip=1.0, coord0 = None, causal=False, filter=True):
         '''
         Build Kikuchi-Kanamori Green's functions
         Args:
@@ -566,6 +566,9 @@ class RectangularPatchesKin(RectangularPatches):
             * Mu: Shear modulus (optional)
             * slip: Slip amplitude for tsunami GF calculation (default: 1. m)
             * coord0: lon,lat,dep of reference point to shift GFs (optional)
+            * causal: if True impose causality of the source (no slip before time=0.)
+            * filter: if True, filter the Green's functions (according to i_master parameters in the KK run directory)
+                      if False, do not filter the Green's functions
         '''
 
         print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
@@ -625,7 +628,7 @@ class RectangularPatchesKin(RectangularPatches):
         udip    = o[:,2]
         urake   = o[:,3]
         
-        wave_engine.computeGFdb(udep,ustrike,udip,urake)
+        wave_engine.computeGFdb(udep,ustrike,udip,urake,filter=filter)
 
         # Compute Green's functions from GF database
         if coord0 is not None:

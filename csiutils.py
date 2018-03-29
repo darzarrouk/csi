@@ -353,3 +353,16 @@ def _split_seq(seq, size):
     for i in range(size):
             newseq.append(seq[int(round(i*splitsize)):int(round((i+1)*splitsize))])
     return newseq
+
+# Check if points are colocated
+def colocated(point1,point2,eps=0.):
+    '''
+    Check if point 1 and 2 are colocated
+    Args:
+        * point1: x,y,z coordinates of point 1
+        * point2: x,y,z coordinates of point 2
+        * eps   : tolerance value 
+    '''
+    if np.linalg.norm(point1-point2)<=eps:
+        return True
+    return False

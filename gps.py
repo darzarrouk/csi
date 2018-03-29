@@ -2537,7 +2537,7 @@ class gps(SourceInv):
 
         # Create the time vector
         self.time = np.unique(np.hstack([self.timeseries[station].time \
-                                for station in self.timeseries]))
+                                for station in self.timeseries])).tolist()
 
         # All done
         return
@@ -2595,10 +2595,8 @@ class gps(SourceInv):
             timeseries = self.timeseries[station]
 
             # Get the index of the date
-            igps = np.flatnonzero(timeseries.time==date)
-
-            # Check if there is something to do
-            if len(igps)>0:
+            try:
+                igps = timeseries.time.index(date)
 
                 # Get the lon, lat
                 lon,lat = self.getstation(station)[:2]
@@ -2618,6 +2616,9 @@ class gps(SourceInv):
                 # Add the station
                 if np.nan not in vel:
                     gpsNew.addstation(station, lon, lat, vel, err)
+
+            except:
+                pass
 
         # Set factor
         gpsNew.factor = self.factor

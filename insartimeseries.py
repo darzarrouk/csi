@@ -106,13 +106,13 @@ class insartimeseries(insar):
 
         # Set up a list of Dates
         if time is not None:
-            self.time = np.array(time)
+            self.time = time
         else:
             assert start is not None, 'Need a starting point...'
             assert increment is not None, 'Need an increment in days...'
             assert steps is not None, 'Need a number of steps...'
-            self.time = np.array([dt.datetime.fromordinal(start.toordinal()+increment*i)\
-                    for i in range(steps)])
+            self.time = [dt.datetime.fromordinal(start.toordinal()+increment*i)\
+                    for i in range(steps)]
 
         # Create timeseries
         self.timeseries = []
@@ -167,18 +167,48 @@ class insartimeseries(insar):
         '''
 
         # Find the right index
-        udate = np.flatnonzero(self.time==date)
-
-        # All done 
-        if udate.size==1:
-            # Speak to me
+        try:
+            udate = self.time.index(date)
+        except:
             if verbose:
-                print('Returning insar image at date {}'.format(self.time[udate[0]]))
-            return self.timeseries[udate[0]]
-        else:
-            if verbose:
-                print('No date found')
+                print('Date {} not available'.format(date.isoformat()))
             return None
+
+        # Speak to me
+        if verbose:
+            print('Returning insar image at date {}'.format(self.time[udate]))
+        return self.timeseries[udate]
+
+    def select_pixels(self, minlon, maxlon, minlat, maxlat):
+        '''
+        Select the pixels in a box defined by min and max, lat and lon.
+
+        Args:
+            * minlon        : Minimum longitude.
+            * maxlon        : Maximum longitude.
+            * minlat        : Minimum latitude.
+            * maxlat        : Maximum latitude.
+        '''
+
+        # Store the corners
+        self.minlon = minlon
+        self.maxlon = maxlon
+        self.minlat = minlat
+        self.maxlat = maxlat
+
+        # Select on latitude and longitude
+        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) \
+                & (self.lon>minlon) & (self.lon<maxlon))
+    
+        # Keep pixels
+        self.keepPixels(u)
+
+        # Iterate over the timeseries
+        for sar in self.timeseries:
+            sar.keepPixels(u)
+
+        # All done
+        return
 
     def setTimeSeries(self, timeseries):
         '''
@@ -226,7 +256,11 @@ class insartimeseries(insar):
                 datetime.datetime object'
 
         # Get the reference
-        i = np.flatnonzero(np.array(self.time)==date)[0]
+        try:
+            i = self.time.index(date)
+        except:
+            print('Date {} not available'.format(date.isformat()))
+
         reference = copy.deepcopy(self.timeseries[i].vel)
 
         # Reference
@@ -268,7 +302,7 @@ class insartimeseries(insar):
         return
 
     def readFromGIAnT(self, h5file, setmaster2zero=None,
-                            zfile=None, lonfile=None, latfile=None, 
+                            zfile=None, lonfile=None, latfile=None, filetype='d',
                             incidence=None, heading=None, inctype='onefloat', 
                             field='recons', keepnan=False, mask=None, readModel=False):
         '''
@@ -276,9 +310,10 @@ class insartimeseries(insar):
         Args:
             * h5file        : Input h5file
             * setmaster2zero: If index is provided, master will be replaced by zeros (no substraction)
-            * zfile         : File with elevation (float32)
-            * lonfile       : File with longitudes (float32)
-            * latfile       : File with latitudes (float32)
+            * zfile         : File with elevation 
+            * lonfile       : File with longitudes 
+            * latfile       : File with latitudes 
+            * filetype      : type of data in lon, lat and elevation file (default: 'f')
             * incidence     : Incidence angle (degree)
             * heading       : Heading angle (degree)
             * inctype       : Type of the incidence and heading values (see insar.py for details)
@@ -320,18 +355,22 @@ class insartimeseries(insar):
 
         # Read Lon Lat
         if lonfile is not None:
-            self.lon = np.fromfile(lonfile, dtype=np.float32)
+            self.lon = np.fromfile(lonfile, dtype=filetype)
         if latfile is not None:
-            self.lat = np.fromfile(latfile, dtype=np.float32)
+            self.lat = np.fromfile(latfile, dtype=filetype)
 
         # Compute utm
         self.x, self.y = self.ll2xy(self.lon, self.lat) 
 
         # Elevation
         if zfile is not None:
-            self.elevation = insar('Elevation', utmzone=self.utmzone, verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+            self.elevation = insar('Elevation', utmzone=self.utmzone, 
+                                   verbose=False, lon0=self.lon0, lat0=self.lat0,
+                                   ellps=self.ellps)
             self.elevation.read_from_binary(zfile, lonfile, latfile, 
-                    incidence=None, heading=None, remove_nan=False, remove_zeros=False)
+                                            incidence=None, heading=None, 
+                                            remove_nan=False, remove_zeros=False, 
+                                            dtype=filetype)
             self.z = self.elevation.vel
 
         # Get the time
@@ -339,7 +378,6 @@ class insartimeseries(insar):
         self.time = []
         for i in range(nDates):
             self.time.append(dt.datetime.fromordinal(int(dates[i])))
-        self.time = np.array(self.time)
 
         # Create a list to hold the dates
         self.timeseries = []
@@ -469,14 +507,14 @@ class insartimeseries(insar):
                 datetime.datetime object'
 
         # Find the date
-        i = np.flatnonzero(self.time==date)
+        try:
+            i = self.time.index(date)
+        except:
+            print('Nothing to do')
 
         # Remove it
-        if len(i)>0:
-            del self.timeseries[i[0]]
-            del self.time[i[0]]
-        else:
-            print('No date to remove')
+        del self.timeseries[i]
+        del self.time[i]
 
         # All done
         return
@@ -823,9 +861,13 @@ class insartimeseries(insar):
                 datetime.datetime object'
 
         # Get the profile
-        i = np.flatnonzero(self.time==date)[0]
-        pname = '{} {}'.format(prefix, date.isoformat())
-        refProfile = self.timeseries[i].profiles[pname]
+        try:
+            i = self.time.index(date)
+            pname = '{} {}'.format(prefix, date.isoformat())
+            refProfile = self.timeseries[i].profiles[pname]
+        except:
+            print('Date not available')
+            return
 
         # Create a linear interpolator
         x = refProfile['Distance']

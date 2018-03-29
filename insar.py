@@ -391,6 +391,12 @@ class insar(SourceInv):
         else:
             iFinite = range(len(vel))
 
+        # First try 
+        self.vel = vel
+        self.lon = lon
+        self.lat = lat
+        self.err = err
+
         # Compute the LOS
         if heading is not None:
             if type(incidence) is np.ndarray:
@@ -892,6 +898,20 @@ class insar(SourceInv):
         # compute distance
         return np.sqrt( (x-xp)**2 + (y-yp)**2 )
 
+    def returnAverage(self, u):
+        '''
+        Returns the average value, the los and the errors averaged for a given set 
+        of indices of pixels {u}.
+
+        Args:
+            * u         : Set of indices.
+        '''
+        vel = np.nanmean(self.vel[u])
+        err = np.nanstd(self.vel[u])
+        los = np.nanmean(self.los[u,:], axis=0)
+        los /= np.linalg.norm(los)
+        return vel, err, los
+
     def returnAverageNearPoint(self, lon, lat, distance):
         '''
         Returns the phase value, the los and the errors averaged over a distance
@@ -911,11 +931,7 @@ class insar(SourceInv):
 
         # return the values
         if len(u)>0:
-            vel = np.nanmean(self.vel[u])
-            err = np.nanstd(self.vel[u])
-            los = np.nanmean(self.los[u,:], axis=0)
-            los /= np.linalg.norm(los)
-            return vel, err, los
+            return self.returnAverage(u)
         else:
             return None, None, None
 
@@ -976,7 +992,8 @@ class insar(SourceInv):
         self.maxlat = maxlat
 
         # Select on latitude and longitude
-        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon))
+        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) \
+                & (self.lon>minlon) & (self.lon<maxlon))
     
         # Do it 
         self.keepPixels(u)
@@ -994,7 +1011,8 @@ class insar(SourceInv):
         self.lat = self.lat[u]
         self.x = self.x[u]
         self.y = self.y[u]
-        self.vel = self.vel[u]
+        if self.vel is not None:
+            self.vel = self.vel[u]
         if self.err is not None:
             self.err = self.err[u]
         if self.los is not None:
@@ -1682,9 +1700,9 @@ class insar(SourceInv):
 
                 # Get the mean
                 if method in ('mean'):
-                    m = vel[uu].mean()
+                    m = np.nanmean(vel[uu])
                 elif method in ('median'):
-                    m = np.median(vel[uu])
+                    m = np.nanmedian(vel[uu])
 
                 # Get the mean distance
                 d = dis[uu].mean()

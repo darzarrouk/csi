@@ -121,7 +121,7 @@ class gpstimeseries(SourceInv):
                              ellps=self.ellps, verbose=verbose)
 
         # Set time
-        self.time = np.array(time)
+        self.time = time
         self.north.time = self.time
         self.east.time = self.time
         self.up.time = self.time
@@ -195,7 +195,7 @@ class gpstimeseries(SourceInv):
                              ellps=self.ellps, verbose=verbose)
 
         # Set time
-        self.time = np.array(time)
+        self.time = time
         self.north.time = self.time
         self.east.time = self.time
         self.up.time = self.time
@@ -252,7 +252,7 @@ class gpstimeseries(SourceInv):
         self.up = timeseries('Up', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
         # Set time
-        self.time = np.array(time)
+        self.time = time
         self.north.time = self.time
         self.east.time = self.time
         self.up.time = self.time
@@ -303,8 +303,8 @@ class gpstimeseries(SourceInv):
         assert (east['DATE'].values==north['DATE'].values).all(), \
                 'There is something weird with the timeline of your station'
         ns = 1e-9 # Number of nanoseconds in a second
-        self.time = np.array([dt.datetime.utcfromtimestamp(t.astype(int)*ns) \
-                              for t in east['DATE'].values])
+        self.time = [dt.datetime.utcfromtimestamp(t.astype(int)*ns) \
+                              for t in east['DATE'].values]
 
         # Initiate some timeseries
         self.north = timeseries('North', utmzone=self.utmzone, verbose=self.verbose,
@@ -374,7 +374,7 @@ class gpstimeseries(SourceInv):
                              verbose=self.verbose)
 
         # Set time
-        self.time = np.array(time)
+        self.time = time
         self.north.time = self.time
         self.east.time = self.time
         self.up.time = self.time
