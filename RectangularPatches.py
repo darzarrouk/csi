@@ -323,7 +323,7 @@ class RectangularPatches(Fault):
         # All done
         return p1, p2, p3, p4
 
-    def mergePatches(self, p1, p2, eps=None, verbose=True):
+    def mergePatches(self, p1, p2, eps=1e-6, verbose=True):
         '''
         Merges 2 patches that have common corners.
         Args:
@@ -335,7 +335,7 @@ class RectangularPatches(Fault):
         if verbose:
             print('Merging patches {} and {} into patch {}'.format(p1,p2,p1))
 
-        newpatch,newpatchll = self._mergePatches(self, p1, p2, eps=eps)   
+        newpatch,newpatchll = self._mergePatches(p1, p2, eps=eps)   
 
         # Replace the patch 1 by the new patch
         self.patch[p1] = newpatch

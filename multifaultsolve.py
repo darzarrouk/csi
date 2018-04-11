@@ -381,7 +381,9 @@ class multifaultsolve(object):
                 fault.polysolindex = {}
                 for dset in fault.datanames:
                     if dset in fault.poly.keys():
-                        if (fault.poly[dset].__class__ is not str) and (fault.poly[dset].__class__ is not list):
+                        if (fault.poly[dset].__class__ is not str) \
+                                and (fault.poly[dset].__class__ is not list)\
+                                and (fault.poly[dset] is not None):
                             if (fault.poly[dset] > 0):
                                 se = st + fault.poly[dset]
                                 fault.polysol[dset] = fault.mpost[st:se]
@@ -394,7 +396,9 @@ class multifaultsolve(object):
                                 fault.polysol[dset] = fault.mpost[st:se]
                                 fault.polysolindex[dset] = range(st,se)
                                 st += nh
-                            if fault.poly[dset] in ('strain', 'strainnorotation', 'strainonly', 'strainnotranslation', 'translation', 'translationrotation'):
+                            if fault.poly[dset] in ('strain', 'strainnorotation', 
+                                                    'strainonly', 'strainnotranslation', 
+                                                    'translation', 'translationrotation'):
                                 nh = fault.strain[dset]
                                 se = st + nh
                                 fault.polysol[dset] = fault.mpost[st:se]
