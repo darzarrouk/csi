@@ -901,10 +901,13 @@ class RectangularPatches(Fault):
             * filename      : Name of the file.
 
         Kwargs:
-            * Cm            : 
-            * increasingy   : if you don't want csi to set your patches 
-                            corners according to increasing y, set
-                            increasingy = False
+            * Cm                : Posterior covariances (array nslip x nslip)
+            * readpatchindex    : Read the index of the patch and organize them
+            * inputCoordinates  : lonlat or utm
+            * donotreadslip     : Do not read slip values in the file
+            * increasingy       : if you don't want csi to set your patches 
+                                  corners according to increasing y, set
+                                  increasingy = False
         '''
 
         # create the lists
@@ -1030,16 +1033,25 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
-    def writePatches2File(self, filename, add_slip=None, scale=1.0, patch='normal',
-                          stdh5=None, decim=1):
+    # ----------------------------------------------------------------------
+    # Write patches to a GMT style file
+    def writePatches2File(self, filename, add_slip=None, scale=1.0, 
+                                patch='normal', stdh5=None, decim=1):
         '''
         Writes the patch corners in a file that can be used in psxyz.
+
         Args:
             * filename      : Name of the file.
-            * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total, coupling.
+
+        Kwargs:
+            * add_slip      : Put the slip as a value for the color. 
+                              Can be None, strikeslip, dipslip, total, coupling.
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
+            * stdh5         : Get standard deviation from an h5 file
+            * decim         : How to decimate the file to get the standard dev.
         '''
         # Write something
         if self.verbose:
@@ -1127,20 +1139,30 @@ class RectangularPatches(Fault):
 
         # All done 
         return
+    # ----------------------------------------------------------------------
 
-
+    # ----------------------------------------------------------------------
+    # Write 2 file
     def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0, neg_depth=False, ellipse=False, flipstrike=False,nsigma=1.):
         '''
+
         Write a psxyz compatible file to draw lines starting from the center of each patch, 
         indicating the direction of slip.
         Tensile slip is not used...
+        
         Args:
-           - scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
-           - factor is a scaling factor
-           - neg_depth: use True if depth is negative
-           - ellipse: if True, design error ellipse for each slip vector
-           - flipstrike: if True, flip strike
-           - nsigma: if ellipse==True, design nsigma*sigma error ellipses
+            * filename      : Name of the output file
+
+        Kwargs:
+            * scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+            * factor is a scaling factor
+            * neg_depth: use True if depth is negative
+            * ellipse: if True, design error ellipse for each slip vector
+            * flipstrike: if True, flip strike
+            * nsigma: if ellipse==True, design nsigma*sigma error ellipses
+
+        Returns:
+            * None
         '''
 
         # Copmute the slip direction
@@ -1204,15 +1226,24 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Compyte the error ellipse given Cm
     def getEllipse(self,patch,ellipseCenter=None,Npoints=100,factor=1.0,nsigma=1.):
         '''
         Compute the ellipse error given Cm for a given patch
-        args:
-               (optional) center  : center of the ellipse
-               (optional) Npoints : number of points on the ellipse
-               (optional) factor  : scaling factor
-               (optional) nsigma  : will design a nsigma*sigma error ellipse
+
+        Args:
+            * patch     : Patch
+        Kwargs:
+            * center    : center of the ellipse
+            * Npoints   : number of points on the ellipse
+            * factor    : scaling factor
+            * nsigma    : will design a nsigma*sigma error ellipse
+
+        Returns:
+            * RE        : Ellipse
         '''
 
         # Get Cm
@@ -1255,16 +1286,21 @@ class RectangularPatches(Fault):
         
         # All done
         return RE
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Calculate slip direction
     def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False, flipstrike=False,nsigma=1.):
         '''
-        Computes the segment indicating the slip direction.
-        Args:
-            - scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
-            - factor is a scaling factor
-            - ellipse: if True: design an ellipse for each slip vector
-            - flipstrike: if True will flip strike direction
-            - nsigma: nsigma for error ellipses
+        Computes the segment indicating the slip direction. Direclty stores 
+        it in self.slipdirection
+
+        Kwargs:
+            * scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+            * factor is a scaling factor
+            * ellipse: if True: design an ellipse for each slip vector
+            * flipstrike: if True will flip strike direction
+            * nsigma: nsigma for error ellipses
         '''
 
         # Create the array
@@ -1329,12 +1365,19 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Delete a patch
     def deletepatch(self, patch):
         '''
         Deletes a patch.
+
         Args:   
             * patch     : index of the patch to remove.
+
+        Returns:
+            * None
         '''
 
         # Remove the patch
@@ -1349,10 +1392,19 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def deletepatches(self, titi):
         '''
         Deletes a list of patches.
+
+        Args:
+            * titi      : List of indexes
+
+        Returns:
+            * None
+                
         '''
 
         tutu = copy.deepcopy(titi)
@@ -1372,13 +1424,22 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Add a patch
     def addpatch(self, patch, slip=[0, 0, 0]):
         '''
         Adds a patch to the list.
+
         Args:
             * patch     : Geometry of the patch to add
+
+        Kwargs:
             * slip      : List of the strike, dip and tensile slip.
+
+        Returns:
+            * None
         '''
 
         # append the patch
@@ -1413,13 +1474,20 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Replace a patch
     def replacePatch(self, patch, iPatch):
         '''
         Replaces one patch by the given geometry.
+
         Args:
             * patch     : Patch geometry.
             * iPatch    : index of the patch to replace.
+
+        Returns:
+            * None
         '''
 
         # Replace
@@ -1446,11 +1514,22 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
-
+    # ----------------------------------------------------------------------
+    # Add patches from another faut
     def addPatchesFromOtherFault(self, fault, indexes=None):
         '''
-        Adds the patches of one fault to another.
+        The name of this method is pretty self-explanatory.
+
+        Args:
+            * fault     : Another fault instance with rectangular patches.
+
+        Kwargs:
+            * indexes   : List of indices to consider
+
+        Returns:
+            * None
         '''
 
         # Set indexes
@@ -1468,7 +1547,9 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def chCoordinates(self,p,p_ref,angle_rad):
         '''
         Change the coordinate system:
@@ -1486,12 +1567,16 @@ class RectangularPatches(Fault):
         
         # All done
         return r_p
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getpatchgeometry(self, patch, center=False, checkindex=True):
         '''
         Returns the patch geometry as needed for okada92.
         Args:
             * patch         : index of the wanted patch or patch;
+
+        Kwargs:
             * center        : if true, returns the coordinates of the center of the patch. 
                               if False, returns the UL corner.
             * checkindex    : Checks the index of the patch
@@ -1554,11 +1639,14 @@ class RectangularPatches(Fault):
 
         # All done
         return x1, x2, x3, width, length, strike, dip
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def distanceMatrix(self, distance='center', lim=None):
         '''
         Returns a matrix of the distances between patches.
-        Args:
+
+        Kwargs:
             * distance  : distance estimation mode
                             center : distance between the centers of the patches.
                             no other method is implemented for now.
@@ -1581,13 +1669,18 @@ class RectangularPatches(Fault):
 
         # All done
         return Distances
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
         '''
         Measures the distance between two patches.
+        
         Args:
             * patch1    : geometry of the first patch.
             * patch2    : geometry of the second patch.
+
+        Kwargs:
             * distance  : distance estimation mode
                             center : distance between the centers of the patches.
                             no other method is implemented for now.
@@ -1610,7 +1703,9 @@ class RectangularPatches(Fault):
 
         # All done
         return dis
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def slip2dis(self, data, patch, slip=None):
         '''
         Computes the surface displacement at the data location using okada.
@@ -1618,6 +1713,8 @@ class RectangularPatches(Fault):
         Args:
             * data          : data object from gps or insar.
             * patch         : number of the patch that slips
+
+        Kwargs:
             * slip          : if a number is given, that is the amount of slip along strike
                               if three numbers are given, that is the amount of slip along strike, along dip and opening
                               if None, values from slip are taken
@@ -1659,13 +1756,18 @@ class RectangularPatches(Fault):
 
         # All done
         return ss_dis, ds_dis, ts_dis
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
         '''
         Measures the distance between two patches.
+
         Args:
             * patch1    : geometry of the first patch.
             * patch2    : geometry of the second patch.
+
+        Kwargs:
             * distance  : distance estimation mode
                             center : distance between the centers of the patches.
                             no other method is implemented for now.
@@ -1688,13 +1790,17 @@ class RectangularPatches(Fault):
 
         # All done
         return dis
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def read3DrectangularGrid(self, filename, aggregatePatchNodes=None, square=False):
         '''
         This routine read the rectangular geometry.
         Format: lon lat E[km] N[km] Dep[km] strike dip length Area ID
         Args:
             * filename            : Name of the text file
+
+        Kwargs
             * aggregatePatchNodes : Aggregates patche nodes that are closer than a distance (float)
             * square              : If square == True, length = width and format is:
                                     lon lat E[km] N[km] Dep[km] strike dip Area ID
@@ -1795,15 +1901,21 @@ class RectangularPatches(Fault):
         # Equiv patches
         self.equivpatch   = self.patch
         self.equivpatchll = self.patchll
+
         # All done
         return
+    # ----------------------------------------------------------------------
 
-
+    # ----------------------------------------------------------------------
     def getcenter(self, p):
         ''' 
         Get the center of one rectangular patch.
+
         Args:
-            * p    : Patch geometry.
+            * p     : Patch geometry.
+
+        Returns:
+            *x,y,z  : Coordinates of the center
         '''
     
         # Get center
@@ -1816,10 +1928,15 @@ class RectangularPatches(Fault):
 
         # All done
         return x,y,z
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def computetotalslip(self):
         '''
-        Computes the total slip.
+        Computes the total slip. Stores is in self.totalslip
+
+        Returns:
+            * None
         '''
 
         # Computes the total slip
@@ -1827,10 +1944,15 @@ class RectangularPatches(Fault):
     
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getcenters(self):
         '''
         Get the center of the patches.
+
+        Returns:
+            * centers       : list of centers [x,y,z]
         '''
 
         # Get the patches
@@ -1846,15 +1968,24 @@ class RectangularPatches(Fault):
 
         # All done
         return center
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def surfacesimulation(self, box=None, disk=None, err=None, lonlat=None,
                           slipVec=None):
         ''' 
-        Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
-        Args:
+        Takes the slip vector and computes the surface displacement that 
+        corresponds on a regular grid. Returns a gps object
+        Has not been tested in a long time...
+
+
+        Kwargs:
             * box       : Can be a list of [minlon, maxlon, minlat, maxlat, n].
             * disk      : list of [xcenter, ycenter, radius, n]
+            * err       : Errors are set randomly using a uniform distribution
+                          multiplied by {err}
             * lonlat    : Arrays of lat and lon. [lon, lat]
+            * slipVec   : Specify slip
         '''
 
         # create a fake gps object
@@ -1954,11 +2085,14 @@ class RectangularPatches(Fault):
 
         # All done
         return 
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def AverageAlongStrikeOffsets(self, name, insars, filename, discretized=True, smooth=None):
         '''
         If the profiles have the lon lat vectors as the fault, 
         This routines averages it and write it to an output file.
+        Weird method, I don't know what it does...
         '''
 
         if discretized:
@@ -2046,12 +2180,16 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def horizshrink1patch(self, ipatch, fixedside='south', finallength=25.):
         '''
         Takes an existing patch and shrinks its size in the horizontal direction.
         Args:
             * ipatch        : Index of the patch of concern.
+
+        Kwargs:
             * fixedside     : One side has to be fixed, takes the southernmost if 'south', 
                                                         takes the northernmost if 'north'
             * finallength   : Length of the final patch.
@@ -2123,11 +2261,14 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def ExtractAlongStrikeVariationsOnDiscretizedFault(self, depth=0.5, filename=None, discret=0.5, interpolation='linear'):
         '''
         Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
-        Args:
+
+        Kwargs:
             depth       : Depth at which we extract the along strike variations of slip.
             discret     : Discretization length
             filename    : Saves to a file.
@@ -2214,15 +2355,18 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def ExtractAlongStrikeVariations(self, depth=0.5, origin=None, filename=None, orientation=0.0):
         '''
-        Extract the Along Strike Variations of the creep at a given depth
+        Extract the Along Strike Variations of slip at a given depth
+
         Args:
-            depth   : Depth at which we extract the along strike variations of slip.
-            origin  : Computes a distance from origin. Give [lon, lat].
-            filename: Saves to a file.
-            orientation: defines the direction of positive distances.
+            * depth         : Depth at which we extract the along strike variations of slip.
+            * origin        : Computes a distance from origin. Give [lon, lat].
+            * filename      : Saves to a file.
+            * orientation   : defines the direction of positive distances.
         '''
 
         # Dictionary to store these guys
@@ -2295,10 +2439,16 @@ class RectangularPatches(Fault):
 
         # all done 
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def ExtractAlongStrikeAllDepths(self, filename=None, discret=0.5):
         '''
         Extracts the Along Strike Variations of the creep at all depths for the discretized version.
+
+        Kwargs:
+            * filename      : save in this file
+            * discret       : Discretize the fault
         '''
 
         # Dictionnary to store these guys
@@ -2343,7 +2493,9 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getFaultVector(self, i, discretized=True, normal=False):
         '''
         Returns the vector tangential to the fault at the i-th point of the fault (discretized if True).
@@ -2382,7 +2534,9 @@ class RectangularPatches(Fault):
 
         # All done
         return vect
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getPatchPositionAlongStrike(self, p, discretized=True):
         '''
         Returns the position of a patch along strike (distance to the first point of the fault).
@@ -2430,7 +2584,9 @@ class RectangularPatches(Fault):
 
         # All done
         return dis[jm] + np.sqrt( (xcd-x[jm])**2 + (ycd-y[jm])**2)
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def computeTractionOnEachFaultPatch(self, factor=0.001, mu=30e9, nu=0.25):
         '''
         Uses okada92 to compute the traction change on each patch.
@@ -2479,11 +2635,14 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def computeCoulombOnPatches(self, friction=0.6, sign='strike'):
         '''
         Computes the Coulomb failure stress change on patches.
         On the routine, the normal stress is positive away from the center of the patch.
+        Has not been tested in a loooong time...
         '''
     
         # Check if Tractions have been computed
@@ -2500,11 +2659,15 @@ class RectangularPatches(Fault):
 
         # All done 
         return
+    # ----------------------------------------------------------------------
         
+    # ----------------------------------------------------------------------
     def computeImposedTractionOnEachFaultPatch(self, factor=0.001, mu=30e9, nu=0.25):
         '''
         Uses okada92 to compute the traction change on each patch from slip on the other patches.
-        Args:
+        Has not been tested in a loooong time...
+
+        Kwargs:
             * factor        : Conversion fator between slip units and distance units. In a regular case, distance 
                               units are km. If the slip is in mm, then factor is 10e-6.
             * mu            : Shear Modulus (default is 30e9 Pa).
@@ -2565,7 +2728,9 @@ class RectangularPatches(Fault):
 
         # all done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def plot(self, figure=134, slip='total', 
              equiv=False, show=True, axesscaling=True, 
              Norm=None, linewidth=1.0, plot_on_2d=True, 
@@ -2574,8 +2739,16 @@ class RectangularPatches(Fault):
         Plot the available elements of the fault.
         
         Args:
-            * ref           : Referential for the plot ('utm' or 'lonlat').
             * figure        : Number of the figure.
+            * slip          : which slip to plot
+            * equiv         : plot the equivalent patches
+            * show          : True/False
+            * axesscaling   : Perform axes scaling
+            * Norm          : Colorbar limits for slip
+            * linewidth     : width of the lines
+            * plot_on_2d    : Make a map plot of the fautl
+            * drawCoastlines: True/False
+            * expand        : How much to extend the map around the fault (degrees)
         '''
 
         # Get lons lats
@@ -2589,15 +2762,6 @@ class RectangularPatches(Fault):
             lonmax+= 360
         latmin = np.min([p[:,1] for p in self.patchll])-expand
         latmax = np.max([p[:,1] for p in self.patchll])+expand
-
-
-        #lon = np.unique([p[:,0] for p in self.patchll])
-        #lon[lon<0.] += 360.
-        #lat = np.unique([p[:,1] for p in self.patchll])
-        #lonmin = lon.min()-expand
-        #lonmax = lon.max()+expand
-        #latmin = lat.min()-expand
-        #latmax = lat.max()+expand
 
         # Create a figure
         fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
@@ -2622,11 +2786,14 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getPatchesThatAreUnder(self, xf, yf, ref='utm', tolerance=0.5):
         '''
         For a list of positions, returns the patches that are directly underneath.
         Only works if you have a vertical fault.
+        Has not been tested in a looooon time....
         '''
 
         # Check reference
@@ -2718,7 +2885,9 @@ class RectangularPatches(Fault):
             return List, SSList, TSList
         else:
             return List
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def mapFault2Fault(self, Map, fault):
         '''
         User provides a Mapping function np.array((len(self.patch), len(fault.patch))) and a fault and the slip from the argument
@@ -2742,7 +2911,9 @@ class RectangularPatches(Fault):
 
         # all done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def mapUnder2Above(self, deepfault, extrapolate=10.):
         '''
         This routine is very very particular. It only works with 2 vertical faults.
@@ -2860,7 +3031,9 @@ class RectangularPatches(Fault):
 
         # All done
         return Map
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def mapSlipPlane2Plane(self, fault, interpolation='linear', verbose=False, addlimits=True, smooth=0.1):
         '''
         Maps the slip distribution from fault onto self.
@@ -2994,7 +3167,9 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def strikedip2normal(self, strike, dip):
         '''
         Returns a vector normal to a plane with a given strike and dip.
@@ -3015,157 +3190,21 @@ class RectangularPatches(Fault):
             return n1.reshape((3,1)), n2.reshape((3,1)), n3.reshape((3,1))
         else:
             return n1, n2, n3
+    # ----------------------------------------------------------------------
 
-# Things that should become obsolete soon
-
-    def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False, w_file=True):
-        '''
-        Write the subParam file needed for the interpolation of the green's function in EDKS.
-        Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source, 
-        then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
-        If amax is specified, the minimum size is fixed.
-        Args:
-            * data          : Data object from gps or insar.
-            * edksfilename  : Name of the file containing the kernels.
-            * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle.
-            * plot          : Activates plotting.
-            * w_file        : if False, will not write the subParam fil (default=True)
-        Returns:
-            * filename         : Name of the subParams file created (only if w_file==True)
-            * RectanglePropFile: Name of the rectangles properties file
-            * ReceiverFile     : Name of the receiver file
-            * method_par       : Dictionary including useful EDKS parameters
-        '''
-
-        # print
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
-
-        # Write the geometry to the EDKS file
-        self.writeEDKSgeometry()
-
-        # Write the data to the EDKS file
-        data.writeEDKSdata()
-
-        # Create the variables
-        if len(self.name.split())>1:
-            fltname = self.name.split()[0]
-            for s in self.name.split()[1:]:
-                fltname = fltname+'_'+s
-        else:
-            fltname = self.name
-        RectanglePropFile = 'edks_{}.END'.format(fltname)
-        if len(data.name.split())>1:
-            datname = data.name.split()[0]
-            for s in data.name.split()[1:]:
-                datname = datname+'_'+s
-        else:
-            datname = data.name
-        ReceiverFile = 'edks_{}.idEN'.format(datname)
-
-        if data.dtype is 'insar':
-            useRecvDir = True # True for InSAR, uses LOS information
-        else:
-            useRecvDir = False # False for GPS, uses ENU displacements
-        EDKSunits = 1000.0
-        EDKSfilename = '{}'.format(edksfilename)
-        prefix = 'edks_{}_{}'.format(fltname, datname)
-        plotGeometry = '{}'.format(plot)
-
-        # Build usefull outputs
-        parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
-        parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
-        method_par = dict(zip(parNames, parValues))
-
-        # Open the EDKSsubParams.py file        
-        if w_file:
-            filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
-            fout = open(filename, 'w')
-
-            # Write in it
-            fout.write("# File with the rectangles properties\n")
-            fout.write("RectanglesPropFile = '{}'\n".format(RectanglePropFile))
-            fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
-            fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
-            fout.write("# read receiver direction (# not yet implemented)\n")
-            fout.write("useRecvDir = {} # True for InSAR, uses LOS information\n".format(useRecvDir))
-            fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
-            if amax is None:
-                fout.write("Amax = None # None computes Amax automatically. \n")
-            else:
-                fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
-                
-            fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
-            fout.write("EDKSfilename = '{}'\n".format(edksfilename))
-            fout.write("prefix = '{}'\n".format(prefix))
-            fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
-            
-            # Close the file
-            fout.close()
-
-            # All done
-            return filename, RectanglePropFile, ReceiverFile, method_par
-        else:
-            return RectanglePropFile, ReceiverFile, method_par
-
-    def writeEDKSgeometry(self, ref=None):
-        '''
-        This routine spits out 2 files:
-        filename.lonlatdepth: Lon center | Lat Center | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
-        filename.END: Easting (km) | Northing (km) | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
-
-        These files are to be used with /home/geomod/dev/edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
-
-        Args:
-            * ref           : Lon and Lat of the reference point. If None, the patches positions is in the UTM coordinates.
-        '''
-
-        # Filename
-        fltname = self.name.replace(' ','_')
-        filename = 'edks_{}'.format(fltname)
-
-        # Open the output file
-        flld = open(filename+'.lonlatdepth','w')
-        flld.write('#lon lat Dep[km] strike dip length(km) width(km) ID\n')
-        fend = open(filename+'.END','w')
-        fend.write('#Easting[km] Northing[km] Dep[km] strike dip length(km) width(km) ID\n')
-
-        # Reference
-        if ref is not None:
-            refx, refy = self.putm(ref[0], ref[1])
-            refx /= 1000.
-            refy /= 1000.
-
-        # Loop over the patches
-        for p in range(len(self.patch)):
-            x, y, z, width, length, strike, dip = self.getpatchgeometry(p, center=True)
-            strike = strike*180./np.pi
-            dip = dip*180./np.pi
-            lon, lat = self.xy2ll(x,y)
-            if ref is not None:
-                x -= refx
-                y -= refy
-            flld.write('{} {} {} {} {} {} {} {:5d} \n'.format(lon,lat,z,strike,dip,length,width,p))
-            fend.write('{} {} {} {} {} {} {} {:5d} \n'.format(x,y,z,strike,dip,length,width,p))
-
-        # Close the files
-        flld.close()
-        fend.close()
-
-        # All done
-        return
-
+    # ----------------------------------------------------------------------
     def computeAdjacencyMat(self, verbose=False, patchinc='alongstrike'):
-        """
+        '''
         Computes the adjacency matrix for the fault geometry provided by ndip x nstrike. Values of 0
         indicate no adjacency while values of 1 indicate patches share an edge.
-        
-            * patchinc : For a patch N, if patch N+1 is located along-strike, patchinc 
-                         should be set to 'alongstrike' (default). If patch N+1 is located 
-                         along-dip, patchinc should be set to 'alongdip'.
+     
+        Kwargs:
+            * verbose   : Speak to me 
+            * patchinc  : For a patch N, if patch N+1 is located along-strike, patchinc 
+                          should be set to 'alongstrike' (default). If patch N+1 is located 
+                          along-dip, patchinc should be set to 'alongdip'.
 
-        """
+        '''
         if verbose:
             print('Computing adjacency matrix for fault %s' % self.name)
 
@@ -3218,18 +3257,25 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def buildLaplacian(self, verbose=False, method=None, irregular=False):
-        """
+        '''
         Build normalized Laplacian smoothing array.
         This routine is not designed for unevenly paved faults.
         It does not account for the variations in size of the patches.
+
+        Kwargs:
+            * verbose       : speak to me
+            * method        : Useless argument only here for compatibility 
+                              reason
             * irregular     : Can be used if the parametrisation is not 
                               regular along dip (N patches above or below
                               one patch). If True, the Laplacian takes 
                               into account that there is not only one patch
                               above (or below)
-        """
+        '''
 
         # Adjacency Matrix
         if self.adjacencyMat is None:
@@ -3262,7 +3308,9 @@ class RectangularPatches(Fault):
             D[p,p] = -4.0
 
         return D
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def _aggregatePatchNodes(self, distance):
         '''
         Replaces the patch nodes that are close to each other by the barycenter.
@@ -3299,7 +3347,9 @@ class RectangularPatches(Fault):
         
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def _mergePatches(self, p1, p2, eps=0.):
         '''
         Return 1 patch consisting of 2 neighbor patches that have common corners.
@@ -3346,5 +3396,147 @@ class RectangularPatches(Fault):
 
         # All done
         return newpatch, newpatchll
+    # ----------------------------------------------------------------------
+
+# Things that are obsolete but I am too scared to remove...
+#
+#   def writeEDKSsubParams(self, data, edksfilename, amax=None, plot=False, w_file=True):
+#       '''
+#       Write the subParam file needed for the interpolation of the green's function in EDKS.
+#       Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source, 
+#       then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
+#       If amax is specified, the minimum size is fixed.
+#       Args:
+#           * data          : Data object from gps or insar.
+#           * edksfilename  : Name of the file containing the kernels.
+#           * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle.
+#           * plot          : Activates plotting.
+#           * w_file        : if False, will not write the subParam fil (default=True)
+#       Returns:
+#           * filename         : Name of the subParams file created (only if w_file==True)
+#           * RectanglePropFile: Name of the rectangles properties file
+#           * ReceiverFile     : Name of the receiver file
+#           * method_par       : Dictionary including useful EDKS parameters
+#       '''
+#
+#       # print
+#       print ("---------------------------------")
+#       print ("---------------------------------")
+#       print ("Write the EDKS files for fault {} and data {}".format(self.name, data.name))
+#
+#       # Write the geometry to the EDKS file
+#       self.writeEDKSgeometry()
+#
+#       # Write the data to the EDKS file
+#       data.writeEDKSdata()
+#
+#       # Create the variables
+#       if len(self.name.split())>1:
+#           fltname = self.name.split()[0]
+#           for s in self.name.split()[1:]:
+#               fltname = fltname+'_'+s
+#       else:
+#           fltname = self.name
+#       RectanglePropFile = 'edks_{}.END'.format(fltname)
+#       if len(data.name.split())>1:
+#           datname = data.name.split()[0]
+#           for s in data.name.split()[1:]:
+#               datname = datname+'_'+s
+#       else:
+#           datname = data.name
+#       ReceiverFile = 'edks_{}.idEN'.format(datname)
+#
+#       if data.dtype is 'insar':
+#           useRecvDir = True # True for InSAR, uses LOS information
+#       else:
+#           useRecvDir = False # False for GPS, uses ENU displacements
+#       EDKSunits = 1000.0
+#       EDKSfilename = '{}'.format(edksfilename)
+#       prefix = 'edks_{}_{}'.format(fltname, datname)
+#       plotGeometry = '{}'.format(plot)
+#
+#       # Build usefull outputs
+#       parNames = ['useRecvDir', 'Amax', 'EDKSunits', 'EDKSfilename', 'prefix']
+#       parValues = [ useRecvDir ,  amax ,  EDKSunits ,  EDKSfilename ,  prefix ]
+#       method_par = dict(zip(parNames, parValues))
+#
+#       # Open the EDKSsubParams.py file        
+#       if w_file:
+#           filename = 'EDKSParams_{}_{}.py'.format(fltname, datname)
+#           fout = open(filename, 'w')
+#
+#           # Write in it
+#           fout.write("# File with the rectangles properties\n")
+#           fout.write("RectanglesPropFile = '{}'\n".format(RectanglePropFile))
+#           fout.write("# File with id, E[km], N[km] coordinates of the receivers.\n")
+#           fout.write("ReceiverFile = '{}'\n".format(ReceiverFile))
+#           fout.write("# read receiver direction (# not yet implemented)\n")
+#           fout.write("useRecvDir = {} # True for InSAR, uses LOS information\n".format(useRecvDir))
+#           fout.write("# Maximum Area to subdivide triangles. If None, uses Saint-Venant's principle.\n")
+#           if amax is None:
+#               fout.write("Amax = None # None computes Amax automatically. \n")
+#           else:
+#               fout.write("Amax = {} # Minimum size for the patch division.\n".format(amax))
+#               
+#           fout.write("EDKSunits = 1000.0 # to convert from kilometers to meters\n")
+#           fout.write("EDKSfilename = '{}'\n".format(edksfilename))
+#           fout.write("prefix = '{}'\n".format(prefix))
+#           fout.write("plotGeometry = {} # set to False if you are running in a remote Workstation\n".format(plot))
+#           
+#           # Close the file
+#           fout.close()
+#
+#           # All done
+#           return filename, RectanglePropFile, ReceiverFile, method_par
+#       else:
+#           return RectanglePropFile, ReceiverFile, method_par
+#
+#   def writeEDKSgeometry(self, ref=None):
+#       '''
+#       This routine spits out 2 files:
+#       filename.lonlatdepth: Lon center | Lat Center | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
+#       filename.END: Easting (km) | Northing (km) | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
+#
+#       These files are to be used with /home/geomod/dev/edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
+#
+#       Args:
+#           * ref           : Lon and Lat of the reference point. If None, the patches positions is in the UTM coordinates.
+#       '''
+#
+#       # Filename
+#       fltname = self.name.replace(' ','_')
+#       filename = 'edks_{}'.format(fltname)
+#
+#       # Open the output file
+#       flld = open(filename+'.lonlatdepth','w')
+#       flld.write('#lon lat Dep[km] strike dip length(km) width(km) ID\n')
+#       fend = open(filename+'.END','w')
+#       fend.write('#Easting[km] Northing[km] Dep[km] strike dip length(km) width(km) ID\n')
+#
+#       # Reference
+#       if ref is not None:
+#           refx, refy = self.putm(ref[0], ref[1])
+#           refx /= 1000.
+#           refy /= 1000.
+#
+#       # Loop over the patches
+#       for p in range(len(self.patch)):
+#           x, y, z, width, length, strike, dip = self.getpatchgeometry(p, center=True)
+#           strike = strike*180./np.pi
+#           dip = dip*180./np.pi
+#           lon, lat = self.xy2ll(x,y)
+#           if ref is not None:
+#               x -= refx
+#               y -= refy
+#           flld.write('{} {} {} {} {} {} {} {:5d} \n'.format(lon,lat,z,strike,dip,length,width,p))
+#           fend.write('{} {} {} {} {} {} {} {:5d} \n'.format(x,y,z,strike,dip,length,width,p))
+#
+#       # Close the files
+#       flld.close()
+#       fend.close()
+#
+#       # All done
+#       return
+
 
 #EOF
