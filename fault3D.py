@@ -24,14 +24,27 @@ if major==2:
 
 class fault3D(RectangularPatches):
 
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
-        '''
-        Args:
-            * name          : Name of the fault.
-            * utmzone   : UTM zone  (optional, default=None)
-            * ellps     : ellipsoid (optional, default='WGS84')
-        '''
+    '''
+    A class that handles faults in 3D. It inherits from RectangularPatches but
+    allows to build the fault in 3D using tying points.
 
+    Args:
+        * name      : Name of the fault.
+
+    Kwargs:
+        * utmzone   : UTM zone  (optional, default=None)
+        * lon0      : Longitude of the center of the UTM zone
+        * lat0      : Latitude of the center of the UTM zone
+        * ellps     : ellipsoid (optional, default='WGS84')
+        * verbose   : Speak to me (default=True)
+
+    '''
+
+    # ----------------------------------------------------------------------
+    # Initialize class
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
+
+        # Base class init
         super(fault3D,self).__init__(name,
                                      utmzone = utmzone,
                                      ellps = ellps, 
@@ -41,12 +54,17 @@ class fault3D(RectangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Computes dip angle at depth z
     def dipatZ(self, interp, z):
         '''
         Uses the interpolator to return the dip angle evolution along strike at depth z.
         The interpolation scheme is piecewise linear.
+
         Args:
+
             * interp        : Dip interpolation function
             * z             : Depth.
         '''
@@ -81,25 +99,39 @@ class fault3D(RectangularPatches):
 
         # all done
         return
+    # ----------------------------------------------------------------------
 
-    def buildPatches(self, dip=None, dipdirection=None, every=10, minpatchsize=0.00001, trace_tol=0.1, trace_fracstep=0.2, trace_xaxis='x', trace_cum_error=True):
+    # ----------------------------------------------------------------------
+    # Build rectangular patches
+    def buildPatches(self, dip=None, dipdirection=None, every=10, 
+                           minpatchsize=0.00001, trace_tol=0.1, trace_fracstep=0.2, 
+                           trace_xaxis='x', trace_cum_error=True):
         '''
-        Builds a dipping fault.
-        Args:
-            * dip           : Dip angle evolution [[alongstrike, depth, dip], [alongstrike, depth, dip], ..., [alongstrike, depth, dip]]
-            * dipdirection  : Direction towards which the fault dips.
-            * every           : patch length for the along trace discretization
-            * minpatchsize    : minimum patch size
-            * trace_tol       : tolerance for the along trace patch discretization optimization
-            * trace_fracstep  : fractional step in x for the patch discretization optimization
-            * trace_xaxis     : x axis for the discretization ('x' use x as the x axis, 'y' use y as the x axis)
-            * trace_cum_error : if True, account for accumulated error to define the x axis bound for the last patch
+        Builds a dipping fault given a certain dip angle evolution. Dip angle is linearly
+        interpolated between tying points given as arguments.
 
-            Example: dip = [[0, 0, 20], [10, 10, 30], [80, 10, 90]] means that from the origin point of the 
-            fault (self.xi[0], self.yi[0]), the dip is 20 deg at 0 km and 0 km depth, 30 deg at km 10 and 10 km-depth 
-            and 90 deg at km 80 and 10 km-depth. The routine starts by discretizing the surface trace, then 
-            defines a dip evolution as a function of distance from the fault origin and drapes the fault down to
-            depth.
+        Args:
+            * dip               : Dip angle tying points 
+                                 [[alongstrike, depth, dip], [alongstrike, depth, dip], 
+                                   ..., [alongstrike, depth, dip]]
+            * dipdirection      : Direction towards which the fault dips.
+            * every             : patch length for the along trace discretization
+            * minpatchsize      : minimum patch size
+            * trace_tol         : tolerance for the along trace patch discretization 
+                                  optimization
+            * trace_fracstep    : fractional step in x for the patch discretization 
+                                  optimization
+            * trace_xaxis       : x axis for the discretization ('x' or 'y')
+            * trace_cum_error   : if True, account for accumulated error to define 
+                                  the x axis bound for the last patch
+
+            Example: dip = [[0, 0, 20], [10, 10, 30], [80, 10, 90]] means that 
+                     from the origin point of the fault (self.xi[0], self.yi[0]), 
+                     the dip is 20 deg at 0 km and 0 km depth, 30 deg at km 10 
+                     and 10 km-depth and 90 deg at km 80 and 10 km-depth. 
+                     The routine starts by discretizing the surface trace, then 
+                     defines a dip evolution as a function of distance from the 
+                     fault origin and drapes the fault down to depth.
         '''
 
         # Initialize the structures
@@ -233,5 +265,6 @@ class fault3D(RectangularPatches):
     
         # All done
         return
+    # ----------------------------------------------------------------------
 
 #EOF

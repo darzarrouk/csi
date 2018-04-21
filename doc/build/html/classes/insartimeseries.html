@@ -1,0 +1,446 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>insartimeseries class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="gpssopactimeseries class" href="gpssopactimeseries.html" />
+    <link rel="prev" title="seismiclocations class" href="seismiclocations.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="insartimeseries-class">
+<h1>insartimeseries class<a class="headerlink" href="#insartimeseries-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.insartimeseries">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">insartimeseries</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>verbose=True</em>, <em>lon0=None</em>, <em>lat0=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.insartimeseries.buildCd">
+<code class="descname">buildCd</code><span class="sig-paren">(</span><em>sigma</em>, <em>lam</em>, <em>function='exp'</em>, <em>diagonalVar=False</em>, <em>normalizebystd=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.buildCd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the full Covariance matrix from values of sigma and lambda.</p>
+<p>If function=’exp’:</p>
+<blockquote>
+<div>Cov(i,j) = sigma*sigma * exp(-d[i,j] / lam)</div></blockquote>
+<p>elif function=’gauss’:</p>
+<blockquote>
+<div>Cov(i,j) = sigma*sigma * exp(-(d[i,j]*d[i,j])/(2*lam))</div></blockquote>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>sigma             : Sigma term of the covariance</li>
+<li>lam               : Caracteristic length of the covariance</li>
+<li>function          : Can be ‘gauss’ or ‘exp’</li>
+<li><dl class="first docutils">
+<dt>diagonalVar <span class="classifier-delimiter">:</span> <span class="classifier">Substitute the diagonal by the standard deviation</span></dt>
+<dd>of the measurement squared</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.cleanProfiles">
+<code class="descname">cleanProfiles</code><span class="sig-paren">(</span><em>prefix</em>, <em>xlim=None</em>, <em>zlim=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.cleanProfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper around cleanProfile of insar.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.dates2time">
+<code class="descname">dates2time</code><span class="sig-paren">(</span><em>start=0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.dates2time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes a time vector in years, starting from the date #start.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>start     : Index of the starting date.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.extractAroundGPS">
+<code class="descname">extractAroundGPS</code><span class="sig-paren">(</span><em>gps</em>, <em>distance</em>, <em>doprojection=True</em>, <em>reference=False</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.extractAroundGPS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a gps object with values projected along the LOS around the 
+gps stations included in gps. In addition, it projects the gps displacements 
+along the LOS</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>gps           : gps object</li>
+<li>distance      : distance to consider around the stations</li>
+<li>doprojection  : Projects the gps enu disp into the los as well</li>
+<li><dl class="first docutils">
+<dt>reference <span class="classifier-delimiter">:</span> <span class="classifier">if True, removes to the InSAR the average gps displacemnt in </span></dt>
+<dd>the LOS for the points overlapping in time.</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.getInsarAtDate">
+<code class="descname">getInsarAtDate</code><span class="sig-paren">(</span><em>date</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.getInsarAtDate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a datetime instance, returns the corresponding insar instance.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>date          : datetime instance.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.getProfiles">
+<code class="descname">getProfiles</code><span class="sig-paren">(</span><em>prefix</em>, <em>loncenter</em>, <em>latcenter</em>, <em>length</em>, <em>azimuth</em>, <em>width</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.getProfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a profile for each time step
+for Arguments, check in insar getprofile</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.initializeTimeSeries">
+<code class="descname">initializeTimeSeries</code><span class="sig-paren">(</span><em>time=None</em>, <em>start=None</em>, <em>end=None</em>, <em>increment=None</em>, <em>steps=None</em>, <em>dtype='f'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.initializeTimeSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the time series object using a series of dates.
+Can give different inputs:
+Mode 1</p>
+<blockquote>
+<div><ul class="simple">
+<li>time          : List of dates (datetime object)</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>Mode 2</dt>
+<dd><ul class="first last simple">
+<li>start         : Starting date (datetime object)</li>
+<li>end           : Ending date</li>
+<li>increment     : Increment of time in days</li>
+<li>steps         : How many steps</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.plotProfiles">
+<code class="descname">plotProfiles</code><span class="sig-paren">(</span><em>prefix</em>, <em>figure=124</em>, <em>show=True</em>, <em>norm=None</em>, <em>xlim=None</em>, <em>zlim=None</em>, <em>marker='.'</em>, <em>color='k'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.plotProfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the profiles in 3D plot.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.readFromGIAnT">
+<code class="descname">readFromGIAnT</code><span class="sig-paren">(</span><em>h5file</em>, <em>setmaster2zero=None</em>, <em>zfile=None</em>, <em>lonfile=None</em>, <em>latfile=None</em>, <em>filetype='d'</em>, <em>incidence=None</em>, <em>heading=None</em>, <em>inctype='onefloat'</em>, <em>field='recons'</em>, <em>keepnan=False</em>, <em>mask=None</em>, <em>readModel=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.readFromGIAnT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the output from a tipycal GIAnT h5 output file.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>h5file        : Input h5file</li>
+<li>setmaster2zero: If index is provided, master will be replaced by zeros (no substraction)</li>
+<li>zfile         : File with elevation</li>
+<li>lonfile       : File with longitudes</li>
+<li>latfile       : File with latitudes</li>
+<li>filetype      : type of data in lon, lat and elevation file (default: ‘f’)</li>
+<li>incidence     : Incidence angle (degree)</li>
+<li>heading       : Heading angle (degree)</li>
+<li><dl class="first docutils">
+<dt>inctype <span class="classifier-delimiter">:</span> <span class="classifier">Type of the incidence and heading values (see insar.py for details)</span></dt>
+<dd>Can be ‘onefloat’, ‘grd’, ‘binary’, ‘binaryfloat’</dd>
+</dl>
+</li>
+<li>field         : Name of the field in the h5 file.</li>
+<li><dl class="first docutils">
+<dt>mask <span class="classifier-delimiter">:</span> <span class="classifier">Adds a common mask to the data.</span></dt>
+<dd>mask is an array the same size as the data with nans and 1
+It can also be a tuple with a key word in 
+the h5file, a value and ‘above’ or ‘under’</dd>
+</dl>
+</li>
+<li>readModel     : Reads the model parameters</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.readModelFromGIAnT">
+<code class="descname">readModelFromGIAnT</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.readModelFromGIAnT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the model parameters from GIAnT after one has read the time series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.reference2timeseries">
+<code class="descname">reference2timeseries</code><span class="sig-paren">(</span><em>gpstimeseries</em>, <em>distance=4.0</em>, <em>verbose=True</em>, <em>parameters=1</em>, <em>daysaround=2</em>, <em>propagate='mean'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.reference2timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>References the InSAR time series to the GPS time series.
+We estimate a linear function of range and azimuth on the difference 
+between InSAR and GPS at each insar epoch.</p>
+<dl class="docutils">
+<dt>We solve for the a, b, c terms in the equation:</dt>
+<dd>d_sar = d_gps + a + b*range + c*azimuth + d*azimuth*range</dd>
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>gpstimeseries     : A gpstimeseries instance.</li>
+</ul>
+</dd>
+<dt>kwArgs:</dt>
+<dd><ul class="first last simple">
+<li>daysaround        : How many days around the date do we consider</li>
+<li><dl class="first docutils">
+<dt>distance <span class="classifier-delimiter">:</span> <span class="classifier">Diameter of the circle surrounding a gps station</span></dt>
+<dd>to gather InSAR points</dd>
+</dl>
+</li>
+<li>verbose           : Talk to me</li>
+<li>parameters        : 1, 3 or 4</li>
+<li>propagate         : ‘mean’ if no gps data available</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt><a class="reference external" href="mailto:sar&#37;&#52;&#48;gps">sar<span>&#64;</span>gps</a> <span class="classifier-delimiter">:</span> <span class="classifier">a gpstimeseries instance with the InSAR values</span></dt>
+<dd>around the GPS stations</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.referenceProfiles">
+<code class="descname">referenceProfiles</code><span class="sig-paren">(</span><em>prefix</em>, <em>xmin</em>, <em>xmax</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.referenceProfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the mean value of points between xmin and xmax for all the profiles.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.referenceProfiles2Date">
+<code class="descname">referenceProfiles2Date</code><span class="sig-paren">(</span><em>prefix</em>, <em>date</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.referenceProfiles2Date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the profile at date ‘date’ to all the profiles in the time series.
+Args:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">prefix        : Name of the profiles</p>
+</li>
+<li><dl class="first docutils">
+<dt>date <span class="classifier-delimiter">:</span> <span class="classifier">Tuple of 3 or 6 numbers for the date</span></dt>
+<dd><p class="first last">date = (year(int), month(int), day(int))</p>
+</dd>
+</dl>
+<p>or date = (year(int), month(int), day(int), hour(int), min(int), s(float))</p>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.referenceTimeSeries2Date">
+<code class="descname">referenceTimeSeries2Date</code><span class="sig-paren">(</span><em>date</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.referenceTimeSeries2Date" title="Permalink to this definition">¶</a></dt>
+<dd><p>References the time series to the date given as argument.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>date <span class="classifier-delimiter">:</span> <span class="classifier">Can a be tuple/list of 3 integers (year, month, day)</span></dt>
+<dd>or a tuple/list of 6 integers (year, month, day, hour, min, sec) 
+or a datetime object.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.removeDate">
+<code class="descname">removeDate</code><span class="sig-paren">(</span><em>date</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.removeDate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove one date from the time series.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>date      : tuple of (year, month, day) or (year, month, day ,hour, min,s)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.removeDates">
+<code class="descname">removeDates</code><span class="sig-paren">(</span><em>dates</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.removeDates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a list of dates from the time series.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>dates     : List of dates to be removed.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.select_pixels">
+<code class="descname">select_pixels</code><span class="sig-paren">(</span><em>minlon</em>, <em>maxlon</em>, <em>minlat</em>, <em>maxlat</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.select_pixels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select the pixels in a box defined by min and max, lat and lon.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>minlon        : Minimum longitude.</li>
+<li>maxlon        : Maximum longitude.</li>
+<li>minlat        : Minimum latitude.</li>
+<li>maxlat        : Maximum latitude.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.setLonLat">
+<code class="descname">setLonLat</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em>, <em>incidence=None</em>, <em>heading=None</em>, <em>elevation=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.setLonLat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the lon and lat array and initialize things.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>lon           : Can be an array or a string.</li>
+<li>lat           : Can be an array or a string.</li>
+<li>incidence     : Can be an array or a string.</li>
+<li>heading       : Can be an array or a string.</li>
+<li>elevation     : Can be an array or a string.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.setTimeSeries">
+<code class="descname">setTimeSeries</code><span class="sig-paren">(</span><em>timeseries</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.setTimeSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the values in the time series.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>timeseries    : List of arrays of the right size.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.smoothProfiles">
+<code class="descname">smoothProfiles</code><span class="sig-paren">(</span><em>prefix</em>, <em>window</em>, <em>verbose=False</em>, <em>method='mean'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.smoothProfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the average window mean on profiles.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.write2GRDs">
+<code class="descname">write2GRDs</code><span class="sig-paren">(</span><em>prefix</em>, <em>interp=100</em>, <em>cmd='surface'</em>, <em>oversample=1</em>, <em>tension=None</em>, <em>verbose=False</em>, <em>useGMT=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.write2GRDs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write all the dates to GRD files.
+For arg description, see insar.write2grd</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.write2h5file">
+<code class="descname">write2h5file</code><span class="sig-paren">(</span><em>h5file</em>, <em>field='recons'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.write2h5file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the time series in a h5file</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>h5file        : Output h5file</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>field         : name of the field in the h5 file</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.writeProfiles2Files">
+<code class="descname">writeProfiles2Files</code><span class="sig-paren">(</span><em>profileprefix</em>, <em>outprefix</em>, <em>fault=None</em>, <em>verbose=False</em>, <em>smoothed=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.writeProfiles2Files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write all the profiles to a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.insartimeseries.writeProfiles2OneFile">
+<code class="descname">writeProfiles2OneFile</code><span class="sig-paren">(</span><em>profileprefix</em>, <em>filename</em>, <em>verbose=False</em>, <em>smoothed=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insartimeseries.writeProfiles2OneFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the profiles to one file</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../dataclasses.html">Classes for types of data</a><ul>
+      <li>Previous: <a href="seismiclocations.html" title="previous chapter">seismiclocations class</a></li>
+      <li>Next: <a href="gpssopactimeseries.html" title="next chapter">gpssopactimeseries class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/insartimeseries.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/insartimeseries.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

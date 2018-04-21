@@ -1,0 +1,435 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>geodeticplot class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="imagecovariance class" href="imagecovariance.html" />
+    <link rel="prev" title="functionfit class" href="functionfit.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="geodeticplot-class">
+<h1>geodeticplot class<a class="headerlink" href="#geodeticplot-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.geodeticplot">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">geodeticplot</code><span class="sig-paren">(</span><em>figure=None, pbaspect=None, projection='cyl', lonmin=None, latmin=None, lonmax=None, latmax=None, resolution='i', figsize=[None, None]</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.geodeticplot.clf">
+<code class="descname">clf</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.clf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the figures</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.close">
+<code class="descname">close</code><span class="sig-paren">(</span><em>fig2close=['map', 'fault']</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Closes all the figures</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.cosicorr">
+<code class="descname">cosicorr</code><span class="sig-paren">(</span><em>corr</em>, <em>norm=None</em>, <em>colorbar=True</em>, <em>data='dataEast'</em>, <em>plotType='decimate'</em>, <em>gmtCmap=None</em>, <em>decim=1</em>, <em>zorder=3</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.cosicorr" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>corr      : instance of the class cosicorr</li>
+<li>norm      : lower and upper bound of the colorbar.</li>
+<li>colorbar  : plot the colorbar (True/False).</li>
+<li><dl class="first docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">plot either ‘dataEast’, ‘dataNorth’, ‘synthNorth’, ‘synthEast’,</span></dt>
+<dd>‘resEast’, ‘resNorth’, ‘data’, ‘synth’ or ‘res’</dd>
+</dl>
+</li>
+<li>plotType  : plot either rectangular patches (decimate) or scatter (scatter)</li>
+<li>decim     : decimation factor if plotType=’scatter’</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.drawCoastlines">
+<code class="descname">drawCoastlines</code><span class="sig-paren">(</span><em>color='k'</em>, <em>linewidth=1.0</em>, <em>linestyle='solid'</em>, <em>resolution='i'</em>, <em>drawLand=True</em>, <em>drawMapScale=None</em>, <em>parallels=4</em>, <em>meridians=4</em>, <em>drawOnFault=True</em>, <em>drawCountries=True</em>, <em>zorder=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.drawCoastlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws the coast lines in the desired area.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>color         : Color of lines</li>
+<li>linewidth     : Width of lines</li>
+<li>linestyle     : Style of lines</li>
+<li><dl class="first docutils">
+<dt>resolution <span class="classifier-delimiter">:</span> <span class="classifier">Resolution of the coastline. </span></dt>
+<dd>Can be c (crude), l (low), i (intermediate), h (high), f (full)</dd>
+</dl>
+</li>
+<li>drawLand      : Fill the continents (True/False)</li>
+<li>drawMapScale  : Draw a map scale (None or length in km)</li>
+<li>drawCountries : Draw County boundaries?</li>
+<li><dl class="first docutils">
+<dt>parallels <span class="classifier-delimiter">:</span> <span class="classifier">If int -&gt; Number of parallels </span></dt>
+<dd>If float -&gt; spacing in degrees between paralles
+If np.array -&gt; array of parallels</dd>
+</dl>
+</li>
+<li>meridians     : Number of meridians to draw or array of meridians</li>
+<li>drawOnFault   : Draw on 3D fault as well</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.earthquakes">
+<code class="descname">earthquakes</code><span class="sig-paren">(</span><em>earthquakes</em>, <em>plot='2d3d'</em>, <em>color='k'</em>, <em>markersize=5</em>, <em>norm=None</em>, <em>colorbar=False</em>, <em>zorder=2</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.earthquakes" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>earthquakes   : object from seismic locations.</li>
+<li>plot          : any combination of 2d and 3d.</li>
+<li>color         : color of the earthquakes. Can be an array.</li>
+<li>markersize    : size of each dots. Can be an array.</li>
+<li>norm          : upper and lower bound for the color code.</li>
+<li>colorbar      : Draw a colorbar.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.equalize3dAspect">
+<code class="descname">equalize3dAspect</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.equalize3dAspect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the 3D axes have equal aspect. Not working yet (maybe never).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.faultTents">
+<code class="descname">faultTents</code><span class="sig-paren">(</span><em>fault, slip='strikeslip', Norm=None, colorbar=True, method='surface', cmap='jet', plot_on_2d=False, revmap=False, factor=1.0, npoints=10, xystrides=[100, 100], zorder=0, vertIndex=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.faultTents" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>fault         : Fault class from verticalfault.</li>
+<li>slip          : Can be ‘strikeslip’, ‘dipslip’, ‘tensile’, ‘total’ or ‘coupling’</li>
+<li>Norm          : Limits for the colorbar.</li>
+<li><dl class="first docutils">
+<dt>method <span class="classifier-delimiter">:</span> <span class="classifier">Can be ‘scatter’ –&gt; Plots all the sub points as a colored dot.</span></dt>
+<dd>‘surface’ –&gt; Interpolates a 3D surface (can be ugly)</dd>
+</dl>
+</li>
+<li>colorbar      : if True, plots a colorbar.</li>
+<li>plot_on_2d    : if True, adds the patches on the map.</li>
+<li>revmap        : Reverse the default colormap</li>
+<li>factor        : Scale factor for fault slip values</li>
+<li><dl class="first docutils">
+<dt>npoints <span class="classifier-delimiter">:</span> <span class="classifier">Number of subpoints per patch. This number is only indicative of the </span></dt>
+<dd>actual number of points that is picked out by the dropSourcesInPatch
+function of EDKS.py. It only matters to make the interpolation finer.
+Default value is generally alright.</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>xystrides <span class="classifier-delimiter">:</span> <span class="classifier">If method is ‘surface’, then xystrides is going to be the number of </span></dt>
+<dd>points along x and along y used to interpolate the surface in 3D and 
+its color.</dd>
+</dl>
+</li>
+<li>vertIndex     : Writes the index of the vertices</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.faultpatches">
+<code class="descname">faultpatches</code><span class="sig-paren">(</span><em>fault</em>, <em>slip='strikeslip'</em>, <em>Norm=None</em>, <em>colorbar=True</em>, <em>plot_on_2d=False</em>, <em>revmap=False</em>, <em>linewidth=1.0</em>, <em>cmap='jet'</em>, <em>transparency=0.0</em>, <em>factor=1.0</em>, <em>zorder=0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.faultpatches" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>fault         : Fault class from verticalfault.</li>
+<li>slip          : Can be ‘strikeslip’, ‘dipslip’, ‘tensile’, ‘total’ or ‘coupling’</li>
+<li>Norm          : Limits for the colorbar.</li>
+<li>colorbar      : if True, plots a colorbar.</li>
+<li>plot_on_2d    : if True, adds the patches on the map.</li>
+<li>factor        : scale factor for fault slip values</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.faultsimulation">
+<code class="descname">faultsimulation</code><span class="sig-paren">(</span><em>fault</em>, <em>norm=None</em>, <em>colorbar=True</em>, <em>direction='north'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.faultsimulation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>fault     : fault object from verticalfault.</li>
+<li>norm      : List of lower and upper bound of the colorbar.</li>
+<li>colorbar  : activates the plotting of the colorbar.</li>
+<li>direction : which direction do we plot (‘east’, ‘north’, ‘up’, ‘total’ or a given azimuth in degrees, or an array to project in the LOS).</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.faulttrace">
+<code class="descname">faulttrace</code><span class="sig-paren">(</span><em>fault</em>, <em>color='r'</em>, <em>add=False</em>, <em>discretized=False</em>, <em>zorder=4</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.faulttrace" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>fault         : Fault class from verticalfault.</li>
+<li>color         : Color of the fault.</li>
+<li>add           : plot the faults in fault.addfaults</li>
+<li>discretized   : Plot the discretized fault</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.gps">
+<code class="descname">gps</code><span class="sig-paren">(</span><em>gps, data=['data'], color=['k'], scale=None, scale_units=None, legendscale=10.0, linewidths=0.1, name=False, zorder=5</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.gps" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>gps           : gps object from gps.</li>
+<li><dl class="first docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">List of things to plot:</span></dt>
+<dd>Can be any list of ‘data’, ‘synth’, ‘res’, ‘strain’, ‘transformation’</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>color <span class="classifier-delimiter">:</span> <span class="classifier">List of the colors of the gps velocity arrows.</span></dt>
+<dd>Must be the same size as data</dd>
+</dl>
+</li>
+<li>scale         : Scales the arrows</li>
+<li>scale_units   : ‘width’, ‘height’, ‘dots’ or ‘inches’</li>
+<li>legendscale   : Length of the scale.</li>
+<li>linewidths    : Width of the arrows.</li>
+<li>name          : Plot the name of the stations (True/False).</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.gpsprojected">
+<code class="descname">gpsprojected</code><span class="sig-paren">(</span><em>gps</em>, <em>norm=None</em>, <em>colorbar=True</em>, <em>zorder=4</em>, <em>cmap='jet'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.gpsprojected" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>gps       : gpsrate object</li>
+<li>norm      : List of lower and upper bound of the colorbar.</li>
+<li>colorbar  : activates the plotting of the colorbar.</li>
+<li>cmap      : Colormap, by default ‘jet’</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.gpsverticals">
+<code class="descname">gpsverticals</code><span class="sig-paren">(</span><em>gps, norm=None, colorbar=True, data=['data'], markersize=[10], linewidth=0.1, zorder=4, cmap='jet', marker='o'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.gpsverticals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scatter plot of the vertical displacement of the GPS.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.insar">
+<code class="descname">insar</code><span class="sig-paren">(</span><em>insar</em>, <em>norm=None</em>, <em>colorbar=True</em>, <em>data='data'</em>, <em>plotType='decimate'</em>, <em>gmtCmap=None</em>, <em>decim=1</em>, <em>zorder=3</em>, <em>edgewidth=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.insar" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>insar     : insar object from insar.</li>
+<li>norm      : lower and upper bound of the colorbar.</li>
+<li>colorbar  : plot the colorbar (True/False).</li>
+<li>data      : plot either ‘data’ or ‘synth’ or ‘res’.</li>
+<li>plotType  : Can be ‘decimate’ or ‘scatter’</li>
+<li>decim     : In case plotType=’scatter’, decimates the data by a factor decim.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.savefig">
+<code class="descname">savefig</code><span class="sig-paren">(</span><em>prefix, mapaxis='equal', ftype='pdf', dpi=None, bbox_inches=None, triDaxis='auto', saveFig=['fault', 'map']</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.savefig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save to file.
+ftype can be: ‘eps’, ‘pdf’, ‘png’</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.set_view">
+<code class="descname">set_view</code><span class="sig-paren">(</span><em>elevation</em>, <em>azimuth</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.set_view" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets azimuth and elevation angle for the 3D plot.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.set_xymap">
+<code class="descname">set_xymap</code><span class="sig-paren">(</span><em>xlim</em>, <em>ylim</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.set_xymap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the xlim and ylim on the map.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.setview">
+<code class="descname">setview</code><span class="sig-paren">(</span><em>elev=30.0</em>, <em>azim=180.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.setview" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the 3D view direction
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>elevation : in degree, angle from horizontal plane, positive looking downwards</li>
+<li>azimuth   : in degree, 0 for North-to-South direction</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.setzaxis">
+<code class="descname">setzaxis</code><span class="sig-paren">(</span><em>depth</em>, <em>zticklabels=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.setzaxis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the z-axis.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>depth     : Maximum depth.</li>
+<li>zticks    : ticks along z.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.show">
+<code class="descname">show</code><span class="sig-paren">(</span><em>mapaxis=None, triDaxis=None, showFig=['fault', 'map'], fitOnBox=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Show to screen
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>mapaxis   : Specify the axis type for the map (see matplotlib)</li>
+<li>triDaxis  : Specify the axis type for the 3D projection (see mpl_toolkits)</li>
+<li>showFig   : List of plots to show on screen (‘fault’ and/or ‘map’)</li>
+<li><dl class="first docutils">
+<dt>fitOnBox <span class="classifier-delimiter">:</span> <span class="classifier">If True, fits the horizontal axis to the one asked at initialization </span></dt>
+<dd>even if data fall outside the box.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.slipdirection">
+<code class="descname">slipdirection</code><span class="sig-paren">(</span><em>fault</em>, <em>linewidth=1.0</em>, <em>color='k'</em>, <em>scale=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.slipdirection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the segment in slip direction of the fault.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.surfacestress">
+<code class="descname">surfacestress</code><span class="sig-paren">(</span><em>stress</em>, <em>component='normal'</em>, <em>linewidth=0.0</em>, <em>Norm=None</em>, <em>colorbar=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.surfacestress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the stress on the map.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>stress        : Stressfield object.</li>
+<li><dl class="first docutils">
+<dt>component <span class="classifier-delimiter">:</span> <span class="classifier">If string, can be normal, shearstrike, sheardip</span></dt>
+<dd>If tuple or list, can be anything specifying the indexes of the Stress tensor.</dd>
+</dl>
+</li>
+<li>linewidth     : option of scatter.</li>
+<li>Norm          : Scales the color bar.</li>
+<li>colorbar      : if true, plots a colorbar</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.titlefault">
+<code class="descname">titlefault</code><span class="sig-paren">(</span><em>titre</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.titlefault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the title of the fault model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.geodeticplot.titlemap">
+<code class="descname">titlemap</code><span class="sig-paren">(</span><em>titre</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.geodeticplot.titlemap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the title of the map.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="functionfit.html" title="previous chapter">functionfit class</a></li>
+      <li>Next: <a href="imagecovariance.html" title="next chapter">imagecovariance class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/geodeticplot.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/geodeticplot.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

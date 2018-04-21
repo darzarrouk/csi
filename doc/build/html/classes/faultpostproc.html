@@ -1,0 +1,337 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>faultpostproc class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="faultpostproctents class" href="faultpostproctents.html" />
+    <link rel="prev" title="explorefault class" href="explorefault.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="faultpostproc-class">
+<h1>faultpostproc class<a class="headerlink" href="#faultpostproc-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.faultpostproc">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">faultpostproc</code><span class="sig-paren">(</span><em>name</em>, <em>fault</em>, <em>Mu=24000000000.0</em>, <em>samplesh5=None</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.faultpostproc.Aki2Harvard">
+<code class="descname">Aki2Harvard</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.Aki2Harvard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform the patch from the Aki convention to the Harvard convention.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.checkSymmetric">
+<code class="descname">checkSymmetric</code><span class="sig-paren">(</span><em>M</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.checkSymmetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if a matrix is symmetric.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.computeBetaMagnitude">
+<code class="descname">computeBetaMagnitude</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.computeBetaMagnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the magnitude with a simple approximation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.computeCentroidLonLatDepth">
+<code class="descname">computeCentroidLonLatDepth</code><span class="sig-paren">(</span><em>plotOutput=None</em>, <em>xyzOutput=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.computeCentroidLonLatDepth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the equivalent centroid location.
+Take from Theoretical Global Seismology, Dahlen &amp; Tromp. Chapter 5. Section 4. pp. 169</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.computeMagnitude">
+<code class="descname">computeMagnitude</code><span class="sig-paren">(</span><em>plotHist=None</em>, <em>outputSamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.computeMagnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the moment magnitude.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.computeMomentAngularDifference">
+<code class="descname">computeMomentAngularDifference</code><span class="sig-paren">(</span><em>Mout</em>, <em>form='harvard'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.computeMomentAngularDifference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the difference in angle between the moment Mout and the moment.
+Mout: full moment in harvard convention.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.computeMomentTensor">
+<code class="descname">computeMomentTensor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.computeMomentTensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the full seismic (0-order) moment tensor from the slip distribution.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.computeMoments">
+<code class="descname">computeMoments</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.computeMoments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the moment tensor for each patch.
+Result is stored in self.Moments</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.computePatchMoment">
+<code class="descname">computePatchMoment</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.computePatchMoment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the Moment tensor for one patch.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>p             : patch index</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.computePotencies">
+<code class="descname">computePotencies</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.computePotencies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the potencies for all the patches.
+Result is stored in self.Potencies</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.computeScalarMoment">
+<code class="descname">computeScalarMoment</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.computeScalarMoment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the scalar seismic moment.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.h5_finalize">
+<code class="descname">h5_finalize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.h5_finalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close the (potentially) open h5 file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.h5_init">
+<code class="descname">h5_init</code><span class="sig-paren">(</span><em>decim=1</em>, <em>indss=None</em>, <em>indds=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.h5_init" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the attribute self.samplesh5 is not None, we open the h5 file specified by 
+self.samplesh5 and copy the slip values to self.fault.slip (hopefully without loading 
+into memory).</p>
+<dl class="docutils">
+<dt>kwargs:</dt>
+<dd>decim :  decimation factor for skipping samples
+indss :  tuples (size (2,)) containing desired indices of strike slip in h5File
+indds :  tuples (size (2,)) containing desired indices of dip slip in h5File</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.integratedPotencyAlongProfile">
+<code class="descname">integratedPotencyAlongProfile</code><span class="sig-paren">(</span><em>numXBins=100</em>, <em>outputSamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.integratedPotencyAlongProfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the cumulative potency as a function of distance to the profile origin.
+If the potencies were computed with multiple samples (in case of Bayesian exploration), we form histograms
+of potency vs. distance. Otherwise, we just compute a distance profile.</p>
+<dl class="docutils">
+<dt>kwargs:</dt>
+<dd>numXBins                        number of bins to group patches along the profile</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.integratedPotencyWithDepth">
+<code class="descname">integratedPotencyWithDepth</code><span class="sig-paren">(</span><em>plotOutput=None</em>, <em>numDepthBins=5</em>, <em>outputSamp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.integratedPotencyWithDepth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the cumulative moment with depth by summing the moment per row of
+patches. If the moments were computed with mutiple samples, we form histograms of 
+potency vs. depth. Otherwise, we just compute a depth profile.</p>
+<dl class="docutils">
+<dt>kwargs:</dt>
+<dd>plotOutput                      output directory for figures
+numDepthBins                    number of bins to group patch depths</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.lonlat2xy">
+<code class="descname">lonlat2xy</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.lonlat2xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the transformation in self to convert  lon/lat vector to x/y utm.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>lon           : Longitude array.</li>
+<li>lat           : Latitude array.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.patchNormal">
+<code class="descname">patchNormal</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.patchNormal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the Normal to a patch.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>p             : Index of the desired patch.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.slipVector">
+<code class="descname">slipVector</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.slipVector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the slip vector in the cartesian space for the patch p. We do not deal with 
+the opening component. The fault slip may be a 3D array for multiple samples of slip.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>p             : Index of the desired patch.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.stressdrop">
+<code class="descname">stressdrop</code><span class="sig-paren">(</span><em>shapefactor=2.44</em>, <em>threshold=0.2</em>, <em>threshold_rand=False</em>, <em>return_Area_Mo_Slip=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.stressdrop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute threshold-dependent moment-based average stress-dip (cf., Noda et al., GJI 2013)
+Args:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">shapefactor: shape factor (e.g., 2.44 for a circular crack,)</p>
+</li>
+<li><p class="first">threshold: Rupture Area = area for slip &gt; threshold * slip_max</p>
+</li>
+<li><dl class="first docutils">
+<dt>threashold_rand: if =’log-normal’ randomly generate threshold with mean threshold[0] </dt>
+<dd><blockquote class="first">
+<div><p>and sigma=threshold[1]</p>
+</div></blockquote>
+<dl class="docutils">
+<dt>if =’uniform’ randomly generate threshold between threshold[0] </dt>
+<dd><p class="first last">and threshold[1]</p>
+</dd>
+</dl>
+<p class="last">if =False: compute stressdrop for a constant threshold</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>return_Area_Mo_Slip: if True, also return Rupture area as well as corresponding </dt>
+<dd><p class="first last">scalar moment and averaged slip amplitude</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.write2GCMT">
+<code class="descname">write2GCMT</code><span class="sig-paren">(</span><em>form='full'</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.write2GCMT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes in GCMT style
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>form <span class="classifier-delimiter">:</span> <span class="classifier">format is either ‘full’ to match with Zacharie binary</span></dt>
+<dd>or ‘line’ to match with the option -Sm in GMT</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>Example of ‘full’:</dt>
+<dd>PDE 2006  1  1  7 11 57.00  31.3900  140.1300  10.0 5.3 5.0 SOUTHEAST OF HONSHU, JAP</dd>
+</dl>
+<p>event name:     200601010711A  
+time shift:     10.4000
+half duration:   1.5000
+latitude:       31.5100
+longitude:     140.0700
+depth:          12.0000
+Mrr:       3.090000e+24
+Mtt:      -2.110000e+24
+Mpp:      -9.740000e+23
+Mrt:      -6.670000e+23
+Mrp:      -5.540000e+23
+Mtp:      -5.260000e+23</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.faultpostproc.xy2lonlat">
+<code class="descname">xy2lonlat</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.faultpostproc.xy2lonlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the transformation in self to convert x.y vectors to lon/lat.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>x             : Xarray</li>
+<li>y             : Yarray</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="explorefault.html" title="previous chapter">explorefault class</a></li>
+      <li>Next: <a href="faultpostproctents.html" title="next chapter">faultpostproctents class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/faultpostproc.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/faultpostproc.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

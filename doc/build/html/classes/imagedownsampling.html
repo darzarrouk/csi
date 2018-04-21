@@ -1,0 +1,398 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>imagedownsampling class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="multifaultsolve class" href="multifaultsolve.html" />
+    <link rel="prev" title="imagecovariance class" href="imagecovariance.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="imagedownsampling-class">
+<h1>imagedownsampling class<a class="headerlink" href="#imagedownsampling-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.imagedownsampling">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">imagedownsampling</code><span class="sig-paren">(</span><em>name</em>, <em>image</em>, <em>faults=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.imagedownsampling.blockSize">
+<code class="descname">blockSize</code><span class="sig-paren">(</span><em>block</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.blockSize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns block size.
+R.Grandin, April 2015
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>block     : Block instance of the imagedownsampling class.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.buildDownsampledCd">
+<code class="descname">buildDownsampledCd</code><span class="sig-paren">(</span><em>mu</em>, <em>lam</em>, <em>function='exp'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.buildDownsampledCd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the covariance matrix by weihgting following the downsampling scheme
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>mu        : Autocovariance</li>
+<li>lam       : Characteristic distance</li>
+<li><dl class="first docutils">
+<dt>function <span class="classifier-delimiter">:</span> <span class="classifier">‘exp’   –&gt; C = mu**2 exp(-d/lam)</span></dt>
+<dd>‘gauss’ –&gt; C = mu**2 exp(-d**2/2lam**2)</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.computeGradientCurvature">
+<code class="descname">computeGradientCurvature</code><span class="sig-paren">(</span><em>smooth=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.computeGradientCurvature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the gradient for all the blocks.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>smooth <span class="classifier-delimiter">:</span> <span class="classifier">Smoothes the Gradient and the Curvature using a Gaussian filter.</span></dt>
+<dd>smooth is the kernel (in km) of the filter.
+Default is None</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.computeResolution">
+<code class="descname">computeResolution</code><span class="sig-paren">(</span><em>slipdirection</em>, <em>damping</em>, <em>vertical=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.computeResolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the resolution matrix in the data space.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>slipdirection: Directions to include when computing the resolution operator.</li>
+<li>damping       : Damping coefficient (damping is made through an identity matrix).</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.cutblockinfour">
+<code class="descname">cutblockinfour</code><span class="sig-paren">(</span><em>block</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.cutblockinfour" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a block, returns 4 equal blocks.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>block         : block as defined in initialstate.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.dataBased">
+<code class="descname">dataBased</code><span class="sig-paren">(</span><em>threshold</em>, <em>plot=False</em>, <em>verboseLevel='minimum'</em>, <em>decimorig=10</em>, <em>quantity='curvature'</em>, <em>smooth=None</em>, <em>itmax=100</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.dataBased" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
+Threshold is based on the gradient or curvature of the phase field inside the block.
+The algorithm is based on the varres downsampler. Please check at <a class="reference external" href="http://earthdef.caltech.edu">http://earthdef.caltech.edu</a>
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>threshold     : Gradient threshold</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.distToFault">
+<code class="descname">distToFault</code><span class="sig-paren">(</span><em>block</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.distToFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns distance from block to fault.
+The distance is here defined as the minimum distance
+from any of the four block corners to the fault.
+R.Grandin, April 2015
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>block     : Block instance of the imagedownsampling class.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.distanceBased">
+<code class="descname">distanceBased</code><span class="sig-paren">(</span><em>chardist=15</em>, <em>expodist=1</em>, <em>plot=False</em>, <em>decimorig=10</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.distanceBased" title="Permalink to this definition">¶</a></dt>
+<dd><p>Downsamples the dataset depending on the distance from the fault
+R.Grandin, April 2015
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>chardist      : Characteristic distance of downsampling.</li>
+<li>expodist      : Exponent of the distance-based downsampling criterion.</li>
+<li>damping       : Damping coefficient (damping is made through an identity matrix).</li>
+<li>slipdirection : Which direction to accout for to build the slip Green’s functions.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.downsample">
+<code class="descname">downsample</code><span class="sig-paren">(</span><em>plot=False</em>, <em>decimorig=10</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.downsample" title="Permalink to this definition">¶</a></dt>
+<dd><p>From the saved list of blocks, computes the downsampled data set and the informations that come along.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.downsampleFromRspFile">
+<code class="descname">downsampleFromRspFile</code><span class="sig-paren">(</span><em>prefix</em>, <em>tolerance=0.5</em>, <em>plot=False</em>, <em>decimorig=10</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.downsampleFromRspFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>From the downsampling scheme saved in a .rsp file, downsamples
+the image.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>prefix        : Prefix of the rsp file.</li>
+<li>tolerance     : Minimum surface covered in a patch to be kept.</li>
+<li>plot          : Plot the downsampled data (True/False)</li>
+<li><dl class="first docutils">
+<dt>decimorig <span class="classifier-delimiter">:</span> <span class="classifier">Simple decimation factor of the data for</span></dt>
+<dd>lighter plotting.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.downsampleFromSampler">
+<code class="descname">downsampleFromSampler</code><span class="sig-paren">(</span><em>sampler</em>, <em>plot=False</em>, <em>decimorig=10</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.downsampleFromSampler" title="Permalink to this definition">¶</a></dt>
+<dd><p>From the downsampling scheme in a previous sampler, downsamples the image.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>sampler       : Sampler which has a blocks instance.</li>
+<li>plot          : Plot the downsampled data (True/False)</li>
+<li>decimorig     : Stupid decimation factor for lighter plotting.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.getblockarea">
+<code class="descname">getblockarea</code><span class="sig-paren">(</span><em>block</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.getblockarea" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the total area of a block.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>block : Block as defined in initialstate.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.getblockcenter">
+<code class="descname">getblockcenter</code><span class="sig-paren">(</span><em>block</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.getblockcenter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the center of a block.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>block         : Block as defined in initialstate.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.initialstate">
+<code class="descname">initialstate</code><span class="sig-paren">(</span><em>startingsize</em>, <em>minimumsize</em>, <em>tolerance=0.5</em>, <em>plot=False</em>, <em>decimorig=10</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.initialstate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does the first cut onto the data.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>startingsize  : Size of the first regular downsampling (it’ll be the effective maximum size of windows)</li>
+<li>minimumsize   : Minimum Size of the blocks.</li>
+<li><dl class="first docutils">
+<dt>tolerance <span class="classifier-delimiter">:</span> <span class="classifier">Between 0 and 1. If 1, all the pixels must have a value so that the box is kept, </span></dt>
+<dd>If 0, no pixels are needed… Default is 0.5</dd>
+</dl>
+</li>
+<li>decimorig     : Decimation ofr plotting purposes only.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.plotDownsampled">
+<code class="descname">plotDownsampled</code><span class="sig-paren">(</span><em>figure=145</em>, <em>ref='utm'</em>, <em>Norm=None</em>, <em>data2plot='north'</em>, <em>decimorig=1</em>, <em>savefig=None</em>, <em>show=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.plotDownsampled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the downsampling as it is at this step.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>figure    : Figure ID.</li>
+<li>Norm      : [colormin, colormax]</li>
+<li>ref       : Can be ‘utm’ or ‘lonlat’.</li>
+<li>data2plot : used if datatype is opticorr: can be north or east.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.readDownsamplingScheme">
+<code class="descname">readDownsamplingScheme</code><span class="sig-paren">(</span><em>prefix</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.readDownsamplingScheme" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a downsampling scheme from a rsp file.
+and set it as self.blocks
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>prefix <span class="classifier-delimiter">:</span> <span class="classifier">Prefix of a .rsp file written by </span></dt>
+<dd>writeDownsampled2File.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.reject_pixels_fault">
+<code class="descname">reject_pixels_fault</code><span class="sig-paren">(</span><em>distance</em>, <em>fault</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.reject_pixels_fault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes pixels that are too close to the fault in the downsampled image.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>distance      : Distance between pixels and fault (scalar)</li>
+<li>fault         : fault object</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.resolutionBased">
+<code class="descname">resolutionBased</code><span class="sig-paren">(</span><em>threshold</em>, <em>damping</em>, <em>slipdirection='s'</em>, <em>plot=False</em>, <em>verboseLevel='minimum'</em>, <em>decimorig=10</em>, <em>vertical=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.resolutionBased" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>threshold     : Threshold.</li>
+<li>damping       : Damping coefficient (damping is made through an identity matrix).</li>
+<li>slipdirection : Which direction to accout for to build the slip Green’s functions.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.setBlocks">
+<code class="descname">setBlocks</code><span class="sig-paren">(</span><em>blocks</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.setBlocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a list of blocks and set it in self.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>blocks    : List of blocks (xy coordinates)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.setDownsamplingScheme">
+<code class="descname">setDownsamplingScheme</code><span class="sig-paren">(</span><em>sampler</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.setDownsamplingScheme" title="Permalink to this definition">¶</a></dt>
+<dd><p>From an imagedownsampling object, sets the downsampling scheme.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.trashblock">
+<code class="descname">trashblock</code><span class="sig-paren">(</span><em>j</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.trashblock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes one block.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.trashblocks">
+<code class="descname">trashblocks</code><span class="sig-paren">(</span><em>jj</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.trashblocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes the blocks corresponding to indexes in the list jj.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.imagedownsampling.writeDownsampled2File">
+<code class="descname">writeDownsampled2File</code><span class="sig-paren">(</span><em>prefix</em>, <em>rsp=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.imagedownsampling.writeDownsampled2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the downsampled image data to a file.
+The file will be called prefix.txt.
+If rsp is True, then it writes a file called prefix.rsp 
+containing the boxes of the downsampling.
+If prefix has white spaces, those are replaced by “_”.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="imagecovariance.html" title="previous chapter">imagecovariance class</a></li>
+      <li>Next: <a href="multifaultsolve.html" title="next chapter">multifaultsolve class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/imagedownsampling.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/imagedownsampling.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

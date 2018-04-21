@@ -1,0 +1,293 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>gpstimeseries class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Misc. Classes" href="../miscclasses.html" />
+    <link rel="prev" title="gpsstation class" href="gpsstation.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="gpstimeseries-class">
+<h1>gpstimeseries class<a class="headerlink" href="#gpstimeseries-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.gpstimeseries">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">gpstimeseries</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>verbose=True</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>ellps='WGS84'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.gpstimeseries.addPointInTime">
+<code class="descname">addPointInTime</code><span class="sig-paren">(</span><em>time</em>, <em>east=0.0</em>, <em>north=0.0</em>, <em>up=0.0</em>, <em>std_east=0.0</em>, <em>std_north=0.0</em>, <em>std_up=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.addPointInTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Augments the time series by one point.
+time is a datetime object.
+if east, north and up values are not provided, 0.0 is used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.fitFunction">
+<code class="descname">fitFunction</code><span class="sig-paren">(</span><em>function</em>, <em>m0</em>, <em>solver='L-BFGS-B'</em>, <em>iteration=1000</em>, <em>tol=1e-08</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.fitFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits a function to the timeseries
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>function  : Prediction function,</li>
+<li>m0        : Initial model</li>
+<li>solver    : Solver type (see list of solver in scipy.optimize.minimize)</li>
+<li>iteration : Number of iteration for the solver</li>
+<li>tol       : Tolerance</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.fitTidalConstituents">
+<code class="descname">fitTidalConstituents</code><span class="sig-paren">(</span><em>steps=None</em>, <em>linear=False</em>, <em>tZero=datetime.datetime(2000</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>chunks=None</em>, <em>cossin=False</em>, <em>constituents='all'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.fitTidalConstituents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits tidal constituents on the time series.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>steps     : list of datetime instances to add step functions in the estimation process.</li>
+<li>linear    : estimate a linear trend.</li>
+<li>tZero     : origin time (datetime instance).</li>
+<li>chunks    : List [ [start1, end1], [start2, end2]] where the fit is performed.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.getOffset">
+<code class="descname">getOffset</code><span class="sig-paren">(</span><em>date1</em>, <em>date2</em>, <em>nodate=nan</em>, <em>data='data'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.getOffset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the offset between date1 and date2.
+If the 2 dates are not available, returns NaN.
+Args:</p>
+<blockquote>
+<div>date1       : datetime object
+date2       : datetime object
+data        : can be ‘data’ or ‘std’</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.initializeTimeSeries">
+<code class="descname">initializeTimeSeries</code><span class="sig-paren">(</span><em>time=None</em>, <em>start=None</em>, <em>end=None</em>, <em>interval=1</em>, <em>los=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.initializeTimeSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the time series by creating whatever is necessary.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>time              Time vector</li>
+<li>starttime:        Begining of the time series.</li>
+<li>endtime:          End of the time series.</li>
+<li>interval:         In days.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.lonlat2xy">
+<code class="descname">lonlat2xy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.lonlat2xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass the position into the utm coordinate system.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>figure=1, styles=['.r'], show=True, data='data'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the time series.
+Args:</p>
+<blockquote>
+<div>figure  :   Figure id number (default=1)
+styles  :   List of styles (default=[‘.r’])
+show    :   Show to me (default=True)
+data    :   What do you show (data, synth)</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.project2InSAR">
+<code class="descname">project2InSAR</code><span class="sig-paren">(</span><em>los</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.project2InSAR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Projects the time series of east, north and up displacements into the 
+line-of-sight given as argument
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>los       : list of three component</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.read_from_JPL">
+<code class="descname">read_from_JPL</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.read_from_JPL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the time series from a file which has been sent from JPL.
+Format is a bit awkward…</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.read_from_caltech">
+<code class="descname">read_from_caltech</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.read_from_caltech" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the data from a time series file from CalTech (Avouac’s group).
+Time is in decimal year…</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.read_from_file">
+<code class="descname">read_from_file</code><span class="sig-paren">(</span><em>filename</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.read_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the time series from a file which has been written by write2file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.read_from_renoxyz">
+<code class="descname">read_from_renoxyz</code><span class="sig-paren">(</span><em>filename</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.read_from_renoxyz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the time series from a file which has been downloaded on
+<a class="reference external" href="http://geodesy.unr.edu/NGLStationPages/gpsnetmap/GPSNetMap.html">http://geodesy.unr.edu/NGLStationPages/gpsnetmap/GPSNetMap.html</a>
+Format xyz</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.read_from_sql">
+<code class="descname">read_from_sql</code><span class="sig-paren">(</span><em>filename</em>, <em>tables={'e': 'east'</em>, <em>'n': 'north'</em>, <em>'u': 'up'}</em>, <em>sigma={'e': 'sigma_east'</em>, <em>'n': 'sigma_north'</em>, <em>'u': 'sigma_up'}</em>, <em>factor=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.read_from_sql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the East, North and Up components of the station in a sql file.
+This follows the organization of M. Simons’ group at Caltech.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename  : Name of the sql file</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.reference2timeseries">
+<code class="descname">reference2timeseries</code><span class="sig-paren">(</span><em>timeseries</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.reference2timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes to another gps timeseries the difference between self and timeseries</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>timeseries        : Another gpstimeseries</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.removeNaNs">
+<code class="descname">removeNaNs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.removeNaNs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove NaNs in the time series</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.removePointsInTime">
+<code class="descname">removePointsInTime</code><span class="sig-paren">(</span><em>u</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.removePointsInTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove points from the time series.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>u         : List or array of indexes to remove</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.trimTime">
+<code class="descname">trimTime</code><span class="sig-paren">(</span><em>start</em>, <em>end=datetime.datetime(2100</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.trimTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keeps the epochs between start and end</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.write2file">
+<code class="descname">write2file</code><span class="sig-paren">(</span><em>outfile</em>, <em>steplike=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.write2file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the time series to a file.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>outfile   : output file.</li>
+<li>steplike  : doubles the output each time so that the plot looks like steps.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.gpstimeseries.xy2lonlat">
+<code class="descname">xy2lonlat</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.gpstimeseries.xy2lonlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass the position from utm to lonlat.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../dataclasses.html">Classes for types of data</a><ul>
+      <li>Previous: <a href="gpsstation.html" title="previous chapter">gpsstation class</a></li>
+      <li>Next: <a href="../miscclasses.html" title="next chapter">Misc. Classes</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/gpstimeseries.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/gpstimeseries.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

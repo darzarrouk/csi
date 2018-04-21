@@ -1,0 +1,180 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>fault3D class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="RectangularPatches class" href="RectangularPatches.html" />
+    <link rel="prev" title="Fault class" href="Fault.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="fault3d-class">
+<h1>fault3D class<a class="headerlink" href="#fault3d-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.fault3D">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">fault3D</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.fault3D" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class that handles faults in 3D. It inherits from RectangularPatches but
+allows to build the fault in 3D using tying points.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>name      : Name of the fault.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>utmzone   : UTM zone  (optional, default=None)</li>
+<li>lon0      : Longitude of the center of the UTM zone</li>
+<li>lat0      : Latitude of the center of the UTM zone</li>
+<li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
+<li>verbose   : Speak to me (default=True)</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="csi.fault3D.buildPatches">
+<code class="descname">buildPatches</code><span class="sig-paren">(</span><em>dip=None</em>, <em>dipdirection=None</em>, <em>every=10</em>, <em>minpatchsize=1e-05</em>, <em>trace_tol=0.1</em>, <em>trace_fracstep=0.2</em>, <em>trace_xaxis='x'</em>, <em>trace_cum_error=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.fault3D.buildPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a dipping fault given a certain dip angle evolution. Dip angle is linearly
+interpolated between tying points given as arguments.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first simple">
+<li><dl class="first docutils">
+<dt>dip <span class="classifier-delimiter">:</span> <span class="classifier">Dip angle tying points </span></dt>
+<dd><dl class="first last docutils">
+<dt>[[alongstrike, depth, dip], [alongstrike, depth, dip], </dt>
+<dd>…, [alongstrike, depth, dip]]</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li>dipdirection      : Direction towards which the fault dips.</li>
+<li>every             : patch length for the along trace discretization</li>
+<li>minpatchsize      : minimum patch size</li>
+<li><dl class="first docutils">
+<dt>trace_tol <span class="classifier-delimiter">:</span> <span class="classifier">tolerance for the along trace patch discretization </span></dt>
+<dd>optimization</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>trace_fracstep <span class="classifier-delimiter">:</span> <span class="classifier">fractional step in x for the patch discretization </span></dt>
+<dd>optimization</dd>
+</dl>
+</li>
+<li>trace_xaxis       : x axis for the discretization (‘x’ or ‘y’)</li>
+<li><dl class="first docutils">
+<dt>trace_cum_error <span class="classifier-delimiter">:</span> <span class="classifier">if True, account for accumulated error to define </span></dt>
+<dd>the x axis bound for the last patch</dd>
+</dl>
+</li>
+</ul>
+<dl class="last docutils">
+<dt>Example: dip = [[0, 0, 20], [10, 10, 30], [80, 10, 90]] means that </dt>
+<dd>from the origin point of the fault (self.xi[0], self.yi[0]), 
+the dip is 20 deg at 0 km and 0 km depth, 30 deg at km 10 
+and 10 km-depth and 90 deg at km 80 and 10 km-depth. 
+The routine starts by discretizing the surface trace, then 
+defines a dip evolution as a function of distance from the 
+fault origin and drapes the fault down to depth.</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.fault3D.dipatZ">
+<code class="descname">dipatZ</code><span class="sig-paren">(</span><em>interp</em>, <em>z</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.fault3D.dipatZ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the interpolator to return the dip angle evolution along strike at depth z.
+The interpolation scheme is piecewise linear.</p>
+<p>Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>interp        : Dip interpolation function</li>
+<li>z             : Depth.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../faultclasses.html">Classes of faults</a><ul>
+      <li>Previous: <a href="Fault.html" title="previous chapter">Fault class</a></li>
+      <li>Next: <a href="RectangularPatches.html" title="next chapter">RectangularPatches class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/fault3D.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/fault3D.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

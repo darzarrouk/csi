@@ -1,0 +1,297 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>timeseries class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="seismiclocations class" href="seismiclocations.html" />
+    <link rel="prev" title="tsunami class" href="tsunami.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="timeseries-class">
+<h1>timeseries class<a class="headerlink" href="#timeseries-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.timeseries">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">timeseries</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>verbose=True</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>ellps='WGS84'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.timeseries.SortInTime">
+<code class="descname">SortInTime</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.SortInTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sort ascending in time.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.addPointInTime">
+<code class="descname">addPointInTime</code><span class="sig-paren">(</span><em>time</em>, <em>value=0.0</em>, <em>std=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.addPointInTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Augments the time series by one point.
+time is a datetime object.
+if east, north and up values are not provided, 0.0 is used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.checkNaNs">
+<code class="descname">checkNaNs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.checkNaNs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the index of the NaNs</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.computeDoubleDifference">
+<code class="descname">computeDoubleDifference</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.computeDoubleDifference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the derivative of the TS with a central difference scheme.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.findZeroIntersect">
+<code class="descname">findZeroIntersect</code><span class="sig-paren">(</span><em>data='data'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.findZeroIntersect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all the points just before the function crosses 0.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data      : Can be ‘data’, ‘synth’ or ‘derivative’.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.fitFunction">
+<code class="descname">fitFunction</code><span class="sig-paren">(</span><em>function</em>, <em>m0</em>, <em>solver='L-BFGS-B'</em>, <em>iteration=1000</em>, <em>tol=1e-08</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.fitFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits a function to the timeseries
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>function  : Prediction function,</li>
+<li>m0        : Initial model</li>
+<li>solver    : Solver type (see list of solver in scipy.optimize.minimize)</li>
+<li>iteration : Number of iteration for the solver</li>
+<li>tol       : Tolerance</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.fitTidalConstituents">
+<code class="descname">fitTidalConstituents</code><span class="sig-paren">(</span><em>steps=None</em>, <em>linear=False</em>, <em>tZero=datetime.datetime(2000</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>chunks=None</em>, <em>cossin=False</em>, <em>constituents='all'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.fitTidalConstituents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits tidal constituents on the time series.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>steps     : list of datetime instances to add step functions in the estimation process.</li>
+<li>linear    : estimate a linear trend.</li>
+<li>tZero     : origin time (datetime instance).</li>
+<li>chunks    : List [ [start1, end1], [start2, end2]] where the fit is performed.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.getOffset">
+<code class="descname">getOffset</code><span class="sig-paren">(</span><em>date1</em>, <em>date2</em>, <em>nodate=nan</em>, <em>data='data'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.getOffset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the offset between date1 and date2.
+If the 2 dates are not available, returns NaN.
+Args:</p>
+<blockquote>
+<div>date1       : datetime object
+date2       : datetime object
+data        : can be ‘data’ or ‘std’</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>time=None</em>, <em>start=None</em>, <em>end=None</em>, <em>increment=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the time series.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>time          : list of datetime instances</li>
+<li>start         : datetime instance of the first period</li>
+<li>end           : datetime instance of the ending period</li>
+<li>increment     : increment of time between periods</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.lonlat2xy">
+<code class="descname">lonlat2xy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.lonlat2xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass the position into the utm coordinate system.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>figure=1, styles=['.r'], show=True, data='data', subplot=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the time series.
+Args:</p>
+<blockquote>
+<div><p>figure  :   Figure id number (default=1)
+styles  :   List of styles (default=[‘.r’])
+show    :   Show to me (default=True)
+data    :   can be ‘data’, ‘derivative’, ‘synth’</p>
+<blockquote>
+<div>or a list of those</div></blockquote>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.readAscii">
+<code class="descname">readAscii</code><span class="sig-paren">(</span><em>infile</em>, <em>header=0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.readAscii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads from an ascii file.
+Format:
+yr mo da hr mi sd value (err)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.reference2timeseries">
+<code class="descname">reference2timeseries</code><span class="sig-paren">(</span><em>timeseries</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.reference2timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes to another gps timeseries the difference between self and timeseries</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>timeseries        : Another gpstimeseries</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.removeMean">
+<code class="descname">removeMean</code><span class="sig-paren">(</span><em>start=None</em>, <em>end=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.removeMean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the mean between start and end.
+start and end are two instance of datetime.datetime.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.removePoints">
+<code class="descname">removePoints</code><span class="sig-paren">(</span><em>indexes</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.removePoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the points from the time series
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>indexes:  Indexes of the poitns to remove</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.smoothGlitches">
+<code class="descname">smoothGlitches</code><span class="sig-paren">(</span><em>biggerThan=999999.0</em>, <em>smallerThan=-999999.0</em>, <em>interpNum=5</em>, <em>interpolation='linear'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.smoothGlitches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the glitches and replace them by a value interpolated on interpNum points.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>biggerThan    : Values higher than biggerThan are glitches.</li>
+<li>smallerThan   : Values smaller than smallerThan are glitches.</li>
+<li>interpNum     : Number of points to take before and after the glicth to predict its values.</li>
+<li>interpolation : Interpolation method.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.trimTime">
+<code class="descname">trimTime</code><span class="sig-paren">(</span><em>start</em>, <em>end=datetime.datetime(2100</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.trimTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keeps the station between start and end.
+start and end are 2 datetime.datetime objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.write2file">
+<code class="descname">write2file</code><span class="sig-paren">(</span><em>outfile</em>, <em>steplike=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.write2file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the time series to a file.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>outfile   : output file.</li>
+<li>steplike  : doubles the output each time so that the plot looks like steps.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.timeseries.xy2lonlat">
+<code class="descname">xy2lonlat</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.xy2lonlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass the position from utm to lonlat.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../dataclasses.html">Classes for types of data</a><ul>
+      <li>Previous: <a href="tsunami.html" title="previous chapter">tsunami class</a></li>
+      <li>Next: <a href="seismiclocations.html" title="next chapter">seismiclocations class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/timeseries.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/timeseries.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

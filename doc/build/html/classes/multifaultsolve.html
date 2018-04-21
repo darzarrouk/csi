@@ -1,0 +1,409 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>multifaultsolve class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="okadafull class" href="okadafull.html" />
+    <link rel="prev" title="imagedownsampling class" href="imagedownsampling.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="multifaultsolve-class">
+<h1>multifaultsolve class<a class="headerlink" href="#multifaultsolve-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.multifaultsolve">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">multifaultsolve</code><span class="sig-paren">(</span><em>name</em>, <em>faults</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.multifaultsolve.ConstrainedLeastSquareSoln">
+<code class="descname">ConstrainedLeastSquareSoln</code><span class="sig-paren">(</span><em>mprior=None</em>, <em>Mw_thresh=None</em>, <em>bounds=None</em>, <em>method='SLSQP'</em>, <em>rcond=None</em>, <em>iterations=100</em>, <em>tolerance=None</em>, <em>maxfun=100000</em>, <em>checkIter=False</em>, <em>checkNorm=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.ConstrainedLeastSquareSoln" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves the least squares problem:</p>
+<blockquote>
+<div><p>min (d - G*m).T * Cd-1 * (d - G*m) + m.T * Cm-1 * m
+subject to:</p>
+<blockquote>
+<div>Mw &lt;= Mw_bound</div></blockquote>
+</div></blockquote>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><p class="first">mprior          : a priori model; if None, mprior = np.zeros((Nm,))
+Mw_thresh       : upper bound on moment magnitude
+bounds          : list of tuple bounds for every parameter
+method          : solver for constrained minimization: SLSQP, COBYLA, or nnls</p>
+<blockquote>
+<div>For general constraints, SLSQP is recommended. For non-negativity,
+use nnls (non-negative least squares).</div></blockquote>
+<p class="last">iterations      : Modifies the maximum number of iterations for the solver (default=100).
+tolerance       : Solver’s tolerance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.GeneralizedLeastSquareSoln">
+<code class="descname">GeneralizedLeastSquareSoln</code><span class="sig-paren">(</span><em>mprior=None</em>, <em>rcond=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.GeneralizedLeastSquareSoln" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves the generalized least-square problem using the following formula (Tarantolla, 2005,         Inverse Problem Theory, SIAM):</p>
+<blockquote>
+<div>m_post = m_prior + (G.T * Cd-1 * G + Cm-1)-1 * G.T * Cd-1 * (d - G*m_prior)</div></blockquote>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>mprior        : A Priori model. If None, then mprior = np.zeros((Nm,)).</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.NonNegativeBruteSoln">
+<code class="descname">NonNegativeBruteSoln</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.NonNegativeBruteSoln" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves the least square problem argmin_x || Ax - b ||_2 for x&gt;=0.
+No Covariance can be used here, maybe in the future.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.OrganizeGBySlipmode">
+<code class="descname">OrganizeGBySlipmode</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.OrganizeGBySlipmode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Organize G by slip mode instead of fault segment
+Return the new G matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.RunAltar">
+<code class="descname">RunAltar</code><span class="sig-paren">(</span><em>tasks=2</em>, <em>chains=1024</em>, <em>steps=100</em>, <em>support=(-10</em>, <em>10)</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.RunAltar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs Altar on the d = Gm problem with a Cd covariance matrix.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>tasks         : Number of mpi tasks.</li>
+<li>chains        : Number of chains.</li>
+<li>steps         : Number of metropolis steps.</li>
+<li>support       : Upper and Lower bounds of the parameter exploration.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.SetSolutionFromExternal">
+<code class="descname">SetSolutionFromExternal</code><span class="sig-paren">(</span><em>soln</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.SetSolutionFromExternal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a vector where the solution of the problem is and affects it to mpost.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.SimpleLeastSquareSoln">
+<code class="descname">SimpleLeastSquareSoln</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.SimpleLeastSquareSoln" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves the simple least square problem:</p>
+<blockquote>
+<div>m_post = (G.T * G)-1 * G.T * d</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.UnregularizedLeastSquareSoln">
+<code class="descname">UnregularizedLeastSquareSoln</code><span class="sig-paren">(</span><em>mprior=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.UnregularizedLeastSquareSoln" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solves the unregularized generalized least-square problem using the following formula (Tarantolla, 2005, “Inverse Problem Theory”, SIAM):</p>
+<blockquote>
+<div>m_post = m_prior + (G.T * Cd-1 * G)-1 * G.T * Cd-1 * (d - G*m_prior)</div></blockquote>
+<p>Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>mprior        : A Priori model. If None, then mprior = np.zeros((Nm,)).</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.affectIndexParameters">
+<code class="descname">affectIndexParameters</code><span class="sig-paren">(</span><em>fault</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.affectIndexParameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build the index parameter for a fault.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.assembleCm">
+<code class="descname">assembleCm</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.assembleCm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles the Model Covariance Matrix for the concerned faults.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.assembleGFs">
+<code class="descname">assembleGFs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.assembleGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles the Green’s functions matrix G for the concerned faults.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.conditionCd">
+<code class="descname">conditionCd</code><span class="sig-paren">(</span><em>singularValue</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.conditionCd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple Conditioning of Cd.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.describeParams">
+<code class="descname">describeParams</code><span class="sig-paren">(</span><em>faults</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.describeParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints to screen  which parameters are what…</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.distributem">
+<code class="descname">distributem</code><span class="sig-paren">(</span><em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.distributem" title="Permalink to this definition">¶</a></dt>
+<dd><p>After computing the m_post model, this routine distributes the m parameters to the faults.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.sensitivity">
+<code class="descname">sensitivity</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.sensitivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates diag(G^t Cd^-1 G)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.simpleSampler">
+<code class="descname">simpleSampler</code><span class="sig-paren">(</span><em>priors</em>, <em>initialSample</em>, <em>nSample</em>, <em>nBurn</em>, <em>plotSampler=False</em>, <em>writeSamples=False</em>, <em>dryRun=False</em>, <em>adaptiveDelay=300</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.simpleSampler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses a Metropolis algorithme to sample the posterior distribution of the model 
+following Bayes’s rule. This is exactly what is done in AlTar, but using an 
+open-source library called pymc. This routine is made for simple problems with 
+few parameters (i.e. More than 30 params needs a very fast computer).</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>priors <span class="classifier-delimiter">:</span> <span class="classifier">List of priors. Each prior is specified by a list.</span></dt>
+<dd><dl class="first last docutils">
+<dt>Example: priors = [ [‘Name of parameter’, ‘Uniform’, min, max]</dt>
+<dd>[‘Name of parameter’, ‘Gaussian’, center, sigma] ]</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li>initialSample : List of initialSample.</li>
+<li>nSample       : Length of the Metropolis chain.</li>
+<li>nBurn         : Number of samples burned.</li>
+<li>plotSampler   : Plot some usefull stuffs from the sampler (default: False).</li>
+<li>writeSamples  : Write the samples to a binary file.</li>
+<li><dl class="first docutils">
+<dt>dryRun <span class="classifier-delimiter">:</span> <span class="classifier">If True, builds the sampler, saves it, but does not run.</span></dt>
+<dd>This can be used for debugging.</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>adaptiveDelay <span class="classifier-delimiter">:</span> <span class="classifier">Recompute the covariance of the proposal every adaptiveDelay </span></dt>
+<dd>steps</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+<p>The result is stored in self.samples
+The variable mpost is the mean of the final sample set.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.writeAltarCfgFile">
+<code class="descname">writeAltarCfgFile</code><span class="sig-paren">(</span><em>prefix='linearfullcov'</em>, <em>tasks=2</em>, <em>chains=1024</em>, <em>steps=100</em>, <em>support=(-10</em>, <em>10)</em>, <em>minimumratio=1e-06</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.writeAltarCfgFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes a cfg and a py file to be used by altar.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>outfile       : Prefix of problem</li>
+<li>tasks         : Number of mpi tasks.</li>
+<li>chains        : Number of chains.</li>
+<li>steps         : Number of metropolis steps.</li>
+<li>support       : Upper and Lower bounds of the parameter exploration.</li>
+<li>minimumratio  : Minimum Eignevalue to cut in the metropolis covariance matrix.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.writeAltarPriors">
+<code class="descname">writeAltarPriors</code><span class="sig-paren">(</span><em>priors, params, modelName, files=['static.data.txt', 'static.Cd.txt', 'static.gf.txt'], prefix='model', chains=2048</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.writeAltarPriors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the cfg file containing the priors to be used by altar.
+Args:</p>
+<blockquote>
+<div><ul>
+<li><dl class="first docutils">
+<dt>priors <span class="classifier-delimiter">:</span> <span class="classifier">type of prior and corresponding parameters for each slip mode</span></dt>
+<dd><blockquote class="first">
+<div><p>ex: prior[‘Strike Slip’]=’gaussian’ &amp; prior[‘Dip Slip’]=’uniform’</p>
+</div></blockquote>
+<ul class="last simple">
+<li><dl class="first docutils">
+<dt>params <span class="classifier-delimiter">:</span> <span class="classifier">Parameters associated with each type of prior</span></dt>
+<dd><ul class="first last">
+<li>params[‘gaussian’]=[[center,sigma]]</li>
+<li>params[‘uniform’]=[[low,high]]</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">modelName     : Name of the model</p>
+</li>
+<li><p class="first">files         : Names of problem files</p>
+</li>
+<li><p class="first">prefix        : Prefix of problem</p>
+</li>
+<li><p class="first">chains        : Number of chains.</p>
+</li>
+</ul>
+</div></blockquote>
+<p>ONLY works with gaussian and uniform prior
+And as if it was not bad enough, initial and run priors are the same.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.writeCd2BinaryFile">
+<code class="descname">writeCd2BinaryFile</code><span class="sig-paren">(</span><em>outfile='Cd.dat'</em>, <em>dtype='f'</em>, <em>scale=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.writeCd2BinaryFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the assembled Data Covariance matrix to a binary file.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>outfile       : Name of the output file.</li>
+<li>scale         : Multiply the data covariance.</li>
+<li>dtype         : Type of data to write. Can be ‘f’, ‘float’, ‘d’ or ‘double’.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.writeData2BinaryFile">
+<code class="descname">writeData2BinaryFile</code><span class="sig-paren">(</span><em>outfile='d.dat'</em>, <em>dtype='f'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.writeData2BinaryFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the assembled data vector to an output file.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>outfile       : Name of the output file.</li>
+<li>dtype         : Type of data to write. Can be ‘f’, ‘float’, ‘d’ or ‘double’.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.writeGFs2BinaryFile">
+<code class="descname">writeGFs2BinaryFile</code><span class="sig-paren">(</span><em>outfile='GF.dat'</em>, <em>dtype='f'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.writeGFs2BinaryFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the assembled GFs to the file outfile.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>outfile       : Name of the output file.</li>
+<li>dtype         : Type of data to write. Can be ‘f’, ‘float’, ‘d’ or ‘double’.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.writeMpost2BinaryFile">
+<code class="descname">writeMpost2BinaryFile</code><span class="sig-paren">(</span><em>outfile</em>, <em>dtype='d'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.writeMpost2BinaryFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the solution to a binary file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.writeMpost2File">
+<code class="descname">writeMpost2File</code><span class="sig-paren">(</span><em>outfile</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.writeMpost2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the solution to a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.writePatchAreasFile">
+<code class="descname">writePatchAreasFile</code><span class="sig-paren">(</span><em>outfile='PatchAreas.dat'</em>, <em>dtype='d'</em>, <em>npadStart=None</em>, <em>npadEnd=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.writePatchAreasFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a binary file for the patch areas to be read into altar.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>outfile               : output file name</li>
+<li>dtype                 : output data type</li>
+<li>npadStart             : number of starting zeros to pad output</li>
+<li>npadEnd               : number of ending zeros to pad output</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.multifaultsolve.writeSamples2hdf5">
+<code class="descname">writeSamples2hdf5</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.multifaultsolve.writeSamples2hdf5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the result of sampling to and HDF5 file.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="imagedownsampling.html" title="previous chapter">imagedownsampling class</a></li>
+      <li>Next: <a href="okadafull.html" title="next chapter">okadafull class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/multifaultsolve.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/multifaultsolve.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

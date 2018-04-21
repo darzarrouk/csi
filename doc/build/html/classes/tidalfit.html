@@ -1,0 +1,159 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>tidalfit class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="timefnutils class" href="timefnutils.html" />
+    <link rel="prev" title="stressfield class" href="stressfield.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tidalfit-class">
+<h1>tidalfit class<a class="headerlink" href="#tidalfit-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.tidalfit">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">tidalfit</code><span class="sig-paren">(</span><em>constituents='all'</em>, <em>linear=False</em>, <em>steps=None</em>, <em>cossin=False</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tidalfit" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.tidalfit.buildG">
+<code class="descname">buildG</code><span class="sig-paren">(</span><em>timeseries</em>, <em>chunks=None</em>, <em>linear=False</em>, <em>steps=None</em>, <em>constituents='all'</em>, <em>derivative=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tidalfit.buildG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the G matrix we will invert.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>timeseries    : Timeseries instance.</li>
+<li>chunks        : List of chunks of dates [[start1, end1], [start2, end2], …[startn, endn]].</li>
+<li>linear        : True/False.</li>
+<li>steps         : List of datetime to add steps.</li>
+<li>constituents  : List of consituents.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.tidalfit.doFit">
+<code class="descname">doFit</code><span class="sig-paren">(</span><em>timeseries</em>, <em>tZero=datetime.datetime(2001</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>chunks=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tidalfit.doFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs the fit on the chunks of data specified in chunks.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>timeseries: Timeseries instance.</li>
+<li>tZero     : Sets the origin time (datetime instance).</li>
+<li><dl class="first docutils">
+<dt>chunks <span class="classifier-delimiter">:</span> <span class="classifier">if not None, provide a list: [[start1, end1], [start2, end2], …[startn, endn]].</span></dt>
+<dd>if None, takes all the data.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.tidalfit.findPeaksTidalModel">
+<code class="descname">findPeaksTidalModel</code><span class="sig-paren">(</span><em>timeseries</em>, <em>maximum=True</em>, <em>minimum=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tidalfit.findPeaksTidalModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns all the local maximums (if True) and minimums (if True) in the modeled tidal signal.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.tidalfit.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>timeseries</em>, <em>constituents='all'</em>, <em>linear=False</em>, <em>steps=True</em>, <em>cossin=False</em>, <em>derivative=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tidalfit.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the results of the fit, this routine predicts the time series.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>timeseries    : timeseries instance.</li>
+<li>constituents  : List of constituents (default: ‘all’)</li>
+<li>linear        : Include the linear trend (default: False).</li>
+<li>steps         : Include the steps (default: False).</li>
+<li>cossin        : Add a simple cos+sin term</li>
+<li><dl class="first docutils">
+<dt>derivative <span class="classifier-delimiter">:</span> <span class="classifier">If True, stores results in timeseries.deriv, </span></dt>
+<dd>else, stores results in timeseries.synth</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="stressfield.html" title="previous chapter">stressfield class</a></li>
+      <li>Next: <a href="timefnutils.html" title="next chapter">timefnutils class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/tidalfit.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/tidalfit.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,949 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>RectangularPatches class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="RectangularPatchesKin class" href="RectangularPatchesKin.html" />
+    <link rel="prev" title="fault3D class" href="fault3D.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="rectangularpatches-class">
+<h1>RectangularPatches class<a class="headerlink" href="#rectangularpatches-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.RectangularPatches">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">RectangularPatches</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Classes implementing a fault made of rectangular patches. Inherits from Fault</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>name      : Name of the fault.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>utmzone   : UTM zone  (optional, default=None)</li>
+<li>lon0      : Longitude of the center of the UTM zone</li>
+<li>lat0      : Latitude of the center of the UTM zone</li>
+<li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
+<li>verbose   : Speak to me (default=True)</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="csi.RectangularPatches.AverageAlongStrikeOffsets">
+<code class="descname">AverageAlongStrikeOffsets</code><span class="sig-paren">(</span><em>name</em>, <em>insars</em>, <em>filename</em>, <em>discretized=True</em>, <em>smooth=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.AverageAlongStrikeOffsets" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the profiles have the lon lat vectors as the fault, 
+This routines averages it and write it to an output file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.ExtractAlongStrikeAllDepths">
+<code class="descname">ExtractAlongStrikeAllDepths</code><span class="sig-paren">(</span><em>filename=None</em>, <em>discret=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.ExtractAlongStrikeAllDepths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts the Along Strike Variations of the creep at all depths for the discretized version.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.ExtractAlongStrikeVariations">
+<code class="descname">ExtractAlongStrikeVariations</code><span class="sig-paren">(</span><em>depth=0.5</em>, <em>origin=None</em>, <em>filename=None</em>, <em>orientation=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.ExtractAlongStrikeVariations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract the Along Strike Variations of the creep at a given depth
+Args:</p>
+<blockquote>
+<div>depth   : Depth at which we extract the along strike variations of slip.
+origin  : Computes a distance from origin. Give [lon, lat].
+filename: Saves to a file.
+orientation: defines the direction of positive distances.</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.ExtractAlongStrikeVariationsOnDiscretizedFault">
+<code class="descname">ExtractAlongStrikeVariationsOnDiscretizedFault</code><span class="sig-paren">(</span><em>depth=0.5</em>, <em>filename=None</em>, <em>discret=0.5</em>, <em>interpolation='linear'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.ExtractAlongStrikeVariationsOnDiscretizedFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
+Args:</p>
+<blockquote>
+<div>depth       : Depth at which we extract the along strike variations of slip.
+discret     : Discretization length
+filename    : Saves to a file.
+interpolation : Interpolation method</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.addPatchesFromOtherFault">
+<code class="descname">addPatchesFromOtherFault</code><span class="sig-paren">(</span><em>fault</em>, <em>indexes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.addPatchesFromOtherFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds the patches of one fault to another.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.addpatch">
+<code class="descname">addpatch</code><span class="sig-paren">(</span><em>patch, slip=[0, 0, 0]</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.addpatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a patch to the list.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>patch     : Geometry of the patch to add</li>
+<li>slip      : List of the strike, dip and tensile slip.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.buildLaplacian">
+<code class="descname">buildLaplacian</code><span class="sig-paren">(</span><em>verbose=False</em>, <em>method=None</em>, <em>irregular=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.buildLaplacian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build normalized Laplacian smoothing array.
+This routine is not designed for unevenly paved faults.
+It does not account for the variations in size of the patches.</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>irregular <span class="classifier-delimiter">:</span> <span class="classifier">Can be used if the parametrisation is not </span></dt>
+<dd>regular along dip (N patches above or below
+one patch). If True, the Laplacian takes 
+into account that there is not only one patch
+above (or below)</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.chCoordinates">
+<code class="descname">chCoordinates</code><span class="sig-paren">(</span><em>p</em>, <em>p_ref</em>, <em>angle_rad</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.chCoordinates" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Change the coordinate system:</dt>
+<dd>reference at p_ref
+rotation by angle_rad</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.computeAdjacencyMat">
+<code class="descname">computeAdjacencyMat</code><span class="sig-paren">(</span><em>verbose=False</em>, <em>patchinc='alongstrike'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.computeAdjacencyMat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the adjacency matrix for the fault geometry provided by ndip x nstrike. Values of 0
+indicate no adjacency while values of 1 indicate patches share an edge.</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>patchinc <span class="classifier-delimiter">:</span> <span class="classifier">For a patch N, if patch N+1 is located along-strike, patchinc </span></dt>
+<dd>should be set to ‘alongstrike’ (default). If patch N+1 is located 
+along-dip, patchinc should be set to ‘alongdip’.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.computeArea">
+<code class="descname">computeArea</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.computeArea" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the area of all patches. Stores that in {self.area}</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.computeCoulombOnPatches">
+<code class="descname">computeCoulombOnPatches</code><span class="sig-paren">(</span><em>friction=0.6</em>, <em>sign='strike'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.computeCoulombOnPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the Coulomb failure stress change on patches.
+On the routine, the normal stress is positive away from the center of the patch.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.computeEquivRectangle">
+<code class="descname">computeEquivRectangle</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.computeEquivRectangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>In the case where patches are not exactly rectangular, this method 
+computes the best rectangle that fits within patches. Stores all the
+equivalent rectangles in equivpatch and equivpatchll.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.computeImposedTractionOnEachFaultPatch">
+<code class="descname">computeImposedTractionOnEachFaultPatch</code><span class="sig-paren">(</span><em>factor=0.001</em>, <em>mu=30000000000.0</em>, <em>nu=0.25</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.computeImposedTractionOnEachFaultPatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses okada92 to compute the traction change on each patch from slip on the other patches.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>factor <span class="classifier-delimiter">:</span> <span class="classifier">Conversion fator between slip units and distance units. In a regular case, distance </span></dt>
+<dd>units are km. If the slip is in mm, then factor is 10e-6.</dd>
+</dl>
+</li>
+<li>mu            : Shear Modulus (default is 30e9 Pa).</li>
+<li>nu            : Poisson’s ratio (default is 0.25).</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.computeSlipDirection">
+<code class="descname">computeSlipDirection</code><span class="sig-paren">(</span><em>scale=1.0</em>, <em>factor=1.0</em>, <em>ellipse=False</em>, <em>flipstrike=False</em>, <em>nsigma=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.computeSlipDirection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the segment indicating the slip direction.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>scale can be a real number or a string in ‘total’, ‘strikeslip’, ‘dipslip’ or ‘tensile’</li>
+<li>factor is a scaling factor</li>
+<li>ellipse: if True: design an ellipse for each slip vector</li>
+<li>flipstrike: if True will flip strike direction</li>
+<li>nsigma: nsigma for error ellipses</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.computeTractionOnEachFaultPatch">
+<code class="descname">computeTractionOnEachFaultPatch</code><span class="sig-paren">(</span><em>factor=0.001</em>, <em>mu=30000000000.0</em>, <em>nu=0.25</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.computeTractionOnEachFaultPatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses okada92 to compute the traction change on each patch.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>factor <span class="classifier-delimiter">:</span> <span class="classifier">Conversion fator between slip units and distance units. In a regular case, distance </span></dt>
+<dd>units are km. If the slip is in mm, then factor is 10e-6.</dd>
+</dl>
+</li>
+<li>mu            : Shear Modulus (default is 30e9 Pa).</li>
+<li>nu            : Poisson’s ratio (default is 0.25).</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.computetotalslip">
+<code class="descname">computetotalslip</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.computetotalslip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the total slip.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.deletepatch">
+<code class="descname">deletepatch</code><span class="sig-paren">(</span><em>patch</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.deletepatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes a patch.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>patch     : index of the patch to remove.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.deletepatches">
+<code class="descname">deletepatches</code><span class="sig-paren">(</span><em>titi</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.deletepatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes a list of patches.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.distanceMatrix">
+<code class="descname">distanceMatrix</code><span class="sig-paren">(</span><em>distance='center'</em>, <em>lim=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.distanceMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a matrix of the distances between patches.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>distance <span class="classifier-delimiter">:</span> <span class="classifier">distance estimation mode</span></dt>
+<dd>center : distance between the centers of the patches.
+no other method is implemented for now.</dd>
+</dl>
+</li>
+<li>lim       : if not None, list of two float, the first one is the distance above which d=lim[1].</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.distancePatchToPatch">
+<code class="descname">distancePatchToPatch</code><span class="sig-paren">(</span><em>patch1</em>, <em>patch2</em>, <em>distance='center'</em>, <em>lim=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.distancePatchToPatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Measures the distance between two patches.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>patch1    : geometry of the first patch.</li>
+<li>patch2    : geometry of the second patch.</li>
+<li><dl class="first docutils">
+<dt>distance <span class="classifier-delimiter">:</span> <span class="classifier">distance estimation mode</span></dt>
+<dd>center : distance between the centers of the patches.
+no other method is implemented for now.</dd>
+</dl>
+</li>
+<li>lim       : if not None, list of two float, the first one is the distance above which d=lim[1].</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.extrap1d">
+<code class="descname">extrap1d</code><span class="sig-paren">(</span><em>interpolator</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.extrap1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Linear extrapolation routine. Found on StackOverflow by sastanin.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>interpolator      : An instance of scipy.interpolation.interp1d</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>ufunc             : An extrapolating method</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.extrapolate">
+<code class="descname">extrapolate</code><span class="sig-paren">(</span><em>length_added=50</em>, <em>tol=2.0</em>, <em>fracstep=5.0</em>, <em>extrap='ud'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.extrapolate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extrapolates the surface trace. This is usefull when building deep patches 
+for interseismic loading.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>length_added  : Length to add when extrapolating.</li>
+<li>tol           : Tolerance to find the good length.</li>
+<li>fracstep      : control each jump size.</li>
+<li><dl class="first docutils">
+<dt>extrap <span class="classifier-delimiter">:</span> <span class="classifier">if u in extrap -&gt; extrapolates at the end</span></dt>
+<dd>if d in extrap -&gt; extrapolates at the beginning
+default is ‘ud’</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.geometry2patch">
+<code class="descname">geometry2patch</code><span class="sig-paren">(</span><em>Lon</em>, <em>Lat</em>, <em>Depth</em>, <em>Strike</em>, <em>Dip</em>, <em>Length</em>, <em>Width</em>, <em>initializeSlip=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.geometry2patch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the list of patches from lists of lon, lat, depth, strike, dip, 
+length and width</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>Lon           : List of longitudes</li>
+<li>Lat           : List of Latitudes</li>
+<li>Depth         : List of depths (km)</li>
+<li>Strike        : List of strike angles (degree)</li>
+<li>Dip           : List of dip angles (degree)</li>
+<li>Length        : List of length (km)</li>
+<li>Width         : List of width (km)</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><a href="#id1"><span class="problematic" id="id2">*</span></a>initializeSlip : Set slip values to zero</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.getDips">
+<code class="descname">getDips</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.getDips" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an array of dip angles for each patch (radians)</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>dip       : Array of angles in radians</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.getEllipse">
+<code class="descname">getEllipse</code><span class="sig-paren">(</span><em>patch</em>, <em>ellipseCenter=None</em>, <em>Npoints=100</em>, <em>factor=1.0</em>, <em>nsigma=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.getEllipse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the ellipse error given Cm for a given patch
+args:</p>
+<blockquote>
+<div>(optional) center  : center of the ellipse
+(optional) Npoints : number of points on the ellipse
+(optional) factor  : scaling factor
+(optional) nsigma  : will design a nsigma*sigma error ellipse</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.getFaultVector">
+<code class="descname">getFaultVector</code><span class="sig-paren">(</span><em>i</em>, <em>discretized=True</em>, <em>normal=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.getFaultVector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the vector tangential to the fault at the i-th point of the fault (discretized if True).
+if normal is True, returns a normal vector (+90 counter-clockwise wrt. tangente)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.getPatchPositionAlongStrike">
+<code class="descname">getPatchPositionAlongStrike</code><span class="sig-paren">(</span><em>p</em>, <em>discretized=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.getPatchPositionAlongStrike" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the position of a patch along strike (distance to the first point of the fault).
+p is the patch index or the patch.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.getPatchesThatAreUnder">
+<code class="descname">getPatchesThatAreUnder</code><span class="sig-paren">(</span><em>xf</em>, <em>yf</em>, <em>ref='utm'</em>, <em>tolerance=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.getPatchesThatAreUnder" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a list of positions, returns the patches that are directly underneath.
+Only works if you have a vertical fault.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.getStrikes">
+<code class="descname">getStrikes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.getStrikes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an array of strike angle for each patch (radians).</p>
+<dl class="docutils">
+<dt>Returns: </dt>
+<dd><ul class="first last simple">
+<li>strike    : Array of angles in radians</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.getcenter">
+<code class="descname">getcenter</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.getcenter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the center of one rectangular patch.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>p    : Patch geometry.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.getcenters">
+<code class="descname">getcenters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.getcenters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the center of the patches.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.getpatchgeometry">
+<code class="descname">getpatchgeometry</code><span class="sig-paren">(</span><em>patch</em>, <em>center=False</em>, <em>checkindex=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.getpatchgeometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the patch geometry as needed for okada92.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>patch         : index of the wanted patch or patch;</li>
+<li><dl class="first docutils">
+<dt>center <span class="classifier-delimiter">:</span> <span class="classifier">if true, returns the coordinates of the center of the patch. </span></dt>
+<dd>if False, returns the UL corner.</dd>
+</dl>
+</li>
+<li>checkindex    : Checks the index of the patch</li>
+</ul>
+</div></blockquote>
+<p>When we build the fault, the patches are not exactly rectangular. Therefore, 
+this routine will return the rectangle that matches with the two shallowest 
+points and that has an average dip angle to match with the other corners.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.horizshrink1patch">
+<code class="descname">horizshrink1patch</code><span class="sig-paren">(</span><em>ipatch</em>, <em>fixedside='south'</em>, <em>finallength=25.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.horizshrink1patch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes an existing patch and shrinks its size in the horizontal direction.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>ipatch        : Index of the patch of concern.</li>
+<li><dl class="first docutils">
+<dt>fixedside <span class="classifier-delimiter">:</span> <span class="classifier">One side has to be fixed, takes the southernmost if ‘south’, </span></dt>
+<dd>takes the northernmost if ‘north’</dd>
+</dl>
+</li>
+<li>finallength   : Length of the final patch.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.importPatches">
+<code class="descname">importPatches</code><span class="sig-paren">(</span><em>filename, origin=[45.0, 45.0]</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.importPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a patch geometry and the corresponding files from a relax 
+co-seismic file type.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>filename      : Input from Relax (See Barbot and Cie on the CIG website).</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>origin        : Origin of the reference frame used by relax. [lon, lat]</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.lonlat2patch">
+<code class="descname">lonlat2patch</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em>, <em>depth</em>, <em>strike</em>, <em>dip</em>, <em>length</em>, <em>width</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.lonlat2patch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a patch from its longitude {lon}, latitude {lat}, 
+depths {depth}, strike angles {strike}, dip angles {dip}, 
+patch length {length} and patch width {width}</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>lon       : Longitude of the center of the patch</li>
+<li>lat       : Latitude of the center of the patch</li>
+<li>depth     : Depth of the center of the patch (km)</li>
+<li>strike    : Strike of the patch (degree)</li>
+<li>dip       : Dip of the patch (degree)</li>
+<li>length    : Length of the patch (km)</li>
+<li>width     : Width of the patch (km)</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>patch     : a list for patch corners</li>
+<li>patchll   : a list patch corners in lonlat</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.mapFault2Fault">
+<code class="descname">mapFault2Fault</code><span class="sig-paren">(</span><em>Map</em>, <em>fault</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.mapFault2Fault" title="Permalink to this definition">¶</a></dt>
+<dd><p>User provides a Mapping function np.array((len(self.patch), len(fault.patch))) and a fault and the slip from the argument
+fault is mapped into self.slip.
+Function just does:
+self.slip[:,0] = np.dot(Map,fault.slip)
+…</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.mapSlipPlane2Plane">
+<code class="descname">mapSlipPlane2Plane</code><span class="sig-paren">(</span><em>fault</em>, <em>interpolation='linear'</em>, <em>verbose=False</em>, <em>addlimits=True</em>, <em>smooth=0.1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.mapSlipPlane2Plane" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maps the slip distribution from fault onto self.
+Mapping is built by computing the best plane between the two faults, 
+projecting the center of patches on that plane and doing a simple resampling.
+The closer the two faults, the better…
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>fault         : Fault that has a slip distribution</li>
+<li>interpolation : Type of interpolation method. Can be ‘linear’, ‘cubic’ or ‘quintic’</li>
+<li>verbose       : if True, the routine says a few things.</li>
+<li>addlimits     : Adds the upper and lower bounds of the fault in the interpolation scheme.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.mapUnder2Above">
+<code class="descname">mapUnder2Above</code><span class="sig-paren">(</span><em>deepfault</em>, <em>extrapolate=10.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.mapUnder2Above" title="Permalink to this definition">¶</a></dt>
+<dd><p>This routine is very very particular. It only works with 2 vertical faults.
+It Builds the mapping function from one fault to another, when these are vertical.
+These two faults must have the same surface trace. If the deep fault has more than one raw of patches, 
+it might go wrong and give some unexpected results.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>deepfault     : Deep section of the fault.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.mergePatches">
+<code class="descname">mergePatches</code><span class="sig-paren">(</span><em>p1</em>, <em>p2</em>, <em>eps=1e-06</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.mergePatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges 2 patches that have common corners. This modifies directly 
+the attribute patch</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>p1        : index of the patch #1.</li>
+<li>p2        : index of the patch #2.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>eps       : tolerance value for the patch corners (in km)</li>
+<li>verbose   : Speak to me (default is True)</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.patchArea">
+<code class="descname">patchArea</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.patchArea" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the area of one patch.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>p         : One item of self.patch</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>area      : The area of the patch</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.patchesUtm2LonLat">
+<code class="descname">patchesUtm2LonLat</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.patchesUtm2LonLat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform the utm to lonlat conversion for all patches.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>figure=134</em>, <em>slip='total'</em>, <em>equiv=False</em>, <em>show=True</em>, <em>axesscaling=True</em>, <em>Norm=None</em>, <em>linewidth=1.0</em>, <em>plot_on_2d=True</em>, <em>drawCoastlines=True</em>, <em>expand=0.2</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the available elements of the fault.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>ref           : Referential for the plot (‘utm’ or ‘lonlat’).</li>
+<li>figure        : Number of the figure.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.read3DrectangularGrid">
+<code class="descname">read3DrectangularGrid</code><span class="sig-paren">(</span><em>filename</em>, <em>aggregatePatchNodes=None</em>, <em>square=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.read3DrectangularGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>This routine read the rectangular geometry.
+Format: lon lat E[km] N[km] Dep[km] strike dip length Area ID
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename            : Name of the text file</li>
+<li>aggregatePatchNodes : Aggregates patche nodes that are closer than a distance (float)</li>
+<li><dl class="first docutils">
+<dt>square <span class="classifier-delimiter">:</span> <span class="classifier">If square == True, length = width and format is:</span></dt>
+<dd>lon lat E[km] N[km] Dep[km] strike dip Area ID</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.readPatchesFromFile">
+<code class="descname">readPatchesFromFile</code><span class="sig-paren">(</span><em>filename</em>, <em>Cm=None</em>, <em>readpatchindex=True</em>, <em>inputCoordinates='lonlat'</em>, <em>donotreadslip=False</em>, <em>increasingy=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.readPatchesFromFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read patches from a GMT formatted file. This means the file is a 
+list of patches separated by ‘&gt;’.</p>
+<dl class="docutils">
+<dt>Args:   </dt>
+<dd><ul class="first last simple">
+<li>filename      : Name of the file.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>Cm            :</li>
+<li><dl class="first docutils">
+<dt>increasingy <span class="classifier-delimiter">:</span> <span class="classifier">if you don’t want csi to set your patches </span></dt>
+<dd>corners according to increasing y, set
+increasingy = False</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.replacePatch">
+<code class="descname">replacePatch</code><span class="sig-paren">(</span><em>patch</em>, <em>iPatch</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.replacePatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replaces one patch by the given geometry.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>patch     : Patch geometry.</li>
+<li>iPatch    : index of the patch to replace.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.setdepth">
+<code class="descname">setdepth</code><span class="sig-paren">(</span><em>nump=None</em>, <em>top=None</em>, <em>width=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.setdepth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set depth patch attributes</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>nump          : Number of fault patches at depth.</li>
+<li>top           : Depth of the top row</li>
+<li>width         : Width of the patches</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.slip2dis">
+<code class="descname">slip2dis</code><span class="sig-paren">(</span><em>data</em>, <em>patch</em>, <em>slip=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.slip2dis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the surface displacement at the data location using okada.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>data          : data object from gps or insar.</li>
+<li>patch         : number of the patch that slips</li>
+<li><dl class="first docutils">
+<dt>slip <span class="classifier-delimiter">:</span> <span class="classifier">if a number is given, that is the amount of slip along strike</span></dt>
+<dd>if three numbers are given, that is the amount of slip along strike, along dip and opening
+if None, values from slip are taken</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.splitPatch">
+<code class="descname">splitPatch</code><span class="sig-paren">(</span><em>patch</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.splitPatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Splits a patch in 4 patches and returns 4 new patches.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>patch         : item of the list of patch</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>p1, p2, p3, p4: Four patches</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.splitPatchesHoriz">
+<code class="descname">splitPatchesHoriz</code><span class="sig-paren">(</span><em>nPatches</em>, <em>equiv=False</em>, <em>indices=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.splitPatchesHoriz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Splits all the patches in nPatches Horizontally. Directly modifies the
+patch attribute.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>nPatches      : Number of new patches per patch.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>equiv         : Do it on the equivalentPatches (default False)</li>
+<li>indices       : Specify which patches to split (list of int)</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.strikedip2normal">
+<code class="descname">strikedip2normal</code><span class="sig-paren">(</span><em>strike</em>, <em>dip</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.strikedip2normal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a vector normal to a plane with a given strike and dip.
+strike and dip in radians…</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.surfacePatches2Trace">
+<code class="descname">surfacePatches2Trace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.surfacePatches2Trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes the shallowest patches of the fault and use them to build a 
+fault trace. Direclty modifies attributes xf, yf, lonf and latf</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.surfacesimulation">
+<code class="descname">surfacesimulation</code><span class="sig-paren">(</span><em>box=None</em>, <em>disk=None</em>, <em>err=None</em>, <em>lonlat=None</em>, <em>slipVec=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.surfacesimulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>box       : Can be a list of [minlon, maxlon, minlat, maxlat, n].</li>
+<li>disk      : list of [xcenter, ycenter, radius, n]</li>
+<li>lonlat    : Arrays of lat and lon. [lon, lat]</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.writeEDKSgeometry">
+<code class="descname">writeEDKSgeometry</code><span class="sig-paren">(</span><em>ref=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.writeEDKSgeometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>This routine spits out 2 files:
+filename.lonlatdepth: Lon center | Lat Center | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
+filename.END: Easting (km) | Northing (km) | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID</p>
+<p>These files are to be used with /home/geomod/dev/edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>ref           : Lon and Lat of the reference point. If None, the patches positions is in the UTM coordinates.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.writeEDKSsubParams">
+<code class="descname">writeEDKSsubParams</code><span class="sig-paren">(</span><em>data</em>, <em>edksfilename</em>, <em>amax=None</em>, <em>plot=False</em>, <em>w_file=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.writeEDKSsubParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the subParam file needed for the interpolation of the green’s function in EDKS.
+Francisco’s program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source, 
+then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant’s principle.
+If amax is specified, the minimum size is fixed.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data          : Data object from gps or insar.</li>
+<li>edksfilename  : Name of the file containing the kernels.</li>
+<li>amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant’s principle.</li>
+<li>plot          : Activates plotting.</li>
+<li>w_file        : if False, will not write the subParam fil (default=True)</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>filename         : Name of the subParams file created (only if w_file==True)</li>
+<li>RectanglePropFile: Name of the rectangles properties file</li>
+<li>ReceiverFile     : Name of the receiver file</li>
+<li>method_par       : Dictionary including useful EDKS parameters</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.writePatches2File">
+<code class="descname">writePatches2File</code><span class="sig-paren">(</span><em>filename</em>, <em>add_slip=None</em>, <em>scale=1.0</em>, <em>patch='normal'</em>, <em>stdh5=None</em>, <em>decim=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.writePatches2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the patch corners in a file that can be used in psxyz.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename      : Name of the file.</li>
+<li>add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total, coupling.</li>
+<li>scale         : Multiply the slip value by a factor.</li>
+<li>patch         : Can be ‘normal’ or ‘equiv’</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.RectangularPatches.writeSlipDirection2File">
+<code class="descname">writeSlipDirection2File</code><span class="sig-paren">(</span><em>filename</em>, <em>scale=1.0</em>, <em>factor=1.0</em>, <em>neg_depth=False</em>, <em>ellipse=False</em>, <em>flipstrike=False</em>, <em>nsigma=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatches.writeSlipDirection2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a psxyz compatible file to draw lines starting from the center of each patch, 
+indicating the direction of slip.
+Tensile slip is not used…
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>scale can be a real number or a string in ‘total’, ‘strikeslip’, ‘dipslip’ or ‘tensile’</li>
+<li>factor is a scaling factor</li>
+<li>neg_depth: use True if depth is negative</li>
+<li>ellipse: if True, design error ellipse for each slip vector</li>
+<li>flipstrike: if True, flip strike</li>
+<li>nsigma: if ellipse==True, design nsigma*sigma error ellipses</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../faultclasses.html">Classes of faults</a><ul>
+      <li>Previous: <a href="fault3D.html" title="previous chapter">fault3D class</a></li>
+      <li>Next: <a href="RectangularPatchesKin.html" title="next chapter">RectangularPatchesKin class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/RectangularPatches.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/RectangularPatches.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

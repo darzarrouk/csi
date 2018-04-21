@@ -27,15 +27,6 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
     # Initialize class
     def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
-        '''
-        Parent class implementing what is common in all fault objects.
-
-        Args:
-            * name          : Name of the fault.
-            * utmzone       : UTM zone  (optional, default=None)
-            * ellps         : ellipsoid (optional, default='WGS84')
-        '''
-
         # Base class init
         super(Fault,self).__init__(name, utmzone=utmzone, ellps=ellps, lon0=lon0, lat0=lat0)
 
@@ -102,9 +93,11 @@ class Fault(SourceInv):
     # Set up whats needed for an empty fault
     def initializeEmptyFault(self):
         '''
-        Initializes what is required for a fualt with no patches
+
+        Initializes what is required for a fault with no patches
 
         Returns: None
+        
         '''
 
         # Initialize
@@ -121,10 +114,12 @@ class Fault(SourceInv):
     # Returns a copy of the fault
     def duplicateFault(self):
         '''
+
         Returns a full copy (copy.deepcopy) of the fault object.
 
-        Return:
+        Returns:
             * fault         : fault object
+
         '''
 
         return copy.deepcopy(self)
@@ -134,23 +129,25 @@ class Fault(SourceInv):
     # Initialize the slip vector
     def initializeslip(self, n=None, values=None):
         '''
-        Re-initializes the fault slip array to zero values.
+
+        Re-initializes the fault slip array.
         Slip array will be the size of the number of patches/tents times the
         3 components of slip (strike-slip, dip slip and tensile).
         
-        1st Column is strike slip
-        2nd Column is dip slip
-        3rd Column is tensile
+        1st Column is strike slip.
+        2nd Column is dip slip.
+        3rd Column is tensile.
 
         Kwargs:
-            * n             : Number of slip values. 
-                              If None, it'll take the number of patches.
+            * n             : Number of slip values. If None, it'll take the 
+                              number of patches.
             * values        : Can be 'depth', 'strike', 'dip', 'length', 
                               'width', 'area', 'index' or a numpy array
                               The array can be of size (n,3) or (n,1)
 
         Returns:
             None
+
         '''
 
         # Shape
@@ -203,13 +200,11 @@ class Fault(SourceInv):
         Add some other faults to plot with the modeled one.
 
         Args:
-            * filename      : Name of the file 
-                              File is ascii format. 
-                              First column is longitude
-                              Second column is latitude
-                              Separator between faults is > as in GMT style
+            * filename      : Name of the file. File is ascii format.
+                              First column is longitude. Second column is latitude.
+                              Separator between faults is > as in GMT style.
 
-        Return:
+        Returns:
             * None
         '''
 
@@ -465,12 +460,11 @@ class Fault(SourceInv):
         self.yi
 
         Kwargs:
-            * every         : Spacing between each point (in km)
-            * tol           : Tolerance in the spacing (in km)
+            * every         : Spacing between each point (in km) 
+            * tol           : Tolerance in the spacing (in km) 
             * fracstep      : fractional step in the chosen direction 
                               for the discretization optimization
-            * xaxis         : Axis for the discretization 
-                              'x'= use x as the axis, 'y'= use y as the axis
+            * xaxis         : Axis for the discretization (can be x or y)
             * cum_error     : if True, accounts for cumulated error to define 
                               the axis bound for the last patch
 
@@ -602,18 +596,19 @@ class Fault(SourceInv):
 
         Args:
             * lon               : Longitude of the point.
+
             * lat               : Latitude of the point.
 
         Kwargs:
             * discretized       : Uses the discretized trace.
-            * coord             : if 'll' or 'lonlat' --> input in degree
-                                  if 'xy' or 'utm'    --> input in km
+            * coord             : If ll or lonlat --> input in degree
+                                  If 'xy' or 'utm'    --> input in km
 
         Returns:    
-            * dalong            : Distance to the first point of the fault
-                                  along the fault
-            * dacross           : Shortest distance between the point and the
-                                  fault
+            * dalong            : Distance to the first point of the fault along the fault
+
+            * dacross           : Shortest distance between the point and the fault
+
         '''
         
         # Get the cumulative distance along the fault

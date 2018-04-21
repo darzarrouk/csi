@@ -1,0 +1,323 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>transformation class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="triangularDisp class" href="triangularDisp.html" />
+    <link rel="prev" title="timefnutils class" href="timefnutils.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="transformation-class">
+<h1>transformation class<a class="headerlink" href="#transformation-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.transformation">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">transformation</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.transformation.assembleCd">
+<code class="descname">assembleCd</code><span class="sig-paren">(</span><em>datas</em>, <em>add_prediction=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.assembleCd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles the data covariance matrices that have been built for each 
+data structure.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>datas         : List of data instances or one data instance</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>add_prediction: Precentage of displacement to add to the Cd </dt>
+<dd>diagonal to simulate a Cp (dirty version of 
+a prediction error covariance, see Duputel et
+al 2013, GJI).</dd>
+</dl>
+</li>
+<li>verbose       : Talk to me (overwrites self.verbose)</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.transformation.assembleGFs">
+<code class="descname">assembleGFs</code><span class="sig-paren">(</span><em>datas</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.assembleGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assemble the Green’s functions corresponding to the data in datas.
+Assembled Greens’ functions are stored in self.Gassembled</p>
+<p>Special case: If ‘strain’ is in self.transformations, this parameter will 
+be placed as first and will be common to all data sets (i.e. there is
+only one strain tensor for a region, although there can be multiple 
+translation, rotations, etc for individual networks)</p>
+<dl class="docutils">
+<dt>Args:   </dt>
+<dd><ul class="first last simple">
+<li>datas         : list of data objects</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.transformation.assembled">
+<code class="descname">assembled</code><span class="sig-paren">(</span><em>datas</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.assembled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles a data vector for inversion using the list datas
+Assembled vector is stored in self.dassembled</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>datas         : list of data objects</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.transformation.buildCm">
+<code class="descname">buildCm</code><span class="sig-paren">(</span><em>sigma</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.buildCm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a model covariance matrix from std deviation values.
+The matrix is diagonal with sigma**2 values.
+Requires an assembled Green’s function matrix.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>sigma         : float, list or array</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.transformation.buildGFs">
+<code class="descname">buildGFs</code><span class="sig-paren">(</span><em>datas</em>, <em>transformations</em>, <em>verbose=True</em>, <em>computeNormFact=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.buildGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the design matrix for the datasets given.</p>
+<p>The GFs are stored in a dictionary. 
+Each entry of the dictionary is named after the corresponding dataset. 
+Each of these entry is a dictionary that contains the different cases 
+of transformations.</p>
+<dl class="docutils">
+<dt>Args:   </dt>
+<dd><ul class="first last simple">
+<li>datas             : List of datasets (gps, insar, optical, …)</li>
+<li>transformations   : List of transformation types</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>verbose           : Talk to me</li>
+<li>computeNormFact   : Compute the Normalization factors or not</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first simple">
+<li>None</li>
+</ul>
+<p>Transformation types can be:</p>
+<blockquote class="last">
+<div><dl class="docutils">
+<dt>For InSAR, Optical, GPS:</dt>
+<dd>1 -&gt; estimate a constant offset
+3 -&gt; estimate z = ax + by + c
+4 -&gt; estimate z = axy + bx + cy + d
+‘strain’              -&gt; Estimates a strain tensor</dd>
+<dt>For GPS only:</dt>
+<dd><dl class="first docutils">
+<dt>‘full’                -&gt; Estimates a rotation, </dt>
+<dd>translation and scaling
+(Helmert transform).</dd>
+</dl>
+<p class="last">‘translation’         -&gt; Estimates a translation
+‘rotation’            -&gt; Estimates a rotation</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.transformation.buildPredictions">
+<code class="descname">buildPredictions</code><span class="sig-paren">(</span><em>datas</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.buildPredictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of data, predicts the surface displacements from what
+is stored in the self.m dictionary</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>datas         : list of data instances</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>verbose       : Talk to me</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.transformation.computeNormFactors">
+<code class="descname">computeNormFactors</code><span class="sig-paren">(</span><em>datas</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.computeNormFactors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets a common reference for the computation of the transformations</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>datas         : list of data</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.transformation.computeTransformNormFactor">
+<code class="descname">computeTransformNormFactor</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.computeTransformNormFactor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes quantities needed to build the transformation object for 
+a dataset</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>data          : instance of a data class</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.transformation.distributem">
+<code class="descname">distributem</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.distributem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses self.mpost to distribute the values to self.m following the 
+organization of self.Gassembled.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.transformation.removePredictions">
+<code class="descname">removePredictions</code><span class="sig-paren">(</span><em>datas</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.transformation.removePredictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of data, predicts the surface displacements from what
+is stored in the self.m dictionary and corrects the data</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>datas         : list of data instances</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>verbose       : Talk to me</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="timefnutils.html" title="previous chapter">timefnutils class</a></li>
+      <li>Next: <a href="triangularDisp.html" title="next chapter">triangularDisp class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/transformation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/transformation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

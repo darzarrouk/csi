@@ -1,0 +1,153 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>planarfault class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="planarfaultkinematic class" href="planarfaultkinematic.html" />
+    <link rel="prev" title="faultwithvaryingdip class" href="faultwithvaryingdip.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="planarfault-class">
+<h1>planarfault class<a class="headerlink" href="#planarfault-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.planarfault">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">planarfault</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>verbose=True</em>, <em>lon0=None</em>, <em>lat0=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfault" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.planarfault.buildPatches">
+<code class="descname">buildPatches</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em>, <em>dep</em>, <em>strike</em>, <em>dip</em>, <em>f_length</em>, <em>f_width</em>, <em>n_strike</em>, <em>n_dip</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfault.buildPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a dipping fault.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>lat,lon,dep: coordinates at the center of the top edge of the fault</li>
+<li>strike: strike angle in degrees (from North)</li>
+<li>f_length: length of the fault (i.e., along strike)</li>
+<li>f_width: width of the fault (i.e., along dip)</li>
+<li>n_strike: number of patches along strike</li>
+<li>n_dip: number of patches along dip</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfault.buildPatchesVarResolution">
+<code class="descname">buildPatchesVarResolution</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em>, <em>dep</em>, <em>strike</em>, <em>dip</em>, <em>f_length</em>, <em>f_width</em>, <em>patch_lengths</em>, <em>patch_widths</em>, <em>interpolation='linear'</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfault.buildPatchesVarResolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a dipping fault.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>lat,lon,dep: coordinates at the center of the top edge of the fault</li>
+<li>strike: strike angle in degrees (from North)</li>
+<li>f_length: length of the fault (i.e., along strike)</li>
+<li>f_width: width of the fault (i.e., along dip)</li>
+<li>n_strike: number of patches along strike</li>
+<li>n_dip: number of patches along dip</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfault.discretize">
+<code class="descname">discretize</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em>, <em>strike</em>, <em>length</em>, <em>n_strike</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfault.discretize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define the discretized trace of the fault
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>lat,lon: coordinates at the center of the top edge of the fault</li>
+<li>strike: strike angle in degrees (from North)</li>
+<li>length: length of the fault (i.e., along strike)</li>
+<li>n_strike: number of patches along strike</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfault.moveFault">
+<code class="descname">moveFault</code><span class="sig-paren">(</span><em>dx</em>, <em>dy</em>, <em>dz</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfault.moveFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Translates all the patches by dx, dy, dz.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../oldclasses.html">Some Untested Classes</a><ul>
+      <li>Previous: <a href="faultwithvaryingdip.html" title="previous chapter">faultwithvaryingdip class</a></li>
+      <li>Next: <a href="planarfaultkinematic.html" title="next chapter">planarfaultkinematic class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/planarfault.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/planarfault.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

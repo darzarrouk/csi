@@ -30,15 +30,23 @@ from .gps import gps as gpsclass
 from .csiutils import colocated
 
 class RectangularPatches(Fault):
+    '''
+    Classes implementing a fault made of rectangular patches. Inherits from Fault
+
+    Args:
+        * name      : Name of the fault.
+
+    Kwargs:
+        * utmzone   : UTM zone  (optional, default=None)
+        * lon0      : Longitude of the center of the UTM zone
+        * lat0      : Latitude of the center of the UTM zone
+        * ellps     : ellipsoid (optional, default='WGS84')
+        * verbose   : Speak to me (default=True)
+    '''
     
+    # ----------------------------------------------------------------------
+    # Initialize class
     def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
-        '''
-        Args:
-            * name          : Name of the fault.
-            * utmzone   : UTM zone  (optional, default=None)
-            * ellps     : ellipsoid (optional, default='WGS84')
-            * lon0,lat0 : Central longitude and latitude
-        '''
         
         # Base class init
         super(RectangularPatches,self).__init__(name,
@@ -56,14 +64,18 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Set depth caracteristics
     def setdepth(self, nump=None, top=None, width=None):
         '''
         Set depth patch attributes
 
         Args:
             * nump          : Number of fault patches at depth.
-            * top           : depth of the top row
+            * top           : Depth of the top row
+            * width         : Width of the patches
         '''
 
         # If there is patches
@@ -84,10 +96,15 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Extrapolate surface trace of the fault
     def extrapolate(self, length_added=50, tol=2., fracstep=5., extrap='ud'):
         ''' 
-        Extrapolates the surface trace. This is usefull when building deep patches for interseismic loading.
+        Extrapolates the surface trace. This is usefull when building deep patches 
+        for interseismic loading.
+
         Args:
             * length_added  : Length to add when extrapolating.
             * tol           : Tolerance to find the good length.
@@ -175,28 +192,50 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Get fault strike for each patch
     def getStrikes(self):
         '''
-        Returns an array of strikes.
+        Returns an array of strike angle for each patch (radians).
+
+        Returns: 
+            * strike    : Array of angles in radians
         '''
 
         # all done in one line
         return np.array([self.getpatchgeometry(p)[5] for p in self.patch])
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Get patch dip angles
     def getDips(self):
         '''
-        Returns an array of dips
+        Returns an array of dip angles for each patch (radians)
+
+        Returns:
+            * dip       : Array of angles in radians
         '''
 
         # all done in one line
         return np.array([self.getpatchgeometry(p)[6] for p in self.patch])
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Split patches
     def splitPatchesHoriz(self, nPatches, equiv=False, indices=None):
         '''
-        Splits all the patches in nPatches Horizontally.
+        Splits all the patches in nPatches Horizontally. Directly modifies the
+        patch attribute.
+
         Args:
             * nPatches      : Number of new patches per patch.
+
+        Kwargs:
+            * equiv         : Do it on the equivalentPatches (default False)
+            * indices       : Specify which patches to split (list of int)
+
         '''
 
         # Check which patches we want to split
@@ -280,12 +319,19 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Split a patch in 4
     def splitPatch(self, patch):
         '''
         Splits a patch in 4 patches and returns 4 new patches.
+
         Args:
             * patch         : item of the list of patch
+
+        Returns:
+            * p1, p2, p3, p4: Four patches
         '''
 
         # Gets the 4 corners
@@ -322,14 +368,22 @@ class RectangularPatches(Fault):
 
         # All done
         return p1, p2, p3, p4
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Merge patches into a common patch
     def mergePatches(self, p1, p2, eps=1e-6, verbose=True):
         '''
-        Merges 2 patches that have common corners.
+        Merges 2 patches that have common corners. This modifies directly 
+        the attribute patch
+
         Args:
-            * p1    : index of the patch #1.
-            * p2    : index of the patch #2.
-            * eps : tolerance value for the patch corners (in km)
+            * p1        : index of the patch #1.
+            * p2        : index of the patch #2.
+
+        Kwargs:
+            * eps       : tolerance value for the patch corners (in km)
+            * verbose   : Speak to me (default is True)
         '''
 
         if verbose:
@@ -346,10 +400,20 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Simple linear extrapolating routine (why is it here?)
     def extrap1d(self,interpolator):
         '''
         Linear extrapolation routine. Found on StackOverflow by sastanin.
+
+        Args:
+            * interpolator      : An instance of scipy.interpolation.interp1d
+
+        Returns:
+            * ufunc             : An extrapolating method
+
         '''
 
         # import a bunch of stuff
@@ -367,10 +431,17 @@ class RectangularPatches(Fault):
         def ufunclike(xs):
             return pointwise(xs) #array(map(pointwise, array(xs)))
         return ufunclike
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Convert the shallowest patches into a surface trace
     def surfacePatches2Trace(self):
         '''
-        Takes the surface patches and set the fault trace with that
+        Takes the shallowest patches of the fault and use them to build a 
+        fault trace. Direclty modifies attributes xf, yf, lonf and latf
+
+        Returns:
+            * None
         '''
 
         # Create lists
@@ -399,10 +470,16 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Compute the area of all patches and store them in {area}
     def computeArea(self):
         '''
-        Computes the area of all rectangles.
+        Computes the area of all patches. Stores that in {self.area}
+
+        Returns:
+            * None
         '''
 
         # Area
@@ -414,12 +491,19 @@ class RectangularPatches(Fault):
 
         # all done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Get the area of a patch
     def patchArea(self, p):
         ''' 
         Computes the area of one patch.
+
         Args:
-            * p      : One item of self.patch
+            * p         : One item of self.patch
+
+        Returns:
+            * area      : The area of the patch
         '''
 
         # get points
@@ -434,10 +518,16 @@ class RectangularPatches(Fault):
 
         # All done
         return area
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Conversion method
     def patchesUtm2LonLat(self):
         '''
         Perform the utm to lonlat conversion for all patches.
+
+        Returns:
+            * None
         '''
 
         # iterate over the patches
@@ -469,10 +559,18 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
-    def computeEquivRectangle(self, strikeDir='south'):
+    # ----------------------------------------------------------------------
+    # Compute equivalent rectangles
+    def computeEquivRectangle(self):
         '''
-        Computes the equivalent rectangle patches and stores these into self.equivpatch
+        In the case where patches are not exactly rectangular, this method 
+        computes the best rectangle that fits within patches. Stores all the
+        equivalent rectangles in equivpatch and equivpatchll.
+
+        Returns:
+            * None
         '''
         
         # Initialize the equivalent structure
@@ -538,23 +636,29 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Create a patch
     def lonlat2patch(self, lon, lat, depth, strike, dip, length, width):
         '''
-        From a list of arguments, returns a patch and a patchll.
+        Builds a patch from its longitude {lon}, latitude {lat}, 
+        depths {depth}, strike angles {strike}, dip angles {dip}, 
+        patch length {length} and patch width {width}
+
         Args:
             * lon       : Longitude of the center of the patch
             * lat       : Latitude of the center of the patch
-            * depth     : Depth of the center of the fault (km)
-            * strike    : Strike of the fault (degree)
-            * dip       : Dip of the fault (degree)
-            * length    : Length of the fault (km)
-            * width     : Width of the fault (km)
-        '''
+            * depth     : Depth of the center of the patch (km)
+            * strike    : Strike of the patch (degree)
+            * dip       : Dip of the patch (degree)
+            * length    : Length of the patch (km)
+            * width     : Width of the patch (km)
 
-        # Create lists
-        patch = []
-        patchll = []
+        Returns:
+            * patch     : a list for patch corners
+            * patchll   : a list patch corners in lonlat
+        '''
 
         # Convert angles
         dip *= np.pi/180.
@@ -610,18 +714,27 @@ class RectangularPatches(Fault):
 
         # All done
         return patch, patchll
+    # ----------------------------------------------------------------------
 
-    def geometry2patch(self, Lon, Lat, Depth, Strike, Dip, Length, Width, initializeSlip=True):
+    # ----------------------------------------------------------------------
+    # Given lon, lat, etc arrays, builds patches
+    def geometry2patch(self, Lon, Lat, Depth, Strike, Dip, Length, Width, 
+                             initializeSlip=True):
         '''
-        Builds the list of patches from lists of lon, lat, depth...
+        Builds the list of patches from lists of lon, lat, depth, strike, dip, 
+        length and width
+
         Args:
-            * Lon       : List of longitudes
-            * Lat       : List of Latitudes
-            * Depth     : List of depths
-            * Strike    : List of strike angles (degree)
-            * Dip       : List of dip angles (degree)
-            * Length    : List of length (km)
-            * Width     : List of width (km)
+            * Lon           : List of longitudes
+            * Lat           : List of Latitudes
+            * Depth         : List of depths (km)
+            * Strike        : List of strike angles (degree)
+            * Dip           : List of dip angles (degree)
+            * Length        : List of length (km)
+            * Width         : List of width (km)
+
+        Kwargs:
+            *initializeSlip : Set slip values to zero
         '''
 
         # Create the patch lists
@@ -647,13 +760,23 @@ class RectangularPatches(Fault):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
+    # Relax type method
     def importPatches(self, filename, origin=[45.0, 45.0]):
         '''
-        Builds a patch geometry and the corresponding files from a relax co-seismic file type.
+        Builds a patch geometry and the corresponding files from a relax 
+        co-seismic file type.
+
         Args:
-            filename    : Input from Relax (See Barbot and Cie on the CIG website).
-            origin      : Origin of the reference frame used by relax. [lon, lat]
+            * filename      : Input from Relax (See Barbot and Cie on the CIG website).
+
+        Kwargs:
+            * origin        : Origin of the reference frame used by relax. [lon, lat]
+
+        Returns:
+            * None
         '''
 
         # Create lists
@@ -763,13 +886,23 @@ class RectangularPatches(Fault):
     
         # All done
         return
+    # ----------------------------------------------------------------------
 
-    def readPatchesFromFile(self, filename, Cm=None, readpatchindex=True, inputCoordinates='lonlat', donotreadslip=False, increasingy = True):
+    # ----------------------------------------------------------------------
+    # Read patches
+    def readPatchesFromFile(self, filename, Cm=None, readpatchindex=True, 
+                                  inputCoordinates='lonlat', 
+                                  donotreadslip=False, increasingy=True):
         '''
-        Read the patches from a GMT formatted file.
+        Read patches from a GMT formatted file. This means the file is a 
+        list of patches separated by '>'. 
+
         Args:   
-            * filename  : Name of the file.
-            * increasingy : if you don't want csi to set your patches 
+            * filename      : Name of the file.
+
+        Kwargs:
+            * Cm            : 
+            * increasingy   : if you don't want csi to set your patches 
                             corners according to increasing y, set
                             increasingy = False
         '''

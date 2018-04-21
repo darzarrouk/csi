@@ -1,0 +1,177 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>tsunami class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="timeseries class" href="timeseries.html" />
+    <link rel="prev" title="seismic class" href="seismic.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tsunami-class">
+<h1>tsunami class<a class="headerlink" href="#tsunami-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.tsunami">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">tsunami</code><span class="sig-paren">(</span><em>name</em>, <em>dtype='tsunami'</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tsunami" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.tsunami.buildsynth">
+<code class="descname">buildsynth</code><span class="sig-paren">(</span><em>faults</em>, <em>direction='sd'</em>, <em>poly=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tsunami.buildsynth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes the slip model in each of the faults and builds the synthetic displacement using the Green’s functions.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>faults        : list of faults to include.</li>
+<li>direction     : list of directions to use. Can be any combination of ‘s’, ‘d’ and ‘t’.</li>
+<li>poly          : if True, add an offseta in the data</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.tsunami.getGF">
+<code class="descname">getGF</code><span class="sig-paren">(</span><em>filename</em>, <em>fault</em>, <em>factor=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tsunami.getGF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read GF from file filename.gf
+returns GF_SS and GF_DS</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.tsunami.getRampEstimator">
+<code class="descname">getRampEstimator</code><span class="sig-paren">(</span><em>order</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tsunami.getRampEstimator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the Estimator of a constant offset in the data
+args:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>order <span class="classifier-delimiter">:</span> <span class="classifier">1 -&gt; estimate just a vertical shift in the data</span></dt>
+<dd>2 -&gt; estimate a ramp in the data
+order given as argiment is in reality order*number_of_station</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.tsunami.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>nobs_per_trace</em>, <em>plot_synth=False</em>, <em>alpha=1.0</em>, <em>figsize=(13</em>, <em>10)</em>, <em>left=0.07</em>, <em>bottom=0.1</em>, <em>right=0.99</em>, <em>top=0.9</em>, <em>wspace=0.31</em>, <em>hspace=0.47</em>, <em>scale=100.0</em>, <em>ylim=None</em>, <em>yticks=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tsunami.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot tsunami traces</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.tsunami.readFromTxtFile">
+<code class="descname">readFromTxtFile</code><span class="sig-paren">(</span><em>filename</em>, <em>factor=1.0</em>, <em>fileinfo=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tsunami.readFromTxtFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read d, Cd from files filename.d filename.Cd</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.tsunami.setGFsInFault">
+<code class="descname">setGFsInFault</code><span class="sig-paren">(</span><em>fault</em>, <em>G</em>, <em>vertical=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tsunami.setGFsInFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a dictionary of Green’s functions, sets these correctly into the fault 
+object fault for future computation.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>fault     : Instance of Fault</li>
+<li><dl class="first docutils">
+<dt>G <span class="classifier-delimiter">:</span> <span class="classifier">Dictionary with 3 entries ‘strikeslip’, ‘dipslip’ and ‘tensile’</span></dt>
+<dd>These can be a matrix or None.</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>vertical <span class="classifier-delimiter">:</span> <span class="classifier">Set here for consistency with other data objects, but will </span></dt>
+<dd>always be set to False, whatever you do.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.tsunami.write2file">
+<code class="descname">write2file</code><span class="sig-paren">(</span><em>namefile</em>, <em>data='synth'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.tsunami.write2file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot tsunami traces</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../dataclasses.html">Classes for types of data</a><ul>
+      <li>Previous: <a href="seismic.html" title="previous chapter">seismic class</a></li>
+      <li>Next: <a href="timeseries.html" title="next chapter">timeseries class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/tsunami.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/tsunami.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

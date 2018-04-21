@@ -12,20 +12,21 @@ import matplotlib.pyplot as plt
 
 #class SourceInv
 class SourceInv(object):
+
+    '''
+    Class implementing the geographical transform. This class will
+    be parent to almost all the classes in csi.
+
+    Args:
+        * name      : Instance Name 
+        * utmzone   : UTM zone  (optional, default=None)
+        * ellps     : ellipsoid (optional, default='WGS84')
+
+    '''
     
     # ----------------------------------------------------------------------
     # Initialize class #
     def __init__(self,name,utmzone=None,ellps='WGS84',lon0=None, lat0=None):
-        '''
-        Class implementing the geographical transform. This class will
-        be parent to almost all the classes in csi.
-
-        Args:
-            * name      : Instance Name 
-            * utmzone   : UTM zone  (optional, default=None)
-            * ellps     : ellipsoid (optional, default='WGS84')
-
-        '''
 
         # Initialization
         self.name = name
@@ -55,7 +56,7 @@ class SourceInv(object):
             * lon       : Longitude (deg)
             * lat       : Latitude (deg)
 
-        Return:
+        Returns:
             * x         : UTM coordinate x (km)
             * y         : UTM coordinate y (km)
         '''
@@ -82,7 +83,7 @@ class SourceInv(object):
             * x         : UTM longitude (km).
             * y         : UTM latitude (km)
 
-        Return: 
+        Returns: 
             * lon       : Longitude (degrees)
             * lat       : Latitude (degree)
         '''
@@ -102,9 +103,10 @@ class SourceInv(object):
         Kwargs:
             * ellps         : Reference Ellipsoid
 
-            Method 1:
+            - Method 1:
                 * utmzone       : International UTM zone number
-            Method 2: 
+
+            - Method 2: 
                 * lon0          : Longitude of the center of the custom UTM zone (deg)
                 * lat0          : Latitude of the center of the custom UTM zone (deg)
         '''

@@ -1,0 +1,219 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>verticalfault class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="planarfaultkinematic class" href="planarfaultkinematic.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="verticalfault-class">
+<h1>verticalfault class<a class="headerlink" href="#verticalfault-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.verticalfault">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">verticalfault</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.verticalfault.BuildPatchesVarResolution">
+<code class="descname">BuildPatchesVarResolution</code><span class="sig-paren">(</span><em>depths</em>, <em>Depthpoints</em>, <em>Resolpoints</em>, <em>interpolation='linear'</em>, <em>minpatchsize=0.1</em>, <em>extrap=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.BuildPatchesVarResolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Patchizes the fault with a variable patch size at depth.
+The variable patch size is given by the respoints table.
+Depthpoints = [depth1, depth2, depth3, …., depthN]
+Resolpoints = [Resol1, Resol2, Resol3, …., ResolN]
+The final resolution is interpolated given the ‘interpolation’ method.
+Interpolation can be ‘linear’, ‘cubic’.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.associatePatch2PDFs">
+<code class="descname">associatePatch2PDFs</code><span class="sig-paren">(</span><em>directory='.'</em>, <em>prefix='step_001_param'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.associatePatch2PDFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Associates a patch with a pdf called directory/prefix_{#}.dat.
+import AltarExplore….</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.build_patches">
+<code class="descname">build_patches</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.build_patches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds rectangular patches from the discretized fault.
+A patch is a list of 4 corners.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.computetotalslip">
+<code class="descname">computetotalslip</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.computetotalslip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the total slip.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.cutPatchesVertically">
+<code class="descname">cutPatchesVertically</code><span class="sig-paren">(</span><em>iP</em>, <em>cuttingDepth</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.cutPatchesVertically" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cut a patche into 2 patches at depth given by cuttingDepth.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>iP            : patch index or list of patch indexes.</li>
+<li>cuttingDepth  : Depth where patch is going to be split in 2.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.differentiateGFs">
+<code class="descname">differentiateGFs</code><span class="sig-paren">(</span><em>datas</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.differentiateGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the Delaunay triangulation to prepare a differential Green’s function matrix, data vector
+and data covariance matrix.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>datas         : List of dataset concerned</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.extrap1d">
+<code class="descname">extrap1d</code><span class="sig-paren">(</span><em>interpolator</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.extrap1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Linear extrapolation routine. Found on StackOverflow by sastanin.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.extrapolate">
+<code class="descname">extrapolate</code><span class="sig-paren">(</span><em>length_added=50</em>, <em>tol=2.0</em>, <em>fracstep=5.0</em>, <em>extrap='ud'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.extrapolate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extrapolates the surface trace. This is usefull when building deep patches for interseismic loading.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>length_added  : Length to add when extrapolating.</li>
+<li>tol           : Tolerance to find the good length.</li>
+<li>fracstep      : control each jump size.</li>
+<li><dl class="first docutils">
+<dt>extrap <span class="classifier-delimiter">:</span> <span class="classifier">if u in extrap -&gt; extrapolates at the end</span></dt>
+<dd>if d in extrap -&gt; extrapolates at the beginning
+default is ‘ud’</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.rotationHoriz">
+<code class="descname">rotationHoriz</code><span class="sig-paren">(</span><em>center</em>, <em>angle</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.rotationHoriz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotates the geometry of the fault around center, of an angle.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>center    : [lon,lat]</li>
+<li>angle     : degrees</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.setDepth">
+<code class="descname">setDepth</code><span class="sig-paren">(</span><em>depth</em>, <em>top=0</em>, <em>num=5</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.setDepth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the maximum depth of the fault patches.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>depth         : Depth of the fault patches.</li>
+<li>num           : Number of fault patches at depth.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.verticalfault.translationHoriz">
+<code class="descname">translationHoriz</code><span class="sig-paren">(</span><em>dx</em>, <em>dy</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.verticalfault.translationHoriz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Translates the patches.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>dx    : Translation along x (km)</li>
+<li>dy    : Translation along y (km)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../oldclasses.html">Some Untested Classes</a><ul>
+      <li>Previous: <a href="planarfaultkinematic.html" title="previous chapter">planarfaultkinematic class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/verticalfault.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/verticalfault.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

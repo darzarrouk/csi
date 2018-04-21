@@ -1,0 +1,457 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>seismiclocations class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="insartimeseries class" href="insartimeseries.html" />
+    <link rel="prev" title="timeseries class" href="timeseries.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="seismiclocations-class">
+<h1>seismiclocations class<a class="headerlink" href="#seismiclocations-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.seismiclocations">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">seismiclocations</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.seismiclocations.BuildHistogramsAlongFaultTrace">
+<code class="descname">BuildHistogramsAlongFaultTrace</code><span class="sig-paren">(</span><em>fault</em>, <em>filename</em>, <em>normed=True</em>, <em>width=10.0</em>, <em>bins=50</em>, <em>plot=False</em>, <em>planemode='verticalfault'</em>, <em>Range=(-5.0</em>, <em>5.0)</em>, <em>reference=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.BuildHistogramsAlongFaultTrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a histogram of the earthquake distribution along the fault trace.
+width: Width of the averaging cell (distance along strike)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.Cmt2Dislocation">
+<code class="descname">Cmt2Dislocation</code><span class="sig-paren">(</span><em>size=1</em>, <em>mu=30000000000.0</em>, <em>choseplane='nochoice'</em>, <em>moment_from_tensor=False</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.Cmt2Dislocation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a single square patch fault from the cmt solutions.
+If no condition is given, it returns the first value.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>size          : Size of one side of the fault patch (km).</li>
+<li>mu            : Shear modulus (Pa).</li>
+<li>choseplane    : Choice of the focal plane to use (can be ‘smallestdip’, ‘highestdip’, ‘nochoice’)</li>
+<li>moment_from_tensor: Computes the scalar moment from the cmt.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.MapHistogram">
+<code class="descname">MapHistogram</code><span class="sig-paren">(</span><em>binwidth=1.0</em>, <em>plot=False</em>, <em>normed=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.MapHistogram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a 2D histogram of the earthquakes locations.
+binwidth: width of the bins used for histogram.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.Mo2mag">
+<code class="descname">Mo2mag</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.Mo2mag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the magnitude from the moment.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.ProjectOnFaultTrace">
+<code class="descname">ProjectOnFaultTrace</code><span class="sig-paren">(</span><em>fault</em>, <em>discretized=True</em>, <em>filename=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.ProjectOnFaultTrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Projects the location of the earthquake along the fault trace.
+This routine is not a 3D one, it just deals with the surface trace of the fault.
+Args:</p>
+<blockquote>
+<div>fault:       Fault object that has a surface trace
+discretized: If True, then it uses the discretized fault, not the trace. Never tested with False.</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.computeGR">
+<code class="descname">computeGR</code><span class="sig-paren">(</span><em>plot=False</em>, <em>bins=20</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.computeGR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the Gutemberg-Richter distribution.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>ion       : Turns on the plt.ion().</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.coord2prof">
+<code class="descname">coord2prof</code><span class="sig-paren">(</span><em>xc</em>, <em>yc</em>, <em>length</em>, <em>azimuth</em>, <em>width</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.coord2prof" title="Permalink to this definition">¶</a></dt>
+<dd><p>Routine returning the profile
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>xc                : X pos of center</li>
+<li>yc                : Y pos of center</li>
+<li>length            : length of the profile.</li>
+<li>azimuth           : azimuth of the profile.</li>
+<li>width             : width of the profile.</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd>dis                 : Distance from the center
+mag                 : Magnitude
+depth               : Depth
+norm                : distance perpendicular to profile
+boxll               : lon lat coordinates of the profile box used
+xe1, ye1            : coordinates (UTM) of the profile endpoint
+xe2, ye2            : coordinates (UTM) of the profile endpoint</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.delete2Close2Trace">
+<code class="descname">delete2Close2Trace</code><span class="sig-paren">(</span><em>faults</em>, <em>distance=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.delete2Close2Trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes the earthquakes that are too close from the fault trace.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.distance2fault">
+<code class="descname">distance2fault</code><span class="sig-paren">(</span><em>faults</em>, <em>distance=5.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.distance2fault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selects the earthquakes that are located less than distance away from the fault plane.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>faults    : List of faults</li>
+<li>distance  : Threshold</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.distance2trace">
+<code class="descname">distance2trace</code><span class="sig-paren">(</span><em>faults</em>, <em>distance=5.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.distance2trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selects the earthquakes that are located less than ‘distance’ km away from a given surface fault trace.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>faults    : list of structures created from verticalfault.</li>
+<li>distance  : threshold distance.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.fitBvalue">
+<code class="descname">fitBvalue</code><span class="sig-paren">(</span><em>b=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.fitBvalue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits a B-value to a Gutemberg-Righter distribution.
+option: if b is provided, then the fit is forced to have a slope b.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.getClosestFaultPatch">
+<code class="descname">getClosestFaultPatch</code><span class="sig-paren">(</span><em>fault</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.getClosestFaultPatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of index for all the earthquakes containing the index of the closest fault patch.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.getEarthquakesOnPatches">
+<code class="descname">getEarthquakesOnPatches</code><span class="sig-paren">(</span><em>fault</em>, <em>epsilon=0.01</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.getEarthquakesOnPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project each earthquake on a fault patch.
+Should work with any fault patch type.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.getprofile">
+<code class="descname">getprofile</code><span class="sig-paren">(</span><em>name</em>, <em>loncenter</em>, <em>latcenter</em>, <em>length</em>, <em>azimuth</em>, <em>width</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.getprofile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project the seismic locations onto a profile.
+Works on the lat/lon coordinates system.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>name              : Name of the profile.</li>
+<li>loncenter         : Profile origin along longitude.</li>
+<li>latcenter         : Profile origin along latitude.</li>
+<li>length            : Length of profile.</li>
+<li>azimuth           : Azimuth in degrees.</li>
+<li>width             : Width of the profile.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.intersectProfileFault">
+<code class="descname">intersectProfileFault</code><span class="sig-paren">(</span><em>name</em>, <em>fault</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.intersectProfileFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the distance between the fault/profile intersection and the profile center.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>name      : name of the profile.</li>
+<li>fault     : fault object from verticalfault.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.lonlat2xy">
+<code class="descname">lonlat2xy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.lonlat2xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass the position into the utm coordinate system.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.mag2Mo">
+<code class="descname">mag2Mo</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.mag2Mo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the moment from the magnitude.
+Result in N.m</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.mergeCatalog">
+<code class="descname">mergeCatalog</code><span class="sig-paren">(</span><em>catalog</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.mergeCatalog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges another catalog into this one.
+Args:</p>
+<blockquote>
+<div>catalog:    Seismic location object.</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.momentEvolution">
+<code class="descname">momentEvolution</code><span class="sig-paren">(</span><em>plot=False</em>, <em>outfile=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.momentEvolution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the evolution of the moment with time.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.read_CMTSolutions">
+<code class="descname">read_CMTSolutions</code><span class="sig-paren">(</span><em>infile</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.read_CMTSolutions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads data and moment tensors from an ascii file listing CMT solutions format
+Args:</p>
+<blockquote>
+<div>infile: Input file.</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.read_ascii">
+<code class="descname">read_ascii</code><span class="sig-paren">(</span><em>infile</em>, <em>header=0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.read_ascii" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads data from an ascii file.
+columns are time (isoformat, lat, lon, depth, mag).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.read_csi">
+<code class="descname">read_csi</code><span class="sig-paren">(</span><em>infile</em>, <em>header=0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.read_csi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads data from a file written by csi.seismiclocation.write2file
+columns are time (isoformat, lat, lon, depth, mag).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.read_from_Hauksson">
+<code class="descname">read_from_Hauksson</code><span class="sig-paren">(</span><em>filename</em>, <em>header=0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.read_from_Hauksson" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the Seismic catalog from the SCSN networks (Template from E. Hauksson, Caltech).
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename      : Name of the input file.</li>
+<li>header        : Size of the header.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.read_from_NCSN">
+<code class="descname">read_from_NCSN</code><span class="sig-paren">(</span><em>filename</em>, <em>header=65</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.read_from_NCSN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename      : Name of the input file.</li>
+<li>header        : Size of the header.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.read_from_Rietbrock">
+<code class="descname">read_from_Rietbrock</code><span class="sig-paren">(</span><em>filename</em>, <em>header=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.read_from_Rietbrock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename      : Name of the input file.</li>
+<li>header        : Size of the header.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.read_from_SCSN">
+<code class="descname">read_from_SCSN</code><span class="sig-paren">(</span><em>filename</em>, <em>header=65</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.read_from_SCSN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename      : Name of the input file.</li>
+<li>header        : Size of the header.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.selectbox">
+<code class="descname">selectbox</code><span class="sig-paren">(</span><em>minlon</em>, <em>maxlon</em>, <em>minlat</em>, <em>maxlat</em>, <em>depth=100000.0</em>, <em>mindep=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.selectbox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select the earthquakes in a box defined by min and max, lat and lon.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>minlon        : Minimum longitude.</li>
+<li>maxlon        : Maximum longitude.</li>
+<li>minlat        : Minimum latitude.</li>
+<li>maxlat        : Maximum latitude.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.selectmagnitude">
+<code class="descname">selectmagnitude</code><span class="sig-paren">(</span><em>minimum</em>, <em>maximum=10</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.selectmagnitude" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selects the earthquakes between two magnitudes.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>minimum   : Minimum earthquake magnitude wanted.</li>
+<li>maximum   : Maximum earthquake magnitude wanted.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.selecttime">
+<code class="descname">selecttime</code><span class="sig-paren">(</span><em>start=[2001, 1, 1], end=[2101, 1, 1]</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.selecttime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selects the earthquake in between two dates. Dates can be datetime.datetime or lists.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>start     : Beginning of the period.</li>
+<li>end       : End of the period.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.sortInTime">
+<code class="descname">sortInTime</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.sortInTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sorts the earthquakes in Time</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.write2file">
+<code class="descname">write2file</code><span class="sig-paren">(</span><em>filename</em>, <em>add_column=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.write2file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the earthquakes to a file.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename      : Name of the output file.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.writeProfile2File">
+<code class="descname">writeProfile2File</code><span class="sig-paren">(</span><em>name</em>, <em>filename</em>, <em>fault=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.writeProfile2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the profile named ‘name’ to the ascii file filename.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.writeSelectedMagRange">
+<code class="descname">writeSelectedMagRange</code><span class="sig-paren">(</span><em>filename</em>, <em>minMag=5.0</em>, <em>maxMag=10.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.writeSelectedMagRange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write to a file the earthquakes with a magnitude larger than minMag and
+smaller than maxMag.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename  : Name of the output file</li>
+<li>minMag    : minimum Magnitude.</li>
+<li>maxMag    : maximum Magnitude.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.seismiclocations.xy2lonlat">
+<code class="descname">xy2lonlat</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismiclocations.xy2lonlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass the position from utm to lonlat.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../dataclasses.html">Classes for types of data</a><ul>
+      <li>Previous: <a href="timeseries.html" title="previous chapter">timeseries class</a></li>
+      <li>Next: <a href="insartimeseries.html" title="next chapter">insartimeseries class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/seismiclocations.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/seismiclocations.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

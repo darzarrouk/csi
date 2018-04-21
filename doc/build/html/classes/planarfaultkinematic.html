@@ -1,0 +1,294 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>planarfaultkinematic class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="verticalfault class" href="verticalfault.html" />
+    <link rel="prev" title="planarfault class" href="planarfault.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="planarfaultkinematic-class">
+<h1>planarfaultkinematic class<a class="headerlink" href="#planarfaultkinematic-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.planarfaultkinematic">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">planarfaultkinematic</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.planarfaultkinematic.buildFault">
+<code class="descname">buildFault</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em>, <em>dep</em>, <em>f_strike</em>, <em>f_dip</em>, <em>f_length</em>, <em>f_width</em>, <em>grid_size</em>, <em>p_nstrike</em>, <em>p_ndip</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.buildFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build fault patches/grid
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>lat,lon,dep:  coordinates at the center of the top edge of the fault (in degrees)</li>
+<li>strike:       strike angle in degrees (from North)</li>
+<li>dip:          dip angle in degrees (from horizontal)</li>
+<li>f_length: Fault length, km</li>
+<li>f_width:  Fault width, km</li>
+<li>grid_size:    Spacing between point sources within each patch</li>
+<li>p_nstrike:   Number of subgrid points per patch along strike (multiple pts src per patch)</li>
+<li>p_ndip:      Number of subgrid points per patch along dip    (multiple pts src per patch)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.buildKinDataTriangleMRF">
+<code class="descname">buildKinDataTriangleMRF</code><span class="sig-paren">(</span><em>data</em>, <em>eik_solver</em>, <em>Mu</em>, <em>rake_para=0.0</em>, <em>out_type='D'</em>, <em>verbose=True</em>, <em>ofd=&lt;_io.TextIOWrapper name='&lt;stdout&gt;' mode='w' encoding='UTF-8'&gt;</em>, <em>efd=&lt;_io.TextIOWrapper name='&lt;stderr&gt;' mode='w' encoding='UTF-8'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.buildKinDataTriangleMRF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build Kinematic Green’s functions based on the discretized fault. Green’s functions will be calculated 
+for a given shear modulus and a given slip (cf., slip) along a given rake angle (cf., rake)
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data: Seismic data object</li>
+<li>eik_solver: eikonal solver</li>
+<li>Mu:   Shear modulus</li>
+<li>rake_para: Rake of the slip parallel component in deg (default=0. deg)</li>
+<li>out_type:   ‘D’ for displacement, ‘V’ for velocity, ‘A’ for acceleration (default=’D’)</li>
+<li>verbose:    True or False (default=True)</li>
+</ul>
+</div></blockquote>
+<p>WARNING: ONLY VALID FOR HOMOGENEOUS RUPTURE VELOCITY</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.buildKinGFs">
+<code class="descname">buildKinGFs</code><span class="sig-paren">(</span><em>data</em>, <em>Mu</em>, <em>rake</em>, <em>slip=1.0</em>, <em>rise_time=2.0</em>, <em>stf_type='triangle'</em>, <em>rfile_name=None</em>, <em>out_type='D'</em>, <em>verbose=True</em>, <em>ofd=&lt;_io.TextIOWrapper name='&lt;stdout&gt;' mode='w' encoding='UTF-8'&gt;</em>, <em>efd=&lt;_io.TextIOWrapper name='&lt;stderr&gt;' mode='w' encoding='UTF-8'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.buildKinGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build Kinematic Green’s functions based on the discretized fault. Green’s functions will be calculated 
+for a given shear modulus and a given slip (cf., slip) along a given rake angle (cf., rake)
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data: Seismic data object</li>
+<li>Mu:   Shear modulus</li>
+<li>rake: Rake used to compute Green’s functions</li>
+<li>slip: Slip amplitude used to compute Green’s functions (in m)</li>
+<li>rise_time:  Duration of the STF in each patch</li>
+<li>stf_type:   Type of STF pulse</li>
+<li>rfile_name: User specified stf file name if stf_type=’rfile’</li>
+<li>out_type:   ‘D’ for displacement, ‘V’ for velocity, ‘A’ for acceleration</li>
+<li>verbose:    True or False</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.buildSubGrid">
+<code class="descname">buildSubGrid</code><span class="sig-paren">(</span><em>grid_size</em>, <em>nbp_strike</em>, <em>nbp_dip</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.buildSubGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a subgrid of point sources on the fault (multiple point src per patches)
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>grid_size:    Spacing between point sources within each patch</li>
+<li>p_nstrike:   Number of subgrid points per patch along strike</li>
+<li>p_ndip:      Number of subgrid points per patch along dip</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.creaWav">
+<code class="descname">creaWav</code><span class="sig-paren">(</span><em>data</em>, <em>include_G=True</em>, <em>include_d=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.creaWav" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a list of Waveform dictionaries
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data: Data object</li>
+<li>include_G: if True, include G (default=True)</li>
+<li>include_d: if True, include d (default=True)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.filter">
+<code class="descname">filter</code><span class="sig-paren">(</span><em>data</em>, <em>a</em>, <em>b</em>, <em>filtFunc</em>, <em>mean_npts=None</em>, <em>filter_G=True</em>, <em>filter_d=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Waveform filtering
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data: Data object</li>
+<li>a: numerator polynomial of the IIR filter</li>
+<li>b: denominator polynomial of the IIR filter</li>
+<li>filtFunc: filter function</li>
+<li>mean_npts: remove mean over the leading mean_npts points (default=None)</li>
+<li>filter_G: if True, filter G (default=True)</li>
+<li>filter_d: if True, filter d (default=True)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.getHypoToCenter">
+<code class="descname">getHypoToCenter</code><span class="sig-paren">(</span><em>p</em>, <em>sd_dist=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.getHypoToCenter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get patch center coordinates from hypocenter
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>p      : Patch number.</li>
+<li>sd_dist: If true, will return along dip and along strike distances</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.loadKinData">
+<code class="descname">loadKinData</code><span class="sig-paren">(</span><em>data</em>, <em>i_dir='data_kin'</em>, <em>station_file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.loadKinData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read Data (1 sac file per channel)
+Args:</p>
+<blockquote>
+<div>data  : Data object corresponding to the Green’s function to be loaded
+i_dir : Input directory
+station_file: read station list from ‘station_file’</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.loadKinGFs">
+<code class="descname">loadKinGFs</code><span class="sig-paren">(</span><em>data, rake=[0, 90], i_dir='gf_kin', station_file=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.loadKinGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reading Green’s functions (1 sac file per channel per patch for each rake)
+Args:</p>
+<blockquote>
+<div>data       : Data object corresponding to the Green’s function to be loaded
+rake       : List of rake values (default=0 and 90 deg)
+i_dir      : Output directory name (default=’gf_kin’)
+station_file: read station list from ‘station_file’</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.saveKinData">
+<code class="descname">saveKinData</code><span class="sig-paren">(</span><em>data</em>, <em>o_dir='data_kin'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.saveKinData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write Data (1 sac file per channel)
+Args:</p>
+<blockquote>
+<div>data  : Data object corresponding to the Green’s function to be saved
+o_dir : Output file name</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.saveKinGFs">
+<code class="descname">saveKinGFs</code><span class="sig-paren">(</span><em>data</em>, <em>o_dir='gf_kin'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.saveKinGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writing Green’s functions (1 sac file per channel per patch for each rake)
+Args:</p>
+<blockquote>
+<div>data  : Data object corresponding to the Green’s function to be saved
+o_dir : Output directory name</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.setHypoXY">
+<code class="descname">setHypoXY</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>UTM=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.setHypoXY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set hypocenter attributes from x,y
+Outputs: East/West UTM/Lon coordinates, depth attributes
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>x:   east  coordinates</li>
+<li>y:   north coordinates</li>
+<li><dl class="first docutils">
+<dt>UTM: default=True, x and y is in UTM coordinates (in km)</dt>
+<dd>if    ==False x=lon and y=lat (in deg)</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.planarfaultkinematic.trim">
+<code class="descname">trim</code><span class="sig-paren">(</span><em>data</em>, <em>mint</em>, <em>maxt</em>, <em>trim_G=True</em>, <em>trim_d=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.planarfaultkinematic.trim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Waveform windowing
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data: Data object</li>
+<li>mint: Minimum time</li>
+<li>maxt: Maximum time</li>
+<li>trim_G: if True, trim G (default=True)</li>
+<li>trim_d: if True, trim d (default=True)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../oldclasses.html">Some Untested Classes</a><ul>
+      <li>Previous: <a href="planarfault.html" title="previous chapter">planarfault class</a></li>
+      <li>Next: <a href="verticalfault.html" title="next chapter">verticalfault class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/planarfaultkinematic.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/planarfaultkinematic.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

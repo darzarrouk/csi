@@ -1,0 +1,261 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>stressfield class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="tidalfit class" href="tidalfit.html" />
+    <link rel="prev" title="strainfield class" href="strainfield.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="stressfield-class">
+<h1>stressfield class<a class="headerlink" href="#stressfield-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.stressfield">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">stressfield</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>ellps='WGS84'</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.stressfield.Fault2Stress">
+<code class="descname">Fault2Stress</code><span class="sig-paren">(</span><em>fault</em>, <em>factor=0.001</em>, <em>mu=30000000000.0</em>, <em>nu=0.25</em>, <em>slipdirection='sd'</em>, <em>force_dip=None</em>, <em>stressonpatches=False</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.Fault2Stress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes a fault, or a list of faults, and computes the stress change associated with the slip on the fault.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>fault             : Fault object (RectangularFault).</li>
+<li><dl class="first docutils">
+<dt>factor <span class="classifier-delimiter">:</span> <span class="classifier">Conversion factor between the slip units and distance units. Usually, distances are in Km.</span></dt>
+<dd>Therefore, if slip is in mm, then factor=1e-6.</dd>
+</dl>
+</li>
+<li>slipdirection     : any combination of s, d, and t.</li>
+<li>mu                : Shear Modulus (default is 30GPa).</li>
+<li>nu                : Poisson’s ratio (default is 0.25).</li>
+<li>stressonpatches   : Re-sets the station locations to be where the center of the patches are.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.computeTrace">
+<code class="descname">computeTrace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.computeTrace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the Trace of the stress tensor.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.computeTractions">
+<code class="descname">computeTractions</code><span class="sig-paren">(</span><em>strike</em>, <em>dip</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.computeTractions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the tractions given a plane with a given strike and dip.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>strike            : Strike (radians).</li>
+<li>dip               : Dip (radians).</li>
+</ul>
+</div></blockquote>
+<p>If these are floats, all the tensors will be projected on that plane.
+Otherwise, they need to be the size ofthe number of tensors.</p>
+<p>Positive Normal Traction means extension.
+Positive Shear Traction means left-lateral.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.getTractions">
+<code class="descname">getTractions</code><span class="sig-paren">(</span><em>strike</em>, <em>dip</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.getTractions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Just a wrapper around computeTractions to store the result, if necessary.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.getprofile">
+<code class="descname">getprofile</code><span class="sig-paren">(</span><em>name</em>, <em>loncenter</em>, <em>latcenter</em>, <em>length</em>, <em>azimuth</em>, <em>width</em>, <em>data='trace'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.getprofile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project the wanted quantity onto a profile. 
+Works on the lat/lon coordinates system.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>name              : Name of the profile.</li>
+<li>loncenter         : Profile origin along longitude.</li>
+<li>latcenter         : Profile origin along latitude.</li>
+<li>length            : Length of profile.</li>
+<li>azimuth           : Azimuth in degrees.</li>
+<li>width             : Width of the profile.</li>
+<li>data              : name of the data to use (‘trace’)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.intersectProfileFault">
+<code class="descname">intersectProfileFault</code><span class="sig-paren">(</span><em>name</em>, <em>fault</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.intersectProfileFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the distance between the fault/profile intersection and the profile center.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>name      : name of the profile.</li>
+<li>fault     : fault object from verticalfault.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.output2GRD">
+<code class="descname">output2GRD</code><span class="sig-paren">(</span><em>outfile</em>, <em>data='dilatation'</em>, <em>comp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.output2GRD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output the desired field to a grd file.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>outfile       : Name of the outputgrd file.</li>
+<li><dl class="first docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">Type of data to output. Can be ‘veast’, ‘vnorth’, </span></dt>
+<dd>‘dilatation’, 
+‘projection’,
+‘strainrateprojection’</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>comp <span class="classifier-delimiter">:</span> <span class="classifier">if data is projection or ‘strainrateprojection’, give the name of the</span></dt>
+<dd>projection you want.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>data='trace'</em>, <em>faults=None</em>, <em>gps=None</em>, <em>figure=123</em>, <em>ref='utm'</em>, <em>legend=False</em>, <em>comp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot one component of the strain field.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data      : Type of data to plot. Can be ‘trace’</li>
+<li>faults    : list of faults to plot.</li>
+<li>gps       : list of gps networks to plot.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.plotprofile">
+<code class="descname">plotprofile</code><span class="sig-paren">(</span><em>name</em>, <em>data='veast'</em>, <em>fault=None</em>, <em>comp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.plotprofile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot profile.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>name      : Name of the profile.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.setLonLatZ">
+<code class="descname">setLonLatZ</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em>, <em>z</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.setLonLatZ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets longitude, latitude and depth.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.setXYZ">
+<code class="descname">setXYZ</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>z</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.setXYZ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the values of x, y and z.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.strikedip2normal">
+<code class="descname">strikedip2normal</code><span class="sig-paren">(</span><em>strike</em>, <em>dip</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.strikedip2normal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a vector normal to a plane with a given strike and dip.
+strike and dip in radians…</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.total2deviatoric">
+<code class="descname">total2deviatoric</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.total2deviatoric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the deviatoric stress tensor dS = S - Tr(S)I</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.stressfield.writeProfile2File">
+<code class="descname">writeProfile2File</code><span class="sig-paren">(</span><em>name</em>, <em>filename</em>, <em>fault=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.stressfield.writeProfile2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the profile named ‘name’ to the ascii file filename.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="strainfield.html" title="previous chapter">strainfield class</a></li>
+      <li>Next: <a href="tidalfit.html" title="next chapter">tidalfit class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/stressfield.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/stressfield.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

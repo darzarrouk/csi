@@ -1,0 +1,584 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>srcmodsolution class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="strainfield class" href="strainfield.html" />
+    <link rel="prev" title="sopac class" href="sopac.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="srcmodsolution-class">
+<h1>srcmodsolution class<a class="headerlink" href="#srcmodsolution-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.srcmodsolution">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">srcmodsolution</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>ellps='WGS84'</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.srcmodsolution.BuildPatches">
+<code class="descname">BuildPatches</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.BuildPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build patches from the FSP/SLP description</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.Flat23D">
+<code class="descname">Flat23D</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.Flat23D" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a line in the fault plane referential, returns the 3d x, y, z coordinates of that line.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.Patch2Trace">
+<code class="descname">Patch2Trace</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.Patch2Trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a fake trace from the patches.
+&#64;todo plot only the shallowest fault trace</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.addfaults">
+<code class="descname">addfaults</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.addfaults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add some other faults to plot with the modeled one.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>filename      : Name of the fault file (GMT lon lat format).</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.addpatch">
+<code class="descname">addpatch</code><span class="sig-paren">(</span><em>patch, slip=[0, 0, 0]</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.addpatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a patch to the list.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>patch     : Geometry of the patch to add</li>
+<li>slip      : List of the strike, dip and tensile slip.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.assembleCd">
+<code class="descname">assembleCd</code><span class="sig-paren">(</span><em>datas</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.assembleCd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles the data covariance matrixes that have been built by each data structure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.assembleGFs">
+<code class="descname">assembleGFs</code><span class="sig-paren">(</span><em>datas</em>, <em>polys=0</em>, <em>slipdir='sd'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.assembleGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assemble the Green’s functions that have been built using build GFs.
+This routine spits out the General G and the corresponding data vector d.
+Args:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">datas         : data sets to use as inputs (from gps and insar).</p>
+</li>
+<li><dl class="first docutils">
+<dt>polys <span class="classifier-delimiter">:</span> <span class="classifier">0 -&gt; nothing additional is estimated</span></dt>
+<dd><p class="first">1 -&gt; estimate a constant offset
+3 -&gt; estimate z = ax + by + c
+4 -&gt; estimate z = axy + bx + cy + d
+‘full’ -&gt; Only for GPS, estimates a rotation, translation and scaling with</p>
+<blockquote class="last">
+<div><p>respect to the center of the network (Helmert transform).</p>
+</div></blockquote>
+</dd>
+</dl>
+</li>
+<li><p class="first">slipdir       : which directions of slip to include. can be any combination of s, d and t.</p>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.assembled">
+<code class="descname">assembled</code><span class="sig-paren">(</span><em>datas</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.assembled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assembles the data vector corresponding to the stored green’s functions.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>datas         : list of the data object involved (from gps and insar).</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.buildCm">
+<code class="descname">buildCm</code><span class="sig-paren">(</span><em>sigma</em>, <em>lam</em>, <em>lam0=None</em>, <em>extra_params=None</em>, <em>lim=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.buildCm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a model covariance matrix using the equation described in Radiguet et al 2010.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>sigma         : Amplitude of the correlation.</li>
+<li>lam           : Characteristic length scale.</li>
+<li>lam0          : Normalizing distance (if None, lam0=min(distance between patches)).</li>
+<li>extra_params  : Add some extra values on the diagonal.</li>
+<li>lim           : Limit distance parameter (see self.distancePatchToPatch)</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.buildGFs">
+<code class="descname">buildGFs</code><span class="sig-paren">(</span><em>data</em>, <em>vertical=True</em>, <em>slipdir='sd'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.buildGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the Green’s function matrix based on the discretized fault.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data      : data object from gps or insar.</li>
+<li>vertical  : if True, will produce green’s functions for the vertical displacements in a gps object.</li>
+<li>slipdir   : direction of the slip along the patches. can be any combination of s (strikeslip), d (dipslip) and t (tensile).</li>
+</ul>
+</div></blockquote>
+<p>The Green’s function matrix is stored in a dictionary. Each entry of the dictionary is named after the corresponding dataset. Each of these entry is a dictionary that contains ‘strikeslip’, ‘dipslip’ and/or ‘tensile’.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.computeSlipContour">
+<code class="descname">computeSlipContour</code><span class="sig-paren">(</span><em>value=2.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.computeSlipContour" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the slip contour for one value only.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.computeSlipDirection">
+<code class="descname">computeSlipDirection</code><span class="sig-paren">(</span><em>scale=1.0</em>, <em>factor=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.computeSlipDirection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the segment indicating the slip direction.
+scale can be a real number or a string in ‘total’, ‘strikeslip’, ‘dipslip’ or ‘tensile’</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.computetotalslip">
+<code class="descname">computetotalslip</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.computetotalslip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the total slip.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.deletepatch">
+<code class="descname">deletepatch</code><span class="sig-paren">(</span><em>patch</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.deletepatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes a patch.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>patch     : index of the patch to remove.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.deletepatches">
+<code class="descname">deletepatches</code><span class="sig-paren">(</span><em>tutu</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.deletepatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deletes a list of patches.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.distancePatchToPatch">
+<code class="descname">distancePatchToPatch</code><span class="sig-paren">(</span><em>patch1</em>, <em>patch2</em>, <em>distance='center'</em>, <em>lim=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.distancePatchToPatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Measures the distance between two patches.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>patch1    : geometry of the first patch.</li>
+<li>patch2    : geometry of the second patch.</li>
+<li><dl class="first docutils">
+<dt>distance <span class="classifier-delimiter">:</span> <span class="classifier">distance estimation mode</span></dt>
+<dd>center : distance between the centers of the patches.
+no other method is implemented for now.</dd>
+</dl>
+</li>
+<li>lim       : if not None, list of two float, the first one is the distance above which d=lim[1].</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.duplicateFault">
+<code class="descname">duplicateFault</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.duplicateFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a copy of the fault.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.file2trace">
+<code class="descname">file2trace</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.file2trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the fault trace directly from a file.
+Format is:
+Lon Lat</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>filename      : Name of the fault file.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.getHelmertMatrix">
+<code class="descname">getHelmertMatrix</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.getHelmertMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a Helmert matrix for a gps data set.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.getcenter">
+<code class="descname">getcenter</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.getcenter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the center of one patch.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>p    : Patch geometry.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.getcenters">
+<code class="descname">getcenters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.getcenters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the center of the patches.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.getpatchgeometry">
+<code class="descname">getpatchgeometry</code><span class="sig-paren">(</span><em>patch</em>, <em>center=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.getpatchgeometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the patch geometry as needed for okada85.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>patch         : index of the wanted patch or patch;</li>
+<li>center        : if true, returns the coordinates of the center of the patch. if False, returns the UL corner.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.getslip">
+<code class="descname">getslip</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.getslip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the slip vector for a patch.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.initializeslip">
+<code class="descname">initializeslip</code><span class="sig-paren">(</span><em>n=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.initializeslip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Re-initializes the fault slip array.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>n     : Number of slip values. If None, it’ll take the number of patches.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.ll2xy">
+<code class="descname">ll2xy</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.ll2xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do the lat lon 2 utm transform</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.mergePatches">
+<code class="descname">mergePatches</code><span class="sig-paren">(</span><em>p1</em>, <em>p2</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.mergePatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merges 2 patches that have common corners.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>p1    : index of the patch #1.</li>
+<li>p2    : index of the patch #2.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>ref='utm'</em>, <em>figure=134</em>, <em>add=False</em>, <em>maxdepth=None</em>, <em>show=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the available elements of the fault.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>ref           : Referential for the plot (‘utm’ or ‘lonlat’).</li>
+<li>figure        : Number of the figure.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.readFSP">
+<code class="descname">readFSP</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.readFSP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the fault geometry from a FSP file that has only one segment (will implement the multisegment
+later ‘cause it is a pain in the <a href="#id1"><span class="problematic" id="id2">**</span></a><a href="#id3"><span class="problematic" id="id4">*</span></a>)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.readInput">
+<code class="descname">readInput</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.readInput" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads both the fsp and slp files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.readSLP">
+<code class="descname">readSLP</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.readSLP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads the slip distribution and the geometry from a .slp file (SRCMOD format).
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename  : Input file name.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.saveGFs">
+<code class="descname">saveGFs</code><span class="sig-paren">(</span><em>dtype='d'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.saveGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the Green’s functions in different files
+Args:</p>
+<blockquote>
+<div>dtype       : Format of the binary data saved.</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.setGFs">
+<code class="descname">setGFs</code><span class="sig-paren">(</span><em>data, strikeslip=[None, None, None], dipslip=[None, None, None], tensile=[None, None, None], vertical=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.setGFs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stores the Green’s functions matrices into the fault structure.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data          : Data structure from gps or insar.</li>
+<li>strikeslip    : List of matrices of the Strikeslip Green’s functions, ordered E, N, U</li>
+<li>dipslip       : List of matrices of the dipslip Green’s functions, ordered E, N, U</li>
+<li>tensile       : List of matrices of the tensile Green’s functions, ordered E, N, U</li>
+</ul>
+<p>If you provide InSAR GFs, these need to be projected onto the LOS direction already.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.setGFsFromFile">
+<code class="descname">setGFsFromFile</code><span class="sig-paren">(</span><em>data</em>, <em>strikeslip=None</em>, <em>dipslip=None</em>, <em>tensile=None</em>, <em>vertical=False</em>, <em>dtype='d'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.setGFsFromFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the Green’s functions from binary files. Be carefull, these have to be in the
+good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and
+if insar, GF are projected already)
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data          : Data structure from gps or insar.</li>
+<li>strikeslip    : File containing the Green’s functions for strikeslip displacements.</li>
+<li>dipslip       : File containing the Green’s functions for dipslip displacements.</li>
+<li>tensile       : File containing the Green’s functions for tensile displacements.</li>
+<li>vertical      : Deal with the UP component (gps: default is false, insar, it will be true anyway).</li>
+<li>dtype         : Type of binary data.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.slip2dis">
+<code class="descname">slip2dis</code><span class="sig-paren">(</span><em>data</em>, <em>patch</em>, <em>slip=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.slip2dis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the surface displacement at the data location using okada.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>data          : data object from gps or insar.</li>
+<li>patch         : number of the patch that slips</li>
+<li><dl class="first docutils">
+<dt>slip <span class="classifier-delimiter">:</span> <span class="classifier">if a number is given, that is the amount of slip along strike</span></dt>
+<dd>if three numbers are given, that is the amount of slip along strike, along dip and opening
+if None, values from slip are taken</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.surfacesimulation">
+<code class="descname">surfacesimulation</code><span class="sig-paren">(</span><em>box=None</em>, <em>disk=None</em>, <em>err=None</em>, <em>npoints=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.surfacesimulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>box       : Can be a list of [minlon, maxlon, minlat, maxlat].</li>
+<li>disk      : list of [xcenter, ycenter, radius, n]</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.trace">
+<code class="descname">trace</code><span class="sig-paren">(</span><em>Lon</em>, <em>Lat</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the surface fault trace.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>Lon           : Array/List containing the Lon points.</li>
+<li>Lat           : Array/List containing the Lat points.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.trace2xy">
+<code class="descname">trace2xy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.trace2xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transpose the surface trace of the fault into the UTM reference.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.writeEDKSgeometry">
+<code class="descname">writeEDKSgeometry</code><span class="sig-paren">(</span><em>ref=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.writeEDKSgeometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>This routine spits out 2 files:
+filename.lonlatdepth: Lon center | Lat Center | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID
+filename.END: Easting (km) | Northing (km) | Depth Center (km) | Strike | Dip | Length (km) | Width (km) | patch ID</p>
+<p>These files are to be used with /home/geomod/dev/edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>ref           : Lon and Lat of the reference point. If None, the patches positions is in the UTM coordinates.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.writeEDKSsubParams">
+<code class="descname">writeEDKSsubParams</code><span class="sig-paren">(</span><em>data</em>, <em>edksfilename</em>, <em>amax=None</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.writeEDKSsubParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the subParam file needed for the interpolation of the green’s function in EDKS.
+Francisco’s program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source,
+then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant’s principle.
+If amax is specified, the minimum size is fixed.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data          : Data object from gps or insar.</li>
+<li>edksfilename  : Name of the file containing the kernels.</li>
+<li>amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant’s principle.</li>
+<li>plot          : Activates plotting.</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>filename      : Name of the subParams file created.</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.writePatches2File">
+<code class="descname">writePatches2File</code><span class="sig-paren">(</span><em>filename</em>, <em>add_slip=None</em>, <em>scale=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.writePatches2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the patch corners in a file that can be used in psxyz.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename      : Name of the file.</li>
+<li>add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total.</li>
+<li>scale         : Multiply the slip value by a factor.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.writeSlipContour2File">
+<code class="descname">writeSlipContour2File</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.writeSlipContour2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the slip contour to a file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.writeSlipDirection2File">
+<code class="descname">writeSlipDirection2File</code><span class="sig-paren">(</span><em>filename</em>, <em>scale=1.0</em>, <em>factor=1.0</em>, <em>neg_depth=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.writeSlipDirection2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a psxyz compatible file to draw lines starting from the center of each patch,
+indicating the direction of slip.
+Tensile slip is not used…
+scale can be a real number or a string in ‘total’, ‘strikeslip’, ‘dipslip’ or ‘tensile’</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.srcmodsolution.xy2ll">
+<code class="descname">xy2ll</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.srcmodsolution.xy2ll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do the utm to lat lon transform</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="sopac.html" title="previous chapter">sopac class</a></li>
+      <li>Next: <a href="strainfield.html" title="next chapter">strainfield class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/srcmodsolution.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/srcmodsolution.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

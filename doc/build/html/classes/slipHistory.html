@@ -1,0 +1,225 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>slipHistory class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="sopac class" href="sopac.html" />
+    <link rel="prev" title="seismicplot class" href="seismicplot.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="sliphistory-class">
+<h1>slipHistory class<a class="headerlink" href="#sliphistory-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.slipHistory">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">slipHistory</code><span class="sig-paren">(</span><em>fault</em>, <em>direction='sd'</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.slipHistory" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.slipHistory.initializeTimeSeries">
+<code class="descname">initializeTimeSeries</code><span class="sig-paren">(</span><em>time=None</em>, <em>start=None</em>, <em>end=None</em>, <em>increment=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.slipHistory.initializeTimeSeries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the time series of slip for each patch.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>time          : list of datetime instances</li>
+<li>start         : datetime instance of the first period</li>
+<li>end           : datetime instance of the ending period</li>
+<li>increment     : increment of time between periods</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.slipHistory.plotPatch">
+<code class="descname">plotPatch</code><span class="sig-paren">(</span><em>patch</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.slipHistory.plotPatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the time series of slip for one patch or one tent.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>patch <span class="classifier-delimiter">:</span> <span class="classifier">Can be a patch or a tent (given the fault </span></dt>
+<dd>object)</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.slipHistory.plotSlip">
+<code class="descname">plotSlip</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.slipHistory.plotSlip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the slip at a given time</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>time          : instance of datetime</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.slipHistory.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>datas</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.slipHistory.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>For all the data included in data, build time series of displacement.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>datas <span class="classifier-delimiter">:</span> <span class="classifier">List of data sets.</span></dt>
+<dd>Time series will be initialized given the time
+vector of slip.</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.slipHistory.slip2fault">
+<code class="descname">slip2fault</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.slipHistory.slip2fault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the slip at a time period ‘time’ into the fault object.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>time          : Instance of datetime</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.slipHistory.slipattime">
+<code class="descname">slipattime</code><span class="sig-paren">(</span><em>time</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.slipHistory.slipattime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the slip at a given time</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>time <span class="classifier-delimiter">:</span> <span class="classifier">Instance of datetime or list or array of </span></dt>
+<dd>instances of datetime</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>slip <span class="classifier-delimiter">:</span> <span class="classifier">Dictionary of ‘strikeslip’, ‘dipslip’ and </span></dt>
+<dd>‘tensile’</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.slipHistory.tbayes2history">
+<code class="descname">tbayes2history</code><span class="sig-paren">(</span><em>tbayes</em>, <em>model='mean'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.slipHistory.tbayes2history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the results of a timebayes instance into time series of fault
+slip.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>tbayes        : Instance of timebayes. Need to run walkWithTime</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>model <span class="classifier-delimiter">:</span> <span class="classifier">Which model do we want? </span></dt>
+<dd>Can be ‘mean’, ‘median’
+or any integer number giving the index of the model</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="seismicplot.html" title="previous chapter">seismicplot class</a></li>
+      <li>Next: <a href="sopac.html" title="next chapter">sopac class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/slipHistory.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/slipHistory.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

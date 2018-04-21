@@ -1,0 +1,284 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>strainfield class &#8212; csi 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="stressfield class" href="stressfield.html" />
+    <link rel="prev" title="srcmodsolution class" href="srcmodsolution.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="strainfield-class">
+<h1>strainfield class<a class="headerlink" href="#strainfield-class" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="csi.strainfield">
+<em class="property">class </em><code class="descclassname">csi.</code><code class="descname">strainfield</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>ellps='WGS84'</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.strainfield.closeHDF5">
+<code class="descname">closeHDF5</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.closeHDF5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Closes the input hdf5 file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.computeDilatationRate">
+<code class="descname">computeDilatationRate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.computeDilatationRate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the dilatation rate from the strain rate tensor.
+This is defined as the trace of the strain rate tensor.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.computeRotationRateTensor">
+<code class="descname">computeRotationRateTensor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.computeRotationRateTensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the rotation rate tensor on each point of the grid and stores that in
+self.W. The rotation rate tensor is the anti-symmetric part of the velocity 
+gradient.   
+It writes</p>
+<blockquote>
+<div>self.W = 1/2 (L - L’).</div></blockquote>
+<p>(Tape et al 2009, GJI)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.computeStrainRateTensor">
+<code class="descname">computeStrainRateTensor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.computeStrainRateTensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the strain rate tensor on each point of the grid and stores that in
+self.D. The strain rate tensor is the symmetric part of the velocity gradient.
+It writes</p>
+<blockquote>
+<div>self.D = 1/2 (L + L’).</div></blockquote>
+<p>(Tape et al 2009, GJI)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.getprofile">
+<code class="descname">getprofile</code><span class="sig-paren">(</span><em>name</em>, <em>loncenter</em>, <em>latcenter</em>, <em>length</em>, <em>azimuth</em>, <em>width</em>, <em>data='dilatation'</em>, <em>comp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.getprofile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project the wanted quantity onto a profile. 
+Works on the lat/lon coordinates system.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>name              : Name of the profile.</li>
+<li>loncenter         : Profile origin along longitude.</li>
+<li>latcenter         : Profile origin along latitude.</li>
+<li>length            : Length of profile.</li>
+<li>azimuth           : Azimuth in degrees.</li>
+<li>width             : Width of the profile.</li>
+<li>data              : name of the data to use (‘dilatation’, ‘veast’, ‘vnorth’, ‘projection’)</li>
+<li>comp              : if data is ‘projection’, comp is the name of the desired projection.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.intersectProfileFault">
+<code class="descname">intersectProfileFault</code><span class="sig-paren">(</span><em>name</em>, <em>fault</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.intersectProfileFault" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the distance between the fault/profile intersection and the profile center.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>name      : name of the profile.</li>
+<li>fault     : fault object from verticalfault.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.lonlat2xy">
+<code class="descname">lonlat2xy</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.lonlat2xy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the transformation in self to convert  lon/lat vector to x/y utm.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>lon           : Longitude array.</li>
+<li>lat           : Latitude array.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.output2GRD">
+<code class="descname">output2GRD</code><span class="sig-paren">(</span><em>outfile</em>, <em>data='dilatation'</em>, <em>comp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.output2GRD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Output the desired field to a grd file.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>outfile       : Name of the outputgrd file.</li>
+<li><dl class="first docutils">
+<dt>data <span class="classifier-delimiter">:</span> <span class="classifier">Type of data to output. Can be ‘veast’, ‘vnorth’, </span></dt>
+<dd>‘dilatation’, 
+‘projection’,
+‘strainrateprojection’</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>comp <span class="classifier-delimiter">:</span> <span class="classifier">if data is projection or ‘strainrateprojection’, give the name of the</span></dt>
+<dd>projection you want.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>data='veast'</em>, <em>faults=None</em>, <em>gps=None</em>, <em>figure=123</em>, <em>ref='utm'</em>, <em>legend=False</em>, <em>comp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot one component of the strain field.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>data      : Type of data to plot. Can be ‘dilatation’, ‘veast’, ‘vnorth’</li>
+<li>faults    : list of faults to plot.</li>
+<li>gps       : list of gps networks to plot.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.plotprofile">
+<code class="descname">plotprofile</code><span class="sig-paren">(</span><em>name</em>, <em>data='veast'</em>, <em>fault=None</em>, <em>comp=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.plotprofile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot profile.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>name      : Name of the profile.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.projectStrainRateTensor">
+<code class="descname">projectStrainRateTensor</code><span class="sig-paren">(</span><em>name</em>, <em>angle</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.projectStrainRateTensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Projects the strain rate tensor onto a vector that has an angle ‘angle’
+with the north. The unit vector is :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>V = [      0      ]</dt>
+<dd>[ -cos(angle) ]
+[  sin(angle) ]</dd>
+</dl>
+</div></blockquote>
+<p>The projection is obtained by doing D.V on each grid point. We then get
+the scalar product of the projection with V.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.projectVelocities">
+<code class="descname">projectVelocities</code><span class="sig-paren">(</span><em>name</em>, <em>angle</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.projectVelocities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Projects the velocity field along a certain angle.
+The output is stored in the self.velproj dictionary and has a name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.read_from_h5">
+<code class="descname">read_from_h5</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.read_from_h5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the Continuous strain field from a hdf5 file.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>filename      : Name of the input file.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.writeProfile2File">
+<code class="descname">writeProfile2File</code><span class="sig-paren">(</span><em>name</em>, <em>filename</em>, <em>fault=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.writeProfile2File" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the profile named ‘name’ to the ascii file filename.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.strainfield.xy2lonlat">
+<code class="descname">xy2lonlat</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.strainfield.xy2lonlat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the transformation in self to convert x.y vectors to lon/lat.
+Args:</p>
+<blockquote>
+<div><ul class="simple">
+<li>x             : Xarray</li>
+<li>y             : Yarray</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="../classes.html">Classes</a><ul>
+  <li><a href="../miscclasses.html">Misc. Classes</a><ul>
+      <li>Previous: <a href="srcmodsolution.html" title="previous chapter">srcmodsolution class</a></li>
+      <li>Next: <a href="stressfield.html" title="next chapter">stressfield class</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/classes/strainfield.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/classes/strainfield.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
