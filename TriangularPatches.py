@@ -542,6 +542,17 @@ class TriangularPatches(Fault):
         # all done in one line
         return np.array([self.getpatchgeometry(p)[6] for p in self.patch])
 
+    def getDepths(self, center=True):
+        '''
+        Returns an array of depths.
+
+        Kwargs:
+            * center        : If True, returns the center of the patches
+        '''
+
+        # All done in one line
+        return np.array([self.getpatchgeometry(p, center=True)[2] for p in self.patch]) 
+
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
         '''
         Writes the patch corners in a file that can be used in psxyz.

@@ -2950,8 +2950,7 @@ class Fault(SourceInv):
         '''
 
         # Make azimuth positive
-        if azimuth < 0.:
-            azimuth += 360.
+        azimuth[azimuth< 0.] += 360.
         
         # Get strikes and dips
         #if self.patchType is 'triangletent':
@@ -2966,8 +2965,8 @@ class Fault(SourceInv):
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
 
         # If azimuth within ]90, 270], change rotation
-        if azimuth*(180./np.pi) > 90. and azimuth*(180./np.pi)<=270.:
-            rotation += np.pi
+        rotation[np.logical_and(azimuth*(180./np.pi)>90.,azimuth*(180./np.pi)<=270.)]\
+                += np.pi
 
         # Store rotation angles
         self.rotation = rotation.copy()
@@ -2999,6 +2998,11 @@ class Fault(SourceInv):
 
         # For now, convergence is constant alnog strike
         azimuth, rate = convergence
+
+        # Check 
+        if type(azimuth) in (float, int):
+            azimuth = np.ones((self.slip.shape[0], ))*azimuth
+            rate = np.ones((self.slip.shape[0], ))*rate
 
         # Create the holders
         Gar = np.zeros(Gss.shape)
