@@ -452,7 +452,7 @@ class seismic(SourceInv):
     def plot(self,synth_vector=None,nc=3,nl=5, title = 'Seismic data', sta_lst=None, basename=None,
              figsize=[11.69,8.270],xlims=None,ylims=[-20.,20.],bottom=0.06,top=0.87,left=0.06,right=0.95,wspace=0.25,
              hspace=0.35,grid=True,axis_visible=True,inc=False,Y_max=False,Y_units='mm',fault=None,
-             basemap=True,globalbasemap=False,basemap_dlon=2.5,basemap_dlat=2.5,endclose=True,sort=None):
+             basemap=True,globalbasemap=False,basemap_dlon=2.5,basemap_dlat=2.5,endclose=True,sort=None,alignENZ=False):
         '''
         Plot seismic traces
         Args:
@@ -469,6 +469,7 @@ class seismic(SourceInv):
            * endclose:          if True, close figure
            * sort:              ['distance' or 'azimuth'] you can choose to sort 
                                 the stations by distance to hypo. or by azimuth
+           * alignENZ:          if True, 3 columns are plotted (ENU) and missing traces are left blank
         '''
         
         # Station list
@@ -476,6 +477,11 @@ class seismic(SourceInv):
             sta_name=copy.deepcopy(self.sta_name)
         else:
             sta_name=copy.deepcopy(sta_lst)
+
+        # Check something
+        if nc != 3 and alignENZ:
+            nc = 3
+            print('nc was forced to 3 because alignENU is True')
 
         # if sort, do it
         if sort is not None:
@@ -550,6 +556,14 @@ class seismic(SourceInv):
                 fig = plt.figure(figsize=figsize)
                 fig.subplots_adjust(bottom=bottom,top=top,left=left,right=right,wspace=wspace,hspace=hspace)
             t1 = np.arange(nsamp,dtype='double')*self.d[dkey].delta + self.d[dkey].b - self.d[dkey].o
+            
+            # Skip subplot if alignENZ is set
+            comp = self.d[dkey].kcmpnm[-1] # Get waveform orientation
+            if alignENZ:
+                col={'E':0,'N':1,'Z':2}
+                while (count-1)%3 != col[comp]:
+                    count+=1
+
             ax = plt.subplot(nl,nc,count)
             if synth_vector is not None:   
                 i = sta_lims[dkey]
