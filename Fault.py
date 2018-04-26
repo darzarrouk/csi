@@ -2948,6 +2948,10 @@ class Fault(SourceInv):
             * rotatedGar    : Displacements along azimuth
             * rotatedGrp    : Displacements perp. to azimuth direction
         '''
+        
+        # Check nature of azimuth (float or array)
+        if type(azimuth) in [float,int]:
+            azimuth = azimuth*np.ones(self.N_slip)
 
         # Make azimuth positive
         azimuth[azimuth< 0.] += 360.
