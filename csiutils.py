@@ -53,7 +53,8 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
                 
     .. Returns:
           
-        * None'''
+        * None
+    '''
 
     if interpolation:
 
@@ -181,14 +182,16 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
 def coord2prof(csiobject, xc, yc, length, azimuth, width, minNum=5):
     '''
     Routine returning the profile
+
     Args:
         * csiobject         : An instance of a csi class that has
-                                 x and y attributes
+                              x and y attributes
         * xc                : X pos of center
         * yc                : Y pos of center
         * length            : length of the profile.
         * azimuth           : azimuth of the profile.
         * width             : width of the profile.
+
     Returns:
         dis                 : Distance from the center
         norm                : distance perpendicular to profile

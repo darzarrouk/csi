@@ -16,8 +16,6 @@ Here are listed all the data classes available in csi. These include geodetic da
     classes/timeseries
     classes/seismiclocations
     classes/insartimeseries
-    classes/gpssopactimeseries
-    classes/gpsstation
     classes/gpstimeseries
  
 

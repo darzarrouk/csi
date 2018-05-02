@@ -43,8 +43,6 @@ from .tsunami import tsunami
 from .insartimeseries import insartimeseries
 from .gpstimeseries import gpstimeseries
 from .timeseries import timeseries
-#from .gpssopactimeseries import gpstimeseries
-#from .gpsstation import gpsstation
 
 ## Green's functions
 from . import okadafull
@@ -71,6 +69,8 @@ from .seismicplot import seismicplot
 from .tidalfit import tidalfit
 from .functionfit import functionfit
 from . import csiutils as utils
+from . import eulerPoleUtils 
+from . import timefnutils
 
 #from timefnutils import *
 

@@ -15,7 +15,7 @@ CSI user manual
    CSIpublications
    classes
 
-CSI stands for Classic Slip Inversion. In brief, it allows to quickly build scripts that will allow to obtain the slip distribution along a fault for an earthquake given some geodetuc and seismological data. Here is an example of what kind of model you can get
+CSI stands for Classic Slip Inversion. In brief, it allows to quickly build scripts that will allow to obtain the slip distribution along a fault for an earthquake given some geodetic and seismological data. Here is an example of what kind of model you can get.
 
 Put a nice figure here
 
@@ -33,13 +33,16 @@ Here is a non-exhaustive list of basic capabilities:
   - Simplifies construction of multi-patch faults with rectangular, triangular and node based parameterization
   - For each of the fault parameterizations, allows construction of GFs (homogeneous or stratified elastic structure)
   - Handles various geodetic data types
+
     - SAR (offsets or interferometry)
     - GPS (hence tide gauges which is a vertical GPS, as everyone knows)
     - Optical cross-correlation measurements 
     - Manipulate many of these
-      - Read, plot, make profiles of InSAR time series (no time-dependent modeling yet).
-      - Extracts empirical covariance functions from satellite imagery data
-      - Downsample satellite imagery data: gradient based (Jonson et al 2002), curvature based (Simons et al 2002) or model based (Lohman et al 2005)
+
+        - Read, plot, make profiles of InSAR time series (no time-dependent modeling yet).
+        - Extracts empirical covariance functions from satellite imagery data
+        - Downsample satellite imagery data: gradient based (Jonson et al 2002), curvature based (Simons et al 2002) or model based (Lohman et al 2005)
+
   - Makes profiles across displacements fields (any kind), plot faults in 2-3D, plot displacement maps and vectors, coastlines, political boundaries, etc
   - Tools for fault slip inversions
     - Solves for slip distribution using constrained LSQ or classic MCMC (less than ~40 parameters). 
@@ -47,6 +50,9 @@ Here is a non-exhaustive list of basic capabilities:
     - Some tools to handle kinematic slip inversions.
 
 To cite CSI, please use the doi of the code provided by Github.
+
+Contacts
+===============================
 
 To contact us, please visit our websites:
 

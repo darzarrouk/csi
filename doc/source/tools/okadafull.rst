@@ -1,6 +1,6 @@
-EDKS class
+okadafull tools
 ===============================
 
-.. autoclass:: csi.EDKS
+.. automodule:: csi.okadafull
     :members:
 

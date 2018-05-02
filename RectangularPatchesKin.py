@@ -23,17 +23,25 @@ from . import okadafull
 
 
 class RectangularPatchesKin(RectangularPatches):
+    '''
+    A class that can handle what is required for a kinematic inversion 
+    with AlTar for a fault with rectangular patches.
+
+    Args:
+        * name      : Name of the fault.
+
+    Kwargs:
+        * utmzone   : UTM zone  (optional, default=None)
+        * lon0      : Longitude of the center of the UTM zone
+        * lat0      : Latitude of the center of the UTM zone
+        * ellps     : ellipsoid (optional, default='WGS84')
+        * verbose   : Speak to me (default=True)
+    '''
     
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
-        '''
-        Args:
-            * name      : Name of the fault.
-            * f_strike: strike angle in degrees (from North)
-            * f_dip:    dip angle in degrees (from horizontal)
-        * f_length: length of the fault (i.e., along strike)
-            * f_width: width of the fault (i.e., along dip)        
-            * utmzone   : UTM zone.
-        '''
+    # ----------------------------------------------------------------------
+    # Initialize class
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, 
+                       lat0=None, verbose=True):
         
         # Parent class init
         super(RectangularPatchesKin,self).__init__(name,
@@ -74,16 +82,23 @@ class RectangularPatchesKin(RectangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def setHypoXY(self,x,y, UTM=True):
         '''
         Set hypocenter attributes from x,y
-        Outputs: East/West UTM/Lon coordinates, depth attributes
+        
+        East/West UTM/Lon coordinates, depth attributes are set
+
         Args:
-            * x:   east  coordinates 
-            * y:   north coordinates
-            * UTM: default=True, x and y is in UTM coordinates (in km)
-                   if    ==False x=lon and y=lat (in deg)
+            * x     : east  coordinates 
+            * y     : north coordinates
+            * UTM   : default=True, x and y is in UTM coordinates (in km)
+                        if    ==False x=lon and y=lat (in deg)
+
+        Returns:
+            * None
         '''
 
         # If UTM==False, convert x=lon/y=lat to UTM
@@ -114,13 +129,19 @@ class RectangularPatchesKin(RectangularPatches):
         
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def setHypoOnFault(self,h_strike,h_dip):
         '''
-        Set hypocenter attributes from on fault coordinates h_strike, h_dip
+        Set hypocenter attributes from fault coordinates
+
         Args:
             * h_strike: Along strike distance from the center of the top left patch
             * h_dip:    Along dip distance from the center of the top left patch
+
+        Returns:
+            * None
         '''
         
         # Fault map must exists
@@ -180,7 +201,9 @@ class RectangularPatchesKin(RectangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def read3DsquareGrid(self, filename):
         '''
         This routine read the square fault geometry
@@ -188,6 +211,12 @@ class RectangularPatchesKin(RectangularPatches):
 
         These files are to be used with edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
         or edks/MPI_EDKS/calcGreenFunctions_EDKS_subSquares.py
+
+        Args:
+            * filename      : name of output file
+
+        Returns:
+            * None
         '''
 
         # Open the output file
@@ -280,13 +309,21 @@ class RectangularPatchesKin(RectangularPatches):
         self.equivpatchll = self.patchll
         # All done
         return    
+    # ----------------------------------------------------------------------
     
+    # ----------------------------------------------------------------------
     def getHypoToCenter(self, p, sd_dist=False):
         ''' 
         Get patch center coordinates from hypocenter
+
         Args:
             * p      : Patch number.
+
+        Kwargs:
             * sd_dist: If true, will return along dip and along strike distances
+
+        Returns:
+            * Hypocenter coordinates
         '''
 
         # Check strike/dip/hypo assigmement
@@ -322,15 +359,23 @@ class RectangularPatchesKin(RectangularPatches):
             y = p_y - self.hypo_y
             z = p_z - self.hypo_z
             return x,y,z
-
+    # ----------------------------------------------------------------------
     
+    # ----------------------------------------------------------------------
     def setFaultMap(self,Nstrike,Ndip,leading='strike',check_depth=True):
         '''
         Set along dip and along strike indexing for patches
+
         Args:
-            * Nstrike: number of patches along strike
-            * Ndip   : number of patches along dip
-            * leading: leadinf index of self.patch (can be 'strike' or 'dip'
+            * Nstrike       : number of patches along strike
+            * Ndip          : number of patches along dip
+
+        Kwargs:
+            * leading       : leadinf index of self.patch (can be 'strike' or 'dip')
+            * check_depth   : CHeck patch depths and indexes are consistent
+
+        Returns:
+            * None
         '''
 
         # Check input parameters
@@ -375,12 +420,20 @@ class RectangularPatchesKin(RectangularPatches):
                         flag  = False
                     assert depth==np.round(z,1), 'Mapping error: inconsistent depth'
 
+        # All done
+        return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def initializekinmodel(self, n=None):
         '''
         Re-initializes the fault slip array to zero values.
-        Args:
+
+        Kwargs:
             * n     : Number of slip values. If None, it'll take the number of patches.
+
+        Returns:
+            * None
         '''
         self.initializeslip(n=n)
         self.tr = np.zeros((self.N_slip,))
@@ -388,15 +441,20 @@ class RectangularPatchesKin(RectangularPatches):
         
         # All done
         return
+    # ----------------------------------------------------------------------
 
-
+    # ----------------------------------------------------------------------
     def buildSubGrid(self,nbp_strike,nbp_dip):
         '''
         Define a subgrid of point sources on the fault (multiple point src per patches)
         All patches must have the same size
+
         Args: 
             * p_nstrike:   Number of subgrid points per patch along strike 
             * p_ndip:      Number of subgrid points per patch along dip            
+
+        Returns:
+            * None
         '''
         
         # Init Grid size
@@ -449,13 +507,24 @@ class RectangularPatchesKin(RectangularPatches):
                 
         # All done
         return 
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def setMu(self,model_file,modelformat='CPS'):
         '''
         Set shear modulus values for seismic moment calculation
         from model_file:
         Thickness  Vp  Vs  Rho (...) if format == 'CPS'
         fort.2 (Kikuchi-Kanamori) if format == 'KK'
+
+        Args:
+            * model_file        : Input file
+
+        Kwargs:
+            * modelformat       : Format of the model file
+
+        Returns:
+            * None
         '''
 
         # Check modelformat
@@ -509,12 +578,20 @@ class RectangularPatchesKin(RectangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def setMuLambdaRho(self,model_file):
         '''
         Set shear modulus values for seismic moment calculation
         from model_file:
         Thickness  Vp  Vs  Rho (...)
+
+        Args:
+            * model_file    : Input file name
+
+        Retunrs:
+            * None
         '''
         
         # Read model file
@@ -556,19 +633,28 @@ class RectangularPatchesKin(RectangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
-    def buildKK(self,data,rakes=[0.,90.],Mu=None, slip=1.0, coord0 = None, causal=False, filter=True):
+    # ----------------------------------------------------------------------
+    def buildKK(self,data,rakes=[0.,90.],Mu=None, slip=1.0, 
+                          coord0=None, causal=False, filter=True):
         '''
         Build Kikuchi-Kanamori Green's functions
+
         Args:
             * data: teleseismic data object
+
+        Kwargs:
             * rake: Rake angles (default [0.,90.])          
             * Mu: Shear modulus (optional)
             * slip: Slip amplitude for tsunami GF calculation (default: 1. m)
             * coord0: lon,lat,dep of reference point to shift GFs (optional)
             * causal: if True impose causality of the source (no slip before time=0.)
-            * filter: if True, filter the Green's functions (according to i_master parameters in the KK run directory)
+            * filter: if True, filter the Green's functions 
+                      (according to i_master parameters in the KK run directory)
                       if False, do not filter the Green's functions
+        Returns:
+            * None
         '''
 
         print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
@@ -651,24 +737,37 @@ class RectangularPatchesKin(RectangularPatches):
                 
         # All done
         return                        
-                
+    # ----------------------------------------------------------------------
     
-    def buildKinGFsFromDB(self, data, wave_engine, slip, rakes, rake_key = None, Mu = None, filter_coef=None, differentiate=False):
+    # ----------------------------------------------------------------------
+    def buildKinGFsFromDB(self, data, wave_engine, slip, rakes, 
+                                rake_key=None, Mu=None, filter_coef=None, 
+                                differentiate=False):
         '''
-        Build Kinematic Green's functions based on the discretized fault and a pre-calculated GF database. 
-        Green's functions will be calculated for a given shear modulus and a given slip (cf., slip) 
-        along a given rake angle (cf., rake)
+        Build Kinematic Green's functions based on the discretized fault and 
+        a pre-calculated GF database. 
+        Green's functions will be calculated for a given shear modulus and a 
+        given slip (cf., slip) along a given rake angle (cf., rake)
+
         Args:
-            * data:        Seismic data object
-            * wave_engine: waveform generator
-            * slip:        slip amplitude (in m)
-            * rakes:        rake angle (in deg). Can be a scalar or an array of len(self.patch)
-            * rake_key:    By default, GFs are stored in a dictionnarry 
-            * Mu:          Shear modulus (optional)
-            * filter_coef: Array or dictionnary of second-order filter coefficients (optional), see scipy.signal.sosfilt
+            * data          : Seismic data object
+            * wave_engine   : waveform generator
+            * slip          : slip amplitude (in m)
+
+        Kwargs:
+            * rakes         : rake angle (in deg). Can be a scalar or an array 
+                              of len(self.patch)
+            * rake_key      : By default, GFs are stored in a dictionnarry 
+            * Mu            : Shear modulus (optional)
+            * filter_coef   : Array or dictionnary of second-order filter 
+                              coefficients (optional), see scipy.signal.sosfilt
+
+        Returns:
+            * None
         '''        
         
-        print ("Building Green's functions for the data set {} of type {}".format(data.name, data.dtype))
+        print ("Building Green's functions for the data set {} of type {}"\
+                .format(data.name, data.dtype))
         print ("Using GF_path: {}".format(wave_engine.GF_path))        
 
         # Check the patch attribute
@@ -683,8 +782,6 @@ class RectangularPatchesKin(RectangularPatches):
         else: # If scalar rake
             rake = rakes 
             rake_key = rake # Set dictionnary keyword to rake value
-
-
 
         # Check Mu
         Np = len(self.patch)
@@ -783,10 +880,18 @@ class RectangularPatchesKin(RectangularPatches):
 
         # All done
         return        
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def buildBigCd(self,seismic_data):
         '''
         Assemble Cd from multiple kinematic datasets
+
+        Args:
+            * seismic_data      : Data to take care of
+
+        Returns:
+            * None
         '''
         assert self.bigD is not None, 'bigD must be assigned'
         assert self.bigD_map is not None, 'bigD_map must be assigned (use setbigDmap)'
@@ -802,11 +907,21 @@ class RectangularPatchesKin(RectangularPatches):
             self.bigCd[i[0]:i[1],i[0]:i[1]] = data.Cd
         # All done return
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def saveBigCd(self, bigCdfile = 'kinematicG.Cd', dtype='float64'):
         '''
         Save bigCd matrix
+
+        Kwargs:
+            * bigCdfile     : Output filename
+            * dtype         : binary type for output
+
+        Returns:    
+            * None
         '''
+
         # Check if Cd exists
         assert self.bigCd is not None, 'bigCd must be assigned'
         
@@ -818,10 +933,18 @@ class RectangularPatchesKin(RectangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
     
+    # ----------------------------------------------------------------------
     def setBigDmap(self,seismic_data):
         '''
         Assign data_idx map for kinematic data
+
+        Args:
+            * seismic_data      : Data to take care of
+
+        Returns:
+            * None
         '''
         if type(seismic_data) != list:
             data_list = [seismic_data]
@@ -839,20 +962,31 @@ class RectangularPatchesKin(RectangularPatches):
             d1 = d2
         # All done
         return
+    # ----------------------------------------------------------------------
         
-    def buildBigGD(self,eik_solver,seismic_data,rakes,vmax,Nt,Dt,rakes_key=None,dtype='float64',fastsweep=False,indexing='Altar'):
+    # ----------------------------------------------------------------------
+    def buildBigGD(self,eik_solver,seismic_data,rakes,vmax,Nt,Dt,
+                        rakes_key=None,dtype='float64',
+                        fastsweep=False,indexing='Altar'):
         '''
         Build BigG and bigD matrices from Green's functions and data dictionaries
+
         Args:
-            eik_solver: Eikonal solver (e.g., FastSweep or None)
-            data:       Seismic data object or list of objects
-            rakes:      List of rake angles
-            vmax:       Maximum rupture velocity
-            Nt:         Number of rupture time-steps
-            Dt:         Rupture time-steps
-            rakes_key:  If GFs are stored under different keywords than rake value, provide them here
-            fastsweep:  If True and vmax is set, solves min arrival time 
-                        using fastsweep algo. If false, uses analytical solution.
+            * eik_solver: Eikonal solver (e.g., FastSweep or None)
+            * data:       Seismic data object or list of objects
+            * rakes:      List of rake angles
+            * vmax:       Maximum rupture velocity
+            * Nt:         Number of rupture time-steps
+            * Dt:         Rupture time-steps
+
+        Kwargs:
+            * rakes_key:  If GFs are stored under different keywords 
+                          than rake value, provide them here
+            * fastsweep:  If True and vmax is set, solves min arrival time 
+                          using fastsweep algo. If false, uses analytical solution.
+
+        Returns:
+            * tmin:       Array of ???
         '''
 
         if type(seismic_data) != list:
@@ -939,13 +1073,21 @@ class RectangularPatchesKin(RectangularPatches):
 
         # All done
         return tmin
+    # ----------------------------------------------------------------------
             
-    def saveBigGD(self, bigDfile = 'kinematicG.data', bigGfile='kinematicG.gf', dtype='float64'):
+    # ----------------------------------------------------------------------
+    def saveBigGD(self, bigDfile='kinematicG.data', bigGfile='kinematicG.gf', 
+                        dtype='float64'):
         '''
         Save bigG and bigD to binary file
-        Args:
-            * bigDfile: bigD filename (optional)
-            * bigGfile: bigG gilename (optional)
+
+        Kwargs:
+            * bigDfile  : bigD filename (optional)
+            * bigGfile  : bigG gilename (optional)
+            * dtype     : Data binary type 
+
+        Returns:
+            * None
         '''
         
         # Check bigG and bigD
@@ -960,14 +1102,17 @@ class RectangularPatchesKin(RectangularPatches):
         
         # All done
         return
+    # ----------------------------------------------------------------------
 
-
-    def loadBigGD(self, bigDfile = 'data.kin', bigGfile='gf.kin', dtype='float64'):
+    # ----------------------------------------------------------------------
+    def loadBigGD(self, bigDfile='data.kin', bigGfile='gf.kin', dtype='float64'):
         '''
         Load bigG and bigD to binary file
-        Args:
-            * bigDfile: bigD filename (optional)
-            * bigGfile: bigG gilename (optional)
+
+        Kwargs:
+            * bigDfile  : bigD filename (optional)
+            * bigGfile  : bigG gilename (optional)
+            * dtype     : data binary type
         '''
         
         # Check file names
@@ -987,14 +1132,24 @@ class RectangularPatchesKin(RectangularPatches):
             self.bigG = self.bigG.reshape(Nm,Nd).T
         
         # All done
-        return
+        return  
+    # ----------------------------------------------------------------------
 
-    def saveKinGF(self, data, outputDir = 'GFs', prefix='gf', rmdir=True):
+    # ----------------------------------------------------------------------
+    def saveKinGF(self, data, outputDir='GFs', prefix='gf', rmdir=True):
         '''
         Save kinematic Green's functions in outputDir
+
         Args:
-            data:      seismic data object
-            outputDir: output directory where GFs will be stored
+            * data        : seismic data object
+
+        Kwargs:
+            * outputDir   : output directory where GFs will be stored
+            * prefix      : Prefix for GFs files
+            * rmdir       : CLeanup?
+
+        Returns:
+            * None
         '''
            
         # Print stuff
@@ -1019,18 +1174,28 @@ class RectangularPatchesKin(RectangularPatches):
     
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def loadKinGF(self, data, rakes, inputDir = 'GFs', prefix='gf'):
         '''
         Load kinematic Green's functions in i_path
+
         Args:
-            data:     seismic data object
-            rakes:    list of rake angle
-            inputDir: input directory where GFs are stored
+            * data        : seismic data object
+            * rakes       : list of rake angle
+
+        Kwargs:
+            * inputDir    : input directory where GFs are stored
+            * prefix      : GFs files prefix
+
+        Returns:
+            * None
         '''
 
         # Print stuff
-        print('Loading Kinematic GFs from directory {} for fault {}'.format(inputDir,self.name))        
+        print('Loading Kinematic GFs from directory {} for fault {}'\
+                .format(inputDir,self.name))        
 
         # Import sacpy 
         import sacpy
@@ -1067,16 +1232,25 @@ class RectangularPatchesKin(RectangularPatches):
         
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def castbigM(self,n_ramp_param,eik_solver,npt=4,Dtriangles=1.,grid_space=1.0):
         '''
         Cast kinematic model into bigM for forward modeling using bigG
-        (model should be specified in slip, tr and vr attributes, hypocenter must be specified)
+        (model should be specified in slip, tr and vr attributes, hypocenter 
+        must be specified)
+
         Args:
-            * n_ramp_param: number of nuisance parameters (e.g., InSAR orbits)
-            * eik_solver: eikonal solver
-            * npt**2: numper of point sources per patch 
-        Outs:
+            * n_ramp_param  : number of nuisance parameters (e.g., InSAR orbits)
+            * eik_solver    : eikonal solver
+
+        Kwargs:
+            * npt**2        : numper of point sources per patch 
+            * Dtriangles    : ??
+            * grid_space    : ??
+
+        Returns:
             * bigM matrix
         '''
 
@@ -1114,3 +1288,6 @@ class RectangularPatchesKin(RectangularPatches):
 
         # All done 
         return bigM  
+    # ----------------------------------------------------------------------
+
+#EOF

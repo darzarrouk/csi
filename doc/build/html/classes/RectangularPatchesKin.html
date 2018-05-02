@@ -34,102 +34,192 @@
 <dl class="class">
 <dt id="csi.RectangularPatchesKin">
 <em class="property">class </em><code class="descclassname">csi.</code><code class="descname">RectangularPatchesKin</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>A class that can handle what is required for a kinematic inversion 
+with AlTar for a fault with rectangular patches.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>name      : Name of the fault.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>utmzone   : UTM zone  (optional, default=None)</li>
+<li>lon0      : Longitude of the center of the UTM zone</li>
+<li>lat0      : Latitude of the center of the UTM zone</li>
+<li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
+<li>verbose   : Speak to me (default=True)</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
 <dt id="csi.RectangularPatchesKin.buildBigCd">
 <code class="descname">buildBigCd</code><span class="sig-paren">(</span><em>seismic_data</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.buildBigCd" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assemble Cd from multiple kinematic datasets</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>seismic_data      : Data to take care of</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.buildBigGD">
 <code class="descname">buildBigGD</code><span class="sig-paren">(</span><em>eik_solver</em>, <em>seismic_data</em>, <em>rakes</em>, <em>vmax</em>, <em>Nt</em>, <em>Dt</em>, <em>rakes_key=None</em>, <em>dtype='float64'</em>, <em>fastsweep=False</em>, <em>indexing='Altar'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.buildBigGD" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build BigG and bigD matrices from Green’s functions and data dictionaries
-Args:</p>
-<blockquote>
-<div><p>eik_solver: Eikonal solver (e.g., FastSweep or None)
-data:       Seismic data object or list of objects
-rakes:      List of rake angles
-vmax:       Maximum rupture velocity
-Nt:         Number of rupture time-steps
-Dt:         Rupture time-steps
-rakes_key:  If GFs are stored under different keywords than rake value, provide them here
-fastsweep:  If True and vmax is set, solves min arrival time</p>
-<blockquote>
-<div>using fastsweep algo. If false, uses analytical solution.</div></blockquote>
-</div></blockquote>
+<dd><p>Build BigG and bigD matrices from Green’s functions and data dictionaries</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>eik_solver: Eikonal solver (e.g., FastSweep or None)</li>
+<li>data:       Seismic data object or list of objects</li>
+<li>rakes:      List of rake angles</li>
+<li>vmax:       Maximum rupture velocity</li>
+<li>Nt:         Number of rupture time-steps</li>
+<li>Dt:         Rupture time-steps</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>rakes_key:  If GFs are stored under different keywords </dt>
+<dd>than rake value, provide them here</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>fastsweep:  If True and vmax is set, solves min arrival time </dt>
+<dd>using fastsweep algo. If false, uses analytical solution.</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>tmin:       Array of ???</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.buildKK">
 <code class="descname">buildKK</code><span class="sig-paren">(</span><em>data, rakes=[0.0, 90.0], Mu=None, slip=1.0, coord0=None, causal=False, filter=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.buildKK" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build Kikuchi-Kanamori Green’s functions
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Build Kikuchi-Kanamori Green’s functions</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>data: teleseismic data object</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>rake: Rake angles (default [0.,90.])</li>
 <li>Mu: Shear modulus (optional)</li>
 <li>slip: Slip amplitude for tsunami GF calculation (default: 1. m)</li>
 <li>coord0: lon,lat,dep of reference point to shift GFs (optional)</li>
 <li>causal: if True impose causality of the source (no slip before time=0.)</li>
 <li><dl class="first docutils">
-<dt>filter: if True, filter the Green’s functions (according to i_master parameters in the KK run directory)</dt>
-<dd>if False, do not filter the Green’s functions</dd>
+<dt>filter: if True, filter the Green’s functions </dt>
+<dd>(according to i_master parameters in the KK run directory)
+if False, do not filter the Green’s functions</dd>
 </dl>
 </li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.buildKinGFsFromDB">
 <code class="descname">buildKinGFsFromDB</code><span class="sig-paren">(</span><em>data</em>, <em>wave_engine</em>, <em>slip</em>, <em>rakes</em>, <em>rake_key=None</em>, <em>Mu=None</em>, <em>filter_coef=None</em>, <em>differentiate=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.buildKinGFsFromDB" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build Kinematic Green’s functions based on the discretized fault and a pre-calculated GF database. 
-Green’s functions will be calculated for a given shear modulus and a given slip (cf., slip) 
-along a given rake angle (cf., rake)
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>data:        Seismic data object</li>
-<li>wave_engine: waveform generator</li>
-<li>slip:        slip amplitude (in m)</li>
-<li>rakes:        rake angle (in deg). Can be a scalar or an array of len(self.patch)</li>
-<li>rake_key:    By default, GFs are stored in a dictionnarry</li>
-<li>Mu:          Shear modulus (optional)</li>
-<li>filter_coef: Array or dictionnary of second-order filter coefficients (optional), see scipy.signal.sosfilt</li>
+<dd><p>Build Kinematic Green’s functions based on the discretized fault and 
+a pre-calculated GF database. 
+Green’s functions will be calculated for a given shear modulus and a 
+given slip (cf., slip) along a given rake angle (cf., rake)</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>data          : Seismic data object</li>
+<li>wave_engine   : waveform generator</li>
+<li>slip          : slip amplitude (in m)</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>rakes <span class="classifier-delimiter">:</span> <span class="classifier">rake angle (in deg). Can be a scalar or an array </span></dt>
+<dd>of len(self.patch)</dd>
+</dl>
+</li>
+<li>rake_key      : By default, GFs are stored in a dictionnarry</li>
+<li>Mu            : Shear modulus (optional)</li>
+<li><dl class="first docutils">
+<dt>filter_coef <span class="classifier-delimiter">:</span> <span class="classifier">Array or dictionnary of second-order filter </span></dt>
+<dd>coefficients (optional), see scipy.signal.sosfilt</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.buildSubGrid">
 <code class="descname">buildSubGrid</code><span class="sig-paren">(</span><em>nbp_strike</em>, <em>nbp_dip</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.buildSubGrid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Define a subgrid of point sources on the fault (multiple point src per patches)
-All patches must have the same size
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+All patches must have the same size</p>
+<dl class="docutils">
+<dt>Args: </dt>
+<dd><ul class="first last simple">
 <li>p_nstrike:   Number of subgrid points per patch along strike</li>
 <li>p_ndip:      Number of subgrid points per patch along dip</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.castbigM">
 <code class="descname">castbigM</code><span class="sig-paren">(</span><em>n_ramp_param</em>, <em>eik_solver</em>, <em>npt=4</em>, <em>Dtriangles=1.0</em>, <em>grid_space=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.castbigM" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cast kinematic model into bigM for forward modeling using bigG
-(model should be specified in slip, tr and vr attributes, hypocenter must be specified)
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>n_ramp_param: number of nuisance parameters (e.g., InSAR orbits)</li>
-<li>eik_solver: eikonal solver</li>
-<li>npt**2: numper of point sources per patch</li>
-</ul>
-</div></blockquote>
+(model should be specified in slip, tr and vr attributes, hypocenter 
+must be specified)</p>
 <dl class="docutils">
-<dt>Outs:</dt>
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>n_ramp_param  : number of nuisance parameters (e.g., InSAR orbits)</li>
+<li>eik_solver    : eikonal solver</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>npt**2        : numper of point sources per patch</li>
+<li>Dtriangles    : ??</li>
+<li>grid_space    : ??</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
 <dd><ul class="first last simple">
 <li>bigM matrix</li>
 </ul>
@@ -140,50 +230,82 @@ Args:</p>
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.getHypoToCenter">
 <code class="descname">getHypoToCenter</code><span class="sig-paren">(</span><em>p</em>, <em>sd_dist=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.getHypoToCenter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get patch center coordinates from hypocenter
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Get patch center coordinates from hypocenter</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>p      : Patch number.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>sd_dist: If true, will return along dip and along strike distances</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>Hypocenter coordinates</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.initializekinmodel">
 <code class="descname">initializekinmodel</code><span class="sig-paren">(</span><em>n=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.initializekinmodel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Re-initializes the fault slip array to zero values.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Re-initializes the fault slip array to zero values.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>n     : Number of slip values. If None, it’ll take the number of patches.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.loadBigGD">
 <code class="descname">loadBigGD</code><span class="sig-paren">(</span><em>bigDfile='data.kin'</em>, <em>bigGfile='gf.kin'</em>, <em>dtype='float64'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.loadBigGD" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load bigG and bigD to binary file
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>bigDfile: bigD filename (optional)</li>
-<li>bigGfile: bigG gilename (optional)</li>
+<dd><p>Load bigG and bigD to binary file</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>bigDfile  : bigD filename (optional)</li>
+<li>bigGfile  : bigG gilename (optional)</li>
+<li>dtype     : data binary type</li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.loadKinGF">
 <code class="descname">loadKinGF</code><span class="sig-paren">(</span><em>data</em>, <em>rakes</em>, <em>inputDir='GFs'</em>, <em>prefix='gf'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.loadKinGF" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load kinematic Green’s functions in i_path
-Args:</p>
-<blockquote>
-<div>data:     seismic data object
-rakes:    list of rake angle
-inputDir: input directory where GFs are stored</div></blockquote>
+<dd><p>Load kinematic Green’s functions in i_path</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>data        : seismic data object</li>
+<li>rakes       : list of rake angle</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>inputDir    : input directory where GFs are stored</li>
+<li>prefix      : GFs files prefix</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -193,87 +315,169 @@ inputDir: input directory where GFs are stored</div></blockquote>
 Format: lon lat E[km] N[km] Dep[km] strike dip Area ID</p>
 <p>These files are to be used with edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
 or edks/MPI_EDKS/calcGreenFunctions_EDKS_subSquares.py</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>filename      : name of output file</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.saveBigCd">
 <code class="descname">saveBigCd</code><span class="sig-paren">(</span><em>bigCdfile='kinematicG.Cd'</em>, <em>dtype='float64'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.saveBigCd" title="Permalink to this definition">¶</a></dt>
 <dd><p>Save bigCd matrix</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>bigCdfile     : Output filename</li>
+<li>dtype         : binary type for output</li>
+</ul>
+</dd>
+<dt>Returns:    </dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.saveBigGD">
 <code class="descname">saveBigGD</code><span class="sig-paren">(</span><em>bigDfile='kinematicG.data'</em>, <em>bigGfile='kinematicG.gf'</em>, <em>dtype='float64'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.saveBigGD" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save bigG and bigD to binary file
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>bigDfile: bigD filename (optional)</li>
-<li>bigGfile: bigG gilename (optional)</li>
+<dd><p>Save bigG and bigD to binary file</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>bigDfile  : bigD filename (optional)</li>
+<li>bigGfile  : bigG gilename (optional)</li>
+<li>dtype     : Data binary type</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.saveKinGF">
 <code class="descname">saveKinGF</code><span class="sig-paren">(</span><em>data</em>, <em>outputDir='GFs'</em>, <em>prefix='gf'</em>, <em>rmdir=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.saveKinGF" title="Permalink to this definition">¶</a></dt>
-<dd><p>Save kinematic Green’s functions in outputDir
-Args:</p>
-<blockquote>
-<div>data:      seismic data object
-outputDir: output directory where GFs will be stored</div></blockquote>
+<dd><p>Save kinematic Green’s functions in outputDir</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>data        : seismic data object</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>outputDir   : output directory where GFs will be stored</li>
+<li>prefix      : Prefix for GFs files</li>
+<li>rmdir       : CLeanup?</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.setBigDmap">
 <code class="descname">setBigDmap</code><span class="sig-paren">(</span><em>seismic_data</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.setBigDmap" title="Permalink to this definition">¶</a></dt>
 <dd><p>Assign data_idx map for kinematic data</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>seismic_data      : Data to take care of</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.setFaultMap">
 <code class="descname">setFaultMap</code><span class="sig-paren">(</span><em>Nstrike</em>, <em>Ndip</em>, <em>leading='strike'</em>, <em>check_depth=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.setFaultMap" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set along dip and along strike indexing for patches
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>Nstrike: number of patches along strike</li>
-<li>Ndip   : number of patches along dip</li>
-<li>leading: leadinf index of self.patch (can be ‘strike’ or ‘dip’</li>
+<dd><p>Set along dip and along strike indexing for patches</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>Nstrike       : number of patches along strike</li>
+<li>Ndip          : number of patches along dip</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>leading       : leadinf index of self.patch (can be ‘strike’ or ‘dip’)</li>
+<li>check_depth   : CHeck patch depths and indexes are consistent</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.setHypoOnFault">
 <code class="descname">setHypoOnFault</code><span class="sig-paren">(</span><em>h_strike</em>, <em>h_dip</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.setHypoOnFault" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set hypocenter attributes from on fault coordinates h_strike, h_dip
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Set hypocenter attributes from fault coordinates</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>h_strike: Along strike distance from the center of the top left patch</li>
 <li>h_dip:    Along dip distance from the center of the top left patch</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.RectangularPatchesKin.setHypoXY">
 <code class="descname">setHypoXY</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>UTM=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.RectangularPatchesKin.setHypoXY" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set hypocenter attributes from x,y
-Outputs: East/West UTM/Lon coordinates, depth attributes
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>x:   east  coordinates</li>
-<li>y:   north coordinates</li>
+<dd><p>Set hypocenter attributes from x,y</p>
+<p>East/West UTM/Lon coordinates, depth attributes are set</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>x     : east  coordinates</li>
+<li>y     : north coordinates</li>
 <li><dl class="first docutils">
-<dt>UTM: default=True, x and y is in UTM coordinates (in km)</dt>
+<dt>UTM <span class="classifier-delimiter">:</span> <span class="classifier">default=True, x and y is in UTM coordinates (in km)</span></dt>
 <dd>if    ==False x=lon and y=lat (in deg)</dd>
 </dl>
 </li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -283,6 +487,23 @@ Args:</p>
 from model_file:
 Thickness  Vp  Vs  Rho (…) if format == ‘CPS’
 fort.2 (Kikuchi-Kanamori) if format == ‘KK’</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>model_file        : Input file</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>modelformat       : Format of the model file</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -291,6 +512,18 @@ fort.2 (Kikuchi-Kanamori) if format == ‘KK’</p>
 <dd><p>Set shear modulus values for seismic moment calculation
 from model_file:
 Thickness  Vp  Vs  Rho (…)</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>model_file    : Input file name</li>
+</ul>
+</dd>
+<dt>Retunrs:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

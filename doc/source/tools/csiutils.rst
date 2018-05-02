@@ -1,6 +1,6 @@
-okadafull class
+csiutils tools
 ===============================
 
-.. autoclass:: csi.okadafull
+.. automodule:: csi.csiutils
     :members:
 

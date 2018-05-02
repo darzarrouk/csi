@@ -34,13 +34,30 @@
 <dl class="class">
 <dt id="csi.TriangularTents">
 <em class="property">class </em><code class="descclassname">csi.</code><code class="descname">TriangularTents</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Classes implementing a fault made of triangular tents. Inherits from Fault</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>name      : Name of the fault.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>utmzone   : UTM zone  (optional, default=None)</li>
+<li>lon0      : Longitude of the center of the UTM zone</li>
+<li>lat0      : Latitude of the center of the UTM zone</li>
+<li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
+<li>verbose   : Speak to me (default=True)</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
 <dt id="csi.TriangularTents.Facet2Nodes">
 <code class="descname">Facet2Nodes</code><span class="sig-paren">(</span><em>homogeneousStrike=False</em>, <em>homogeneousDip=False</em>, <em>keepFacetsSeparated=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.Facet2Nodes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transfers the edksSources list into the node based setup.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Transfers the edksSources list into the node based setup.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>honogeneousStrike <span class="classifier-delimiter">:</span> <span class="classifier">In a tent, the strike varies among the faces. This variation</span></dt>
 <dd>can be a problem if the variation in strikes is too large, 
@@ -56,33 +73,59 @@ of the main node of the tent.</dd>
 </dl>
 </li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:    </dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.addTent">
 <code class="descname">addTent</code><span class="sig-paren">(</span><em>tent, slip=[0, 0, 0]</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.addTent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Append a tent to the current list.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Append a tent to the current list.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>tent      : tent to add</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>slip      : List of the strike, dip and tensile slip.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.addTents">
 <code class="descname">addTents</code><span class="sig-paren">(</span><em>tents</em>, <em>slip=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.addTents" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a tent to the list.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Adds a list of tents</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>tents      : tent to add</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>slip      : List of the strike, dip and tensile slip.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -90,37 +133,57 @@ Args:</p>
 <code class="descname">buildAdjacencyMap</code><span class="sig-paren">(</span><em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.buildAdjacencyMap" title="Permalink to this definition">¶</a></dt>
 <dd><p>For each triangle vertex, find the indices of the adjacent triangles.
 This function overwrites that from the parent class TriangularPatches.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>verbose       : Speak to me</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.buildLaplacian">
 <code class="descname">buildLaplacian</code><span class="sig-paren">(</span><em>verbose=True</em>, <em>method='distance'</em>, <em>irregular=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.buildLaplacian" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build a discrete Laplacian smoothing matrix.
-Args:</p>
-<blockquote>
-<div><ul>
-<li><p class="first">verbose       : if True, displays stuff.</p>
-</li>
+<dd><p>Build a discrete Laplacian smoothing matrix.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>verbose       : if True, displays stuff.</li>
 <li><dl class="first docutils">
 <dt>method <span class="classifier-delimiter">:</span> <span class="classifier">Method to estimate the Laplacian operator</span></dt>
-<dd><dl class="first docutils">
-<dt>‘count’     –&gt; The diagonal is 2-times the number of surrounding nodes.</dt>
-<dd><p class="first last">Off diagonals are -2/(number of surrounding nodes) for the surrounding nodes, 0 otherwise.</p>
-</dd>
-</dl>
-<p>‘distance’  –&gt; Computes the scale-dependent operator based on Desbrun et al 1999.</p>
-<blockquote class="last">
-<div><p>Mathieu Desbrun, Mark Meyer, Peter Schr”oder, and Alan Barr, 1999. 
-Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow,  
-Proceedings of SIGGRAPH.</p>
-</div></blockquote>
-</dd>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>‘count’ <span class="classifier-delimiter">:</span> <span class="classifier">The diagonal is 2-times the number of surrounding </span></dt>
+<dd>nodes. Off diagonals are -2/(number of surrounding 
+nodes) for the surrounding nodes, 0 otherwise.</dd>
 </dl>
 </li>
-<li><p class="first">irregular     : Not used, here for consistency purposes</p>
+<li><dl class="first docutils">
+<dt>‘distance’: Computes the scale-dependent operator based on Desbrun et al 1999.</dt>
+<dd>Mathieu Desbrun, Mark Meyer, Peter Schr”oder, and Alan Barr, 1999. 
+Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow,  
+Proceedings of SIGGRAPH.</dd>
+</dl>
 </li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
+</li>
+<li>irregular     : Not used, here for consistency purposes</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>Laplacian     : 2D array</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -128,12 +191,36 @@ Proceedings of SIGGRAPH.</p>
 <code class="descname">buildTentAdjacencyMap</code><span class="sig-paren">(</span><em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.buildTentAdjacencyMap" title="Permalink to this definition">¶</a></dt>
 <dd><p>For each triangle vertex, finds the indices of the surrounding vertices.
 This function runs typically after buildAdjacencyMap.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>verbose       : Speak to me</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.chooseTents">
 <code class="descname">chooseTents</code><span class="sig-paren">(</span><em>tents</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.chooseTents" title="Permalink to this definition">¶</a></dt>
 <dd><p>Choose a subset of tents (indices)</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>tents     : List of indices</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -155,7 +242,14 @@ This function runs typically after buildAdjacencyMap.</p>
 <dl class="method">
 <dt id="csi.TriangularTents.computeTentArea">
 <code class="descname">computeTentArea</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.computeTentArea" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the area for each node</p>
+<dd><p>Computes the area for each node. Stores it in self.area_tent</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -168,44 +262,63 @@ This function runs typically after buildAdjacencyMap.</p>
 <dt id="csi.TriangularTents.cumdistance">
 <code class="descname">cumdistance</code><span class="sig-paren">(</span><em>discretized=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.cumdistance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the distance between the first point of the fault and every other
-point, when you walk along the fault.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+point, when you walk along the fault.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>discretized <span class="classifier-delimiter">:</span> <span class="classifier">if True, use the discretized fault trace</span></dt>
 <dd>(default False)</dd>
 </dl>
 </li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.deleteTent">
 <code class="descname">deleteTent</code><span class="sig-paren">(</span><em>tent</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.deleteTent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Deletes a tent.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Deletes a tent.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>tent     : index of the tent to remove.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:    </dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.deleteTents">
 <code class="descname">deleteTents</code><span class="sig-paren">(</span><em>tents</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.deleteTents" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes a list of tent (indices)</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>tents     : list of indices</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.distanceMatrix">
 <code class="descname">distanceMatrix</code><span class="sig-paren">(</span><em>distance='center'</em>, <em>lim=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.distanceMatrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a matrix of the distances between Nodes.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Returns a matrix of the distances between Nodes.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>distance <span class="classifier-delimiter">:</span> <span class="classifier">distance estimation mode</span></dt>
 <dd>center : distance between the centers of the patches.
@@ -214,13 +327,37 @@ no other method is implemented for now.</dd>
 </li>
 <li>lim       : if not None, list of two float, the first one is the distance above which d=lim[1].</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>distance  : 2d array</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.findNodes">
 <code class="descname">findNodes</code><span class="sig-paren">(</span><em>lon</em>, <em>lat</em>, <em>round=2</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.findNodes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the nodes with lon and lat (np.array or list)</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>lon   : array or float of longitude</li>
+<li>lat   : array or float of latitude</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>round : Round to how many decimals</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>Indices of the nodes : list</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -232,13 +369,22 @@ no other method is implemented for now.</dd>
 <dl class="method">
 <dt id="csi.TriangularTents.getEllipse">
 <code class="descname">getEllipse</code><span class="sig-paren">(</span><em>tent</em>, <em>ellipseCenter=None</em>, <em>Npoints=10</em>, <em>factor=1.0</em>, <em>nsigma=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.getEllipse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the ellipse error given Cm for a given tent
-args:</p>
-<blockquote>
-<div>(optional) center  : center of the ellipse
-(optional) Npoints : number of points on the ellipse
-(optional) factor  : scaling factor
-(optional) nsigma  : will design a nsigma*sigma error ellipse</div></blockquote>
+<dd><p>Compute the ellipse error given Cm for a given tent</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>center  : center of the ellipse</li>
+<li>Npoints : number of points on the ellipse</li>
+<li>factor  : scaling factor</li>
+<li>nsigma  : will design a nsigma*sigma error ellipse</li>
+</ul>
+</dd>
+<dt>Returns:    </dt>
+<dd><ul class="first last simple">
+<li>Ellipse   : 3D array with the ellipse</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -250,20 +396,37 @@ args:</p>
 <dl class="method">
 <dt id="csi.TriangularTents.getTentInfo">
 <code class="descname">getTentInfo</code><span class="sig-paren">(</span><em>tent</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.getTentInfo" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the geometry info related to vertex-based tent parameterization
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Returns the geometry info related to vertex-based tent parameterization</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>tent         : index of the wanted tent or tent;</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>x, y, z, strike, dip  : Tent Informations</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.getTentindex">
 <code class="descname">getTentindex</code><span class="sig-paren">(</span><em>tent</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.getTentindex" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the index of a tent.
-This function over-writes that from the parent class Fault.</p>
+<dd><p>Returns the index of a tent.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>tent  : element of self.tents</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>iout  : integer</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -275,42 +438,69 @@ This function over-writes that from the parent class Fault.</p>
 <dl class="method">
 <dt id="csi.TriangularTents.initializeFromFault">
 <code class="descname">initializeFromFault</code><span class="sig-paren">(</span><em>fault</em>, <em>adjMap=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.initializeFromFault" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initializes the tent fault object from a triangularPatches or a triangularTents instance.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Initializes the tent fault object from a triangularPatches or a 
+triangularTents instance.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>fault     : Instance of triangular fault.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>adjMap    : Build the adjacency map (True/False).</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.initializeslip">
 <code class="descname">initializeslip</code><span class="sig-paren">(</span><em>n=None</em>, <em>values=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.initializeslip" title="Permalink to this definition">¶</a></dt>
 <dd><p>Re-initializes the fault slip array to zero values.
-This function over-writes the function in the parent class Fault.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+This function over-writes the function in the parent class Fault.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>n     : Number of slip values. If None, it’ll take the number of patches.</li>
 <li>values: Can be depth, strike, dip, length, area or a numpy array</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.patches2triangles">
 <code class="descname">patches2triangles</code><span class="sig-paren">(</span><em>fault</em>, <em>numberOfTriangles=4</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.patches2triangles" title="Permalink to this definition">¶</a></dt>
 <dd><p>Takes a fault with rectangular patches and splits them into triangles to 
-initialize self.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+initialize self.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>fault             : instance of rectangular patches.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>numberOfTriangles : Split each patch in 2 or 4 (default) triangle</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:    </dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -318,10 +508,23 @@ Args:</p>
 <code class="descname">plot</code><span class="sig-paren">(</span><em>figure=134</em>, <em>slip='total'</em>, <em>equiv=False</em>, <em>show=True</em>, <em>axesscaling=True</em>, <em>Norm=None</em>, <em>linewidth=1.0</em>, <em>plot_on_2d=True</em>, <em>method='scatter'</em>, <em>npoints=10</em>, <em>colorbar=True</em>, <em>cmap='jet'</em>, <em>drawCoastlines=True</em>, <em>expand=0.2</em>, <em>vertIndex=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the available elements of the fault.</p>
 <dl class="docutils">
-<dt>Args:</dt>
+<dt>Kwargs:</dt>
 <dd><ul class="first last simple">
-<li>ref           : Referential for the plot (‘utm’ or ‘lonlat’).</li>
 <li>figure        : Number of the figure.</li>
+<li>slip          : What slip to plot</li>
+<li>equiv         : For consistentcy issues</li>
+<li>show          : show me</li>
+<li>axesscaling   : Scale the axes</li>
+<li>Norm          : colorbar limits</li>
+<li>linewidth     : Line width in points</li>
+<li>plot_on_2d    : Plot on a map as well?</li>
+<li>method        : ‘scatter’ or ‘surface’ (scatter is better)</li>
+<li>npoints       : how many points per triangle</li>
+<li>colorbar      : True/False</li>
+<li>cmap          : color map in matplotlib</li>
+<li>drawCoastlines: Self-explanatory argument</li>
+<li>expand        : Expand the map by {expand} degrees</li>
+<li>vertIndex     : ?????</li>
 </ul>
 </dd>
 </dl>
@@ -329,106 +532,157 @@ Args:</p>
 
 <dl class="method">
 <dt id="csi.TriangularTents.readGocadPatches">
-<code class="descname">readGocadPatches</code><span class="sig-paren">(</span><em>filename</em>, <em>neg_depth=False</em>, <em>utm=False</em>, <em>factor_xy=1.0</em>, <em>factor_depth=1.0</em>, <em>box=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.readGocadPatches" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<code class="descname">readGocadPatches</code><span class="sig-paren">(</span><em>filename</em>, <em>neg_depth=False</em>, <em>utm=False</em>, <em>factor_xy=1.0</em>, <em>factor_depth=1.0</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.readGocadPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>filename:  tsurf file to read</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>neg_depth: if true, use negative depth</li>
 <li>utm: if true, input file is given as utm coordinates (if false -&gt; lon/lat)</li>
 <li>factor_xy: if utm==True, multiplication factor for x and y</li>
 <li>factor_depth: multiplication factor for z</li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.readPatchesFromFile">
 <code class="descname">readPatchesFromFile</code><span class="sig-paren">(</span><em>filename</em>, <em>readpatchindex=True</em>, <em>donotreadslip=False</em>, <em>inputCoordinates='lonlat'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.readPatchesFromFile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Reads patches from a GMT formatted file.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Reads patches from a GMT formatted file.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>filename          : Name of the file</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>inputCoordinates  : Default is ‘lonlat’. Can be ‘utm’</li>
 <li>readpatchindex    : Default True.</li>
 <li>donotreadslip     : Default is False. If True, does not read the slip</li>
 <li>inputCoordinates  : Default is ‘lonlat’, can be ‘xyz’</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.slipIntegrate">
 <code class="descname">slipIntegrate</code><span class="sig-paren">(</span><em>slip=None</em>, <em>factor=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.slipIntegrate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Integrates slip on the patch.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Integrates slip on the patch. Stores integration in self.volume</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
-<dt>slip <span class="classifier-delimiter">:</span> <span class="classifier">slip vector</span></dt>
-<dd>Can be strikeslip, dipslip, tensile, coupling or
-a list/array of floats.</dd>
+<dt>slip <span class="classifier-delimiter">:</span> <span class="classifier">slip vector. Can be strikeslip, dipslip, tensile, </span></dt>
+<dd>coupling or a list/array of floats.</dd>
 </dl>
 </li>
 <li>factor : multiply slip vector</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.vertices2tents">
 <code class="descname">vertices2tents</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.vertices2tents" title="Permalink to this definition">¶</a></dt>
 <dd><p>Takes the list of vertices and builds the tents.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.writeNodes2File">
 <code class="descname">writeNodes2File</code><span class="sig-paren">(</span><em>filename</em>, <em>add_slip=None</em>, <em>scale=1.0</em>, <em>stdh5=None</em>, <em>decim=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.writeNodes2File" title="Permalink to this definition">¶</a></dt>
-<dd><p>Writes the tent node in a file that can be used in psxyz.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Writes the tent node in a file that can be used in psxyz.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>filename      : Name of the file.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>add_slip <span class="classifier-delimiter">:</span> <span class="classifier">Put the slip as a value for the color.</span></dt>
 <dd>Can be None, strikeslip, dipslip, total.</dd>
 </dl>
 </li>
 <li>scale         : Multiply the slip value by a factor.</li>
-<li>patch         : Can be ‘normal’ or ‘equiv’</li>
+<li>stdh5         : Get standrad dev from a h5file</li>
+<li>decim         : Decimate the h5 file</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.writePatches2File">
 <code class="descname">writePatches2File</code><span class="sig-paren">(</span><em>filename</em>, <em>add_slip=None</em>, <em>scale=1.0</em>, <em>stdh5=None</em>, <em>decim=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.writePatches2File" title="Permalink to this definition">¶</a></dt>
-<dd><p>Writes the patch corners in a file that can be used in psxyz.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Writes the patch corners in a file that can be used in psxyz.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>filename      : Name of the file.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>add_slip      : Will be set to None</li>
 <li>scale         : Multiply the slip value by a factor.</li>
 <li>patch         : Can be ‘normal’ or ‘equiv’</li>
+<li>stdh5         : Get std dev from an h5 file</li>
+<li>decim         : decimate the h5 file</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularTents.writeSlipDirection2File">
 <code class="descname">writeSlipDirection2File</code><span class="sig-paren">(</span><em>filename</em>, <em>scale=1.0</em>, <em>factor=1.0</em>, <em>neg_depth=False</em>, <em>ellipse=False</em>, <em>nsigma=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.writeSlipDirection2File" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write a psxyz compatible file to draw lines starting from the center of each patch,
-indicating the direction of slip.
-Tensile slip is not used…
-scale can be a real number or a string in ‘total’, ‘strikeslip’, ‘dipslip’ or ‘tensile’</p>
-<blockquote>
-<div><ul class="simple">
+indicating the direction of slip.</p>
+<p>Tensile slip is not used…</p>
+<dl class="docutils">
+<dt>scale can be a real number or a string in ‘total’, ‘strikeslip’, ‘dipslip’ or ‘tensile’</dt>
+<dd><ul class="first last simple">
 <li>nsigma: nsigma for error ellipses</li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -436,16 +690,33 @@ scale can be a real number or a string in ‘total’, ‘strikeslip’, ‘dips
 <code class="descname">writeSources2Grd</code><span class="sig-paren">(</span><em>filename</em>, <em>npoints=10</em>, <em>slip='strikeslip'</em>, <em>increments=None</em>, <em>nSamples=None</em>, <em>outDir='./'</em>, <em>mask=False</em>, <em>noValues=nan</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularTents.writeSources2Grd" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>Writes the values of slip in two grd files:</dt>
-<dd>-&gt; z_{filename}
--&gt; {slip}_{filename}</dd>
+<dd><ul class="first last simple">
+<li>z_{filename}</li>
+<li>{slip}_{filename}</li>
+</ul>
+</dd>
 <dt>Args:</dt>
 <dd><ul class="first last simple">
 <li>filename      : Name of the grdfile (should end by grd or nc)</li>
-<li>npoints       : Number of points inside each patch.</li>
-<li>dlon          : Longitude increment of the output file</li>
-<li>dlat          : Latitude increment of the output file</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>slip          : Slip value to store.</li>
-<li>mask          : If true,builds a mask based on the outter boundary of the fault.</li>
+<li><dl class="first docutils">
+<dt>mask <span class="classifier-delimiter">:</span> <span class="classifier">If true,builds a mask based on the outer </span></dt>
+<dd>boundary of the fault.</dd>
+</dl>
+</li>
+<li>nSamples      : How many samples on each axis</li>
+<li>increments    : Size of increments along each axis</li>
+<li>outDir        : Output directory</li>
+<li>noValues      : What to write when there is no value</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
 </ul>
 </dd>
 </dl>

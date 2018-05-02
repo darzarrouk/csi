@@ -23,14 +23,23 @@ from .geodeticplot import geodeticplot as geoplot
 from . import csiutils as utils
 
 class TriangularTents(TriangularPatches):
+    '''
+    Classes implementing a fault made of triangular tents. Inherits from Fault
 
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
-        '''
-        Args:
-            * name          : Name of the fault.
-            * utmzone   : UTM zone  (optional, default=None)
-            * ellps     : ellipsoid (optional, default='WGS84')
-        '''
+    Args:
+        * name      : Name of the fault.
+
+    Kwargs:
+        * utmzone   : UTM zone  (optional, default=None)
+        * lon0      : Longitude of the center of the UTM zone
+        * lat0      : Latitude of the center of the UTM zone
+        * ellps     : ellipsoid (optional, default='WGS84')
+        * verbose   : Speak to me (default=True)
+    '''
+
+    # ----------------------------------------------------------------------
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, 
+                       lat0=None, verbose=True):
 
         # Base class init
         super(TriangularTents, self).__init__(name, utmzone=utmzone, ellps=ellps, 
@@ -44,13 +53,22 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def initializeFromFault(self, fault, adjMap=True):
         '''
-        Initializes the tent fault object from a triangularPatches or a triangularTents instance.
+        Initializes the tent fault object from a triangularPatches or a 
+        triangularTents instance.
+
         Args:
             * fault     : Instance of triangular fault.
+
+        Kwargs:
             * adjMap    : Build the adjacency map (True/False).
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -81,7 +99,9 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getStrikes(self):
         '''
         Returns the strikes of each nodes.
@@ -89,7 +109,9 @@ class TriangularTents(TriangularPatches):
 
         # All done in one line
         return np.array([self.getTentInfo(t)[3] for t in self.tent])
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getDips(self):
         '''
         Returns the dip of each nodes.
@@ -97,12 +119,18 @@ class TriangularTents(TriangularPatches):
 
         # All done in one line
         return np.array([self.getTentInfo(t)[4] for t in self.tent])
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getTentInfo(self, tent):
         '''
         Returns the geometry info related to vertex-based tent parameterization
+
         Args:
             * tent         : index of the wanted tent or tent;
+
+        Returns:
+            * x, y, z, strike, dip  : Tent Informations
         '''
 
         # Get the patch
@@ -130,12 +158,18 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return x, y, z, strike, dip
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def deleteTent(self, tent):
         '''
         Deletes a tent.
+
         Args:
             * tent     : index of the tent to remove.
+
+        Returns:    
+            * None
         '''
 
         # Remove the patch
@@ -155,10 +189,18 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def deleteTents(self, tents):
         '''
         Deletes a list of tent (indices)
+
+        Args:
+            * tents     : list of indices
+
+        Returns:
+            * None
         '''
 
         while len(tents)>0:
@@ -176,10 +218,22 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def findNodes(self, lon, lat, round=2):
         '''
         Find the nodes with lon and lat (np.array or list)
+
+        Args:
+            * lon   : array or float of longitude
+            * lat   : array or float of latitude
+
+        Kwargs:
+            * round : Round to how many decimals
+
+        Returns:
+            * Indices of the nodes : list
         '''
 
         # Create list
@@ -200,10 +254,18 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return indices
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def chooseTents(self, tents):
         '''
         Choose a subset of tents (indices)
+
+        Args:
+            * tents     : List of indices
+
+        Returns:
+            * None
         '''
         tent_new = []
         tentll_new = []
@@ -224,7 +286,9 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getcenters(self):
         '''
         Returns a list of nodes.
@@ -232,13 +296,21 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return self.tent
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def addTent(self, tent, slip=[0, 0, 0]):
         '''
         Append a tent to the current list.
+
         Args:
             * tent      : tent to add
+
+        Kwargs:
             * slip      : List of the strike, dip and tensile slip.
+
+        Returns:
+            * None
         '''
 
         # append the patch
@@ -263,14 +335,21 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
-
+    # ----------------------------------------------------------------------
     def addTents(self, tents, slip=None):
         '''
-        Adds a tent to the list.
+        Adds a list of tents
+
         Args:
             * tents      : tent to add
+
+        Kwargs:
             * slip      : List of the strike, dip and tensile slip.
+
+        Returns:
+            * None
         '''
         if (slip is None) or (slip == [0, 0, 0]):
             slip = np.zeros((len(tents),3))
@@ -280,18 +359,26 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def readPatchesFromFile(self, filename, readpatchindex=True, 
                             donotreadslip=False, inputCoordinates='lonlat'):
-        """
+        '''
         Reads patches from a GMT formatted file.
+        
         Args:
             * filename          : Name of the file
+
+        Kwargs:
             * inputCoordinates  : Default is 'lonlat'. Can be 'utm'
             * readpatchindex    : Default True.
             * donotreadslip     : Default is False. If True, does not read the slip
             * inputCoordinates  : Default is 'lonlat', can be 'xyz'
-        """
+
+        Returns:
+            * None
+        '''
 
         # Run the method from the parent class
         super(TriangularTents, self).readPatchesFromFile(filename,
@@ -303,15 +390,25 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def writePatches2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
         '''
         Writes the patch corners in a file that can be used in psxyz.
+
         Args:
             * filename      : Name of the file.
+
+        Kwargs:
             * add_slip      : Will be set to None
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
+            * stdh5         : Get std dev from an h5 file
+            * decim         : decimate the h5 file
+
+        Returns:
+            * None
         '''
 
         # Set add_slip to none
@@ -325,21 +422,31 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
-    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', increments=None, nSamples=None, outDir='./', mask=False, 
-            noValues=np.nan):
+    # ----------------------------------------------------------------------
+    def writeSources2Grd(self, filename, npoints=10, slip='strikeslip', 
+                               increments=None, nSamples=None, outDir='./', 
+                               mask=False, noValues=np.nan):
         '''
         Writes the values of slip in two grd files:
-                -> z_{filename}
-                -> {slip}_{filename}
+                * z_{filename}
+                * {slip}_{filename}
 
         Args:
             * filename      : Name of the grdfile (should end by grd or nc)
-            * npoints       : Number of points inside each patch.
-            * dlon          : Longitude increment of the output file
-            * dlat          : Latitude increment of the output file
+
+        Kwargs:
             * slip          : Slip value to store.
-            * mask          : If true,builds a mask based on the outter boundary of the fault.
+            * mask          : If true,builds a mask based on the outer 
+                              boundary of the fault.
+            * nSamples      : How many samples on each axis
+            * increments    : Size of increments along each axis
+            * outDir        : Output directory
+            * noValues      : What to write when there is no value
+
+        Returns:
+            * None
         '''
     
         # Assert
@@ -368,16 +475,25 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def writeNodes2File(self, filename, add_slip=None, scale=1.0, stdh5=None, decim=1):
         '''
         Writes the tent node in a file that can be used in psxyz.
+
         Args:
             * filename      : Name of the file.
+
+        Kwargs:
             * add_slip      : Put the slip as a value for the color.
                               Can be None, strikeslip, dipslip, total.
             * scale         : Multiply the slip value by a factor.
-            * patch         : Can be 'normal' or 'equiv'
+            * stdh5         : Get standrad dev from a h5file
+            * decim         : Decimate the h5 file
+
+        Returns:
+            * None
         '''
 
         # Check size
@@ -431,14 +547,20 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def initializeslip(self, n=None, values=None):
         '''
         Re-initializes the fault slip array to zero values.
         This function over-writes the function in the parent class Fault.
-        Args:
+
+        Kwargs:
             * n     : Number of slip values. If None, it'll take the number of patches.
             * values: Can be depth, strike, dip, length, area or a numpy array
+
+        Returns:
+            * None
         '''
 
         # Shape
@@ -475,15 +597,21 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def distanceMatrix(self, distance='center', lim=None):
         '''
         Returns a matrix of the distances between Nodes.
-        Args:
+
+        Kwargs:
             * distance  : distance estimation mode
                             center : distance between the centers of the patches.
                             no other method is implemented for now.
             * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+
+        Returns:
+            * distance  : 2d array
         '''
 
         # Assert 
@@ -505,11 +633,19 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return Distances
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def getTentindex(self, tent):
         '''
         Returns the index of a tent.
-        This function over-writes that from the parent class Fault.
+
+        Args:
+            * tent  : element of self.tents
+
+        Returns:
+            * iout  : integer
+
         '''
 
         # Output index
@@ -522,15 +658,20 @@ class TriangularTents(TriangularPatches):
         
         # All done
         return iout
+    # ----------------------------------------------------------------------
     
+    # ----------------------------------------------------------------------
     def slipIntegrate(self, slip=None, factor=1.):
         '''
-        Integrates slip on the patch.
+        Integrates slip on the patch. Stores integration in self.volume
+
         Args:
-            * slip   : slip vector
-                       Can be strikeslip, dipslip, tensile, coupling or
-                       a list/array of floats.
+            * slip   : slip vector. Can be strikeslip, dipslip, tensile, 
+                       coupling or a list/array of floats.
             * factor : multiply slip vector 
+
+        Returns:
+            * None
         '''
 
         # Slip
@@ -556,10 +697,15 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def computeTentArea(self):
         '''
-        Computes the area for each node 
+        Computes the area for each node. Stores it in self.area_tent
+
+        Returns:
+            * None
         '''
 
         # Area
@@ -580,14 +726,22 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def patches2triangles(self, fault, numberOfTriangles=4):
         '''
         Takes a fault with rectangular patches and splits them into triangles to 
         initialize self.
+
         Args:
             * fault             : instance of rectangular patches.
+
+        Kwargs:
             * numberOfTriangles : Split each patch in 2 or 4 (default) triangle
+
+        Returns:    
+            * None
         '''
 
         # The method is in the parent class
@@ -599,13 +753,18 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def readGocadPatches(self, filename, neg_depth=False, utm=False, factor_xy=1.0,
-                         factor_depth=1.0, box=None, verbose=False):
+                         factor_depth=1.0, verbose=False):
         """
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
+
         Args:
             * filename:  tsurf file to read
+
+        Kwargs:
             * neg_depth: if true, use negative depth
             * utm: if true, input file is given as utm coordinates (if false -> lon/lat)
             * factor_xy: if utm==True, multiplication factor for x and y
@@ -614,17 +773,22 @@ class TriangularTents(TriangularPatches):
 
         # Run the upper level routine 
         super(TriangularTents, self).readGocadPatches(filename, neg_depth=neg_depth, utm=utm,
-                    factor_xy=factor_xy, factor_depth=factor_depth, box=box, verbose=verbose)
+                    factor_xy=factor_xy, factor_depth=factor_depth, verbose=verbose)
 
         # Vertices to Tents
         self.vertices2tents()
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def vertices2tents(self):
         '''
         Takes the list of vertices and builds the tents.
+
+        Returns:
+            * None
         '''
 
         # Initialize the lists of patches
@@ -654,6 +818,760 @@ class TriangularTents(TriangularPatches):
 
         # All done
         return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def Facet2Nodes(self, homogeneousStrike=False, homogeneousDip=False, keepFacetsSeparated=False):
+        '''
+        Transfers the edksSources list into the node based setup.
+
+        Kwargs:
+            * honogeneousStrike     : In a tent, the strike varies among the faces. This variation
+                                      can be a problem if the variation in strikes is too large, 
+                                      with slip that can partially cancel each other.
+                                      If True, the strike of each of the point is equal to the strike
+                                      of the main node of the tent.
+            * homogeneousDip        : Same thing for the dip angle.
+            * keepFacetsSeparated   : If True, each facet of each node will have a different identifier (int).
+                                      This is needed when computing the Green's function for the Node based case. 
+
+        Returns:    
+            * None
+        '''
+    
+        # Get the faces and Nodes
+        Faces = np.array(self.Faces)
+        Vertices = self.Vertices
+
+        # Get the surrounding triangles
+        Nodes = {}
+
+        # Loop for that 
+        for nId in self.tentid:
+            Nodes[nId] = {'nTriangles': 0, 'idTriangles': []}
+            for idFace in range(self.Faces.shape[0]):
+                ns = self.Faces[idFace,:].tolist()
+                if nId in ns:
+                    Nodes[nId]['nTriangles'] += 1
+                    Nodes[nId]['idTriangles'].append(idFace)
+
+        # Save the nodes
+        self.Nodes = Nodes
+
+        # Create the new edksSources
+        Ids = []
+        xs = []; ys = []; zs = []
+        strike = []; dip = []
+        areas = []; slip = []
+
+        # Initialize counter
+        iSource = -1
+
+        # Iterate on the nodes to derive the weights
+        for mainNode in Nodes:
+            if homogeneousDip:
+                mainDip = self.getTentInfo(mainNode)[4]
+            if homogeneousStrike:
+                mainStrike = self.getTentInfo(mainNode)[3]
+            if keepFacetsSeparated:
+                Nodes[mainNode]['subSources'] = []
+            # Loop over each of these triangles
+            for tId in Nodes[mainNode]['idTriangles']:
+                # Find the sources in edksSources
+                iS = np.flatnonzero(self.edksSources[0]==(tId)).tolist()
+                # Get the three nodes
+                tNodes = Faces[tId]
+                # Affect the master node and the two outward nodes
+                nodeOne, nodeTwo = tNodes[np.where(tNodes!=mainNode)]
+                # Get weights (Attention: Vertices are in km, edksSources in m)
+                Wi = self._getWeights(Vertices[mainNode], 
+                                      Vertices[nodeOne], 
+                                      Vertices[nodeTwo], 
+                                      self.edksSources[1][iS]/1000., 
+                                      self.edksSources[2][iS]/1000., 
+                                      self.edksSources[3][iS]/1000.)
+                # Source Ids
+                if keepFacetsSeparated:
+                    iSource += 1
+                    Nodes[mainNode]['subSources'].append(iSource)
+                else:
+                    iSource = mainNode
+                # Save each source
+                Ids += (np.ones((len(iS),))*iSource).astype(int).tolist()
+                xs += self.edksSources[1][iS].tolist()
+                ys += self.edksSources[2][iS].tolist()
+                zs += self.edksSources[3][iS].tolist()
+                areas += self.edksSources[6][iS].tolist()
+                slip += Wi.tolist()
+                if homogeneousStrike:
+                    strike += (np.ones((len(iS),))*mainStrike).tolist()
+                else:
+                    strike += self.edksSources[4][iS].tolist()
+                if homogeneousDip:
+                    dip += (np.ones((len(iS),))*mainDip).tolist()
+                else:
+                    dip += self.edksSources[5][iS].tolist()
+
+        # Set the new edksSources
+        self.edksFacetSources = copy.deepcopy(self.edksSources)
+        self.edksSources = [np.array(Ids), np.array(xs), np.array(ys), np.array(zs), 
+                np.array(strike), np.array(dip), np.array(areas), np.array(slip)]
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def buildAdjacencyMap(self, verbose=True):
+        '''
+        For each triangle vertex, find the indices of the adjacent triangles.
+        This function overwrites that from the parent class TriangularPatches.
+
+        Kwargs:
+            * verbose       : Speak to me
+
+        Returns:
+            * None
+        '''
+
+        if verbose:
+            print("-----------------------------------------------")
+            print("-----------------------------------------------")
+            print("Finding the adjacent triangles for all vertices")
+
+        self.adjacencyMap = []
+
+        # Cache the vertices and faces arrays
+        vertices, faces = self.Vertices, np.array(self.Faces)
+
+        # First find adjacent triangles for all triangles
+        numvert = len(vertices)
+        numface = len(faces)
+
+        for i in range(numvert):
+            if verbose:
+                sys.stdout.write('%i / %i\r' % (i + 1, numvert))
+                sys.stdout.flush()
+
+            # Find triangles that share an edge
+            adjacents = []
+            for j in range(numface):
+                if i in faces[j,:]:
+                    adjacents.append(j)
+
+            self.adjacencyMap.append(adjacents)
+
+        if verbose:
+            print('\n')
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def buildTentAdjacencyMap(self, verbose=True):
+        '''
+        For each triangle vertex, finds the indices of the surrounding vertices.
+        This function runs typically after buildAdjacencyMap.
+
+        Kwargs:
+            * verbose       : Speak to me
+
+        Returns:
+            * None
+        '''
+
+        if verbose:
+            print("-----------------------------------------------")
+            print("-----------------------------------------------")
+            print("Finding the adjacent vertices for all vertices.")
+
+        # Check adjacency Map
+        if not hasattr(self, 'adjacencyMap'):
+            self.buildAdjacencyMap(verbose=verbose)
+
+        # Cache adjacencyMap
+        adjacency = self.adjacencyMap 
+        faces = self.Faces
+
+        # Create empty lists
+        adjacentTents = []
+
+        # Iterate over adjacency map
+        for adj, iVert in zip(adjacency, range(len(adjacency))):
+            # Create a list for that tent
+            tent = []
+            # Iterate over the surrounding triangles
+            for iTriangle in adj:
+                face = faces[iTriangle]
+                face = face[face!=iVert]
+                tent.append(face)
+            # Clean up tent
+            tent = np.unique(np.concatenate(tent)).tolist()
+            # Append
+            adjacentTents.append(tent)
+
+        # Save
+        self.adjacentTents = adjacentTents
+
+        # All don
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def buildLaplacian(self, verbose=True, method='distance', irregular=False):
+        '''
+        Build a discrete Laplacian smoothing matrix.
+
+        Args:
+            * verbose       : if True, displays stuff.
+            * method        : Method to estimate the Laplacian operator
+                - 'count'   : The diagonal is 2-times the number of surrounding 
+                              nodes. Off diagonals are -2/(number of surrounding 
+                              nodes) for the surrounding nodes, 0 otherwise.
+
+                - 'distance': Computes the scale-dependent operator based on Desbrun et al 1999.
+                              Mathieu Desbrun, Mark Meyer, Peter Schr\"oder, and Alan Barr, 1999. 
+                              Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow,  
+                              Proceedings of SIGGRAPH.
+            * irregular     : Not used, here for consistency purposes
+
+        Returns:
+            * Laplacian     : 2D array
+        '''
+ 
+        # Build the tent adjacency map
+        self.buildTentAdjacencyMap(verbose=verbose)
+
+        # Get the vertices
+        vertices = self.Vertices
+
+        # Allocate an array
+        D = np.zeros((len(vertices), len(vertices)))
+
+        # Normalize the distances
+        if method=='distance':
+            self.Distances = []
+            for adja, i in zip(self.adjacentTents, range(len(vertices))):
+                x0, y0, z0 = vertices[i,0], vertices[i,1], vertices[i,2]
+                xv, yv, zv = vertices[adja,0], vertices[adja,1], vertices[adja,2] 
+                distances = np.array([np.sqrt((x-x0)**2+(y-y0)**2+(z-z0)**2) 
+                    for x, y, z in zip(xv, yv, zv)])
+                self.Distances.append(distances)
+            normalizer = np.max([d.max() for d in self.Distances])
+
+        # Iterate over the vertices
+        i = 0
+        for adja in self.adjacentTents:
+            # Counting Laplacian
+            if method=='count':
+                D[i,i] = 2*float(len(adja))
+                D[i,adja] = -2./float(len(adja))
+            # Distance-based
+            elif method=='distance':
+                distances = self.Distances[i]/normalizer
+                E = np.sum(distances)
+                D[i,i] = float(len(adja))*2./E * np.sum(1./distances)
+                D[i,adja] = -2./E * 1./distances
+
+            # Increment 
+            i += 1
+
+        # All done
+        return D
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def getEllipse(self, tent, ellipseCenter=None, Npoints=10, factor=1.0,nsigma=1.):
+        '''
+        Compute the ellipse error given Cm for a given tent
+
+        Kwargs:
+            * center  : center of the ellipse
+            * Npoints : number of points on the ellipse
+            * factor  : scaling factor
+            * nsigma  : will design a nsigma*sigma error ellipse
+
+        Returns:    
+            * Ellipse   : 3D array with the ellipse
+        '''
+
+        # Get Cm
+        Cm = np.diag(self.Cm[tent,:2])
+        Cm[0,1] = Cm[1,0] = self.Cm[tent,2]
+
+        # Get strike and dip
+        xc, yc, zc, strike, dip = self.getTentInfo(tent)
+        if ellipseCenter!=None:
+            xc, yc, zc = ellipseCenter
+
+        # Compute eigenvalues/eigenvectors
+        D,V = np.linalg.eig(Cm)
+        v1 = V[:,0]
+        a = nsigma*np.sqrt(np.abs(D[0]))
+        b = nsigma*np.sqrt(np.abs(D[1]))
+        phi = np.arctan2(v1[1],v1[0])
+        theta = np.linspace(0,2*np.pi,Npoints);
+
+        # The ellipse in x and y coordinates
+        Ex = a * np.cos(theta) * factor
+        Ey = b * np.sin(theta) * factor
+
+        # Correlation Rotation
+        R  = np.array([[np.cos(phi), -np.sin(phi)],
+                       [np.sin(phi), np.cos(phi)]])
+        RE = np.dot(R,np.array([Ex,Ey]))
+
+        # Strike/Dip rotation
+        ME = np.array([RE[0,:], RE[1,:] * np.cos(dip), RE[1,:]*np.sin(dip)])
+        R  = np.array([[np.sin(strike), -np.cos(strike), 0.0],
+                       [np.cos(strike), np.sin(strike), 0.0],
+                       [0.0, 0.0, 1.]])
+        RE = np.dot(R,ME).T
+
+        # Translation on Fault
+        RE[:,0] += xc
+        RE[:,1] += yc
+        RE[:,2] += zc
+
+        # All done
+        return RE
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0,
+                                neg_depth=False, ellipse=False,nsigma=1.):
+        '''
+        Write a psxyz compatible file to draw lines starting from the center of each patch,
+        indicating the direction of slip.
+
+        Tensile slip is not used...
+
+        scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+            - nsigma: nsigma for error ellipses
+        
+        '''
+
+        # Copmute the slip direction
+        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse,nsigma=nsigma)
+
+        # Write something
+        print('Writing slip direction to file {}'.format(filename))
+
+        # Open the file
+        fout = open(filename, 'w')
+
+        # Loop over the patches
+        for p in self.slipdirection:
+
+            # Write the > sign to the file
+            fout.write('> \n')
+
+            # Get the start of the vector (node)
+            xc, yc, zc = p[0]
+            lonc, latc = self.xy2ll(xc, yc)
+            if neg_depth:
+                zc = -1.0*zc
+            fout.write('{} {} {} \n'.format(lonc, latc, zc))
+
+            # Get the end of the vector
+            xc, yc, zc = p[1]
+            lonc, latc = self.xy2ll(xc, yc)
+            if neg_depth:
+                zc = -1.0*zc
+            fout.write('{} {} {} \n'.format(lonc, latc, zc))
+
+        # Close file
+        fout.close()
+
+        if ellipse:
+            # Open the file
+            fout = open('ellipse_'+filename, 'w')
+
+            # Loop over the patches
+            for e in self.ellipse:
+
+                # Get ellipse points
+                ex, ey, ez = e[:,0],e[:,1],e[:,2]
+
+                # Depth
+                if neg_depth:
+                    ez = -1.0 * ez
+
+                # Conversion to geographical coordinates
+                lone,late = self.putm(ex*1000.,ey*1000.,inverse=True)
+
+                # Write the > sign to the file
+                fout.write('> \n')
+
+                for lon,lat,z in zip(lone,late,ez):
+                    fout.write('{} {} {} \n'.format(lon, lat, -1.*z))
+            # Close file
+            fout.close()
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False,nsigma=1.):
+        '''
+        Computes the segment indicating the slip direction.
+            * scale : can be a real number or a string in 'total', 'strikeslip',
+                                    'dipslip' or 'tensile'
+        '''
+
+        # Create the array
+        self.slipdirection = []
+
+        # Check Cm if ellipse
+        if ellipse:
+            self.ellipse = []
+            assert(self.Cm!=None), 'Provide Cm values'
+
+        # Loop over the patches
+        if self.N_slip == None:
+            self.N_slip = self.numtent
+
+        for tid in range(self.N_slip):
+            # Get some geometry
+            xc, yc, zc, strike, dip = self.getTentInfo(tid)
+
+            # Get the slip vector
+            #slip = self.getslip(self.patch[p]) # This is weird
+            slip = self.slip[tid, :]
+            rake = np.arctan2(slip[1], slip[0])
+
+            x = (np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake))
+            y = (np.cos(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake))
+            z =  1.0*np.sin(dip)*np.sin(rake)
+
+            # print("strike, dip, rake, x, y, z: ", strike, dip, rake, x, y, z)
+
+            # Scale these
+            if scale.__class__ is float:
+                sca = scale
+            elif scale.__class__ is str:
+                if scale in ('total'):
+                    sca = np.sqrt(slip[0]**2 + slip[1]**2 + slip[2]**2)*factor
+                elif scale in ('strikeslip'):
+                    sca = slip[0]*factor
+                elif scale in ('dipslip'):
+                    sca = slip[1]*factor
+                elif scale in ('tensile'):
+                    sca = slip[2]*factor
+                else:
+                    print('Unknown Slip Direction in computeSlipDirection')
+                    sys.exit(1)
+            x *= sca
+            y *= sca
+            z *= sca
+
+            # update point
+            xe = xc + x
+            ye = yc + y
+            ze = zc + z
+
+            # Append ellipse
+            if ellipse:
+                self.ellipse.append(self.getEllipse(tid, ellipseCenter=[xe, ye, ze], factor=factor,nsigma=nsigma))
+
+            # Append slip direction
+            self.slipdirection.append([[xc, yc, zc], [xe, ye, ze]])
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def computetotalslip(self):
+        '''
+        Computes the total slip.
+        '''
+
+        # Computes the total slip
+        self.totalslip = np.sqrt(self.slip[:,0]**2 + self.slip[:,1]**2 + self.slip[:,2]**2)
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def cumdistance(self, discretized=False):
+        '''
+        Computes the distance between the first point of the fault and every other
+        point, when you walk along the fault.
+
+        Args:
+            * discretized           : if True, use the discretized fault trace
+                                      (default False)
+        '''
+
+        # Get the x and y positions
+        if discretized:
+            x = self.xi
+            y = self.yi
+        else:
+            x = self.xf
+            y = self.yf
+
+        # initialize
+        dis = np.zeros((x.shape[0]))
+
+        # Loop
+        for i in xrange(1,x.shape[0]):
+            d = np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
+            dis[i] = dis[i-1] + d
+
+        # all done
+        return dis
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def plot(self, figure=134, slip='total', equiv=False, 
+             show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
+             method='scatter', npoints=10, colorbar=True, cmap='jet',
+             drawCoastlines=True, expand=0.2, vertIndex=False):
+        '''
+        Plot the available elements of the fault.
+        
+        Kwargs:
+            * figure        : Number of the figure.
+            * slip          : What slip to plot
+            * equiv         : For consistentcy issues
+            * show          : show me
+            * axesscaling   : Scale the axes
+            * Norm          : colorbar limits
+            * linewidth     : Line width in points
+            * plot_on_2d    : Plot on a map as well?
+            * method        : 'scatter' or 'surface' (scatter is better)
+            * npoints       : how many points per triangle
+            * colorbar      : True/False
+            * cmap          : color map in matplotlib
+            * drawCoastlines: Self-explanatory argument
+            * expand        : Expand the map by {expand} degrees
+            * vertIndex     : ?????
+        '''
+
+        # Get lons lats
+        lonmin = np.min([p[:,0] for p in self.patchll])-expand
+	
+        if lonmin<0: 
+            lonmin += 360
+        lonmax = np.max([p[:,0] for p in self.patchll])+expand
+        if lonmax<0:
+            lonmax+= 360
+        latmin = np.min([p[:,1] for p in self.patchll])-expand
+        latmax = np.max([p[:,1] for p in self.patchll])+expand
+
+        # Create a figure
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
+
+        # Draw the coastlines
+        if drawCoastlines:
+            fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
+
+        # Draw the fault
+        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=colorbar, 
+                plot_on_2d=plot_on_2d, npoints=npoints, cmap=cmap,
+                method=method, vertIndex=vertIndex)
+
+        # show
+        if show:
+            showFig = ['fault']
+            if plot_on_2d:
+                showFig.append('map')
+            fig.show(showFig=showFig)
+
+        # All done
+        return x, y, z, slip
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def _getWeights(self, mainNode, nodeOne, nodeTwo, x, y, z):
+        '''
+        For a triangle given by the coordinates of its summits, compute the weight of
+        the points given by x, y, and z positions (these guys need to be inside the triangle).
+        Args:
+            * mainNode  : [x,y,z] of the main Node
+            * nodeOne   : [x,y,z] of the first Node
+            * nodeTwo   : [x,y,z] of the second Node
+            * x         : X position of all the subpoints
+            * y         : Y position of all the subpoints
+            * z         : Z position of all the subpoints
+        '''
+
+        # Calculate the three vectors of the sides of the triangle
+        v1 = nodeOne - mainNode
+        v2 = nodeTwo - mainNode
+
+        # Barycentric coordinates: Less lines. Implemented nicely.
+        Area = 0.5 * np.sqrt(np.sum(np.cross(v1, v2)**2))
+        Is = np.array([x,y,z])
+        S1 = nodeOne[:,np.newaxis] - Is
+        S2 = nodeTwo[:,np.newaxis] - Is
+        Areas = 0.5 * np.sqrt(np.sum(np.cross(S1, S2, axis=0)**2, axis=0))
+        Wi = Areas/Area
+
+        return Wi
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def _getSlipOnSubSources(self, Ids, X, Y, Z, slip, method='manual'):
+        '''
+        From a slip distribution in slip at each Node, interpolate onto the sources defined by Ids, X, Y and Z.
+        Args:
+            * Ids       : Index of the subsources
+            * X         : X position of the subsources
+            * Y         : Y position of the subsources
+            * Z         : Z position of the subsources
+            * slip      : Slip on the sources
+            * method    : 'manual' for a barycentric implementation (slow, but correct)
+                          'scipy' for a LinearNDInterpolator (quick, but not tested)
+        '''
+
+        # Create array
+        Slip = np.zeros(X.shape)
+
+        # Get Vertices
+        vertices = self.Vertices
+
+        if method is 'scipy':
+            
+            # create the interpolator
+            try:
+                inter = self.slipInter
+            except:
+                self.slipInter = sciint.Rbf(self.Vertices[:,0],
+                                            self.Vertices[:,1],
+                                            self.Vertices[:,2],
+                                            slip,
+                                            function='linear')
+
+            # Interpolate
+            Slip = self.slipInter(X, Y, Z)
+        
+        elif method is 'manual':
+
+            # Compute the slip value at each subpoint
+            for iPatch in range(len(self.patch)):
+                nodeOne, nodeTwo, nodeThree = self.Faces[iPatch]
+                slipOne = slip[nodeOne]
+                slipTwo = slip[nodeTwo]
+                slipThree = slip[nodeThree]
+                vertOne = np.array(vertices[nodeOne])
+                vertTwo = np.array(vertices[nodeTwo])
+                vertThree = np.array(vertices[nodeThree])
+                ids = np.flatnonzero(Ids==iPatch)
+                w1 = self._getWeights(vertOne, vertTwo, vertThree, X[ids], Y[ids], Z[ids])
+                w2 = self._getWeights(vertTwo, vertOne, vertThree, X[ids], Y[ids], Z[ids])
+                w3 = self._getWeights(vertThree, vertTwo, vertOne, X[ids], Y[ids], Z[ids])
+                weightedSlip = w1*slipOne + w2*slipTwo + w3*slipThree
+                Slip[ids] = weightedSlip
+
+        # All Done
+        return Slip
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def _getFaultContour(self, takeAngle='max', check=False, write2file=None):
+        '''
+        Returns the outer-edge of the fault.
+        '''
+
+        # Check
+        if not hasattr(self, 'adjacentTents'):
+            self.buildTentAdjacencyMap()
+
+        # Initiate a list of points
+        contour = []
+
+        # Get the lon, lat and depth
+        lon = np.array([t[0] for t in self.tentll])
+        lat = np.array([t[1] for t in self.tentll])
+        depth = np.array([t[2] for t in self.tentll])
+
+        # Take the first point as the shallowest
+        uu = np.argmin(depth)
+        ustart = copy.deepcopy(uu)
+        contour.append([lon[uu], lat[uu], depth[uu], uu])
+
+        # Since we have taken the shallowest point as a start, the second point probably is
+        # as shallow or very close (and there is no such thing as a horizontal fault) 
+        # This is a cheap way, but it should work 99% of the time
+        adj = self.adjacentTents[uu]
+        ii = np.argmin(depth[adj]-depth[uu])
+        uu = adj[ii]
+        contour.append([lon[uu], lat[uu], depth[uu], uu])
+
+        # Follow the edge until we find the same point
+        while uu!=ustart:
+
+            # Get the position of the last 2 points
+            lon2, lat2, d2, u2 = contour[-1]
+            lon1, lat1, d1, u1 = contour[-2]
+            
+            # In XY plane
+            x1, y1 = self.tent[u1][:2]
+            x2, y2 = self.tent[u2][:2]
+
+            # Compute the vector
+            vec = np.array([x2-x1, y2-y1])
+            nvec = np.linalg.norm(vec)
+
+            # Get the adjacent tents
+            adj = copy.deepcopy(self.adjacentTents[u2])
+
+            # Remove the point we had before
+            adj.remove(u1)
+
+            # Compute the vectors
+            vecs = [np.array([x2-self.tent[a][0], y2-self.tent[a][1]]) for a in adj]
+
+            # Compute the scalar product and get the angle
+            angles = []
+            for v in vecs:
+                value = np.dot(vec,v)/(np.linalg.norm(v)*nvec)
+                # Precision issue
+                if value<-1.0: value=-1.0
+                if value>1.0: value=1.0
+                # Get angle
+                angle = np.arccos(value)*180./np.pi
+                vprod = np.cross(vec, v)
+                if vprod<0.:
+                    angle = 360. - angle
+                angles.append(angle)
+
+            # test 
+            if check:
+                plt.plot(lon, lat, '.k', markersize=10, zorder=0)
+                plt.plot([c[0] for c in contour], [c[1] for c in contour], '-r', 
+                        linewidth=2, zorder=1)
+                plt.scatter(lon[adj], lat[adj], s=50, 
+                        c=np.array(angles), linewidth=0.1, zorder=2)
+                plt.colorbar()
+                plt.show()
+
+            # Get the largest angle
+            if takeAngle in ('max'):
+                uu = adj[np.argmax(angles)]
+            elif takeAngle in ('min'):
+                uu =adj[np.argmin(angles)]
+
+            # Append
+            contour.append([lon[uu], lat[uu], depth[uu], uu])
+
+        # Remove the last point because we already have it
+        contour.pop()
+
+        # Write 2 file?
+        if write2file is not None: 
+            fout = open(write2file, 'w')
+            for cont in contour:
+                fout.write('{} {} {} \n'.format(cont[0], cont[1], cont[2]))
+            fout.close()
+
+        # All done
+        return contour
+    # ----------------------------------------------------------------------
 
     #def rotateGFs(self, G, convergence):
     #    '''
@@ -767,702 +1685,6 @@ class TriangularTents(TriangularPatches):
 
     #    # All done
     #    return
-
-    def Facet2Nodes(self, homogeneousStrike=False, homogeneousDip=False, keepFacetsSeparated=False):
-        '''
-        Transfers the edksSources list into the node based setup.
-        Args:
-            * honogeneousStrike     : In a tent, the strike varies among the faces. This variation
-                                      can be a problem if the variation in strikes is too large, 
-                                      with slip that can partially cancel each other.
-                                      If True, the strike of each of the point is equal to the strike
-                                      of the main node of the tent.
-            * homogeneousDip        : Same thing for the dip angle.
-            * keepFacetsSeparated   : If True, each facet of each node will have a different identifier (int).
-                                      This is needed when computing the Green's function for the Node based case. 
-        '''
-    
-        # Get the faces and Nodes
-        Faces = np.array(self.Faces)
-        Vertices = self.Vertices
-
-        # Get the surrounding triangles
-        Nodes = {}
-
-        # Loop for that 
-        for nId in self.tentid:
-            Nodes[nId] = {'nTriangles': 0, 'idTriangles': []}
-            for idFace in range(self.Faces.shape[0]):
-                ns = self.Faces[idFace,:].tolist()
-                if nId in ns:
-                    Nodes[nId]['nTriangles'] += 1
-                    Nodes[nId]['idTriangles'].append(idFace)
-
-        # Save the nodes
-        self.Nodes = Nodes
-
-        # Create the new edksSources
-        Ids = []
-        xs = []; ys = []; zs = []
-        strike = []; dip = []
-        areas = []; slip = []
-
-        # Initialize counter
-        iSource = -1
-
-        # Iterate on the nodes to derive the weights
-        for mainNode in Nodes:
-            if homogeneousDip:
-                mainDip = self.getTentInfo(mainNode)[4]
-            if homogeneousStrike:
-                mainStrike = self.getTentInfo(mainNode)[3]
-            if keepFacetsSeparated:
-                Nodes[mainNode]['subSources'] = []
-            # Loop over each of these triangles
-            for tId in Nodes[mainNode]['idTriangles']:
-                # Find the sources in edksSources
-                iS = np.flatnonzero(self.edksSources[0]==(tId)).tolist()
-                # Get the three nodes
-                tNodes = Faces[tId]
-                # Affect the master node and the two outward nodes
-                nodeOne, nodeTwo = tNodes[np.where(tNodes!=mainNode)]
-                # Get weights (Attention: Vertices are in km, edksSources in m)
-                Wi = self._getWeights(Vertices[mainNode], 
-                                      Vertices[nodeOne], 
-                                      Vertices[nodeTwo], 
-                                      self.edksSources[1][iS]/1000., 
-                                      self.edksSources[2][iS]/1000., 
-                                      self.edksSources[3][iS]/1000.)
-                # Source Ids
-                if keepFacetsSeparated:
-                    iSource += 1
-                    Nodes[mainNode]['subSources'].append(iSource)
-                else:
-                    iSource = mainNode
-                # Save each source
-                Ids += (np.ones((len(iS),))*iSource).astype(int).tolist()
-                xs += self.edksSources[1][iS].tolist()
-                ys += self.edksSources[2][iS].tolist()
-                zs += self.edksSources[3][iS].tolist()
-                areas += self.edksSources[6][iS].tolist()
-                slip += Wi.tolist()
-                if homogeneousStrike:
-                    strike += (np.ones((len(iS),))*mainStrike).tolist()
-                else:
-                    strike += self.edksSources[4][iS].tolist()
-                if homogeneousDip:
-                    dip += (np.ones((len(iS),))*mainDip).tolist()
-                else:
-                    dip += self.edksSources[5][iS].tolist()
-
-        # Set the new edksSources
-        self.edksFacetSources = copy.deepcopy(self.edksSources)
-        self.edksSources = [np.array(Ids), np.array(xs), np.array(ys), np.array(zs), 
-                np.array(strike), np.array(dip), np.array(areas), np.array(slip)]
-
-        # All done
-        return
-
-    def buildAdjacencyMap(self, verbose=True):
-        """
-        For each triangle vertex, find the indices of the adjacent triangles.
-        This function overwrites that from the parent class TriangularPatches.
-        """
-        if verbose:
-            print("-----------------------------------------------")
-            print("-----------------------------------------------")
-            print("Finding the adjacent triangles for all vertices")
-
-        self.adjacencyMap = []
-
-        # Cache the vertices and faces arrays
-        vertices, faces = self.Vertices, np.array(self.Faces)
-
-        # First find adjacent triangles for all triangles
-        numvert = len(vertices)
-        numface = len(faces)
-
-        for i in range(numvert):
-            if verbose:
-                sys.stdout.write('%i / %i\r' % (i + 1, numvert))
-                sys.stdout.flush()
-
-            # Find triangles that share an edge
-            adjacents = []
-            for j in range(numface):
-                if i in faces[j,:]:
-                    adjacents.append(j)
-
-            self.adjacencyMap.append(adjacents)
-
-        if verbose:
-            print('\n')
-        return
-
-    def buildTentAdjacencyMap(self, verbose=True):
-        '''
-        For each triangle vertex, finds the indices of the surrounding vertices.
-        This function runs typically after buildAdjacencyMap.
-        '''
-
-        if verbose:
-            print("-----------------------------------------------")
-            print("-----------------------------------------------")
-            print("Finding the adjacent vertices for all vertices.")
-
-        # Check adjacency Map
-        if not hasattr(self, 'adjacencyMap'):
-            self.buildAdjacencyMap(verbose=verbose)
-
-        # Cache adjacencyMap
-        adjacency = self.adjacencyMap 
-        faces = self.Faces
-
-        # Create empty lists
-        adjacentTents = []
-
-        # Iterate over adjacency map
-        for adj, iVert in zip(adjacency, range(len(adjacency))):
-            # Create a list for that tent
-            tent = []
-            # Iterate over the surrounding triangles
-            for iTriangle in adj:
-                face = faces[iTriangle]
-                face = face[face!=iVert]
-                tent.append(face)
-            # Clean up tent
-            tent = np.unique(np.concatenate(tent)).tolist()
-            # Append
-            adjacentTents.append(tent)
-
-        # Save
-        self.adjacentTents = adjacentTents
-
-        # All don
-        return
-
-    def buildLaplacian(self, verbose=True, method='distance', irregular=False):
-        """
-        Build a discrete Laplacian smoothing matrix.
-        Args:
-            * verbose       : if True, displays stuff.
-            * method        : Method to estimate the Laplacian operator
-                'count'     --> The diagonal is 2-times the number of surrounding nodes.
-                                Off diagonals are -2/(number of surrounding nodes) for the surrounding nodes, 0 otherwise.
-
-                'distance'  --> Computes the scale-dependent operator based on Desbrun et al 1999.
-                                
-                                Mathieu Desbrun, Mark Meyer, Peter Schr\"oder, and Alan Barr, 1999. 
-                                Implicit Fairing of Irregular Meshes using Diffusion and Curvature Flow,  
-                                Proceedings of SIGGRAPH.
-            * irregular     : Not used, here for consistency purposes
-        """
- 
-        # Build the tent adjacency map
-        self.buildTentAdjacencyMap(verbose=verbose)
-
-        # Get the vertices
-        vertices = self.Vertices
-
-        # Allocate an array
-        D = np.zeros((len(vertices), len(vertices)))
-
-        # Normalize the distances
-        if method=='distance':
-            self.Distances = []
-            for adja, i in zip(self.adjacentTents, range(len(vertices))):
-                x0, y0, z0 = vertices[i,0], vertices[i,1], vertices[i,2]
-                xv, yv, zv = vertices[adja,0], vertices[adja,1], vertices[adja,2] 
-                distances = np.array([np.sqrt((x-x0)**2+(y-y0)**2+(z-z0)**2) 
-                    for x, y, z in zip(xv, yv, zv)])
-                self.Distances.append(distances)
-            normalizer = np.max([d.max() for d in self.Distances])
-
-        # Iterate over the vertices
-        i = 0
-        for adja in self.adjacentTents:
-            # Counting Laplacian
-            if method=='count':
-                D[i,i] = 2*float(len(adja))
-                D[i,adja] = -2./float(len(adja))
-            # Distance-based
-            elif method=='distance':
-                distances = self.Distances[i]/normalizer
-                E = np.sum(distances)
-                D[i,i] = float(len(adja))*2./E * np.sum(1./distances)
-                D[i,adja] = -2./E * 1./distances
-
-            # Increment 
-            i += 1
-
-        # All done
-        return D
-
-    def getEllipse(self, tent, ellipseCenter=None, Npoints=10, factor=1.0,nsigma=1.):
-        '''
-        Compute the ellipse error given Cm for a given tent
-        args:
-               (optional) center  : center of the ellipse
-               (optional) Npoints : number of points on the ellipse
-               (optional) factor  : scaling factor
-               (optional) nsigma  : will design a nsigma*sigma error ellipse
-        '''
-
-        # Get Cm
-        Cm = np.diag(self.Cm[tent,:2])
-        Cm[0,1] = Cm[1,0] = self.Cm[tent,2]
-
-        # Get strike and dip
-        xc, yc, zc, strike, dip = self.getTentInfo(tent)
-        if ellipseCenter!=None:
-            xc, yc, zc = ellipseCenter
-
-        # Compute eigenvalues/eigenvectors
-        D,V = np.linalg.eig(Cm)
-        v1 = V[:,0]
-        a = nsigma*np.sqrt(np.abs(D[0]))
-        b = nsigma*np.sqrt(np.abs(D[1]))
-        phi = np.arctan2(v1[1],v1[0])
-        theta = np.linspace(0,2*np.pi,Npoints);
-
-        # The ellipse in x and y coordinates
-        Ex = a * np.cos(theta) * factor
-        Ey = b * np.sin(theta) * factor
-
-        # Correlation Rotation
-        R  = np.array([[np.cos(phi), -np.sin(phi)],
-                       [np.sin(phi), np.cos(phi)]])
-        RE = np.dot(R,np.array([Ex,Ey]))
-
-        # Strike/Dip rotation
-        ME = np.array([RE[0,:], RE[1,:] * np.cos(dip), RE[1,:]*np.sin(dip)])
-        R  = np.array([[np.sin(strike), -np.cos(strike), 0.0],
-                       [np.cos(strike), np.sin(strike), 0.0],
-                       [0.0, 0.0, 1.]])
-        RE = np.dot(R,ME).T
-
-        # Translation on Fault
-        RE[:,0] += xc
-        RE[:,1] += yc
-        RE[:,2] += zc
-
-        # All done
-        return RE
-
-
-    def writeSlipDirection2File(self, filename, scale=1.0, factor=1.0,
-                                neg_depth=False, ellipse=False,nsigma=1.):
-        '''
-        Write a psxyz compatible file to draw lines starting from the center of each patch,
-        indicating the direction of slip.
-        Tensile slip is not used...
-        scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
-            - nsigma: nsigma for error ellipses
-        
-        '''
-
-        # Copmute the slip direction
-        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse,nsigma=nsigma)
-
-        # Write something
-        print('Writing slip direction to file {}'.format(filename))
-
-        # Open the file
-        fout = open(filename, 'w')
-
-        # Loop over the patches
-        for p in self.slipdirection:
-
-            # Write the > sign to the file
-            fout.write('> \n')
-
-            # Get the start of the vector (node)
-            xc, yc, zc = p[0]
-            lonc, latc = self.xy2ll(xc, yc)
-            if neg_depth:
-                zc = -1.0*zc
-            fout.write('{} {} {} \n'.format(lonc, latc, zc))
-
-            # Get the end of the vector
-            xc, yc, zc = p[1]
-            lonc, latc = self.xy2ll(xc, yc)
-            if neg_depth:
-                zc = -1.0*zc
-            fout.write('{} {} {} \n'.format(lonc, latc, zc))
-
-        # Close file
-        fout.close()
-
-        if ellipse:
-            # Open the file
-            fout = open('ellipse_'+filename, 'w')
-
-            # Loop over the patches
-            for e in self.ellipse:
-
-                # Get ellipse points
-                ex, ey, ez = e[:,0],e[:,1],e[:,2]
-
-                # Depth
-                if neg_depth:
-                    ez = -1.0 * ez
-
-                # Conversion to geographical coordinates
-                lone,late = self.putm(ex*1000.,ey*1000.,inverse=True)
-
-                # Write the > sign to the file
-                fout.write('> \n')
-
-                for lon,lat,z in zip(lone,late,ez):
-                    fout.write('{} {} {} \n'.format(lon, lat, -1.*z))
-            # Close file
-            fout.close()
-
-        # All done
-        return
-
-    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False,nsigma=1.):
-        '''
-        Computes the segment indicating the slip direction.
-            * scale : can be a real number or a string in 'total', 'strikeslip',
-                                    'dipslip' or 'tensile'
-        '''
-
-        # Create the array
-        self.slipdirection = []
-
-        # Check Cm if ellipse
-        if ellipse:
-            self.ellipse = []
-            assert(self.Cm!=None), 'Provide Cm values'
-
-        # Loop over the patches
-        if self.N_slip == None:
-            self.N_slip = self.numtent
-
-        for tid in range(self.N_slip):
-            # Get some geometry
-            xc, yc, zc, strike, dip = self.getTentInfo(tid)
-
-            # Get the slip vector
-            #slip = self.getslip(self.patch[p]) # This is weird
-            slip = self.slip[tid, :]
-            rake = np.arctan2(slip[1], slip[0])
-
-            x = (np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake))
-            y = (np.cos(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake))
-            z =  1.0*np.sin(dip)*np.sin(rake)
-
-            # print("strike, dip, rake, x, y, z: ", strike, dip, rake, x, y, z)
-
-            # Scale these
-            if scale.__class__ is float:
-                sca = scale
-            elif scale.__class__ is str:
-                if scale in ('total'):
-                    sca = np.sqrt(slip[0]**2 + slip[1]**2 + slip[2]**2)*factor
-                elif scale in ('strikeslip'):
-                    sca = slip[0]*factor
-                elif scale in ('dipslip'):
-                    sca = slip[1]*factor
-                elif scale in ('tensile'):
-                    sca = slip[2]*factor
-                else:
-                    print('Unknown Slip Direction in computeSlipDirection')
-                    sys.exit(1)
-            x *= sca
-            y *= sca
-            z *= sca
-
-            # update point
-            xe = xc + x
-            ye = yc + y
-            ze = zc + z
-
-            # Append ellipse
-            if ellipse:
-                self.ellipse.append(self.getEllipse(tid, ellipseCenter=[xe, ye, ze], factor=factor,nsigma=nsigma))
-
-            # Append slip direction
-            self.slipdirection.append([[xc, yc, zc], [xe, ye, ze]])
-
-        # All done
-        return
-
-    def computetotalslip(self):
-        '''
-        Computes the total slip.
-        '''
-
-        # Computes the total slip
-        self.totalslip = np.sqrt(self.slip[:,0]**2 + self.slip[:,1]**2 + self.slip[:,2]**2)
-
-        # All done
-        return
-
-    def cumdistance(self, discretized=False):
-        '''
-        Computes the distance between the first point of the fault and every other
-        point, when you walk along the fault.
-        Args:
-            * discretized           : if True, use the discretized fault trace
-                                      (default False)
-        '''
-
-        # Get the x and y positions
-        if discretized:
-            x = self.xi
-            y = self.yi
-        else:
-            x = self.xf
-            y = self.yf
-
-        # initialize
-        dis = np.zeros((x.shape[0]))
-
-        # Loop
-        for i in xrange(1,x.shape[0]):
-            d = np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
-            dis[i] = dis[i-1] + d
-
-        # all done
-        return dis
-
-    def plot(self, figure=134, slip='total', equiv=False, 
-             show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
-             method='scatter', npoints=10, colorbar=True, cmap='jet',
-             drawCoastlines=True, expand=0.2, vertIndex=False):
-        '''
-        Plot the available elements of the fault.
-        
-        Args:
-            * ref           : Referential for the plot ('utm' or 'lonlat').
-            * figure        : Number of the figure.
-        '''
-
-        # Get lons lats
-        lonmin = np.min([p[:,0] for p in self.patchll])-expand
-	
-        if lonmin<0: 
-            lonmin += 360
-        lonmax = np.max([p[:,0] for p in self.patchll])+expand
-        if lonmax<0:
-            lonmax+= 360
-        latmin = np.min([p[:,1] for p in self.patchll])-expand
-        latmax = np.max([p[:,1] for p in self.patchll])+expand
-
-
-        # lon = np.unique([p[:,0] for p in self.patchll])
-        # lon[lon<0.] += 360.
-        # lat = np.unique([p[:,1] for p in self.patchll])
-        # lonmin = lon.min()-expand
-        # lonmax = lon.max()+expand
-        # latmin = lat.min()-expand
-        # latmax = lat.max()+expand
-
-        # Create a figure
-        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
-
-        # Draw the coastlines
-        if drawCoastlines:
-            fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
-
-        # Draw the fault
-        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=colorbar, 
-                plot_on_2d=plot_on_2d, npoints=npoints, cmap=cmap,
-                method=method, vertIndex=vertIndex)
-
-        # show
-        if show:
-            showFig = ['fault']
-            if plot_on_2d:
-                showFig.append('map')
-            fig.show(showFig=showFig)
-
-        # All done
-        return x, y, z, slip
-
-    def _getWeights(self, mainNode, nodeOne, nodeTwo, x, y, z):
-        '''
-        For a triangle given by the coordinates of its summits, compute the weight of
-        the points given by x, y, and z positions (these guys need to be inside the triangle).
-        Args:
-            * mainNode  : [x,y,z] of the main Node
-            * nodeOne   : [x,y,z] of the first Node
-            * nodeTwo   : [x,y,z] of the second Node
-            * x         : X position of all the subpoints
-            * y         : Y position of all the subpoints
-            * z         : Z position of all the subpoints
-        '''
-
-        # Calculate the three vectors of the sides of the triangle
-        v1 = nodeOne - mainNode
-        v2 = nodeTwo - mainNode
-
-        # Barycentric coordinates: Less lines. Implemented nicely.
-        Area = 0.5 * np.sqrt(np.sum(np.cross(v1, v2)**2))
-        Is = np.array([x,y,z])
-        S1 = nodeOne[:,np.newaxis] - Is
-        S2 = nodeTwo[:,np.newaxis] - Is
-        Areas = 0.5 * np.sqrt(np.sum(np.cross(S1, S2, axis=0)**2, axis=0))
-        Wi = Areas/Area
-
-        return Wi
-
-    def _getSlipOnSubSources(self, Ids, X, Y, Z, slip, method='manual'):
-        '''
-        From a slip distribution in slip at each Node, interpolate onto the sources defined by Ids, X, Y and Z.
-        Args:
-            * Ids       : Index of the subsources
-            * X         : X position of the subsources
-            * Y         : Y position of the subsources
-            * Z         : Z position of the subsources
-            * slip      : Slip on the sources
-            * method    : 'manual' for a barycentric implementation (slow, but correct)
-                          'scipy' for a LinearNDInterpolator (quick, but not tested)
-        '''
-
-        # Create array
-        Slip = np.zeros(X.shape)
-
-        # Get Vertices
-        vertices = self.Vertices
-
-        if method is 'scipy':
-            
-            # create the interpolator
-            try:
-                inter = self.slipInter
-            except:
-                self.slipInter = sciint.Rbf(self.Vertices[:,0],
-                                            self.Vertices[:,1],
-                                            self.Vertices[:,2],
-                                            slip,
-                                            function='linear')
-
-            # Interpolate
-            Slip = self.slipInter(X, Y, Z)
-        
-        elif method is 'manual':
-
-            # Compute the slip value at each subpoint
-            for iPatch in range(len(self.patch)):
-                nodeOne, nodeTwo, nodeThree = self.Faces[iPatch]
-                slipOne = slip[nodeOne]
-                slipTwo = slip[nodeTwo]
-                slipThree = slip[nodeThree]
-                vertOne = np.array(vertices[nodeOne])
-                vertTwo = np.array(vertices[nodeTwo])
-                vertThree = np.array(vertices[nodeThree])
-                ids = np.flatnonzero(Ids==iPatch)
-                w1 = self._getWeights(vertOne, vertTwo, vertThree, X[ids], Y[ids], Z[ids])
-                w2 = self._getWeights(vertTwo, vertOne, vertThree, X[ids], Y[ids], Z[ids])
-                w3 = self._getWeights(vertThree, vertTwo, vertOne, X[ids], Y[ids], Z[ids])
-                weightedSlip = w1*slipOne + w2*slipTwo + w3*slipThree
-                Slip[ids] = weightedSlip
-
-        # All Done
-        return Slip
-
-    def _getFaultContour(self, takeAngle='max', check=False, write2file=None):
-        '''
-        Returns the outer-edge of the fault.
-        '''
-
-        # Check
-        if not hasattr(self, 'adjacentTents'):
-            self.buildTentAdjacencyMap()
-
-        # Initiate a list of points
-        contour = []
-
-        # Get the lon, lat and depth
-        lon = np.array([t[0] for t in self.tentll])
-        lat = np.array([t[1] for t in self.tentll])
-        depth = np.array([t[2] for t in self.tentll])
-
-        # Take the first point as the shallowest
-        uu = np.argmin(depth)
-        ustart = copy.deepcopy(uu)
-        contour.append([lon[uu], lat[uu], depth[uu], uu])
-
-        # Since we have taken the shallowest point as a start, the second point probably is
-        # as shallow or very close (and there is no such thing as a horizontal fault) 
-        # This is a cheap way, but it should work 99% of the time
-        adj = self.adjacentTents[uu]
-        ii = np.argmin(depth[adj]-depth[uu])
-        uu = adj[ii]
-        contour.append([lon[uu], lat[uu], depth[uu], uu])
-
-        # Follow the edge until we find the same point
-        while uu!=ustart:
-
-            # Get the position of the last 2 points
-            lon2, lat2, d2, u2 = contour[-1]
-            lon1, lat1, d1, u1 = contour[-2]
-            
-            # In XY plane
-            x1, y1 = self.tent[u1][:2]
-            x2, y2 = self.tent[u2][:2]
-
-            # Compute the vector
-            vec = np.array([x2-x1, y2-y1])
-            nvec = np.linalg.norm(vec)
-
-            # Get the adjacent tents
-            adj = copy.deepcopy(self.adjacentTents[u2])
-
-            # Remove the point we had before
-            adj.remove(u1)
-
-            # Compute the vectors
-            vecs = [np.array([x2-self.tent[a][0], y2-self.tent[a][1]]) for a in adj]
-
-            # Compute the scalar product and get the angle
-            angles = []
-            for v in vecs:
-                value = np.dot(vec,v)/(np.linalg.norm(v)*nvec)
-                # Precision issue
-                if value<-1.0: value=-1.0
-                if value>1.0: value=1.0
-                # Get angle
-                angle = np.arccos(value)*180./np.pi
-                vprod = np.cross(vec, v)
-                if vprod<0.:
-                    angle = 360. - angle
-                angles.append(angle)
-
-            # test 
-            if check:
-                plt.plot(lon, lat, '.k', markersize=10, zorder=0)
-                plt.plot([c[0] for c in contour], [c[1] for c in contour], '-r', 
-                        linewidth=2, zorder=1)
-                plt.scatter(lon[adj], lat[adj], s=50, 
-                        c=np.array(angles), linewidth=0.1, zorder=2)
-                plt.colorbar()
-                plt.show()
-
-            # Get the largest angle
-            if takeAngle in ('max'):
-                uu = adj[np.argmax(angles)]
-            elif takeAngle in ('min'):
-                uu =adj[np.argmin(angles)]
-
-            # Append
-            contour.append([lon[uu], lat[uu], depth[uu], uu])
-
-        # Remove the last point because we already have it
-        contour.pop()
-
-        # Write 2 file?
-        if write2file is not None: 
-            fout = open(write2file, 'w')
-            for cont in contour:
-                fout.write('{} {} {} \n'.format(cont[0], cont[1], cont[2]))
-            fout.close()
-
-        # All done
-        return contour
 
        
 

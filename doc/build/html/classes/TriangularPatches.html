@@ -34,80 +34,167 @@
 <dl class="class">
 <dt id="csi.TriangularPatches">
 <em class="property">class </em><code class="descclassname">csi.</code><code class="descname">TriangularPatches</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>verbose=True</em>, <em>lon0=None</em>, <em>lat0=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Classes implementing a fault made of triangular patches. Inherits from Fault</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>name      : Name of the fault.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>utmzone   : UTM zone  (optional, default=None)</li>
+<li>lon0      : Longitude of the center of the UTM zone</li>
+<li>lat0      : Latitude of the center of the UTM zone</li>
+<li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
+<li>verbose   : Speak to me (default=True)</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
 <dt id="csi.TriangularPatches.AverageAlongStrikeOffsets">
 <code class="descname">AverageAlongStrikeOffsets</code><span class="sig-paren">(</span><em>name</em>, <em>insars</em>, <em>filename</em>, <em>discretized=True</em>, <em>smooth=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.AverageAlongStrikeOffsets" title="Permalink to this definition">¶</a></dt>
-<dd><p>If the profiles have the lon lat vectors as the fault,
+<dd><p>!Untested in a looong time…!</p>
+<p>If the profiles have the lon lat vectors as the fault,
 This routines averages it and write it to an output file.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.ExtractAlongStrikeAllDepths">
 <code class="descname">ExtractAlongStrikeAllDepths</code><span class="sig-paren">(</span><em>filename=None</em>, <em>discret=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.ExtractAlongStrikeAllDepths" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extracts the Along Strike Variations of the creep at all depths for the discretized version.</p>
+<dd><p>Extracts the Along Strike Variations of the creep at all depths for 
+the discretized fault trace.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>filename      : Name of the output file</li>
+<li>discret       : Fault discretization</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.ExtractAlongStrikeVariations">
 <code class="descname">ExtractAlongStrikeVariations</code><span class="sig-paren">(</span><em>depth=0.5</em>, <em>origin=None</em>, <em>filename=None</em>, <em>orientation=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.ExtractAlongStrikeVariations" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extract the Along Strike Variations of the creep at a given depth
-Args:</p>
-<blockquote>
-<div>depth   : Depth at which we extract the along strike variations of slip.
-origin  : Computes a distance from origin. Give [lon, lat].
-filename: Saves to a file.
-orientation: defines the direction of positive distances.</div></blockquote>
+<dd><p>Extract the Along Strike Variations of the creep at a given depth</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>depth   : Depth at which we extract the along strike variations of slip.</li>
+<li>origin  : Computes a distance from origin. Give [lon, lat].</li>
+<li>filename: Saves to a file.</li>
+<li>orientation: defines the direction of positive distances.</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.ExtractAlongStrikeVariationsOnDiscretizedFault">
 <code class="descname">ExtractAlongStrikeVariationsOnDiscretizedFault</code><span class="sig-paren">(</span><em>depth=0.5</em>, <em>filename=None</em>, <em>discret=0.5</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.ExtractAlongStrikeVariationsOnDiscretizedFault" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
-Args:</p>
-<blockquote>
-<div>depth       : Depth at which we extract the along strike variations of slip.
-discret     : Discretization length
-filename    : Saves to a file.</div></blockquote>
+<dd><p>! Untested in a looong time !</p>
+<p>Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>depth       : Depth at which we extract the along strike variations of slip.</li>
+<li>discret     : Discretization length</li>
+<li>filename    : Saves to a file.</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.addpatch">
 <code class="descname">addpatch</code><span class="sig-paren">(</span><em>patch, slip=[0, 0, 0]</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.addpatch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds a patch to the list.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Adds a patch to the list.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>patch     : Geometry of the patch to add (km, not lon lat)</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>slip      : List of the strike, dip and tensile slip.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.addpatches">
 <code class="descname">addpatches</code><span class="sig-paren">(</span><em>patches</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.addpatches" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds patches to the list.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>patch     : List of patch geometries</li>
+<dd><p>Adds patches to the list.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>patches     : List of patch geometries</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.buildAdjacencyMap">
 <code class="descname">buildAdjacencyMap</code><span class="sig-paren">(</span><em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.buildAdjacencyMap" title="Permalink to this definition">¶</a></dt>
 <dd><p>For each triangle, find the indices of the adjacent (edgewise) triangles.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>verbose</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.buildLaplacian">
 <code class="descname">buildLaplacian</code><span class="sig-paren">(</span><em>verbose=True</em>, <em>method=None</em>, <em>irregular=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.buildLaplacian" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>Build a discrete Laplacian smoothing matrix.</dt>
+<dd><p>Build a discrete Laplacian smoothing matrix.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
 <dd><ul class="first last simple">
+<li>verbose       : Speak to me</li>
+<li>method        : Not used, here for consistency purposes</li>
 <li>irregular     : Not used, here for consistency purposes</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>Laplacian     : 2D array</li>
 </ul>
 </dd>
 </dl>
@@ -117,19 +204,35 @@ Args:</p>
 <dt id="csi.TriangularPatches.computeArea">
 <code class="descname">computeArea</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.computeArea" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the area of all triangles.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.computeSlipDirection">
 <code class="descname">computeSlipDirection</code><span class="sig-paren">(</span><em>scale=1.0</em>, <em>factor=1.0</em>, <em>ellipse=False</em>, <em>nsigma=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.computeSlipDirection" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>Computes the segment indicating the slip direction.</dt>
+<dd><p>Computes the segment indicating the slip direction.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
 <dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>scale <span class="classifier-delimiter">:</span> <span class="classifier">can be a real number or a string in ‘total’, ‘strikeslip’,</span></dt>
 <dd>‘dipslip’ or ‘tensile’</dd>
 </dl>
 </li>
+<li>factor    : Multiply by a factor</li>
+<li>ellipse   : Compute the ellipse</li>
+<li>nsigma    : How many times sigma for the ellipse</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
 </ul>
 </dd>
 </dl>
@@ -138,56 +241,100 @@ Args:</p>
 <dl class="method">
 <dt id="csi.TriangularPatches.computetotalslip">
 <code class="descname">computetotalslip</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.computetotalslip" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the total slip.</p>
+<dd><p>Computes the total slip and stores it self.totalslip</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.cumdistance">
 <code class="descname">cumdistance</code><span class="sig-paren">(</span><em>discretized=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.cumdistance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the distance between the first point of the fault and every other
-point, when you walk along the fault.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+point, when you walk along the fault.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>discretized <span class="classifier-delimiter">:</span> <span class="classifier">if True, use the discretized fault trace</span></dt>
 <dd>(default False)</dd>
 </dl>
 </li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>cum                   : Array of floats</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.deletepatch">
 <code class="descname">deletepatch</code><span class="sig-paren">(</span><em>patch</em>, <em>checkVertices=True</em>, <em>checkSlip=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.deletepatch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Deletes a patch.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Deletes a patch.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>patch     : index of the patch to remove.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>checkVertices : Make sure vertice array corresponds to patch corners</li>
+<li>checkSlip     : Check that slip vector corresponds to patch corners</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.deletepatches">
 <code class="descname">deletepatches</code><span class="sig-paren">(</span><em>tutu</em>, <em>checkVertices=True</em>, <em>checkSlip=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.deletepatches" title="Permalink to this definition">¶</a></dt>
 <dd><p>Deletes a list of patches.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>tutu      : List of indices</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>checkVertices : Check and delete if patches are concerned.</li>
+<li>checkSlip     : Check and delete is slip is concerned.</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.deletevertex">
 <code class="descname">deletevertex</code><span class="sig-paren">(</span><em>iVertex</em>, <em>checkPatch=True</em>, <em>checkSlip=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.deletevertex" title="Permalink to this definition">¶</a></dt>
-<dd><p>Delete a Vertex.
-If some patches are composed of this vertex and checkPatch is True,</p>
-<blockquote>
-<div>deletes the patches.</div></blockquote>
+<dd><p>Delete a Vertex. If some patches are composed of this vertex and 
+checkPatch is True, deletes the patches.</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><ul class="first last simple">
 <li>iVertex       : index of the vertex to delete</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>checkPatch    : Check and delete if patches are concerned.</li>
+<li>checkSlip     : Check and delete is slip is concerned.</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
 </ul>
 </dd>
 </dl>
@@ -196,15 +343,23 @@ If some patches are composed of this vertex and checkPatch is True,</p>
 <dl class="method">
 <dt id="csi.TriangularPatches.deletevertices">
 <code class="descname">deletevertices</code><span class="sig-paren">(</span><em>iVertices</em>, <em>checkPatch=True</em>, <em>checkSlip=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.deletevertices" title="Permalink to this definition">¶</a></dt>
-<dd><p>Deletes some vertices.
-If some patches are composed of thexe vertices and checkPatch is True,</p>
-<blockquote>
-<div>deletes the patches.</div></blockquote>
+<dd><p>Deletes some vertices. If some patches are composed of these vertices 
+and checkPatch is True, deletes the patches.</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><ul class="first last simple">
 <li>iVertices     : List of vertices to delete.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>checkPatch    : Check and delete if patches are concerned.</li>
+<li>checkSlip     : Check and delete if slip terms are concerned.</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
 </ul>
 </dd>
 </dl>
@@ -213,73 +368,128 @@ If some patches are composed of thexe vertices and checkPatch is True,</p>
 <dl class="method">
 <dt id="csi.TriangularPatches.distanceMatrix">
 <code class="descname">distanceMatrix</code><span class="sig-paren">(</span><em>distance='center'</em>, <em>lim=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.distanceMatrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a matrix of the distances between patches.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Returns a matrix of the distances between patches.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>distance <span class="classifier-delimiter">:</span> <span class="classifier">distance estimation mode</span></dt>
-<dd>center : distance between the centers of the patches.
-no other method is implemented for now.</dd>
+<dd><ul class="first last">
+<li>center : distance between the centers of the patches.</li>
+<li>no other method is implemented for now.</li>
+</ul>
+</dd>
 </dl>
 </li>
-<li>lim       : if not None, list of two float, the first one is the distance above which d=lim[1].</li>
+<li><dl class="first docutils">
+<dt>lim <span class="classifier-delimiter">:</span> <span class="classifier">if not None, list of two float, the first one is </span></dt>
+<dd>the distance above which d=lim[1].</dd>
+</dl>
+</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>distances : Array of floats</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.distancePatchToPatch">
 <code class="descname">distancePatchToPatch</code><span class="sig-paren">(</span><em>patch1</em>, <em>patch2</em>, <em>distance='center'</em>, <em>lim=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.distancePatchToPatch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Measures the distance between two patches.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Measures the distance between two patches.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>patch1    : first patch or its index</li>
 <li>patch2    : second patch or its index</li>
+</ul>
+</dd>
+<dt>Kwargs</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>distance <span class="classifier-delimiter">:</span> <span class="classifier">distance estimation mode</span></dt>
-<dd>center : distance between the centers of the patches.
-no other method is implemented for now.</dd>
+<dd><ul class="first last">
+<li>center : distance between the centers of the patches.</li>
+<li>no other method is implemented for now.</li>
+</ul>
+</dd>
 </dl>
 </li>
-<li>lim       : if not None, list of two float, the first one is the distance above which d=lim[1].</li>
+<li><dl class="first docutils">
+<dt>lim <span class="classifier-delimiter">:</span> <span class="classifier">if not None, list of two float, the first one is the </span></dt>
+<dd>distance above which d=lim[1].</dd>
+</dl>
+</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>distace   : float</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.distanceVertexToVertex">
 <code class="descname">distanceVertexToVertex</code><span class="sig-paren">(</span><em>vertex1</em>, <em>vertex2</em>, <em>distance='center'</em>, <em>lim=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.distanceVertexToVertex" title="Permalink to this definition">¶</a></dt>
-<dd><p>Measures the distance between two vertexes.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>patch1    : first patch or its index</li>
-<li>patch2    : second patch or its index</li>
-<li>lim       : if not None, list of two float, the first one is the distance above which d=lim[1].</li>
+<dd><p>Measures the distance between two vertexes.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>vertex1   : first patch or its index</li>
+<li>vertex2   : second patch or its index</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>lim <span class="classifier-delimiter">:</span> <span class="classifier">if not None, list of two float, the first one is </span></dt>
+<dd>the distance above which d=lim[1].</dd>
+</dl>
+</li>
+<li>distance  : Useless argument only here for compatibility reasons</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>distance  : float</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.findAsperities">
 <code class="descname">findAsperities</code><span class="sig-paren">(</span><em>function</em>, <em>slip='strikeslip'</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.findAsperities" title="Permalink to this definition">¶</a></dt>
 <dd><p>Finds the number, size and location of asperities that are identified by the 
-given function.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+given function.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>function <span class="classifier-delimiter">:</span> <span class="classifier">Function that takes an array the size of the </span></dt>
 <dd>number of patches and returns an array of bolean
 the same size. Trues are within the asperity.</dd>
 </dl>
 </li>
+</ul>
+</dd>
+<dt>Kwargs</dt>
+<dd><ul class="first last simple">
 <li>slip              : Which slip vector do you want to apply the function to</li>
 <li>verbose           : Talk to me?</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>Asperities</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -291,13 +501,27 @@ the same size. Trues are within the asperity.</dd>
 <dl class="method">
 <dt id="csi.TriangularPatches.getEllipse">
 <code class="descname">getEllipse</code><span class="sig-paren">(</span><em>patch</em>, <em>ellipseCenter=None</em>, <em>Npoints=10</em>, <em>factor=1.0</em>, <em>nsigma=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.getEllipse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the ellipse error given Cm for a given patch
-args:</p>
-<blockquote>
-<div>(optional) center  : center of the ellipse
-(optional) Npoints : number of points on the ellipse
-(optional) factor  : scaling factor
-(optional) nsigma  : will design a nsigma*sigma error ellipse</div></blockquote>
+<dd><p>Compute the ellipse error given Cm for a given patch</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>patch : Which patch to consider</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>center  : center of the ellipse</li>
+<li>Npoints : number of points on the ellipse</li>
+<li>factor  : scaling factor</li>
+<li>nsigma  : will design a nsigma*sigma error ellipse</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>Ellipse   : Array containing the ellipse</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -310,49 +534,79 @@ args:</p>
 <dt id="csi.TriangularPatches.getSubSourcesFault">
 <code class="descname">getSubSourcesFault</code><span class="sig-paren">(</span><em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.getSubSourcesFault" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a TriangularPatches fault object with each triangle
-corresponding to the subsources used for plotting.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+corresponding to the subsources used for plotting.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>verbose       : Talk to me (default: True)</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>fault         : Returns a triangularpatches instance</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.getcenter">
 <code class="descname">getcenter</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.getcenter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the center of one triangular patch.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>p    : Patch geometry.</li>
+<dd><p>Get the center of one triangular patch.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>p     : Patch geometry.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>x,y,z : floats</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.getcenters">
 <code class="descname">getcenters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.getcenters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the center of the patches.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>centers:  list of triplets</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.getpatchgeometry">
 <code class="descname">getpatchgeometry</code><span class="sig-paren">(</span><em>patch</em>, <em>center=False</em>, <em>retNormal=False</em>, <em>checkindex=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.getpatchgeometry" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the patch geometry as needed for triangleDisp.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>patch         : index of the wanted patch or patch;</li>
+<dd><p>Returns the patch geometry as needed for triangleDisp.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>patch         : index of the wanted patch or patch</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>center <span class="classifier-delimiter">:</span> <span class="classifier">if true, returns the coordinates of the center of the patch.</span></dt>
 <dd>if False, returns the first corner</dd>
 </dl>
 </li>
 <li>checkindex    : Checks the index of the patch</li>
+<li>retNormal     : If True gives, also the normal vector to the patch</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>x, y, z, width, length, strike, dip, (normal)</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -362,8 +616,7 @@ Args:</p>
 and a fault and the slip from the argument
 fault is mapped into self.slip.
 Function just does:
-self.slip[:,0] = np.dot(Map,fault.slip)
-…</p>
+self.slip[:,0] = np.dot(Map,fault.slip)</p>
 </dd></dl>
 
 <dl class="method">
@@ -372,39 +625,56 @@ self.slip[:,0] = np.dot(Map,fault.slip)
 <dd><p>This routine is very very particular. It only works with 2 vertical faults.
 It Builds the mapping function from one fault to another, when these are vertical.
 These two faults must have the same surface trace. If the deep fault has more than one raw of patches,
-it might go wrong and give some unexpected results.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+it might go wrong and give some unexpected results.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>deepfault     : Deep section of the fault.</li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.patchArea">
 <code class="descname">patchArea</code><span class="sig-paren">(</span><em>patch</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.patchArea" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the area of one patch.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Returns the area of one patch.</p>
+<dl class="docutils">
+<dt>Args:   </dt>
+<dd><ul class="first last simple">
 <li>patch : one item of the patch list.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>Area  : float</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.patches2triangles">
 <code class="descname">patches2triangles</code><span class="sig-paren">(</span><em>fault</em>, <em>numberOfTriangles=4</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.patches2triangles" title="Permalink to this definition">¶</a></dt>
 <dd><p>Takes a fault with rectangular patches and splits them into triangles to 
-initialize self.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+initialize self.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>fault             : instance of rectangular patches.</li>
+</ul>
+</dd>
+<dt>Kwargs</dt>
+<dd><ul class="first last simple">
 <li>numberOfTriangles : Split each patch in 2 or 4 (default) triangle</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -412,10 +682,27 @@ Args:</p>
 <code class="descname">plot</code><span class="sig-paren">(</span><em>figure=134</em>, <em>slip='total'</em>, <em>equiv=False</em>, <em>show=True</em>, <em>axesscaling=True</em>, <em>Norm=None</em>, <em>linewidth=1.0</em>, <em>plot_on_2d=True</em>, <em>drawCoastlines=True</em>, <em>expand=0.2</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the available elements of the fault.</p>
 <dl class="docutils">
-<dt>Args:</dt>
+<dt>Kwargs:</dt>
 <dd><ul class="first last simple">
-<li>ref           : Referential for the plot (‘utm’ or ‘lonlat’).</li>
 <li>figure        : Number of the figure.</li>
+<li>slip          : What slip to plot</li>
+<li>equiv         : useless. For consitency between fault objects</li>
+<li>show          : Show me</li>
+<li>axesscaling   : Scale the axis</li>
+<li>Norm          : colorbar min and max values</li>
+<li>linewidth     : Line width in points</li>
+<li>plot_on_2d    : Plot on a map as well</li>
+<li>drawCoastline : Self-explanatory argument…</li>
+<li><dl class="first docutils">
+<dt>expand <span class="classifier-delimiter">:</span> <span class="classifier">Expand the map by {expand} degree around the edges</span></dt>
+<dd>of the fault.</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
 </ul>
 </dd>
 </dl>
@@ -424,7 +711,8 @@ Args:</p>
 <dl class="method">
 <dt id="csi.TriangularPatches.plotMayavi">
 <code class="descname">plotMayavi</code><span class="sig-paren">(</span><em>neg_depth=True</em>, <em>value_to_plot='total'</em>, <em>colormap='jet'</em>, <em>reverseSign=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.plotMayavi" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot 3D representation of fault using MayaVi.</p>
+<dd><p>! OBSOLETE BUT KEPT HERE TO BE TESTED IN THE FUTURE !
+Plot 3D representation of fault using MayaVi.</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><ul class="first last simple">
@@ -435,38 +723,61 @@ Args:</p>
 </ul>
 </dd>
 </dl>
+<p>! OBSOLETE BUT KEPT HERE TO BE TESTED IN THE FUTURE !</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.readGocadPatches">
-<code class="descname">readGocadPatches</code><span class="sig-paren">(</span><em>filename</em>, <em>neg_depth=False</em>, <em>utm=False</em>, <em>factor_xy=1.0</em>, <em>factor_depth=1.0</em>, <em>box=None</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.readGocadPatches" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<code class="descname">readGocadPatches</code><span class="sig-paren">(</span><em>filename</em>, <em>neg_depth=False</em>, <em>utm=False</em>, <em>factor_xy=1.0</em>, <em>factor_depth=1.0</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.readGocadPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a triangulated surface from a Gocad formatted file. Vertices 
+must be in geographical coordinates.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>filename:  tsurf file to read</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>neg_depth: if true, use negative depth</li>
 <li>utm: if true, input file is given as utm coordinates (if false -&gt; lon/lat)</li>
 <li>factor_xy: if utm==True, multiplication factor for x and y</li>
 <li>factor_depth: multiplication factor for z</li>
+<li>verbose: Speak to me</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.readPatchesFromFile">
 <code class="descname">readPatchesFromFile</code><span class="sig-paren">(</span><em>filename</em>, <em>readpatchindex=True</em>, <em>donotreadslip=False</em>, <em>inputCoordinates='lonlat'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.readPatchesFromFile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Reads patches from a GMT formatted file.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Reads patches from a GMT formatted file.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>filename          : Name of the file</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li>inputCoordinates  : Default is ‘lonlat’. Can be ‘utm’</li>
 <li>readpatchindex    : Default True.</li>
 <li>donotreadslip     : Default is False. If True, does not read the slip</li>
 <li>inputCoordinates  : Default is ‘lonlat’, can be ‘xyz’</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -474,31 +785,81 @@ Args:</p>
 <code class="descname">refineMesh</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.refineMesh" title="Permalink to this definition">¶</a></dt>
 <dd><p>Cuts all the patches in 4, based on the mid-point of each triangle and 
 builds a new fault from that.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.replacePatch">
 <code class="descname">replacePatch</code><span class="sig-paren">(</span><em>patch</em>, <em>iPatch</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.replacePatch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Replaces one patch by the given geometry.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Replaces one patch by the given geometry.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>patch     : Patch geometry.</li>
 <li>iPatch    : index of the patch to replace.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:    </dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="csi.TriangularPatches.selectPatches">
+<code class="descname">selectPatches</code><span class="sig-paren">(</span><em>minlon</em>, <em>maxlon</em>, <em>minlat</em>, <em>maxlat</em>, <em>mindep</em>, <em>maxdep</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.selectPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes patches that are outside of a 3D box.</p>
+<dl class="docutils">
+<dt>Args:   </dt>
+<dd><ul class="first last simple">
+<li>minlon        : west longitude</li>
+<li>maxlon        : east longitude</li>
+<li>minlat        : south latitude</li>
+<li>maxlat        : north latitude</li>
+<li>mindep        : Minimum depth</li>
+<li>maxdep        : Maximum depth</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.setVerticesFromPatches">
 <code class="descname">setVerticesFromPatches</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.setVerticesFromPatches" title="Permalink to this definition">¶</a></dt>
 <dd><p>Takes the patches and constructs a list of Vertices and Faces</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.setdepth">
 <code class="descname">setdepth</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.setdepth" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set depth patch attributes</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
@@ -511,12 +872,25 @@ using a homogeneous half-space.</p>
 <dd><ul class="first last simple">
 <li>data          : data object from gps or insar.</li>
 <li>patch         : number of the patch that slips</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
-<dt>slip <span class="classifier-delimiter">:</span> <span class="classifier">if a number is given, that is the amount of slip along strike.</span></dt>
-<dd>if three numbers are given, that is the amount of slip along strike,
-along dip and opening. if None, values from self.slip are taken.</dd>
+<dt>slip <span class="classifier-delimiter">:</span> <span class="classifier">if a number is given, that is the amount of </span></dt>
+<dd>slip along strike. If three numbers are given,
+that is the amount of slip along strike, along 
+dip and opening. if None, values from self.slip 
+are taken.</dd>
 </dl>
 </li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>ss_dis        : Surface displacements due to strike slip</li>
+<li>ds_dis        : Surface displacements due to dip slip</li>
+<li>ts_dis        : Surface displacements due to tensile opening</li>
 </ul>
 </dd>
 </dl>
@@ -525,49 +899,87 @@ along dip and opening. if None, values from self.slip are taken.</dd>
 <dl class="method">
 <dt id="csi.TriangularPatches.splitPatch">
 <code class="descname">splitPatch</code><span class="sig-paren">(</span><em>patch</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.splitPatch" title="Permalink to this definition">¶</a></dt>
-<dd><p>Splits a patch into 4 patches, based on the mid-point of each side.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Splits a patch into 4 patches, based on the mid-point of each side.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>patch : item of the patch list.</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>t1, t2, t3, t4    : 4 patches</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.surfacesimulation">
 <code class="descname">surfacesimulation</code><span class="sig-paren">(</span><em>box=None</em>, <em>disk=None</em>, <em>err=None</em>, <em>npoints=None</em>, <em>lonlat=None</em>, <em>slipVec=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.surfacesimulation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Takes the slip vector and computes the surface displacement that corresponds on a regular grid.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>box       : Can be a list of [minlon, maxlon, minlat, maxlat].</li>
+<dd><p>Takes the slip vector and computes the surface displacement that 
+corresponds on a regular grid.</p>
+<dl class="docutils">
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>box       : A list of [minlon, maxlon, minlat, maxlat].</li>
 <li>disk      : list of [xcenter, ycenter, radius, n]</li>
 <li>lonlat    : Arrays of lat and lon. [lon, lat]</li>
+<li>err       : Compute random errors and scale them by {err}</li>
+<li>slipVec   : Replace slip by what is in slipVec</li>
 </ul>
-</div></blockquote>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.vertices2ll">
 <code class="descname">vertices2ll</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.vertices2ll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts all the vertices into lonlat coordinates.</p>
+<dl class="docutils">
+<dt>Returns:    </dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.writeGocadPatches">
 <code class="descname">writeGocadPatches</code><span class="sig-paren">(</span><em>filename</em>, <em>utm=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.writeGocadPatches" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.</p>
+<dd><p>Write a triangulated Gocad surface file.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>filename  : output file name</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>utm       : Write in utm coordinates if True</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.writePatches2File">
 <code class="descname">writePatches2File</code><span class="sig-paren">(</span><em>filename</em>, <em>add_slip=None</em>, <em>scale=1.0</em>, <em>stdh5=None</em>, <em>decim=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.writePatches2File" title="Permalink to this definition">¶</a></dt>
-<dd><p>Writes the patch corners in a file that can be used in psxyz.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Writes the patch corners in a file that can be used in psxyz.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
 <li>filename      : Name of the file.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>add_slip <span class="classifier-delimiter">:</span> <span class="classifier">Put the slip as a value for the color.</span></dt>
 <dd>Can be None, strikeslip, dipslip, total, coupling</dd>
@@ -575,17 +987,45 @@ Args:</p>
 </li>
 <li>scale         : Multiply the slip value by a factor.</li>
 <li>patch         : Can be ‘normal’ or ‘equiv’</li>
+<li>stdh5         : Get the standard deviation from a h5 file</li>
+<li>decim         : Decimate the h5 file</li>
 </ul>
-</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.TriangularPatches.writeSlipDirection2File">
 <code class="descname">writeSlipDirection2File</code><span class="sig-paren">(</span><em>filename</em>, <em>scale=1.0</em>, <em>factor=1.0</em>, <em>neg_depth=False</em>, <em>ellipse=False</em>, <em>nsigma=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.TriangularPatches.writeSlipDirection2File" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write a psxyz compatible file to draw lines starting from the center of each patch,
-indicating the direction of slip.
-Tensile slip is not used…
-scale can be a real number or a string in ‘total’, ‘strikeslip’, ‘dipslip’ or ‘tensile’</p>
+<dd><p>Write a psxyz compatible file to draw lines starting from the center 
+of each patch, indicating the direction of slip. Scale can be a real 
+number or a string in ‘total’, ‘strikeslip’, ‘dipslip’ or ‘tensile’</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>filename      : Name of the output file</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>scale         : Scale of the line</li>
+<li>factor        : Multiply slip by a factor</li>
+<li>neg_depth     : if True, depth is a negative nmber</li>
+<li>ellipse       : Write the ellipse</li>
+<li>nsigma        : Nxsigma for the ellipse</li>
+</ul>
+</dd>
+<dt>Returns:</dt>
+<dd><ul class="first last simple">
+<li>None</li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

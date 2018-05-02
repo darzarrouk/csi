@@ -1,6 +1,6 @@
-sopac class
+EDKSmp Tools
 ===============================
 
-.. autoclass:: csi.sopac
+.. automodule:: csi.EDKSmp
     :members:
 

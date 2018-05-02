@@ -34,7 +34,24 @@
 <dl class="class">
 <dt id="csi.Fault">
 <em class="property">class </em><code class="descclassname">csi.</code><code class="descname">Fault</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.Fault" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>Classes implementing a fault. Parent class to all faults</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>name      : Name of the fault.</li>
+</ul>
+</dd>
+<dt>Kwargs:</dt>
+<dd><ul class="first last simple">
+<li>utmzone   : UTM zone  (optional, default=None)</li>
+<li>lon0      : Longitude of the center of the UTM zone</li>
+<li>lat0      : Latitude of the center of the UTM zone</li>
+<li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
+<li>verbose   : Speak to me (default=True)</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
 <dt id="csi.Fault.addfaults">
 <code class="descname">addfaults</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.Fault.addfaults" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add some other faults to plot with the modeled one.</p>
@@ -107,40 +124,54 @@ to be estimated in the data sets, through the polys argument.</p>
 </dd>
 <dt>Kwargs:</dt>
 <dd><ul class="first last">
-<li><p class="first">polys             : None -&gt; nothing additional is estimated</p>
+<li><p class="first">polys             : None</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>For InSAR, Optical, GPS:</dt>
-<dd><p class="first last">1 -&gt; estimate a constant offset
-3 -&gt; estimate z = ax + by + c
-4 -&gt; estimate z = axy + bx + cy + d</p>
-</dd>
-<dt>For GPS only:</dt>
-<dd><dl class="first docutils">
-<dt>‘full’                -&gt; Estimates a rotation, </dt>
-<dd><p class="first last">translation and scaling
-(Helmert transform).</p>
-</dd>
-<dt>‘strain’              -&gt; Estimates the full strain </dt>
-<dd><p class="first last">tensor (Rotation + Translation 
-+ Internal strain)</p>
-</dd>
-<dt>‘strainnorotation’    -&gt; Estimates the strain tensor and a </dt>
-<dd><p class="first last">translation</p>
-</dd>
-</dl>
-<p>‘strainonly’          -&gt; Estimates the strain tensor
-‘strainnotranslation’ -&gt; Estimates the strain tensor and a</p>
+<div><ul>
+<li><p class="first">For InSAR, Optical, GPS:</p>
 <blockquote>
-<div><p>rotation</p>
+<div><ul class="simple">
+<li>1 : estimate a constant offset</li>
+<li>3 : estimate z = ax + by + c</li>
+<li>4 : estimate z = axy + bx + cy + d</li>
+</ul>
 </div></blockquote>
-<p>‘translation’         -&gt; Estimates the translation
-‘translationrotation  -&gt; Estimates the translation and a</p>
-<blockquote class="last">
-<div><p>rotation</p>
-</div></blockquote>
-</dd>
+</li>
+<li><p class="first">For GPS only:</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt>full <span class="classifier-delimiter">:</span> <span class="classifier">Estimates a rotation, </span></dt>
+<dd>translation and scaling
+(Helmert transform).</dd>
 </dl>
+</li>
+<li><dl class="first docutils">
+<dt>strain <span class="classifier-delimiter">:</span> <span class="classifier">Estimates the full strain </span></dt>
+<dd>tensor (Rotation, Translation,
+Internal strain)</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>strainnorotation <span class="classifier-delimiter">:</span> <span class="classifier">Estimates the strain tensor and a </span></dt>
+<dd>translation</dd>
+</dl>
+</li>
+<li>strainonly           : Estimates the strain tensor</li>
+<li><dl class="first docutils">
+<dt>strainnotranslation <span class="classifier-delimiter">:</span> <span class="classifier">Estimates the strain tensor and a </span></dt>
+<dd>rotation</dd>
+</dl>
+</li>
+<li>translation          : Estimates the translation</li>
+<li><dl class="first docutils">
+<dt>translationrotation <span class="classifier-delimiter">:</span> <span class="classifier">Estimates the translation and a </span></dt>
+<dd>rotation</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
 </div></blockquote>
 </li>
 <li><dl class="first docutils">
@@ -203,19 +234,13 @@ Assembled vector is stored in self.dassembled</p>
 <dl class="method">
 <dt id="csi.Fault.buildCm">
 <code class="descname">buildCm</code><span class="sig-paren">(</span><em>sigma</em>, <em>lam</em>, <em>lam0=None</em>, <em>extra_params=None</em>, <em>lim=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.Fault.buildCm" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Builds a model covariance matrix using the equation described in 
+<dd><p>Builds a model covariance matrix using the equation described in 
 Radiguet et al 2010. We use</p>
-<blockquote>
-<div>C_m(i,j) =</div></blockquote>
-</div></blockquote>
-<p>rac{sigmalam_0}{lam}^2 e^{-
-rac{||i,j||_2}{lam}}</p>
-<blockquote>
-<div><p>extra_params allows to add some diagonal terms and expand the size 
-of the matrix, in case the fault object is also hosting the estimation
-of transformation parameters.</p>
-<p>Model covariance is stored in self.Cm</p>
+<div class="math notranslate">
+\[C_m(i,j) = \frac{\sigma\lambda_0}{\lambda}^2 e^{-\frac{||i,j||_2}{\lambda}}\]</div>
+<p>extra_params allows to add some diagonal terms and expand the size of 
+the matrix, in case the fault object is also hosting the estimation of 
+transformation parameters. Model covariance is stored in self.Cm</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><ul class="first last simple">
@@ -241,7 +266,6 @@ of transformation parameters.</p>
 </ul>
 </dd>
 </dl>
-</div></blockquote>
 </dd></dl>
 
 <dl class="method">
@@ -314,21 +338,15 @@ of transformation parameters.</p>
 <dl class="method">
 <dt id="csi.Fault.buildCmSensitivity">
 <code class="descname">buildCmSensitivity</code><span class="sig-paren">(</span><em>sigma</em>, <em>lam</em>, <em>lam0=None</em>, <em>extra_params=None</em>, <em>lim=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.Fault.buildCmSensitivity" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Builds a model covariance matrix using the equation described in Radiguet et al 2010.
+<dd><p>Builds a model covariance matrix using the equation described in Radiguet et al 2010.
 We use</p>
-<blockquote>
-<div>C_m(i,j) =</div></blockquote>
-</div></blockquote>
-<p>rac{sigmalam_0}{lam}^2 e^{-
-rac{||i,j||_2}{lam}}</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>Then correlation length is weighted by the sensitivity matrix described in Ortega’s PhD thesis.</dt>
-<dd>==&gt;       S = diag(G’G)</dd>
-</dl>
-<p>Here, Sigma and Lambda are lists specifying values for the slip directions</p>
-<p>extra_params allows to add some diagonal terms and expand the size 
+<div class="math notranslate">
+\[C_m(i,j) = \frac{\sigma\lambda_0}{\lambda}^2 e^{-\frac{||i,j||_2}{\lambda}}\]</div>
+<p>Then correlation length is weighted by the sensitivity matrix described in Ortega’s PhD thesis.</p>
+<div class="math notranslate">
+\[S = diag(G'G)\]</div>
+<p>Here, sigma and lambda are lists specifying values for the slip directions. 
+extra_params allows to add some diagonal terms and expand the size 
 of the matrix, in case the fault object is also hosting the estimation
 of transformation parameters.</p>
 <p>Model covariance is stored in self.Cm</p>
@@ -357,23 +375,17 @@ of transformation parameters.</p>
 </ul>
 </dd>
 </dl>
-</div></blockquote>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.Fault.buildCmSlipDirs">
 <code class="descname">buildCmSlipDirs</code><span class="sig-paren">(</span><em>sigma</em>, <em>lam</em>, <em>lam0=None</em>, <em>extra_params=None</em>, <em>lim=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.Fault.buildCmSlipDirs" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Builds a model covariance matrix using the equation described in 
+<dd><p>Builds a model covariance matrix using the equation described in 
 Radiguet et al 2010. Here, Sigma and Lambda are lists specifying 
 values for the slip directions. We use</p>
-<blockquote>
-<div>C_m(i,j) =</div></blockquote>
-</div></blockquote>
-<p>rac{sigmalam_0}{lam}^2 e^{-
-rac{||i,j||_2}{lam}}</p>
-<blockquote>
-<div><dl class="docutils">
+<div class="math notranslate">
+\[C_m(i,j) = \frac{\sigma\lambda_0}{\lambda}^2 e^{-\frac{||i,j||_2}{\lambda}}\]</div>
+<dl class="docutils">
 <dt>Args:</dt>
 <dd><ul class="first last simple">
 <li>sigma         : Amplitude of the correlation.</li>
@@ -398,14 +410,13 @@ rac{||i,j||_2}{lam}}</p>
 </ul>
 </dd>
 </dl>
-</div></blockquote>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.Fault.buildGFs">
 <code class="descname">buildGFs</code><span class="sig-paren">(</span><em>data</em>, <em>vertical=True</em>, <em>slipdir='sd'</em>, <em>method='homogeneous'</em>, <em>verbose=True</em>, <em>convergence=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.Fault.buildGFs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Builds the Green’s function matrix based on the discretized fault.</p>
-<p>The Green’s function matrix is stored in a dictionary. 
+<dd><p>Builds the Green’s function matrix based on the discretized fault.
+The Green’s function matrix is stored in a dictionary. 
 Each entry of the dictionary is named after the corresponding dataset. 
 Each of these entry is a dictionary that contains ‘strikeslip’, ‘dipslip’,
 ‘tensile’ and/or ‘coupling’</p>
@@ -416,42 +427,29 @@ Each of these entry is a dictionary that contains ‘strikeslip’, ‘dipslip�
 </ul>
 </dd>
 <dt>Kwargs:</dt>
-<dd><ul class="first last">
+<dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>vertical <span class="classifier-delimiter">:</span> <span class="classifier">If True, will produce green’s functions for</span></dt>
-<dd><p class="first last">the vertical displacements in a gps object.</p>
-</dd>
+<dd>the vertical displacements in a gps object.</dd>
 </dl>
 </li>
 <li><dl class="first docutils">
 <dt>slipdir <span class="classifier-delimiter">:</span> <span class="classifier">Direction of slip along the patches. </span></dt>
-<dd><dl class="first last docutils">
-<dt>Can be any combination of s (strikeslip), </dt>
-<dd><p class="first last">d (dipslip), 
-t (tensile) and 
-c (coupling)</p>
-</dd>
-</dl>
-</dd>
+<dd>Can be any combination of s (strikeslip), 
+d (dipslip), t (tensile) and c (coupling)</dd>
 </dl>
 </li>
 <li><dl class="first docutils">
 <dt>method <span class="classifier-delimiter">:</span> <span class="classifier">Can be okada (Okada, 1982) (rectangular patches only)</span></dt>
-<dd><p class="first">meade (Meade 2007) (triangular patches only)
+<dd>meade (Meade 2007) (triangular patches only)
 edks (Zhao &amp; Rivera, 2002) 
-homogeneous (Okada for rectangles,</p>
-<blockquote class="last">
-<div><p>Meade for triangles)</p>
-</div></blockquote>
-</dd>
+homogeneous (Okada for rectangles, Meade for triangles)</dd>
 </dl>
 </li>
-<li><p class="first">verbose       : Writes stuff to the screen (overwrites self.verbose)</p>
-</li>
+<li>verbose       : Writes stuff to the screen (overwrites self.verbose)</li>
 <li><dl class="first docutils">
 <dt>convergence <span class="classifier-delimiter">:</span> <span class="classifier">If coupling case, needs convergence azimuth </span></dt>
-<dd><p class="first last">and rate [azimuth in deg, rate]</p>
-</dd>
+<dd>and rate [azimuth in deg, rate]</dd>
 </dl>
 </li>
 </ul>
@@ -462,6 +460,7 @@ homogeneous (Okada for rectangles,</p>
 </ul>
 </dd>
 </dl>
+<p>TODO: Implement the homogeneous case for the Node-based triangular GFs</p>
 </dd></dl>
 
 <dl class="method">
@@ -559,9 +558,12 @@ throughout the whole library.</p>
 to compute GFs using the EDKS software.</p>
 <dl class="docutils">
 <dt>The process is controlled by the attributes:</dt>
-<dd>self.sourceSpacing      : Distance between sources
-self.sourceArea         : Area of the sources
-self.sourceNumber       : Number of sources per patch</dd>
+<dd><ul class="first last simple">
+<li>self.sourceSpacing      : Distance between sources</li>
+<li>self.sourceArea         : Area of the sources</li>
+<li>self.sourceNumber       : Number of sources per patch</li>
+</ul>
+</dd>
 </dl>
 <p>One needs to set at least one of those three attributes.</p>
 <p>Sources are saved in self.plotSources and self.edksSources</p>
@@ -651,8 +653,11 @@ c (coupling)</dd>
 <dd><p>Counts the number of earthquakes per patches and divides by the area of the patches.
 Sets the results in</p>
 <blockquote>
-<div>self.earthquakeInPatch  –&gt; Number of earthquakes per patch
-self.seismicityRate     –&gt; Seismicity rate for this patch</div></blockquote>
+<div><ul class="simple">
+<li>self.earthquakeInPatch  : Number of earthquakes per patch</li>
+<li>self.seismicityRate     : Seismicity rate for this patch</li>
+</ul>
+</div></blockquote>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><ul class="first last simple">
@@ -989,13 +994,9 @@ in self.G[data.name].</p>
 <code class="descname">setGFs</code><span class="sig-paren">(</span><em>data, strikeslip=[None, None, None], dipslip=[None, None, None], tensile=[None, None, None], coupling=[None, None, None], vertical=False, synthetic=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.Fault.setGFs" title="Permalink to this definition">¶</a></dt>
 <dd><p>Stores the input Green’s functions matrices into the fault structure.</p>
 <p>These GFs are organized in a dictionary structure in self.G
-Entries of self.G are the data set names (data.name).</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>Entries of self.G[data.name] are ‘strikeslip’, ‘dipslip’, ‘tensile’</dt>
-<dd>and/or ‘coupling’</dd>
-</dl>
-</div></blockquote>
+Entries of self.G are the data set names (data.name).
+Entries of self.G[data.name] are ‘strikeslip’, ‘dipslip’, ‘tensile’
+and/or ‘coupling’</p>
 <p>If you provide GPS GFs, those are organised with E, N and U in lines</p>
 <p>If you provide Optical GFs, those are organised with E and N in lines</p>
 <p>If you provide InSAR GFs, these need to be projected onto the 
@@ -1043,15 +1044,15 @@ LOS direction already.</p>
 <code class="descname">setGFsFromFile</code><span class="sig-paren">(</span><em>data</em>, <em>strikeslip=None</em>, <em>dipslip=None</em>, <em>tensile=None</em>, <em>coupling=None</em>, <em>custom=None</em>, <em>vertical=False</em>, <em>dtype='d'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.Fault.setGFsFromFile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the Green’s functions reading binary files. Be carefull, these have to be in the
 good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and
-if insar, GF are projected already). Basically, it will work better if
-you have computed the GFs using csi…</p>
+if insar, GF are projected already). Basically, it will work better if you have 
+computed the GFs using csi.</p>
 <dl class="docutils">
 <dt>Args:</dt>
 <dd><ul class="first last simple">
 <li>data          : Data object</li>
 </ul>
 </dd>
-<dt>kwargs:</dt>
+<dt>Kwargs:</dt>
 <dd><ul class="first last simple">
 <li><dl class="first docutils">
 <dt>strikeslip <span class="classifier-delimiter">:</span> <span class="classifier">File containing the Green’s functions for </span></dt>
@@ -1080,8 +1081,8 @@ you have computed the GFs using csi…</p>
 </li>
 <li><dl class="first docutils">
 <dt>dtype <span class="classifier-delimiter">:</span> <span class="classifier">Type of binary data.</span></dt>
-<dd>‘d’ for double/float64
-‘f’ for float32</dd>
+<dd>d for double/float64
+f for float32</dd>
 </dl>
 </li>
 </ul>

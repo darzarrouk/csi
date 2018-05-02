@@ -8,5 +8,6 @@ Classes
     faultclasses 
     dataclasses
     miscclasses
+    tools
     oldclasses
 

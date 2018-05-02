@@ -23,6 +23,19 @@ from .EDKSmp import dropSourcesInPatches as Patches2Sources
 
 #class Fault
 class Fault(SourceInv):
+    '''
+    Classes implementing a fault. Parent class to all faults
+
+    Args:
+        * name      : Name of the fault.
+
+    Kwargs:
+        * utmzone   : UTM zone  (optional, default=None)
+        * lon0      : Longitude of the center of the UTM zone
+        * lat0      : Latitude of the center of the UTM zone
+        * ellps     : ellipsoid (optional, default='WGS84')
+        * verbose   : Speak to me (default=True)
+    '''
 
     # ----------------------------------------------------------------------
     # Initialize class
@@ -823,7 +836,6 @@ class Fault(SourceInv):
                  method='homogeneous', verbose=True, convergence=None):
         '''
         Builds the Green's function matrix based on the discretized fault.
-
         The Green's function matrix is stored in a dictionary. 
         Each entry of the dictionary is named after the corresponding dataset. 
         Each of these entry is a dictionary that contains 'strikeslip', 'dipslip',
@@ -837,14 +849,11 @@ class Fault(SourceInv):
                               the vertical displacements in a gps object.
             * slipdir       : Direction of slip along the patches. 
                               Can be any combination of s (strikeslip), 
-                                                        d (dipslip), 
-                                                        t (tensile) and 
-                                                        c (coupling)
+                              d (dipslip), t (tensile) and c (coupling)
             * method        : Can be okada (Okada, 1982) (rectangular patches only)
-                                     meade (Meade 2007) (triangular patches only)
-                                     edks (Zhao & Rivera, 2002) 
-                                     homogeneous (Okada for rectangles, 
-                                                  Meade for triangles)
+                              meade (Meade 2007) (triangular patches only)
+                              edks (Zhao & Rivera, 2002) 
+                              homogeneous (Okada for rectangles, Meade for triangles)
             * verbose       : Writes stuff to the screen (overwrites self.verbose)
             * convergence   : If coupling case, needs convergence azimuth 
                               and rate [azimuth in deg, rate]
@@ -852,9 +861,7 @@ class Fault(SourceInv):
         Returns:
             * None
 
-        **********************
         TODO: Implement the homogeneous case for the Node-based triangular GFs
-        **********************
         '''
 
         # Chech something
@@ -1325,13 +1332,13 @@ class Fault(SourceInv):
         '''
         Sets the Green's functions reading binary files. Be carefull, these have to be in the
         good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and
-        if insar, GF are projected already). Basically, it will work better if
-        you have computed the GFs using csi...
+        if insar, GF are projected already). Basically, it will work better if you have 
+        computed the GFs using csi.
 
         Args:
             * data          : Data object
 
-        kwargs:
+        Kwargs:
             * strikeslip    : File containing the Green's functions for 
                               strikeslip related displacements.
             * dipslip       : File containing the Green's functions for 
@@ -1343,8 +1350,8 @@ class Fault(SourceInv):
             * vertical      : Deal with the UP component (gps: default is false,
                               insar: it will be true anyway).
             * dtype         : Type of binary data.
-                                    'd' for double/float64
-                                    'f' for float32
+                              d for double/float64
+                              f for float32
 
         Returns:
             * None
@@ -1411,8 +1418,8 @@ class Fault(SourceInv):
         
         These GFs are organized in a dictionary structure in self.G
         Entries of self.G are the data set names (data.name).
-            Entries of self.G[data.name] are 'strikeslip', 'dipslip', 'tensile'
-                                             and/or 'coupling'
+        Entries of self.G[data.name] are 'strikeslip', 'dipslip', 'tensile'
+        and/or 'coupling'
 
         If you provide GPS GFs, those are organised with E, N and U in lines
 
@@ -1610,9 +1617,10 @@ class Fault(SourceInv):
         to compute GFs using the EDKS software.
 
         The process is controlled by the attributes:
-            self.sourceSpacing      : Distance between sources
-            self.sourceArea         : Area of the sources
-            self.sourceNumber       : Number of sources per patch
+            - self.sourceSpacing      : Distance between sources
+            - self.sourceArea         : Area of the sources
+            - self.sourceNumber       : Number of sources per patch
+
         One needs to set at least one of those three attributes.
 
         Sources are saved in self.plotSources and self.edksSources
@@ -1741,27 +1749,29 @@ class Fault(SourceInv):
                                   used, can be a data instance only.
             
         Kwargs:
-            * polys             : None -> nothing additional is estimated
+            * polys             : None 
 
-                 For InSAR, Optical, GPS:
-                       1 -> estimate a constant offset
-                       3 -> estimate z = ax + by + c
-                       4 -> estimate z = axy + bx + cy + d
+                 - For InSAR, Optical, GPS:
+
+                       - 1 : estimate a constant offset
+                       - 3 : estimate z = ax + by + c
+                       - 4 : estimate z = axy + bx + cy + d
              
-                 For GPS only:
-                       'full'                -> Estimates a rotation, 
-                                                translation and scaling
-                                                (Helmert transform).
-                       'strain'              -> Estimates the full strain 
-                                                tensor (Rotation + Translation 
-                                                + Internal strain)
-                       'strainnorotation'    -> Estimates the strain tensor and a 
+                 - For GPS only:
+
+                       - full                 : Estimates a rotation, 
+                                               translation and scaling
+                                               (Helmert transform).
+                       - strain               : Estimates the full strain 
+                                                tensor (Rotation, Translation,
+                                                Internal strain)
+                       - strainnorotation     : Estimates the strain tensor and a 
                                                 translation
-                       'strainonly'          -> Estimates the strain tensor
-                       'strainnotranslation' -> Estimates the strain tensor and a 
+                       - strainonly           : Estimates the strain tensor
+                       - strainnotranslation  : Estimates the strain tensor and a 
                                                 rotation
-                       'translation'         -> Estimates the translation
-                       'translationrotation  -> Estimates the translation and a 
+                       - translation          : Estimates the translation
+                       - translationrotation  : Estimates the translation and a 
                                                 rotation
             
             * slipdir           : Directions of slip to include. 
@@ -2162,13 +2172,12 @@ class Fault(SourceInv):
         Builds a model covariance matrix using the equation described in 
         Radiguet et al 2010. We use
         
-            C_m(i,j) = \frac{\sigma\lam_0}{\lam}^2 e^{-\frac{||i,j||_2}{\lam}}
+        .. math::    
+            C_m(i,j) = \\frac{\sigma\lambda_0}{\lambda}^2 e^{-\\frac{||i,j||_2}{\lambda}}
 
-        extra_params allows to add some diagonal terms and expand the size 
-        of the matrix, in case the fault object is also hosting the estimation
-        of transformation parameters.
-
-        Model covariance is stored in self.Cm
+        extra_params allows to add some diagonal terms and expand the size of 
+        the matrix, in case the fault object is also hosting the estimation of 
+        transformation parameters. Model covariance is stored in self.Cm
 
         Args:
             * sigma         : Amplitude of the correlation.
@@ -2251,7 +2260,9 @@ class Fault(SourceInv):
         Radiguet et al 2010. Here, Sigma and Lambda are lists specifying 
         values for the slip directions. We use
 
-            C_m(i,j) = \frac{\sigma\lam_0}{\lam}^2 e^{-\frac{||i,j||_2}{\lam}}
+        .. math::    
+            C_m(i,j) = \\frac{\sigma\lambda_0}{\lambda}^2 e^{-\\frac{||i,j||_2}{\lambda}}
+
             
         Args:
             * sigma         : Amplitude of the correlation.
@@ -2354,12 +2365,15 @@ class Fault(SourceInv):
         Builds a model covariance matrix using the equation described in Radiguet et al 2010.
         We use
 
-            C_m(i,j) = \frac{\sigma\lam_0}{\lam}^2 e^{-\frac{||i,j||_2}{\lam}}
+        .. math::    
+            C_m(i,j) = \\frac{\sigma\lambda_0}{\lambda}^2 e^{-\\frac{||i,j||_2}{\lambda}}
 
         Then correlation length is weighted by the sensitivity matrix described in Ortega's PhD thesis.
-                     ==>       S = diag(G'G)
-        Here, Sigma and Lambda are lists specifying values for the slip directions
-        
+
+        .. math::
+            S = diag(G'G)
+
+        Here, sigma and lambda are lists specifying values for the slip directions. 
         extra_params allows to add some diagonal terms and expand the size 
         of the matrix, in case the fault object is also hosting the estimation
         of transformation parameters.
@@ -2604,8 +2618,9 @@ class Fault(SourceInv):
         '''
         Counts the number of earthquakes per patches and divides by the area of the patches.
         Sets the results in
-            self.earthquakeInPatch  --> Number of earthquakes per patch
-            self.seismicityRate     --> Seismicity rate for this patch
+
+            - self.earthquakeInPatch  : Number of earthquakes per patch
+            - self.seismicityRate     : Seismicity rate for this patch
 
         Args:
             * earthquake    : seismiclocation object
