@@ -560,8 +560,7 @@ class timeseries(SourceInv):
         # Plot ts
         for v,style in zip(values, styles):
             u = np.argsort(self.time)
-            for i in u:
-                ax.plot(self.time[i], v[i], style)
+            ax.plot(np.array(self.time)[u], np.array(v)[u], style)
 
         # show
         if show:
