@@ -2950,20 +2950,23 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def _rotatedisp(self, Gss, Gds, azimuth):
+    def _rotatedisp(self, Gss, Gds, azim):
         '''
         A rotation function for Green function.
 
         Args:   
             * Gss           : Strike slip GFs
             * Gds           : Dip slip GFs
-            * azimtuh       : Direction to rotate (degrees)
+            * azim          : Direction to rotate (degrees)
 
         Return:
             * rotatedGar    : Displacements along azimuth
             * rotatedGrp    : Displacements perp. to azimuth direction
         '''
         
+        # Save
+        azimuth = copy.deepcopy(azim)
+
         # Check nature of azimuth (float or array)
         if type(azimuth) in [float,int]:
             azimuth = azimuth*np.ones(self.N_slip)
