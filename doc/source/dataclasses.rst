@@ -6,7 +6,6 @@ Here are listed all the data classes available in csi. These include geodetic da
 .. toctree::
     :maxdepth: 2
 
-    classes/creepmeters
     classes/gps
     classes/insar
     classes/multigps
@@ -14,6 +13,7 @@ Here are listed all the data classes available in csi. These include geodetic da
     classes/seismic
     classes/tsunami
     classes/timeseries
+    classes/creepmeters
     classes/seismiclocations
     classes/insartimeseries
     classes/gpstimeseries

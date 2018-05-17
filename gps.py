@@ -20,14 +20,26 @@ from . import csiutils as utils
 
 class gps(SourceInv):
 
+    '''
+    A class that handles a network of gps displacements
+
+    Args:
+        * name      : Name of the dataset.
+
+    Kwargs:
+        * utmzone   : UTM zone  (optional, default=None)
+        * lon0      : Longitude of the center of the UTM zone
+        * lat0      : Latitude of the center of the UTM zone
+        * ellps     : ellipsoid (optional, default='WGS84')
+        * verbose   : Speak to me (default=True)
+    ----
+    ----
+    '''
+
+    # ----------------------------------------------------------------------
+    # Initialize class
     def __init__(self, name, utmzone=None, 
                        ellps='WGS84', lon0=None, lat0=None, verbose=True):
-        '''
-        Args:
-            * name      : Name of the dataset.
-            * utmzone   : UTM zone. (optional, default is 10 (Western US))
-            * ellps     : ellipsoid (optional, default='WGS84')
-        '''
 
         # Base class init
         super(gps,self).__init__(name,
@@ -54,10 +66,14 @@ class gps(SourceInv):
 
         # All done
         return
+    # ----------------------------------------------------------------------
 
+    # ----------------------------------------------------------------------
     def setStat(self,sta_name,x,y,loc_format='LL', initVel=False):
         '''
+
         Set station names and locations attributes
+
         Args:
             * sta_name: station names
             * x: x coordinate (longitude or UTM) 
