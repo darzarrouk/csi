@@ -24,10 +24,10 @@ class TriangularPatches(Fault):
     '''
     Classes implementing a fault made of triangular patches. Inherits from Fault
 
-    Args:
+    :Args:
         * name      : Name of the fault.
 
-    Kwargs:
+    :Kwargs:
         * utmzone   : UTM zone  (optional, default=None)
         * lon0      : Longitude of the center of the UTM zone
         * lat0      : Latitude of the center of the UTM zone
@@ -53,7 +53,7 @@ class TriangularPatches(Fault):
         '''
         Set depth patch attributes
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -70,7 +70,7 @@ class TriangularPatches(Fault):
         '''
         Computes the area of all triangles.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -90,10 +90,10 @@ class TriangularPatches(Fault):
         '''
         Returns the area of one patch.
 
-        Args:   
+        :Args:   
             * patch : one item of the patch list.
 
-        Returns:
+        :Returns:
             * Area  : float
         '''
 
@@ -119,10 +119,10 @@ class TriangularPatches(Fault):
         '''
         Splits a patch into 4 patches, based on the mid-point of each side.
 
-        Args:
+        :Args:
             * patch : item of the patch list.
 
-        Returns:
+        :Returns:
             * t1, t2, t3, t4    : 4 patches
         '''
 
@@ -161,7 +161,7 @@ class TriangularPatches(Fault):
         '''
         Removes patches that are outside of a 3D box.
 
-        Args:   
+        :Args:   
             * minlon        : west longitude
             * maxlon        : east longitude
             * minlat        : south latitude
@@ -169,7 +169,7 @@ class TriangularPatches(Fault):
             * mindep        : Minimum depth
             * maxdep        : Maximum depth
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -196,7 +196,7 @@ class TriangularPatches(Fault):
         '''
         Converts all the vertices into lonlat coordinates.
 
-        Returns:    
+        :Returns:    
             * None
         '''
 
@@ -220,7 +220,7 @@ class TriangularPatches(Fault):
         '''
         Takes the patches and constructs a list of Vertices and Faces
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -262,13 +262,13 @@ class TriangularPatches(Fault):
         Takes a fault with rectangular patches and splits them into triangles to 
         initialize self.
 
-        Args:
+        :Args:
             * fault             : instance of rectangular patches.
 
-        Kwargs
+        :Kwargs:
             * numberOfTriangles : Split each patch in 2 or 4 (default) triangle
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -370,16 +370,16 @@ class TriangularPatches(Fault):
         '''
         Reads patches from a GMT formatted file.
 
-        Args:
+        :Args:
             * filename          : Name of the file
 
-        Kwargs:
+        :Kwargs:
             * inputCoordinates  : Default is 'lonlat'. Can be 'utm'
             * readpatchindex    : Default True.
             * donotreadslip     : Default is False. If True, does not read the slip
             * inputCoordinates  : Default is 'lonlat', can be 'xyz'
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -495,17 +495,17 @@ class TriangularPatches(Fault):
         Load a triangulated surface from a Gocad formatted file. Vertices 
         must be in geographical coordinates.
 
-        Args:
+        :Args:
             * filename:  tsurf file to read
 
-        Kwargs:
+        :Kwargs:
             * neg_depth: if true, use negative depth
             * utm: if true, input file is given as utm coordinates (if false -> lon/lat)
             * factor_xy: if utm==True, multiplication factor for x and y
             * factor_depth: multiplication factor for z
             * verbose: Speak to me
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -595,13 +595,13 @@ class TriangularPatches(Fault):
         '''
         Write a triangulated Gocad surface file.
 
-        Args:
+        :Args:
             * filename  : output file name
 
-        Kwargs:
+        :Kwargs:
             * utm       : Write in utm coordinates if True
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -649,7 +649,7 @@ class TriangularPatches(Fault):
         '''
         Returns an array of depths.
 
-        Kwargs:
+        :Kwargs:
             * center        : If True, returns the center of the patches
         '''
 
@@ -661,18 +661,17 @@ class TriangularPatches(Fault):
         '''
         Writes the patch corners in a file that can be used in psxyz.
 
-        Args:
+        :Args:
             * filename      : Name of the file.
 
-        Kwargs:
-            * add_slip      : Put the slip as a value for the color.
-                              Can be None, strikeslip, dipslip, total, coupling
+        :Kwargs:
+            * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total, coupling
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
             * stdh5         : Get the standard deviation from a h5 file
             * decim         : Decimate the h5 file
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -774,17 +773,17 @@ class TriangularPatches(Fault):
         of each patch, indicating the direction of slip. Scale can be a real 
         number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
 
-        Args:
+        :Args:
             * filename      : Name of the output file
 
-        Kwargs:
+        :Kwargs:
             * scale         : Scale of the line
             * factor        : Multiply slip by a factor
             * neg_depth     : if True, depth is a negative nmber
             * ellipse       : Write the ellipse
             * nsigma        : Nxsigma for the ellipse
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -855,16 +854,16 @@ class TriangularPatches(Fault):
         '''
         Compute the ellipse error given Cm for a given patch
 
-        Args:
+        :Args:
             * patch : Which patch to consider
 
-        Kwargs:
+        :Kwargs:
             * center  : center of the ellipse
             * Npoints : number of points on the ellipse
             * factor  : scaling factor
             * nsigma  : will design a nsigma*sigma error ellipse
 
-        Returns:
+        :Returns:
             * Ellipse   : Array containing the ellipse
         '''
 
@@ -917,14 +916,13 @@ class TriangularPatches(Fault):
         '''
         Computes the segment indicating the slip direction.
 
-        Kwargs:
-            * scale     : can be a real number or a string in 'total', 'strikeslip',
-                          'dipslip' or 'tensile'
+        :Kwargs:
+            * scale     : can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
             * factor    : Multiply by a factor
             * ellipse   : Compute the ellipse
             * nsigma    : How many times sigma for the ellipse
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -994,14 +992,14 @@ class TriangularPatches(Fault):
         '''
         Deletes a patch.
 
-        Args:
+        :Args:
             * patch     : index of the patch to remove.
 
-        Kwargs:
+        :Kwargs:
             * checkVertices : Make sure vertice array corresponds to patch corners
             * checkSlip     : Check that slip vector corresponds to patch corners
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1043,14 +1041,14 @@ class TriangularPatches(Fault):
         Deletes some vertices. If some patches are composed of these vertices 
         and checkPatch is True, deletes the patches.
 
-        Args:
+        :Args:
             * iVertices     : List of vertices to delete.
 
-        Kwargs:
+        :Kwargs:
             * checkPatch    : Check and delete if patches are concerned.
             * checkSlip     : Check and delete if slip terms are concerned.
 
-        Returns:
+        :Returns:
             * None
         ''' 
 
@@ -1088,14 +1086,14 @@ class TriangularPatches(Fault):
         Delete a Vertex. If some patches are composed of this vertex and 
         checkPatch is True, deletes the patches.
 
-        Args:
+        :Args:
             * iVertex       : index of the vertex to delete
 
-        Kwargs:
+        :Kwargs:
             * checkPatch    : Check and delete if patches are concerned.
             * checkSlip     : Check and delete is slip is concerned.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1111,14 +1109,14 @@ class TriangularPatches(Fault):
         '''
         Deletes a list of patches.
 
-        Args:
+        :Args:
             * tutu      : List of indices
 
-        Kwargs:
+        :Kwargs:
             * checkVertices : Check and delete if patches are concerned.
             * checkSlip     : Check and delete is slip is concerned.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1145,7 +1143,7 @@ class TriangularPatches(Fault):
         Cuts all the patches in 4, based on the mid-point of each triangle and 
         builds a new fault from that.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1182,10 +1180,10 @@ class TriangularPatches(Fault):
         '''
         Adds patches to the list.
 
-        Args:
+        :Args:
             * patches     : List of patch geometries
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1202,13 +1200,13 @@ class TriangularPatches(Fault):
         '''
         Adds a patch to the list.
 
-        Args:
+        :Args:
             * patch     : Geometry of the patch to add (km, not lon lat)
 
-        Kwargs:
+        :Kwargs:
             * slip      : List of the strike, dip and tensile slip.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1265,11 +1263,11 @@ class TriangularPatches(Fault):
         '''
         Replaces one patch by the given geometry.
 
-        Args:
+        :Args:
             * patch     : Patch geometry.
             * iPatch    : index of the patch to replace.
 
-        Returns:    
+        :Returns:    
             * None
         '''
 
@@ -1288,16 +1286,15 @@ class TriangularPatches(Fault):
         '''
         Returns the patch geometry as needed for triangleDisp.
 
-        Args:
+        :Args:
             * patch         : index of the wanted patch or patch
 
-        Kwargs:
-            * center        : if true, returns the coordinates of the center of the patch.
-                              if False, returns the first corner
+        :Kwargs:
+            * center        : if true, returns the coordinates of the center of the patch. if False, returns the first corner
             * checkindex    : Checks the index of the patch
             * retNormal     : If True gives, also the normal vector to the patch
 
-        Returns:
+        :Returns:
             * x, y, z, width, length, strike, dip, (normal)
         '''
 
@@ -1356,16 +1353,15 @@ class TriangularPatches(Fault):
         '''
         Measures the distance between two vertexes.
 
-        Args:
+        :Args:
             * vertex1   : first patch or its index
             * vertex2   : second patch or its index
 
-        Kwargs:
-            * lim       : if not None, list of two float, the first one is 
-                          the distance above which d=lim[1].
+        :Kwargs:
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
             * distance  : Useless argument only here for compatibility reasons
 
-        Returns:
+        :Returns:
             * distance  : float
         '''
 
@@ -1395,14 +1391,14 @@ class TriangularPatches(Fault):
         '''
         Returns a matrix of the distances between patches.
 
-        Kwargs:
+        :Kwargs:
             * distance  : distance estimation mode
-                        - center : distance between the centers of the patches.
-                        - no other method is implemented for now.
-            * lim       : if not None, list of two float, the first one is 
-                          the distance above which d=lim[1].
 
-        Returns:
+                 - center : distance between the centers of the patches.
+                 - no other method is implemented for now.
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+
+        :Returns:
             * distances : Array of floats
         '''
 
@@ -1432,17 +1428,18 @@ class TriangularPatches(Fault):
         '''
         Measures the distance between two patches.
 
-        Args:
+        :Args:
             * patch1    : first patch or its index
             * patch2    : second patch or its index
 
-        Kwargs
+        :Kwargs:
             * distance  : distance estimation mode
+
                     - center : distance between the centers of the patches.
                     - no other method is implemented for now.
-            * lim       : if not None, list of two float, the first one is the 
-                          distance above which d=lim[1].
-        Returns:
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+
+        :Returns:
             * distace   : float
         '''
 
@@ -1473,18 +1470,14 @@ class TriangularPatches(Fault):
         Computes the surface displacement for a given patch at the data location
         using a homogeneous half-space.
 
-        Args:
+        :Args:
             * data          : data object from gps or insar.
             * patch         : number of the patch that slips
 
-        Kwargs:
-            * slip          : if a number is given, that is the amount of 
-                              slip along strike. If three numbers are given,
-                              that is the amount of slip along strike, along 
-                              dip and opening. if None, values from self.slip 
-                              are taken.
+        :Kwargs:
+            * slip          : if a number is given, that is the amount of slip along strike. If three numbers are given, that is the amount of slip along strike, along dip and opening. if None, values from self.slip are taken.
 
-        Returns:
+        :Returns:
             * ss_dis        : Surface displacements due to strike slip
             * ds_dis        : Surface displacements due to dip slip
             * ts_dis        : Surface displacements due to tensile opening
@@ -1527,10 +1520,10 @@ class TriangularPatches(Fault):
         '''
         For each triangle, find the indices of the adjacent (edgewise) triangles.
 
-        Kwargs:
+        :Kwargs:
             * verbose
 
-        Returns:
+        :Returns:
             * None
         '''
         if verbose:
@@ -1579,12 +1572,12 @@ class TriangularPatches(Fault):
         '''
         Build a discrete Laplacian smoothing matrix.
 
-        Kwargs:
+        :Kwargs:
             * verbose       : Speak to me
             * method        : Not used, here for consistency purposes
             * irregular     : Not used, here for consistency purposes
         
-        Returns:
+        :Returns:
             * Laplacian     : 2D array
         '''
         
@@ -1649,10 +1642,10 @@ class TriangularPatches(Fault):
         '''
         Get the center of one triangular patch.
 
-        Args:
+        :Args:
             * p     : Patch geometry.
 
-        Returns:
+        :Returns:
             * x,y,z : floats 
         '''
 
@@ -1692,7 +1685,7 @@ class TriangularPatches(Fault):
         '''
         Get the center of the patches.
 
-        Returns:
+        :Returns:
             * centers:  list of triplets
         '''
 
@@ -1716,7 +1709,7 @@ class TriangularPatches(Fault):
         Takes the slip vector and computes the surface displacement that 
         corresponds on a regular grid.
 
-        Kwargs:
+        :Kwargs:
             * box       : A list of [minlon, maxlon, minlat, maxlat].
             * disk      : list of [xcenter, ycenter, radius, n]
             * lonlat    : Arrays of lat and lon. [lon, lat]
@@ -1830,11 +1823,10 @@ class TriangularPatches(Fault):
         Computes the distance between the first point of the fault and every other
         point, when you walk along the fault.
 
-        Kwargs:
+        :Kwargs:
             * discretized           : if True, use the discretized fault trace
-                                      (default False)
 
-        Returns:
+        :Returns:
             * cum                   : Array of floats
         '''
 
@@ -1962,12 +1954,12 @@ class TriangularPatches(Fault):
         
         Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
 
-        Kwargs:
+        :Kwargs:
             * depth       : Depth at which we extract the along strike variations of slip.
             * discret     : Discretization length
             * filename    : Saves to a file.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2058,13 +2050,13 @@ class TriangularPatches(Fault):
         '''
         Extract the Along Strike Variations of the creep at a given depth
 
-        Kwargs:
+        :Kwargs:
             * depth   : Depth at which we extract the along strike variations of slip.
             * origin  : Computes a distance from origin. Give [lon, lat].
             * filename: Saves to a file.
             * orientation: defines the direction of positive distances.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2151,11 +2143,11 @@ class TriangularPatches(Fault):
         Extracts the Along Strike Variations of the creep at all depths for 
         the discretized fault trace.
 
-        Kwargs:
+        :Kwargs:
             * filename      : Name of the output file
             * discret       : Fault discretization
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2211,7 +2203,7 @@ class TriangularPatches(Fault):
         '''
         Plot the available elements of the fault.
         
-        Kwargs:
+        :Kwargs:
             * figure        : Number of the figure.
             * slip          : What slip to plot
             * equiv         : useless. For consitency between fault objects
@@ -2224,7 +2216,7 @@ class TriangularPatches(Fault):
             * expand        : Expand the map by {expand} degree around the edges
                               of the fault.
         
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2265,7 +2257,7 @@ class TriangularPatches(Fault):
         ! OBSOLETE BUT KEPT HERE TO BE TESTED IN THE FUTURE !
         Plot 3D representation of fault using MayaVi.
 
-        Args:
+        :Args:
             * neg_depth     : Flag to specify if patch depths are negative or positive
             * value_to_plot : What to plot on patches
             * colormap      : Colormap for patches
@@ -2333,7 +2325,8 @@ class TriangularPatches(Fault):
         User provides a Mapping function np.array((len(self.patch), len(fault.patch)))
         and a fault and the slip from the argument
         fault is mapped into self.slip.
-        Function just does:
+        
+        Function just does
         self.slip[:,0] = np.dot(Map,fault.slip)
         '''
 
@@ -2365,7 +2358,7 @@ class TriangularPatches(Fault):
         These two faults must have the same surface trace. If the deep fault has more than one raw of patches,
         it might go wrong and give some unexpected results.
 
-        Args:
+        :Args:
             * deepfault     : Deep section of the fault.
         '''
 
@@ -2478,10 +2471,10 @@ class TriangularPatches(Fault):
         Returns a TriangularPatches fault object with each triangle
         corresponding to the subsources used for plotting.
     
-        Kwargs:
+        :Kwargs:
             * verbose       : Talk to me (default: True)
 
-        Returns:
+        :Returns:
             * fault         : Returns a triangularpatches instance
         '''
 
@@ -2510,16 +2503,14 @@ class TriangularPatches(Fault):
         Finds the number, size and location of asperities that are identified by the 
         given function.
 
-        Args:
-            * function          : Function that takes an array the size of the 
-                                  number of patches and returns an array of bolean
-                                  the same size. Trues are within the asperity.
+        :Args:
+            * function          : Function that takes an array the size of the number of patches and returns an array of bolean the same size. Trues are within the asperity.
 
-        Kwargs
+        :Kwargs:
             * slip              : Which slip vector do you want to apply the function to
             * verbose           : Talk to me?
 
-        Returns:
+        :Returns:
             * Asperities
         '''
 

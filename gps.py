@@ -23,17 +23,16 @@ class gps(SourceInv):
     '''
     A class that handles a network of gps displacements
 
-    Args:
+    :Args:
         * name      : Name of the dataset.
 
-    Kwargs:
+    :Kwargs:
         * utmzone   : UTM zone  (optional, default=None)
         * lon0      : Longitude of the center of the UTM zone
         * lat0      : Latitude of the center of the UTM zone
         * ellps     : ellipsoid (optional, default='WGS84')
         * verbose   : Speak to me (default=True)
-    ----
-    ----
+
     '''
 
     # ----------------------------------------------------------------------
@@ -74,11 +73,17 @@ class gps(SourceInv):
 
         Set station names and locations attributes
 
-        Args:
+        :Args:
             * sta_name: station names
             * x: x coordinate (longitude or UTM) 
             * y: y coordinate (latitude or UTM)
+
+        :Kwargs:
             * loc_format: location format ('LL' for lon/lat or 'XY' for UTM)
+            * initVel: initialize a vel_enu attribute with zeros
+
+        :Returns:
+            * None
         '''
 
         # Check input parameters
@@ -118,12 +123,25 @@ class gps(SourceInv):
     
     def setStatFromFile(self,filename, initVel=False, header=0):
         '''
-        Set station names and locations attributes
-        Args:
+        Set station names and locations attributes. File should be formatted as
+
+            +--------------+-----+-----+
+            | Station Name | lon | lat |
+            +==============+=====+=====+
+            |    TAGA      | 13. | 23. |
+            +--------------+-----+-----+
+            |    POUT      |14.5 | 23.2|
+            +--------------+-----+-----+
+
+        :Args:
             * filename  : name of the station list 
-                    Station Name | lon | lat 
+            
+        :Kwargs:
             * initVel   : Intialize a vel_enu vector or not
             * header    : Length of the file header
+
+        :Returns:
+            * None
         '''
 
         # Check input parameters
@@ -157,14 +175,20 @@ class gps(SourceInv):
     def importNetwork(self, gpsdata, iftwo='keep'):
         '''
         Adds stations from gpsdata to the current network.
-        If station is already in here, it will:
-            if iftwo == 'keep': Keep both measures
-            if iftwo == gpsdata.name: Keep the incomcing measure
-            if iftwo == self.name: Keep the current one
+        If station is already in here, there is several options:
+            
+            - if iftwo == 'keep': Keep both measures
+            - if iftwo == gpsdata.name: Keep the incomcing measure
+            - if iftwo == self.name: Keep the current one
 
-        Args:
+        :Args:
             * gpsdata           : A gps instance
+
+        :Kwargs:
             * iftwo             : same station policy
+
+        :Returns:
+            * None
         '''
 
         # Iterate over the stations to import
@@ -199,9 +223,15 @@ class gps(SourceInv):
     def combineNetworks(self, gpsdata, newNetworkName='Combined Network'):
         '''
         Combine networks into a new network.
-        Args:
+
+        :Args:
             * gpsdata           : List of gps instances.
+
+        :Kwargs:
             * newNetworkName    : Name of the returned network
+
+        :Returns:
+            * None
         '''
 
         # Create lists
@@ -235,12 +265,27 @@ class gps(SourceInv):
     def readStat(self,station_file,loc_format='LL'):
         '''
         Read simple station ascii file and populate station attributes
-        Args:
+         
+        If loc_format='XY', then the file should be as
+        
+        +========+=========+=========+
+        | STNAME | X_COORD | Y_COORD |
+        +========+=========+=========+
+
+        If loc_format='LL', then the file should be as
+
+        +========+=====+=====+
+        | STNAME | LON | LAT |
+        +========+=====+=====+
+
+        :Args:
             * station_file: station filename including station coordinates
+
+        :Kwargs:
             * loc_format:  station file format (default= 'LL')
-        file format:
-        STNAME  X_COORD Y_COORD (if loc_format='XY')
-        STNAME  LON LAT (if loc_format='LL')
+
+        :Returns:
+            * None
         '''
         
         # Assert if station file exists
@@ -275,8 +320,12 @@ class gps(SourceInv):
         '''
         Gets informations for a station.
 
-        Args:
+        :Args:
             * station   : name of the station
+
+        :Returns:
+            * lon, lat, vel, err, synth, los
+
         '''
 
         # Get lon, lat
@@ -302,9 +351,15 @@ class gps(SourceInv):
     def getvelo(self, station, data='data'):
         '''
         Gets the velocities enu for the station.
-        Args:
+
+        :Args:
             * station   : name of the station.
+
+        :Kwargs:
             * data      : which velocity do you want ('data' or 'synth')
+
+        :Returns:
+            * vel       : 3D vector
         '''
 
         # Get the index
@@ -321,8 +376,12 @@ class gps(SourceInv):
     def geterr(self, station):
         '''
         Gets the errors enu for the station.
-        Args:
+
+        :Args:
             * station   : name of the station.
+
+        :Returns:
+            * vector    : 3D vector of uncertainties
         '''
 
         # Get the index
@@ -333,7 +392,14 @@ class gps(SourceInv):
 
     def scale_errors(self, scale):
         '''
-        Multiplies the errors by scale.
+        Scales the errors (in-place multiplication)
+
+        :Args:
+            * scale : float
+
+        :Returns:
+            * None
+
         '''
 
         # Multiplyt
@@ -345,9 +411,13 @@ class gps(SourceInv):
     def getSubNetwork(self, name, stations):
         '''
         Given a list of station names, returns the corresponding gps object.
-        Args:
+
+        :Args:
             * name      : Name of the returned gps object
             * stations  : List of station names.
+
+        :Returns:
+            * gps       : Instance of the gps class
         '''
         
         # initialize lists
@@ -387,8 +457,12 @@ class gps(SourceInv):
     def buildCd(self, direction='en'):
         '''
         Builds a diagonal data covariance matrix using the formal uncertainties in the GPS data.
-        Args:
+
+        :Kwargs:
             * direction : Direction to take into account. Can be any combination of e, n and u.
+
+        :Returns:
+            * None
         '''
 
         # get the size of the total thing
@@ -421,8 +495,12 @@ class gps(SourceInv):
     def scale(self, factor):
         '''
         Scales the gps velocities by a factor.
-        Args:
-            * factor    : multiplication factor.
+
+        :Args:
+            * factor    : multiplication factor (float)
+
+        :Returns:
+            * None
         '''
 
         self.err_enu = self.err_enu*factor
@@ -439,14 +517,20 @@ class gps(SourceInv):
         '''
         Project the GPS velocities onto a profile. 
         Works on the lat/lon coordinates system.
-        Args:
+
+        :Args:
             * name              : Name of the profile.
             * loncenter         : Profile origin along longitude.
             * latcenter         : Profile origin along latitude.
             * length            : Length of profile.
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
+
+        :Kwargs:
             * data              : Do the profile through the 'data' or the 'synth'etics.
+
+        :Returns:
+            * None: Profiles are stored in self.profiles
         '''
 
         # the profiles are in a dictionary
@@ -548,6 +632,16 @@ class gps(SourceInv):
     def writeProfile2File(self, name, filename, fault=None):
         '''
         Writes the profile named 'name' to the ascii file filename.
+
+        :Args:
+            * name      : Name of the profile to write out
+            * filename  : Name of the output file
+
+        :Kwargs:
+            * fault     : Add the location of a fault (uses the fault trace)
+
+        :Returns:
+            * None
         '''
 
         # open a file
@@ -600,9 +694,18 @@ class gps(SourceInv):
     def plotprofile(self, name, legendscale=10., fault=None, data=['parallel', 'normal', 'vertical'], show=True):
         '''
         Plot profile.
-        Args:
+
+        :Args:
             * name      : Name of the profile.
-            * legendscale: Length of the legend arrow.
+
+        :Kwargs:
+            * legendscale   : Length of the legend arrow.
+            * fault         : Add a fault on the plot
+            * data          : list of type of data to use
+            * show          : Show me
+
+        :Returns:
+            * None
         '''
 
         if type(data) is str:
@@ -679,9 +782,13 @@ class gps(SourceInv):
     def intersectProfileFault(self, name, fault):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
-        Args:
+
+        :Args:
             * name      : name of the profile.
             * fault     : fault object from verticalfault.
+
+        :Returns:
+            * distance  : float
         '''
 
         # Grab the fault trace
@@ -728,12 +835,25 @@ class gps(SourceInv):
 
     def read_from_en(self, velfile, factor=1., minerr=1., header=0):
         '''
-        Reading velocities from a enu file:
-        StationName | Lon | Lat | e_vel | n_vel | e_err | n_err 
-        Args:
+        Reading velocities from a en file formatted as:
+
+        +-------------+-----+-----+-------+-------+-------+-------+ 
+        | StationName | Lon | Lat | e_vel | n_vel | e_err | n_err |
+        +=============+=====+=====+=======+=======+=======+=======+ 
+        |             |     |     |       |       |       |       |
+        |             |     |     |       |       |       |       |
+        +-------------+-----+-----+-------+-------+-------+-------+ 
+
+        :Args:
             * velfile   : File containing the velocities.
+
+        :Kwargs:
             * factor    : multiplication factor for velocities
             * minerr    : if err=0, then err=minerr.
+            * header    : length of the file header
+
+        :Returns:
+            * None
         '''
 
         if self.verbose:
@@ -798,13 +918,28 @@ class gps(SourceInv):
 
     def read_from_enu(self, velfile, factor=1., minerr=1., header=0, checkNaNs=True):
         '''
-        Reading velocities from a enu file:
-        StationName | Lon | Lat | e_vel | n_vel | u_vel | e_err | n_err | u_err
-        Args:
-            * velfile   : File containing the velocities.
+        Reading velocities from a enu file formatted as
+
+        +-------------+-----+-----+-------+-------+-------+-------+-------+-------+
+        | StationName | Lon | Lat | e_vel | n_vel | u_vel | e_err | n_err | u_err |
+        +=============+=====+=====+=======+=======+=======+=======+=======+=======+
+        |             |     |     |       |       |       |       |       |       |
+        |             |     |     |       |       |       |       |       |       |
+        +-------------+-----+-----+-------+-------+-------+-------+-------+-------+
+
+        :Args:
+            * velfile   : Input file
+
+        :Kwargs:
             * factor    : multiplication factor for velocities
             * minerr    : if err=0, then err=minerr.
+            * header    : length of the header
+            * checkNaNs : If True, kicks out stations with NaNs
+
+        :Returns:
+            * None
         '''
+
         if self.verbose:
             print ("Read data from file {} into data set {}".format(velfile, self.name))
 
@@ -868,10 +1003,17 @@ class gps(SourceInv):
 
     def read_from_ICM(self, velfile, factor=1., header=1):
         '''
-        Reading velocities from an ICM (F. Ortega's format) file:
-        Args:
-            * velfile   : File containing the velocities.
+        Reading velocities from an ICM (F. Ortega's format) file. Maybe obsolete now.
+
+        :Args:
+            * velfile   : Input file
+
+        :Kwargs:
             * factor    : multiplication factor for velocities
+            * header    : length of the file header
+
+        :Returns:
+            * None
         '''
         if self.verbose:
             print ("Read data from file {} into data set {}".format(velfile, self.name))
@@ -956,7 +1098,19 @@ class gps(SourceInv):
 
     def read_from_unavco(self, velfile, factor=1., minerr=1., header=37):
         '''
-        Reading velocities from a unavco file
+        Reading velocities from a unavco file. This follows the unavco format as it was in 2013.
+
+        :Args:
+            * velfile   : Input file
+
+        :Kwargs:
+            * factor    : multiplication factor for velocities
+            * header    : length of the file header
+            * minerr    : If the error is lower than minerr, set it to minerr
+
+        :Returns:
+            * None
+        
         '''
 
         if self.verbose:
@@ -1022,10 +1176,18 @@ class gps(SourceInv):
 
     def read_from_sopac(self,velfile, coordfile, factor=1., minerr=1.):
         '''
-        Reading velocities from Sopac file and converting to mm/yr.
-        Args:
+        Reading velocities from Sopac file and converting to mm/yr. Format is as sopac was providing it in 2013.
+        
+        :Args:
             * velfile   : File containing the velocities.
             * coordfile : File containing the coordinates.
+
+        :Kwargs:
+            * factor    : Scaling factor
+            * minerr    : If err is lower than minerr, err is set to minerr
+
+        :Returns:
+            * None
         '''
         if self.verbose:
             print ("Read data from file {} into data set {}".format(velfile, self.name))
@@ -1127,11 +1289,14 @@ class gps(SourceInv):
         ''' 
         Select the stations in a box defined by min and max, lat and lon.
         
-        Args:
+        :Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
+
+        :Returns:
+            * None
         '''
 
         # Store the corners
@@ -1161,10 +1326,14 @@ class gps(SourceInv):
     def project2InSAR(self, los=None, incidence=None, heading=None):
         '''
         Projects the GPS data into the InSAR Line-Of-Sight provided.
-        Args:
+
+        :Args:
             * los       : list of three components of the line-of-sight vector.
             * incidence : incidence angle (single float)
             * heading   : heading (single float)
+
+        :Returns:
+            * None
         '''
 
         # Check something
@@ -1205,8 +1374,12 @@ class gps(SourceInv):
     def keep_stations(self, stations):
         '''
         Keeps only the stations on the arg list.
-        Args:
+
+        :Args:
             * stations  : list of stations to keep.
+
+        :Returns:
+            * None
         '''
 
         # Get the total list of stations
@@ -1230,14 +1403,19 @@ class gps(SourceInv):
         '''
         Add a station to a network.
 
-        Args:
+        :Args:
             * station   : name of the station
             * lon       : Longitude
             * lat       : Latitude
             * vel       : velocity (3 numbers)
             * err       : uncertainty (3 numbers)
+
+        :Kwargs:
             * synth     : Synthetics (3 numbers)
             * los       : Line-of-sight projection (1 number)
+
+        :Returns:
+            * None
         '''
 
         # Check something
@@ -1279,9 +1457,13 @@ class gps(SourceInv):
     def reject_stations_fault(self, dis, faults):
         ''' 
         Rejects the pixels that are dis km close to the fault.
-        Args:
+
+        :Args:
             * dis       : Threshold distance.
             * faults    : list of fault objects.
+
+        :Returns:
+            * None
         '''
 
         # Import stuff
@@ -1319,8 +1501,12 @@ class gps(SourceInv):
     def reject_stations(self, station):
         '''
         Reject the stations named in stations.
-        Args:
+
+        :Args:
             * station   : name or list of names of station.
+
+        :Returns:
+            * None
         '''
 
         # This method is kind of studid and should be removed
@@ -1340,8 +1526,11 @@ class gps(SourceInv):
         '''
         Removes a station from the network
 
-        Args:
+        :Args:
             * station       : Name of the station
+
+        :Returns:
+            * None
         '''
         
         # get the index
@@ -1370,9 +1559,12 @@ class gps(SourceInv):
         Removes a Helmert transform that best references the velocity
         field from self to that of network.
 
-        Args:
+        :Args:
             * network   : gps instance 
             * components: Number of components to use
+
+        :Returns:
+            * None
         '''
 
         # Difference
@@ -1403,9 +1595,13 @@ class gps(SourceInv):
     def reference(self, station, refSynth=False):
         '''
         References the velocities to a single station.
-        Args:
+
+        :Args:
             * station   : name of the station or list of station names.
             * refSynth  : Apply referencing to synthetics as well (default=False)
+
+        :Returns:
+            * None
         '''
     
         if station.__class__ is str:
@@ -1453,11 +1649,16 @@ class gps(SourceInv):
         '''
         From a dictionary of Green's functions, sets these correctly into the fault 
         object fault for future computation.
-        Args:
+
+        :Args:
             * fault     : Instance of Fault
-            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
-                          These can be a matrix or None.
+            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'. These can be a matrix or None.
+
+        :Kwargs:
             * vertical  : Do we set the vertical GFs? default is True
+
+        :Returns:
+            * None
         '''
 
         # Initialize the variables
@@ -1547,9 +1748,12 @@ class gps(SourceInv):
         Returns the number of transform parameters for the given transformation.
         Strain is only computed as an aerial strain (2D). If verticals are included, it just estimates 
         a vertical translation for the network.
-        Args:
-            * transformation : String. Can be
-                        'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
+
+        :Args:
+            * transformation : String. Can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
+
+        :Returns:
+            * Integer
         '''
 
         # Helmert Transform
@@ -1594,11 +1798,15 @@ class gps(SourceInv):
     def getTransformEstimator(self, transformation, computeNormFact=True):
         '''
         Returns the estimator for the transform.
-        Args:
-            * transformation : String. Can be
-                        'strain', 'full', 'strainnorotation', 
-                        'strainnotranslation', 'strainonly', 'translation'
-                        or 'translationrotation'
+
+        :Args:
+            * transformation : String. Can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly', 'translation' or 'translationrotation'
+
+        :Kwargs:
+            * computeNormFact: compute and store the normalizing factor
+
+        :Returns:
+            * 2d array
         '''
         
         # Helmert Transform
@@ -1634,6 +1842,16 @@ class gps(SourceInv):
         '''
         Computes the transformation that is stored with a particular fault.
         Stores it in transformation.
+
+        :Args:
+            * fault : An instance of a fault class
+
+        :Kwargs:    
+            * verbose   : talk to me
+            * custom    : Do we have custom green's functions
+
+        :Returns:
+            * None
         '''
 
         # Get the transformation 
@@ -1718,16 +1936,24 @@ class gps(SourceInv):
     def get2DstrainEst(self, strain=True, rotation=True, translation=True, computeNormFact=True):
         '''
         Returns the matrix to estimate the full 2d strain tensor.
-        Positive is clockwise for the rotation.
-        Only works with 2D.
+        Positive is clockwise for the rotation. Only works with 2D.
 
-        When buildin gthe estimator:
-        First column is translation along the x-axis
-        Second column is translation along the y-axis
-        Third column is the Epsilon_xx component
-        Fourth column is the Epsilon_xy component
-        Fifth column is the Epsilon_yy component
-        Sixth column is the Rotation term
+        :When building the estimator:
+            - First column is translation along the x-axis
+            - Second column is translation along the y-axis
+            - Third column is the Epsilon_xx component
+            - Fourth column is the Epsilon_xy component
+            - Fifth column is the Epsilon_yy component
+            - Sixth column is the Rotation term
+
+        :Kwargs:
+            * strain: True/False
+            * rotation: True/False
+            * translation: True/False
+            * computeNorFact: Recompute normalizatin factor.
+
+        :Returns:
+            * 2D array
         '''
 
         # Get the number of gps stations
@@ -1826,6 +2052,15 @@ class gps(SourceInv):
     def getHelmertMatrix(self, components=2, meanbase=None, center=None):
         '''
         Returns a Helmert matrix for a gps data set.
+
+        :Kwargs:
+            * components: How many components (can be 2 or 3)
+            * meanbase: float for baseline length normalization
+            * center: tuple of float for the center o the network
+
+        :Returns:
+            * 2d array
+
         '''
 
         # Get the number of stations
@@ -1903,6 +2138,17 @@ class gps(SourceInv):
     def compute2Dstrain(self, fault, write2file=False, verbose=False):
         '''
         Computes the 2D strain tensor stored in the fault given as an argument.
+
+        :Args:
+            * fault : Instance of a fault class
+
+        :Kwargs:
+            * write2file    : Write to a file
+            * verbose       : talk to me
+
+        :Returns:
+            * None
+
         '''
 
         # Compute the transformation
@@ -2006,6 +2252,12 @@ class gps(SourceInv):
     def remove2Dstrain(self, fault):
         '''
         Computess the 2D strain and removes it.
+
+        :Args:
+            * fault : Instance of a fault class
+
+        :Returns:
+            * None
         '''
 
         # Computes the strain
@@ -2020,6 +2272,15 @@ class gps(SourceInv):
     def computeHelmertTransform(self, fault, verbose=False):
         '''
         Removes the Helmert Transform stored in the fault given as argument.
+
+        :Args:
+            * fault : Instance of a fault class
+
+        :Kwargs:
+            * verbose: talk to me
+
+        :Returns:
+            * None
         '''
 
         # Compute transofmration
@@ -2041,7 +2302,13 @@ class gps(SourceInv):
 
     def removeHelmertTransform(self, fault):
         '''
-        Computess the Helmert and removes it.
+        Computes the Helmert and removes it.
+
+        :Args:
+            * fault : Instance of a fault class
+
+        :Returns:
+            * None
         '''
 
         # Computes the strain
@@ -2056,10 +2323,14 @@ class gps(SourceInv):
     def remove_euler_rotation(self, eradius=6378137.0, stations=None, verbose=True):
         '''
         Removes the best fit Euler rotation from the network.
-        Args:
+
+        :Kwargs:
             * eradius   : Radius of the earth (should not change that much :-)).
-            * stations  : List of stations on which rotation is estimated. If None, 
-                          uses all the stations.
+            * stations  : List of stations on which rotation is estimated. If None, uses all the stations.
+            * verbose   : talk to me
+
+        :Returns:
+            * None
         '''
         if verbose:
             print('--------------------------------------------------')
@@ -2104,10 +2375,14 @@ class gps(SourceInv):
     def remove_rotation(self, elon, elat, omega):
         '''
         Removes a rotation from the lon, lat and velocity of a rotation pole.
-        Args:
+
+        :Args:
             * elon   : Longitude of the rotation pole (in rad)
             * elat   : Latitude of the rotation pole (in rad)
-            * omega : Amplitude of the rotation (in rad/yr).
+            * omega  : Amplitude of the rotation (in rad/yr).
+
+        :Returns:
+            * None
         '''
 
         import eulerPoleUtils as eu
@@ -2132,8 +2407,12 @@ class gps(SourceInv):
         '''
         Fits a full Helmert transform to the network 
 
-        Args:
+        :Kwargs:
             * components    : Take the 2 horizontal (default) or 3 enu
+            * data          : Can be 'data', 'synth', 'res', or 'transofmration'
+
+        :Returns:
+            * None
         '''
 
         # Get the Helmert matrix
@@ -2160,14 +2439,12 @@ class gps(SourceInv):
         '''
         Fits a Helmert transform to the network and removes it.
 
-        Args:
+        :Kwargs:
             * components    : Take the 2 horizontal (default) or 3 enu
-            * data          : Which data to use to compute the transform
-                              'data'           : Corrects the data 
-                              'synth'          : Corrects the synthetics
-                              'res'            : Estimates the Helmert on the residuals
-                                                 and corrects the data
-                              'transformation' : Corrects the transformation
+            * data          : Can be 'data', 'synth', 'res', or 'transofmration'
+
+        :Returns:
+            * None
         '''
 
         # Compute Helmert
@@ -2195,8 +2472,12 @@ class gps(SourceInv):
     def makeDelaunay(self, plot=False):
         '''
         Builds a Delaunay triangulation of the GPS network.
-        Args:   
+
+        :Kwargs:   
             * plot          : True/False(default).
+
+        :Returns:
+            * None
         '''
 
         # import needed matplotlib
@@ -2226,11 +2507,17 @@ class gps(SourceInv):
     def removeSynth(self, faults, direction='sd', poly=None, custom=False):
         '''
         Removes the synthetics from a slip model.
-        Args:
+
+        :Args:
             * faults        : list of faults to include.
+
+        :Kwargs:
             * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
             * poly          : if a polynomial function has been estimated, include it.
             * custom        : if some custom green's function was used, include it.
+
+        :Returns:
+            * None
         '''
 
         # build the synthetics
@@ -2245,11 +2532,18 @@ class gps(SourceInv):
     def buildsynth(self, faults, direction='sd', poly=None, vertical=True, custom=False):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
-        Args:
+
+        :Args:
             * faults        : list of faults to include.
+
+        :Kwargs:
             * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
+            * vertical      : True/False
             * include_poly  : if a polynomial function has been estimated, include it.
             * custom        : if some custom green's function was used, include it.
+
+        :Returns:
+            * None
         '''
 
         # Check list
@@ -2401,10 +2695,15 @@ class gps(SourceInv):
 
     def write2file(self, namefile=None, data='data', outDir='./'):
         '''
-        Args:
+        Write the data to a file. If namefile is None, then the output file will be in the form outDir/self.name.dat
+
+        :Kwargs:
             * namefile  : Name of the output file.
             * data      : data, synth, strain, transformation.
+            * outDir    : Output directory
 
+        :Returns:
+            * None
         '''
 
         # Determine file name
@@ -2458,6 +2757,9 @@ class gps(SourceInv):
     def getRMS(self):
         '''
         Computes the RMS of the data and if synthetics are computed, the RMS of the residuals
+        
+        :Returns:
+            * dataRMS, synthRMS: 2 floats
         '''
 
         # Get the number of points
@@ -2474,10 +2776,14 @@ class gps(SourceInv):
             return dataRMS, 0.
 
         # All done
+        return
 
     def getVariance(self):
         '''                                                                                                      
         Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
+
+        :Returns:
+            * dataVariance, synthVariance: 2 floats
         '''
         
         # Get the number of points                                                                               
@@ -2496,23 +2802,24 @@ class gps(SourceInv):
             return dataVariance, 0.                                                                                   
         
         # All done       
-        
+        return
+
     def getMisfit(self):
         '''                                                                                                      
-        Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals                    
-        '''
+        Computes the summed misfit of the residuals                    
 
-        # Misfit of the data                                                                                        
-        dataMisfit = sum((self.vel_enu.flatten()))
+        :Returns:
+        '''
 
         # Synthetics
         if self.synth is not None:
             synthMisfit = sum( (self.vel_enu.flatten() - self.synth.flatten()) )
-            return dataMisfit, synthMisfit
+            return synthMisfit
         else:
-            return dataMisfit, 0.
+            return
 
         # All done
+        return
 
     def initializeTimeSeries(self, start=None, end=None, stationfile=False,
                                    sqlfile=None, time=None,  
@@ -2520,10 +2827,20 @@ class gps(SourceInv):
                                    factor=1.):
         '''
         Initializes a time series for all the stations.
-        Args:
-            * start     : Starting date
-            * end       : Ending date
-            * interval  : in days (default=1).
+
+        :Kwargs:
+            * start         : Starting date
+            * end           : Ending date
+            * interval      : in days (default=1).
+            * stationfile   : Read the time series from the station file
+            * sqlfile       : Red the time series from a sqlfile
+            * time          : time would be taken from this array
+            * verbose       : talk to me
+            * los           : Los vector
+            * factor        : scaling factor
+
+        :Returns:
+            * None
         '''
 
         # Create a list
@@ -2561,10 +2878,16 @@ class gps(SourceInv):
     def writeTimeSeries(self, verbose=False, outdir='./', steplike=False):
         '''
         Writes the time series of displacement in text files.
-        
         Filenames are entirely determined from the name of the station
+        example: STAT.dat, COPO.dat, ISME.dat ...
+    
+        :Kwargs:
+            * verbose   : talk to me
+            * outdir    : output directory
+            * steplike  : write 2 dots per day 
 
-                example: STAT.dat, COPO.dat, ISME.dat ...
+        :Returns:
+            * None
         '''
 
         # Iterate over the time series
@@ -2586,7 +2909,7 @@ class gps(SourceInv):
         '''
         Returns a GPS object which displacements are the values at the desired date.
 
-        Args:
+        :Args:
             * date      : datetime.datetime instance
 
         Return:
@@ -2645,105 +2968,22 @@ class gps(SourceInv):
         # all done
         return gpsNew
 
-    def simulateTimeSeriesFromSlipHistory(self, slip, scale=1., verbose=True, elasticstructure='okada', sourceSpacing=0.1):
-        '''
-        Takes a seismolocation object with CMT informations and computes the time 
-        series from these.
-        Args:
-            * sismo     : seismiclocation object (needs to have CMTinfo object and 
-                          the corresponding faults list of dislocations).
-            * scale     : Scales the results (default is 1.).
-        '''
-
-        # Check sismo
-        assert hasattr(sismo, 'CMTinfo'),\
-                '{} object (seismiclocation class) needs a CMTinfo dictionary...'\
-                .format(sismo.name)
-        assert hasattr(sismo, 'faults'),\
-                '{} object (seismiclocation class) needs a list of faults. \
-                Please run Cmt2Dislocation...'.format(sismo.name)
-            
-        # Check self
-        assert hasattr(self, 'timeseries'), \
-                '{} object (gps class) needs a timeseries list. \
-                Please run initializeTimeSeries...'.format(self.name)
-
-        # Re-set the time series
-        for station in self.station:
-            self.timeseries[station].east.value[:] = 0.0
-            self.timeseries[station].north.value[:] = 0.0
-            self.timeseries[station].up.value[:] = 0.0
-
-        # Loop over the earthquakes
-        for i in range(len(sismo.CMTinfo)):
-
-            # Get the time of the earthquake
-            eqTime = sismo.time[i]
-
-            # Get the fault
-            fault = sismo.faults[i]
-
-            # Verbose
-            if verbose:
-                name = sismo.CMTinfo[i]['event name']
-                mag = sismo.mag[i]
-                strike = sismo.CMTinfo[i]['strike']
-                dip = sismo.CMTinfo[i]['dip']
-                rake = sismo.CMTinfo[i]['rake']
-                depth = sismo.CMTinfo[i]['depth']
-                print('Running for event {}:'.format(name))
-                print('                 Mw : {}'.format(mag))
-                print('               Time : {}'.format(eqTime.isoformat()))
-                print('             strike : {}'.format(strike*180./np.pi))
-                print('                dip : {}'.format(dip*180./np.pi))
-                print('               rake : {}'.format(rake*180./np.pi))
-                print('              depth : {}'.format(depth))
-                print('        slip vector : {}'.format(fault.slip))
-                
-            # Compute the Green's functions
-            if elasticstructure in ('okada'):
-                fault.buildGFs(self, verbose=verbose, method='okada')
-            else:
-                fault.kernelsEDKS = elasticstructure
-                fault.sourceSpacing = sourceSpacing
-                fault.buildGFs(self, verbose=verbose, method='edks')
-
-            # Compute the synthetics
-            self.buildsynth([fault])
-
-            # Loop over the stations to add the step
-            for station in self.station:
-
-                # Get some informations
-                TStime = np.array(self.timeseries[station].time)
-                TSlength = len(TStime)
-            
-                # Create the time vector
-                step = np.zeros(TSlength)
-
-                # Put ones where needed
-                step[TStime>eqTime] = 1.0
-
-                # Add step to the time series
-                e, n, u = self.getvelo(station, data='synth')
-                e = step*e*scale
-                n = step*n*scale
-                u = step*u*scale
-                self.timeseries[station].east.value += e
-                self.timeseries[station].north.value += n
-                self.timeseries[station].up.value += u
-
-        # All done
-        return
-    
     def simulateTimeSeriesFromCMT(self, sismo, scale=1., verbose=True, elasticstructure='okada', sourceSpacing=0.1):
         '''
         Takes a seismolocation object with CMT informations and computes the time 
         series from these.
-        Args:
-            * sismo     : seismiclocation object (needs to have CMTinfo object and 
-                          the corresponding faults list of dislocations).
-            * scale     : Scales the results (default is 1.).
+
+        :Args:
+            * sismo     : seismiclocation object (needs to have CMTinfo object and the corresponding faults list of dislocations).
+
+        :Kwargs:
+            * scale             : Scales the results (default is 1.).
+            * verbose           : talk to me
+            * elasticstructure  : can be okada or edks
+            * sourceSpacing     : spacing of sources in case edks is chosen
+
+        :Returns:
+            * None
         '''
 
         # Check sismo
@@ -2830,11 +3070,13 @@ class gps(SourceInv):
     def extractTimeSeriesOffsets(self, date1, date2, destination='data'):
         '''
         Puts the offset from the time series between date1 and date2 into an instance of self.
-        Args:
+
+        :Args:
             * date1         : datetime object.
             * date2         : datetime object.
-            * destination   : if 'data', results are in vel_enu
-                              if 'synth', results are in synth
+
+        :Kwargs:
+            * destination   : if 'data', results are in vel_enu, if 'synth', results are in synth
         '''
 
         # Initialize
@@ -2869,6 +3111,24 @@ class gps(SourceInv):
         xtsd, ystd, depthstd are the standard deviation of the Gaussian used to perturbe the location
         The moment will be perturbed by a fraction of the moment (Moperc).
         if relative_location_is_ok is True, then all the mechanisms are moved by a common translation.
+
+        :Args:
+            * sismo     : seismiclocation object
+            * N         : Number of perturbed models
+
+        :Kwargs:
+            * xstd      : std dev in longitude (km)
+            * ystd      : std dev in latitude (km)
+            * depthstd  : std dev in depth (km)
+            * Moperc    : maximum perturbation of the seismic moment (%)
+            * scale     : Scaling factor
+            * verbose   : talk to me
+            * plot      : name of the station to plot
+            * elasticstructure  : okada or edks
+            * relative_location_is_ok : a common perturbation for all mechanisms
+
+        :Returns:
+            * None
         '''
 
         if verbose:
@@ -3000,12 +3260,29 @@ class gps(SourceInv):
             vertical=False, verticalsize=[30],
             data=['data'], color=['k']):
         '''
-        Args:
-            * ref       : can be 'utm' or 'lonlat'.
-            * figure    : number of the figure.
-            * faults    : List of fault objects to plot the surface trace of a fault object (see verticalfault.py).
-            * plot_los  : Plot the los projected gps as scatter points
+        Plot the network
+
+        :Kwargs:
+            * faults        : list of instances of faults
+            * data          : list of data to plot (can be 'data', 'synth', 'res' or 'transformation')
+            * vertical      : plot verticals (True/False)
+            * verticalsize  : size of the dots for vertical plots (list as long as data)
+            * color         : lits of color specifications as long as data
+            * name          : plot the name of the stations
+            * legendscale   : size of the legend (default is 10)
+            * scale         : scale of the arrows
+            * ref           : can be 'utm' or 'lonlat'
+            * drawCoastlines: True/False
+            * expand        : Expand the map (in degrees)
+            * show          : plot to screen
+            * figure        : number of the figure.
+            * faults        : List of fault objects to plot the surface trace of a fault object (see verticalfault.py).
+            * plot_los      : Plot the los projected gps as scatter points
+
+        :Returns:
+            * None
         '''
+
         # Get lons lats
         lonmin = self.lon.min()-expand
         lonmax = self.lon.max()+expand

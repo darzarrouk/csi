@@ -1,5 +1,5 @@
 '''
-A class that deals with InSAR data, after decimation using VarRes.
+A class that deals with creepmeter data
 
 Written by R. Jolivet, April 2013.
 '''
@@ -10,15 +10,27 @@ import datetime as dt
 import matplotlib.pyplot as plt
 import os
 
-class creepmeters(object):
+# Personals
+from .SourceInv import SourceInv
+
+class creepmeters(SourceInv):
+
+    '''
+    A class that handles creepmeter data
+
+    :Args:
+       * name      : Name of the dataset.
+
+    :Kwargs:
+       * utmzone   : UTM zone  (optional, default=None)
+       * lon0      : Longitude of the center of the UTM zone
+       * lat0      : Latitude of the center of the UTM zone
+       * ellps     : ellipsoid (optional, default='WGS84')
+       * verbose   : Speak to me (default=True)
+
+    '''
 
     def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
-        '''
-        Args:
-            * name          : Name of the Seismic dataset.
-            * utmzone       : UTM zone. 
-
-        '''
 
         # Initialize the data set 
         self.dtype = 'creepmeters'
@@ -45,9 +57,17 @@ class creepmeters(object):
 
     def readStationList(self, filename):
         '''
-        Reads the list of Stations.
-        Args:
-            filename        : Input file.
+        Reads the list of Stations. Input file format is
+
+        +--------------+-----+-----+
+        | Station Name | Lon | Lat |
+        +--------------+-----+-----+
+
+        :Args:
+            * filename        : Input file.
+
+        :Returns:
+            * None
         '''
 
         # open the file
@@ -82,8 +102,12 @@ class creepmeters(object):
     def position(self, station):
         ''' 
         Returns lon,lat of a station.
-        Args:
+
+        :Args:
             * station   : Name of a station.
+
+        :Returns:
+            * lon, lat 
         '''
         
         # Find it
@@ -96,10 +120,15 @@ class creepmeters(object):
     def distance(self, station, point, direction):
         '''
         Computes the distance between a station and a point.
-        Args:
+
+        :Args:
             * station   : Name of a station.
             * point     : [Lon, Lat].
             * direction : Direction of the positive sign.
+
+        :Returns:
+            * None. Distance is stored in the {data} attribute under the station name.
+
         '''
 
         # Check
@@ -130,6 +159,12 @@ class creepmeters(object):
     def deleteStation(self, station):
         '''
         Removes a station.
+
+        :Args:
+            * station   : Name of the station to remove
+
+        :Returns:
+            * None
         '''
 
         # find it
@@ -146,6 +181,12 @@ class creepmeters(object):
     def readAllStations(self, directory='.'):
         '''
         Reads all the station files.
+
+        :Kwargs:
+            * directory : directory where to find the station files
+
+        :Returns:
+            * None
         '''
 
         for station in self.station:
@@ -165,6 +206,15 @@ class creepmeters(object):
     def readStationData(self, station, directory='.'):
         '''
         From the name of a station, reads what is in station.day.
+
+        :Args:
+            * station   : name of the station
+
+        :Kwargs:
+            * directory : directory where to find the station.day file.
+
+        :Returns:
+            * None
         '''
 
         # Filename
@@ -215,11 +265,14 @@ class creepmeters(object):
         ''' 
         Select the earthquakes in a box defined by min and max, lat and lon.
         
-        Args:
+        :Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
+
+        :Returns:
+            * None
         '''
 
         # Store the corners
@@ -245,6 +298,9 @@ class creepmeters(object):
     def lonlat2xy(self):
         '''
         Converts the lat lon positions into utm coordinates.
+
+        :Returns:
+            * None
         '''
 
         self.x, self.y = self.ll2xy(self.lon, self.lat)
@@ -252,20 +308,18 @@ class creepmeters(object):
         # all done
         return
 
-    def ll2xy(self, lon, lat):
-
-        x, y = self.putm(lon,lat)
-        x /= 1000.
-        y /= 1000.
-
-        # All done
-        return x,y
-
     def fitLinearAllStations(self, period=None, directory='.'):
         '''
-        Fits a linear trend to all the available stations.
-        Can specify a period=[startdate, enddate]
-        ex:     fitLinearAllStation(period=[(2006,01,23), (2007,12,31)])
+        Fits a linear trend to all the available stations. Can specify a period=[startdate, enddate]
+
+        :Args:
+            * period    : list of 2 tuples (yyyy, mm, dd)
+
+        :Kwargs:
+            * directory : If station files have not been read before, this is the directory where to find the station files
+
+        :Returns:
+            * None
         '''
 
         # Loop 
@@ -279,8 +333,16 @@ class creepmeters(object):
     def fitLinear(self, station, period=None, directory='.'):
         '''
         Fits a linear trend onto the offsets for the station 'station'.
-        Can specify a period=[startdate, enddate].
-        ex:     fitLinear('xva1', period=[(2006,01,23), (2007,12,31)])
+
+        :Args:
+            * station   : station name
+
+        :Kwargs:
+            * period    : list of 2 tuples (yyyy, mm, dd)
+            * directory : If station files have not been read before, this is the directory where to find the station files
+
+        :Returns:
+            * None
         '''
 
         # Check if the station has been read before
@@ -341,6 +403,16 @@ class creepmeters(object):
     def plotStation(self, station, figure=100, save=None):
         '''
         Plots one station evolution through time.
+
+        :Args:
+            * station   : name of the station
+
+        :Kwargs:
+            * figure    : figure numner
+            * save      : name of the file if you want to save
+
+        :Returns:
+            * None
         '''
 
         # Check if the station has been read
@@ -385,6 +457,13 @@ class creepmeters(object):
     def date2real(self, date):
         '''
         Pass from a datetime to a real number.
+        Weird method... Who implemented that?
+
+        :Args:
+            * date  : datetime instance
+
+        :Returns:
+            * float
         '''
 
         yr = date.year

@@ -17,12 +17,21 @@ from .SourceInv import SourceInv
 
 class seismiclocations(SourceInv):
 
+    '''
+    A class that handles a simple earthquake catalog
+
+    :Args:
+       * name      : Name of the dataset.
+
+    :Kwargs:
+       * utmzone   : UTM zone  (optional, default=None)
+       * lon0      : Longitude of the center of the UTM zone
+       * lat0      : Latitude of the center of the UTM zone
+       * ellps     : ellipsoid (optional, default='WGS84')
+
+    '''
+
     def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None):
-        '''
-        Args:
-            * name          : Name of the Seismic dataset.
-            * utmzone       : UTM zone. Default is 10 (Western US).
-        '''
 
         # Base class init
         super(seismiclocations, self).__init__(name, 
@@ -52,10 +61,22 @@ class seismiclocations(SourceInv):
 
     def read_from_Hauksson(self,filename, header=0):
         '''
-        Read the Seismic catalog from the SCSN networks (Template from E. Hauksson, Caltech).
-        Args:
+        Read the Seismic catalog from the SCSN networks (Template from E. Hauksson, Caltech). File format is as follows
+
+        +------+-------+-----+------+--------+---------+-----+-----+-------+-----------+
+        | year | month | day | hour | minute | seconds | lat | lon | depth | magnitude |
+        +------+-------+-----+------+--------+---------+-----+-----+-------+-----------+
+        | int  | int   | int | int  | int    | float   |float|float| float | float     |
+        +------+-------+-----+------+--------+---------+-----+-----+-------+-----------+
+
+        :Args:
             * filename      : Name of the input file.
+
+        :Kwargs:
             * header        : Size of the header.
+
+        :Returns:
+            * None
         '''
 
         print ("Read from file {} into data set {}".format(filename, self.name))
@@ -124,9 +145,21 @@ class seismiclocations(SourceInv):
     def read_from_Rietbrock(self, filename, header=1):
         '''
         Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
-        Args:
+
+        +-----+------+-------+-----+------+--------+---------+-----------+------------+------------+------------+-------+-----------+
+        | id  | year | month | day | hour | minute | seconds | degre lat | minute lat | degree lon | minute lon | depth | magnitude |
+        +-----+------+-------+-----+------+--------+---------+-----------+------------+------------+------------+-------+-----------+
+        |     | int  |  int  | int | int  |  int   |  float  |   float   |   float    |    float   |    float   | float |   float   |
+        +-----+------+-------+-----+------+--------+---------+-----------+------------+------------+------------+-------+-----------+
+
+        :Args:
             * filename      : Name of the input file. 
+
+        :Kwargs:
             * header        : Size of the header.
+
+        :Returns:
+            * None
         '''
 
         print ("Read from file {} into data set {}".format(filename, self.name))
@@ -194,10 +227,22 @@ class seismiclocations(SourceInv):
 
     def read_from_SCSN(self,filename, header=65):
         '''
-        Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
-        Args:
+        Read the Seismic catalog from the SCSN networks (Template from F. Waldhauser).
+
+        +------+-------+-----+------+--------+-----+-----+-------+-----------+
+        | year | month | day | hour | minute | lat | lon | depth | magnitude |
+        +------+-------+-----+------+--------+-----+-----+-------+-----------+
+        | int  |  int  | int | int  |  int   |float|float| float |   float   |
+        +------+-------+-----+------+--------+-----+-----+-------+-----------+
+
+        :Args:
             * filename      : Name of the input file.
+
+        :Kwargs:
             * header        : Size of the header.
+
+        :Returns:
+            * None
         '''
 
         print ("Read from file {} into data set {}".format(filename, self.name))
@@ -268,10 +313,23 @@ class seismiclocations(SourceInv):
 
     def read_from_NCSN(self,filename, header=65):
         '''
-        Read the Seismic catalog from the NCSN networks (Template from F. Waldhauser).
-        Args:
+        Read the Seismic catalog from the NCSN networks. Magnitude is in a column determined from the header.
+        The rest reads as
+
+        +------+-------+-----+------+--------+-----+-----+-------+
+        | year | month | day | hour | minute | lat | lon | depth |
+        +------+-------+-----+------+--------+-----+-----+-------+
+        | int  |  int  | int | int  |  int   |float|float| float |
+        +------+-------+-----+------+--------+-----+-----+-------+
+
+        :Args:
             * filename      : Name of the input file.
+
+        :Kwargs:
             * header        : Size of the header.
+
+        :Returns:
+            * None
         '''
 
         print ("Read from file {} into data set {}".format(filename, self.name))
@@ -339,7 +397,21 @@ class seismiclocations(SourceInv):
     def read_csi(self, infile, header=0):
         '''
         Reads data from a file written by csi.seismiclocation.write2file
-        columns are time (isoformat, lat, lon, depth, mag).
+        
+        +-----+-----+-------+-----------+----------------------------+
+        | lon | lat | depth | magnitude | time (isoformat)           |
+        +-----+-----+-------+-----------+----------------------------+
+        |float|float| float |   float   | yyy-mm-ddThh:mm:ss.ss      |
+        +-----+-----+-------+-----------+----------------------------+
+
+        :Args:
+            * infile    : input file
+            
+        :Kwargs:
+            * header    : length of the header
+
+        :Returns:
+            * None
         '''
 
         # open the file
@@ -394,7 +466,21 @@ class seismiclocations(SourceInv):
     def read_ascii(self, infile, header=0):
         '''
         Reads data from an ascii file.
-        columns are time (isoformat, lat, lon, depth, mag).
+
+        +----------------------------+-----+-----+-------+-----------+
+        | time (isoformat)           | lon | lat | depth | magnitude |
+        +----------------------------+-----+-----+-------+-----------+
+        | yyy-mm-ddThh:mm:ss.ss      |float|float| float |   float   |
+        +----------------------------+-----+-----+-------+-----------+
+
+        :Args:
+            * infile    : input file
+            
+        :Kwargs:
+            * header    : length of the header
+
+        :Returns:
+            * None
         '''
 
         # open the file
@@ -447,9 +533,13 @@ class seismiclocations(SourceInv):
 
     def read_CMTSolutions(self, infile):
         '''
-        Reads data and moment tensors from an ascii file listing CMT solutions format
-        Args:
-            infile: Input file.
+        Reads data and moment tensors from an ascii file listing CMT solutions format. Go check the GCMT webpage for format description
+
+        :Args:
+            * infile: Input file.
+
+        :Returns:
+            * None
         '''
 
         # open the file
@@ -546,11 +636,18 @@ class seismiclocations(SourceInv):
         '''
         Select the earthquakes in a box defined by min and max, lat and lon.
 
-        Args:
+        :Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
+
+        :Kwargs:
+            * depth         : Maximum depth
+            * mindepth      : Minimum depth
+
+        :Returns:
+            * None. Direclty kicks out earthquakes that are not in the box
         '''
 
         # Store the corners
@@ -569,13 +666,16 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-
     def selecttime(self, start=[2001, 1, 1], end=[2101, 1, 1]):
         '''
         Selects the earthquake in between two dates. Dates can be datetime.datetime or lists.
-        Args:
-            * start     : Beginning of the period.
-            * end       : End of the period.
+
+        :Args:
+            * start     : Beginning of the period [yyyy, mm, dd]
+            * end       : End of the period [yyyy, mm, dd]
+
+        :Returns:
+            * None. Direclty kicks out earthquakes that are not within start-end period
         '''
 
         # check start and end
@@ -628,9 +728,15 @@ class seismiclocations(SourceInv):
     def selectmagnitude(self, minimum, maximum=10):
         '''
         Selects the earthquakes between two magnitudes.
-        Args:
+
+        :Args:
             * minimum   : Minimum earthquake magnitude wanted.
+
+        :Kwargs:    
             * maximum   : Maximum earthquake magnitude wanted.
+
+        :Returns:
+            * None. Directly kicks out earthquakes that are not within the wanted magnitude range
         '''
 
         # Get the magnitude
@@ -649,8 +755,13 @@ class seismiclocations(SourceInv):
     def computeGR(self, plot=False, bins=20):
         '''
         Plots the Gutemberg-Richter distribution.
-        Args:
-            * ion       : Turns on the plt.ion().
+
+        :Kwargs:
+            * plot      : make a figure
+            * bins      : how many bins to use
+
+        :Returns:
+            * None
         '''
 
         # Get the magnitude
@@ -677,7 +788,11 @@ class seismiclocations(SourceInv):
         '''
         Fits a B-value to a Gutemberg-Righter distribution.
         option: if b is provided, then the fit is forced to have a slope b.
+
+        :Note: This method has not been implemented
         '''
+
+        raise NotImplementedError('not yet implemented')
 
         # All done
         return
@@ -685,9 +800,15 @@ class seismiclocations(SourceInv):
     def distance2fault(self, faults, distance=5.):
         '''
         Selects the earthquakes that are located less than distance away from the fault plane.
-        Args:
+
+        :Args:
             * faults    : List of faults
+
+        :Kwargs:
             * distance  : Threshold
+
+        :Returns:   
+            * None. Selected events are kept. Others are deleted.
         '''
 
         # Create the list
@@ -713,9 +834,15 @@ class seismiclocations(SourceInv):
     def distance2trace(self, faults, distance=5.):
         '''
         Selects the earthquakes that are located less than 'distance' km away from a given surface fault trace.
-        Args:
-            * faults    : list of structures created from verticalfault.
+
+        :Args:
+            * faults    : list of instances of faults. These need to have {xf} and {yf} attributes
+
+        :Kwargs:
             * distance  : threshold distance.
+
+        :Returns:
+            * None. Selected earthquakes are kept. Others are deleted.
         '''
 
         # Shapely (Change for matplotlib path later)
@@ -757,6 +884,16 @@ class seismiclocations(SourceInv):
     def delete2Close2Trace(self, faults, distance=1.):
         '''
         Deletes the earthquakes that are too close from the fault trace.
+
+        :Args:
+            * faults    : list of instances of faults. These need to have {xf} and {yf} attributes
+
+        :Kwargs:
+            * distance  : threshold distance.
+
+        :Returns:
+            * None. Direclty modifies the list of earthquakes
+            
         '''
 
         # Shapely (Change for matplotlib path later)
@@ -793,11 +930,17 @@ class seismiclocations(SourceInv):
 
     def ProjectOnFaultTrace(self, fault, discretized=True, filename=None):
         '''
-        Projects the location of the earthquake along the fault trace.
-        This routine is not a 3D one, it just deals with the surface trace of the fault.
-        Args:
-            fault:       Fault object that has a surface trace
-            discretized: If True, then it uses the discretized fault, not the trace. Never tested with False.
+        Projects the location of the earthquake along the fault trace. This routine is not a 3D one, it just deals with the surface trace of the fault.
+
+        :Args:
+            * fault:       Fault object that has a surface trace ({xf} and {yf} attributes)
+
+        :Kwargs:
+            * discretized: If True, then it uses the discretized fault, not the trace. Never tested with False.
+            * filename: Store in a text file
+        
+        :Returns:
+            * None. Everything is stored in the dictionary {Projected}
         '''
 
         # Import needed stuff
@@ -904,71 +1047,17 @@ class seismiclocations(SourceInv):
         # All done
         return
 
-    def _getDistance2Fault(self, fault):
-        '''
-        Computes the distance between the fault trace and all the earthquakes.
-        '''
-
-        # Import
-        import shapely.geometry as sg
-
-        # Create a list with earthquakes
-        LL = np.vstack((self.x, self.y)).T.tolist()
-        PP = sg.MultiPoint(LL)
-
-        # Build a line object
-        FF = np.vstack((fault.xf, fault.yf)).T.tolist()
-        trace = sg.LineString(FF)
-
-        # Distance
-        dis = []
-        for p in PP.geoms:
-            dis.append(trace.distance(p))
-
-        # All done
-        return dis
-
-    def _getDistance2FaultPlane(self, fault):
-        '''
-        Computes the distance between the fault plane and all the earthquakes.
-        '''
-
-        # import scipy
-        import scipy.spatial.distance as scidis
-
-        # Create a list
-        dis = []
-
-        # Create the list of vertices
-        if fault.patchType in ('triangle', 'triangletent'):
-            vertices = fault.Vertices
-        elif fault.patchType in ('rectangle'):
-            vertices = []
-            for p in fault.patch:
-                for i in range(4):
-                    vertices.append(p[i])
-
-        # Loop on the earthquakes
-        for i in range(self.mag.shape[0]):
-
-            # Get position
-            x = self.x[i]
-            y = self.y[i]
-            z = self.depth[i]
-
-            # Get the min distance
-            d = scidis.cdist([[x, y, z]], vertices).min()
-
-            # Append
-            dis.append(d)
-
-        # All done
-        return dis
-
     def MapHistogram(self, binwidth=1.0, plot=False, normed=True):
         '''
         Builds a 2D histogram of the earthquakes locations.
-        binwidth: width of the bins used for histogram.
+
+        :Kwargs:
+            * binwidth  : width of the bins used for histogram.
+            * plot      : True/False
+            * normed    : Normed the histgram
+
+        :Returns:
+            * None. Histogram is stored in the {histogram} attribute
         '''
 
         # Build x- and y-bins
@@ -1011,7 +1100,22 @@ class seismiclocations(SourceInv):
     def BuildHistogramsAlongFaultTrace(self, fault, filename, normed=True, width=10.0, bins=50, plot=False, planemode='verticalfault', Range=(-5.0, 5.0), reference=None):
         '''
         Builds a histogram of the earthquake distribution along the fault trace.
-        width: Width of the averaging cell (distance along strike)
+
+        :Args:
+            * fault : instance of fault with {xf} and {yf} attributes
+            * filename: Name of output file
+
+        :Kwargs:
+            * normed: Norm the histogram
+            * width: Width of the averaging cell (distance along strike)
+            * bins  : number of bins
+            * plot  : True/False
+            * planemode: 'verticalfault' or 'bestfit'. verticalfault will assume the fault is vertical. bestfit will fit a dip angle within the cloud of events (can produce weird results sometimes).
+            * Range : Range for histogram computation
+            * reference: Tuple of float to set the reference of the domain
+
+        :Returns:
+            * None. Everything is stored in output files
         '''
 
         # Import needed stuffs
@@ -1214,8 +1318,16 @@ class seismiclocations(SourceInv):
 
     def getEarthquakesOnPatches(self, fault, epsilon=0.01):
         '''
-        Project each earthquake on a fault patch.
-        Should work with any fault patch type.
+        Project each earthquake on a fault patch. Should work with any fault patch type.
+
+        :Args:
+            * fault : instance of a fault class
+
+        :Kwargs:
+            * epsilon   : float comparison tolerance number
+
+        :Returns:
+            * InPatch, a list of events in each patch
         '''
 
         # Make a list for each patch of the earthquakes that are in the patch
@@ -1268,6 +1380,12 @@ class seismiclocations(SourceInv):
     def getClosestFaultPatch(self, fault):
         '''
         Returns a list of index for all the earthquakes containing the index of the closest fault patch.
+
+        :Args:
+            * fault : an instance of a fault class
+
+        :Returns:
+            * ipatch, a list of the index of the closest patch for each event
         '''
 
         # Create a list
@@ -1296,8 +1414,11 @@ class seismiclocations(SourceInv):
 
     def mag2Mo(self):
         '''
-        Compute the moment from the magnitude.
-        Result in N.m
+        Computes the moment from the magnitude. Result in N.m
+
+        :Returns:
+            * None. Result is in the {Mo} attribute
+
         '''
 
         # Compute
@@ -1309,6 +1430,9 @@ class seismiclocations(SourceInv):
     def Mo2mag(self):
         '''
         Compute the magnitude from the moment.
+
+        :Returns:
+            * None. Result is in the {mag} attribute
         '''
 
         self.mag = 2./3. * (np.log10(self.Mo) - 9.1)
@@ -1319,6 +1443,13 @@ class seismiclocations(SourceInv):
     def momentEvolution(self, plot=False, outfile=None):
         '''
         Computes the evolution of the moment with time.
+
+        :Kwargs:
+            * plot  : True/False
+            * outfile: output file
+
+        :Returns:
+            * None
         '''
 
         # Make sure these are sorted
@@ -1371,6 +1502,9 @@ class seismiclocations(SourceInv):
     def sortInTime(self):
         '''
         Sorts the earthquakes in Time
+
+        :Returns:
+            * None. Directly modifies the object
         '''
 
         # Get the ordering
@@ -1385,8 +1519,15 @@ class seismiclocations(SourceInv):
     def write2file(self, filename, add_column=None):
         '''
         Write the earthquakes to a file.
-        Args:
+
+        :Args:
             * filename      : Name of the output file.
+
+        :Kwargs:
+            * add_column    : array or list of length equal to the number of events
+
+        :Returns:
+            * None
         '''
 
         # open the file
@@ -1411,12 +1552,17 @@ class seismiclocations(SourceInv):
 
     def writeSelectedMagRange(self, filename, minMag=5.0, maxMag=10.):
         '''
-        Write to a file the earthquakes with a magnitude larger than minMag and
-        smaller than maxMag.
-        Args:
+        Write to a file the earthquakes with a magnitude larger than minMag and smaller than maxMag.
+
+        :Args:
             * filename  : Name of the output file
+
+        :Kwargs:
             * minMag    : minimum Magnitude.
             * maxMag    : maximum Magnitude.
+
+        :Returns:   
+            * None
         '''
 
         # Create a new object
@@ -1437,14 +1583,17 @@ class seismiclocations(SourceInv):
     def Cmt2Dislocation(self, size=1, mu=30e9, choseplane='nochoice', 
                               moment_from_tensor=False, verbose=True):
         '''
-        Returns a single square patch fault from the cmt solutions.
-        If no condition is given, it returns the first value.
+        Builds a list of single square patch faults from the cmt solutions. If no condition is given, it returns the first value.
 
-        Args:
+        :Kwargs:
             * size          : Size of one side of the fault patch (km).
             * mu            : Shear modulus (Pa).
             * choseplane    : Choice of the focal plane to use (can be 'smallestdip', 'highestdip', 'nochoice')
             * moment_from_tensor: Computes the scalar moment from the cmt.
+            * verbose       : talk to me
+
+        :Returns:
+            * None. Attribute {faults} is a list of faults with a single patch corresponding to the chosen fault plane
         '''
 
         if verbose:
@@ -1540,8 +1689,12 @@ class seismiclocations(SourceInv):
     def mergeCatalog(self, catalog):
         '''
         Merges another catalog into this one.
-        Args:
-            catalog:    Seismic location object.
+
+        :Args:
+            * catalog:    Seismic location object.
+        
+        :Returns:
+            * None
         '''
 
         # Merge variables
@@ -1560,6 +1713,9 @@ class seismiclocations(SourceInv):
     def lonlat2xy(self):
         '''
         Pass the position into the utm coordinate system.
+
+        :Returns:
+            * None
         '''
 
         x, y = self.putm(self.lon, self.lat)
@@ -1572,6 +1728,9 @@ class seismiclocations(SourceInv):
     def xy2lonlat(self):
         '''
         Pass the position from utm to lonlat.
+
+        :Returns:
+            * None
         '''
 
         lon, lat = self.putm(x*1000., y*1000.)
@@ -1581,116 +1740,20 @@ class seismiclocations(SourceInv):
         # all done
         return
 
-    def _select(self, u):
-        '''
-        Makes a selection.
-        '''
-
-        # Select the stations
-        self.lon = self.lon[u]
-        self.lat = self.lat[u]
-        self.x = self.x[u]
-        self.y = self.y[u]
-        self.time = self.time[u]
-        self.depth = self.depth[u]
-        self.mag = self.mag[u]
-
-        # Conditional
-        if hasattr(self, 'CMTinfo'):
-            self.CMTinfo = np.array(self.CMTinfo)
-            self.CMTinfo = self.CMTinfo[u]
-            self.CMTinfo = self.CMTinfo.tolist()
-
-        # Conditional
-        if hasattr(self, 'Mo'):
-            self.Mo = self.Mo[u]
-
-        # All done
-        return
-
-    def _cmt2strikediprake(self, cmt, returnMo=False):
-        '''
-        From a moment tensor in Harvard convention, returns 2 tuples of (strike, dip, rake)
-        Args:
-            * cmt   : Array (3,3) with the CMT.
-        '''
-
-        # 1. Compute the eigenvalues and eigenvectors
-        EigValues, EigVectors = np.linalg.eig(cmt)
-
-        # 2. Sort them => T = max(Eig)
-        #                 N = Neutral
-        #                 P = min(Eig)
-        #    Then, n = (T+P)/sqrt(2)    # Normal
-        #          s = (P-T)/sqrt(2)    # Slip
-        T = EigVectors[:,np.argmax(EigValues)]
-        P = EigVectors[:,np.argmin(EigValues)]
-        n = (T+P)/np.sqrt(2.)
-        s = (T-P)/np.sqrt(2.)
-
-        # 3. Compute the moment
-        Mo = (np.abs(np.min(EigValues)) + np.abs(np.max(EigValues)))
-        Mo /= 2e7
-
-        # 4. Get strike, dip and rake from vectors
-        sdr1 = self._ns2sdr(n,s)
-        sdr2 = self._ns2sdr(s,n)
-
-        # All done
-        if returnMo:
-            return sdr1, sdr2, Mo
-        else:
-            return sdr1, sdr2
-
-    def _ns2sdr(self, n, s, epsilon=0.0001):
-        '''
-        From the normal and the slip vector, returns the strike, dip and rake.
-        Args:
-            * n     : Normal vector.
-            * s     : Slip vector.
-        '''
-
-        # Case: If normal downwards, flip them
-        if n[0]<0.:
-            n = -1.0*n
-            s = -1.0*s
-
-        # Case: if normal is vertical (i.e. if the plane is horizontal)
-        if n[0]>(1-epsilon):
-            strike = 0.0
-            dip = 0.0
-            rake = np.arctan2(-s[2], -s[1])
-
-        # Case: if normal is horizontal (i.e. plane if vertical)
-        elif n[0]<epsilon:
-            strike = np.arctan2(n[1], n[2])
-            dip = np.pi/2.
-            rake = np.arctan2(s[0], -s[1]*n[2] + s[2]*n[1])
-
-        # General Case:
-        else:
-            strike = np.arctan2(n[1], n[2])
-            dip = np.arccos(n[0])
-            rake = np.arctan2(-s[1]*n[1]-s[2]*n[2], (-s[1]*n[2]+s[2]*n[1])*n[0])
-
-        # Strike
-        if strike < 0.:
-            strike += 2*np.pi
-
-        # All done
-        return strike, dip, rake
-
     def getprofile(self, name, loncenter, latcenter, length, azimuth, width):
         '''
-        Project the seismic locations onto a profile.
-        Works on the lat/lon coordinates system.
-        Args:
+        Project the seismic locations onto a profile. Works on the lat/lon coordinates system.
+
+        :Args:
             * name              : Name of the profile.
             * loncenter         : Profile origin along longitude.
             * latcenter         : Profile origin along latitude.
             * length            : Length of profile.
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
+
+        :Returns:
+            * None. Profiles are stored in the attribute {profiles}
         '''
 
         # the profiles are in a dictionary
@@ -1730,20 +1793,22 @@ class seismiclocations(SourceInv):
     def coord2prof(self, xc, yc, length, azimuth, width):
         '''
         Routine returning the profile
-        Args:
+
+        :Args:
             * xc                : X pos of center
             * yc                : Y pos of center
             * length            : length of the profile.
             * azimuth           : azimuth of the profile.
             * width             : width of the profile.
-        Returns:
-            dis                 : Distance from the center
-            mag                 : Magnitude
-            depth               : Depth
-            norm                : distance perpendicular to profile
-            boxll               : lon lat coordinates of the profile box used
-            xe1, ye1            : coordinates (UTM) of the profile endpoint
-            xe2, ye2            : coordinates (UTM) of the profile endpoint
+
+        :Returns:
+            * dis                 : Distance from the center
+            * mag                 : Magnitude
+            * depth               : Depth
+            * norm                : distance perpendicular to profile
+            * boxll               : lon lat coordinates of the profile box used
+            * xe1, ye1            : coordinates (UTM) of the profile endpoint
+            * xe2, ye2            : coordinates (UTM) of the profile endpoint
         '''
 
         # Azimuth into radians
@@ -1860,6 +1925,16 @@ class seismiclocations(SourceInv):
     def writeProfile2File(self, name, filename, fault=None):
         '''
         Writes the profile named 'name' to the ascii file filename.
+
+        :Args:
+            * name      : name of the profile you want to write
+            * filename  : Name of the output file
+
+        :Kwargs:
+            * fault     : Add fault for intersection
+
+        :Returns:
+            * None
         '''
 
         # open a file
@@ -1911,9 +1986,13 @@ class seismiclocations(SourceInv):
     def intersectProfileFault(self, name, fault):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
-        Args:
+
+        :Args:
             * name      : name of the profile.
             * fault     : fault object from verticalfault.
+
+        :Returns:
+            * None
         '''
 
         # Import shapely
@@ -1963,4 +2042,166 @@ class seismiclocations(SourceInv):
 
         # All done
         return d
+
+#PRIVATE METHODS
+    def _getDistance2Fault(self, fault):
+        '''
+        Computes the distance between the fault trace and all the earthquakes.
+        '''
+
+        # Import
+        import shapely.geometry as sg
+
+        # Create a list with earthquakes
+        LL = np.vstack((self.x, self.y)).T.tolist()
+        PP = sg.MultiPoint(LL)
+
+        # Build a line object
+        FF = np.vstack((fault.xf, fault.yf)).T.tolist()
+        trace = sg.LineString(FF)
+
+        # Distance
+        dis = []
+        for p in PP.geoms:
+            dis.append(trace.distance(p))
+
+        # All done
+        return dis
+
+    def _getDistance2FaultPlane(self, fault):
+        '''
+        Computes the distance between the fault plane and all the earthquakes.
+        '''
+
+        # import scipy
+        import scipy.spatial.distance as scidis
+
+        # Create a list
+        dis = []
+
+        # Create the list of vertices
+        if fault.patchType in ('triangle', 'triangletent'):
+            vertices = fault.Vertices
+        elif fault.patchType in ('rectangle'):
+            vertices = []
+            for p in fault.patch:
+                for i in range(4):
+                    vertices.append(p[i])
+
+        # Loop on the earthquakes
+        for i in range(self.mag.shape[0]):
+
+            # Get position
+            x = self.x[i]
+            y = self.y[i]
+            z = self.depth[i]
+
+            # Get the min distance
+            d = scidis.cdist([[x, y, z]], vertices).min()
+
+            # Append
+            dis.append(d)
+
+        # All done
+        return dis
+
+    def _select(self, u):
+        '''
+        Makes a selection.
+        '''
+
+        # Select the stations
+        self.lon = self.lon[u]
+        self.lat = self.lat[u]
+        self.x = self.x[u]
+        self.y = self.y[u]
+        self.time = self.time[u]
+        self.depth = self.depth[u]
+        self.mag = self.mag[u]
+
+        # Conditional
+        if hasattr(self, 'CMTinfo'):
+            self.CMTinfo = np.array(self.CMTinfo)
+            self.CMTinfo = self.CMTinfo[u]
+            self.CMTinfo = self.CMTinfo.tolist()
+
+        # Conditional
+        if hasattr(self, 'Mo'):
+            self.Mo = self.Mo[u]
+
+        # All done
+        return
+
+    def _cmt2strikediprake(self, cmt, returnMo=False):
+        '''
+        From a moment tensor in Harvard convention, returns 2 tuples of (strike, dip, rake)
+        Args:
+            * cmt   : Array (3,3) with the CMT.
+        '''
+
+        # 1. Compute the eigenvalues and eigenvectors
+        EigValues, EigVectors = np.linalg.eig(cmt)
+
+        # 2. Sort them => T = max(Eig)
+        #                 N = Neutral
+        #                 P = min(Eig)
+        #    Then, n = (T+P)/sqrt(2)    # Normal
+        #          s = (P-T)/sqrt(2)    # Slip
+        T = EigVectors[:,np.argmax(EigValues)]
+        P = EigVectors[:,np.argmin(EigValues)]
+        n = (T+P)/np.sqrt(2.)
+        s = (T-P)/np.sqrt(2.)
+
+        # 3. Compute the moment
+        Mo = (np.abs(np.min(EigValues)) + np.abs(np.max(EigValues)))
+        Mo /= 2e7
+
+        # 4. Get strike, dip and rake from vectors
+        sdr1 = self._ns2sdr(n,s)
+        sdr2 = self._ns2sdr(s,n)
+
+        # All done
+        if returnMo:
+            return sdr1, sdr2, Mo
+        else:
+            return sdr1, sdr2
+
+    def _ns2sdr(self, n, s, epsilon=0.0001):
+        '''
+        From the normal and the slip vector, returns the strike, dip and rake.
+        Args:
+            * n     : Normal vector.
+            * s     : Slip vector.
+        '''
+
+        # Case: If normal downwards, flip them
+        if n[0]<0.:
+            n = -1.0*n
+            s = -1.0*s
+
+        # Case: if normal is vertical (i.e. if the plane is horizontal)
+        if n[0]>(1-epsilon):
+            strike = 0.0
+            dip = 0.0
+            rake = np.arctan2(-s[2], -s[1])
+
+        # Case: if normal is horizontal (i.e. plane if vertical)
+        elif n[0]<epsilon:
+            strike = np.arctan2(n[1], n[2])
+            dip = np.pi/2.
+            rake = np.arctan2(s[0], -s[1]*n[2] + s[2]*n[1])
+
+        # General Case:
+        else:
+            strike = np.arctan2(n[1], n[2])
+            dip = np.arccos(n[0])
+            rake = np.arctan2(-s[1]*n[1]-s[2]*n[2], (-s[1]*n[2]+s[2]*n[1])*n[0])
+
+        # Strike
+        if strike < 0.:
+            strike += 2*np.pi
+
+        # All done
+        return strike, dip, rake
+
 # EOF

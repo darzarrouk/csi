@@ -1,63 +1,231 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>seismic class &#8212; csi 1.0 documentation</title>
-    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="tsunami class" href="tsunami.html" />
-    <link rel="prev" title="opticorr class" href="opticorr.html" /> 
-  </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="tsunami.html" title="tsunami class"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="opticorr.html" title="opticorr class"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">csi 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../classes.html" >Classes</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../dataclasses.html" accesskey="U">Classes for types of data</a> &#187;</li> 
-      </ul>
-    </div>  
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>seismic class &mdash; csi 1.0 documentation</title>
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="csi 1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Classes for types of data" href="../dataclasses.html"/>
+        <link rel="next" title="tsunami class" href="tsunami.html"/>
+        <link rel="prev" title="opticorr class" href="opticorr.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> csi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Some Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basictutorial.html">A Basic Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CSIpublications.html">Citations and CSI Publications</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../classes.html">Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../mainclass.html">Principal CSI class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../faultclasses.html">Classes of faults</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../dataclasses.html">Classes for types of data</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gps.html">gps class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="insar.html">insar class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="opticorr.html">opticorr class</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">seismic class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tsunami.html">tsunami class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="timeseries.html">timeseries class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="creepmeters.html">creepmeters class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismiclocations.html">seismiclocations class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="insartimeseries.html">insartimeseries class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gpstimeseries.html">gpstimeseries class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multigps.html">multigps class</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../miscclasses.html">Misc. Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools.html">Useful Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oldclasses.html">Some Untested Classes</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">csi</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../classes.html">Classes</a> &raquo;</li>
+        
+          <li><a href="../dataclasses.html">Classes for types of data</a> &raquo;</li>
+        
+      <li>seismic class</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/classes/seismic.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="seismic-class">
 <h1>seismic class<a class="headerlink" href="#seismic-class" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="csi.seismic">
 <em class="property">class </em><code class="descclassname">csi.</code><code class="descname">seismic</code><span class="sig-paren">(</span><em>name</em>, <em>dtype='seismic'</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>A class that handles optical correlation results</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>name      : Name of the dataset.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first last simple">
+<li>dtype     : Specifies a data type</li>
+<li>utmzone   : UTM zone  (optional, default=None)</li>
+<li>lon0      : Longitude of the center of the UTM zone</li>
+<li>lat0      : Latitude of the center of the UTM zone</li>
+<li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
 <dt id="csi.seismic.buildCdFromRes">
 <code class="descname">buildCdFromRes</code><span class="sig-paren">(</span><em>fault</em>, <em>model</em>, <em>n_ramp_param=None</em>, <em>eik_solver=None</em>, <em>npt=4</em>, <em>nmesh=None</em>, <em>relative_error=0.2</em>, <em>add_to_previous_Cd=False</em>, <em>average_correlation=False</em>, <em>exp_cor=False</em>, <em>exp_cor_len=10.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.buildCdFromRes" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build Cd from residuals
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Build Cd from residuals</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>fault: An instance of a fault class</li>
 <li>model: Can be a AlTar kinematic model file (posterior mean model in a txt file) or a bigM vector</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>n_ramp_param: number of nuisance parameters (e.g., InSAR orbits, used with a model file)</li>
 <li>eik_solver: eikonal solver (to be used with an AlTar kinematic model file)</li>
 <li>npt**2: numper of point sources per patch (to be used with an AlTar kinematic model file)</li>
@@ -67,65 +235,153 @@ Args:</p>
 <li>exp_corr: Use an exponential correlation function</li>
 <li>exp_corr_len: Correlation length</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.buildDiagCd">
 <code class="descname">buildDiagCd</code><span class="sig-paren">(</span><em>std</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.buildDiagCd" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build a diagonal Cd from standard deviations
-Args:</p>
-<blockquote>
-<div>std: array of standard deviations</div></blockquote>
+<dd><p>Build a diagonal Cd from standard deviations</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>std: array of standard deviations</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.calcSynthetics">
 <code class="descname">calcSynthetics</code><span class="sig-paren">(</span><em>dir_name</em>, <em>strike</em>, <em>dip</em>, <em>rake</em>, <em>M0</em>, <em>rise_time</em>, <em>stf_type='triangle'</em>, <em>rfile_name=None</em>, <em>out_type='D'</em>, <em>src_loc=None</em>, <em>cleanup=True</em>, <em>ofd=&lt;_io.TextIOWrapper name='&lt;stdout&gt;' mode='w' encoding='UTF-8'&gt;</em>, <em>efd=&lt;_io.TextIOWrapper name='&lt;stderr&gt;' mode='w' encoding='UTF-8'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.calcSynthetics" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build Green’s functions for a particular source location
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Build Green’s functions for a particular source location</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>dir_name:  Name of the directory where synthetics will be created</li>
 <li>strike:    Fault strike (in deg)</li>
 <li>dip:       Fault dip (in deg)</li>
 <li>rake:      Fault rake (in deg)</li>
 <li>M0:        Seismic moment</li>
 <li>rise_time: Rise time (in sec)</li>
-<li>stf_type:</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>stf_type: Type of source time function (default is ‘triangle’)</li>
 <li>src_loc:  Point source coordinates (ndarray)</li>
 <li>rfile_name: pulse file name if stf_type=’rfile’</li>
-<li>ofd:       stream for standard output (optional, default=sys.stdout)</li>
-<li>efd:       stream for standard error  (optional, default=sys.stdout)</li>
+<li>ofd:       stream for standard output (default=sys.stdout)</li>
+<li>efd:       stream for standard error  (default=sys.stdout)</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.initWave">
 <code class="descname">initWave</code><span class="sig-paren">(</span><em>waveform_engine</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.initWave" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize Green’s function database engine</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>waveform_engine:  Green’s function database engine</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.initWaveInt">
 <code class="descname">initWaveInt</code><span class="sig-paren">(</span><em>waveform_engine</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.initWaveInt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize Bob Hermann’s wavenumber integration engine</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>waveform_engine   : Bob Hermann’s wavenumber intergration engine</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.initWaveKK">
 <code class="descname">initWaveKK</code><span class="sig-paren">(</span><em>waveform_engine</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.initWaveKK" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize Kikuchi Kanamori waveform engine</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>waveform_engine: Kikuchi-Kanamori waveform engine</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.plot">
 <code class="descname">plot</code><span class="sig-paren">(</span><em>synth_vector=None, nc=3, nl=5, title='Seismic data', sta_lst=None, basename=None, figsize=[11.69, 8.27], xlims=None, ylims=[-20.0, 20.0], bottom=0.06, top=0.87, left=0.06, right=0.95, wspace=0.25, hspace=0.35, grid=True, axis_visible=True, inc=False, Y_max=False, Y_units='mm', fault=None, basemap=True, globalbasemap=False, basemap_dlon=2.5, basemap_dlat=2.5, endclose=True, sort=None, alignENZ=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.plot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plot seismic traces
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Plot seismic traces</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body"><p class="first">Please complement explanations</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>synth_vector:      concatenated synthetic waveforms</li>
 <li>nc:                number of collumns per page</li>
 <li>nl:                number of rows per page</li>
@@ -133,85 +389,191 @@ Args:</p>
 <li>sta_lst:           station list</li>
 <li>basename:          used as prefix for figure name</li>
 <li>fault:             fault object used for epicenter loc</li>
-<li><dl class="first docutils">
-<dt>basemap:           plot basemap with epicenter and stations location</dt>
-<dd>Can be tuned with basemap_dlon,basemap_dlat</dd>
-</dl>
-</li>
+<li>basemap:           plot basemap with epicenter and stations location</li>
+<li>basemap_dlon:      Longitude steps for map</li>
+<li>basemap_dlat:      Latitude steps for map</li>
 <li>globalbasemap:     plot whole globe for teleseismic loc</li>
 <li>endclose:          if True, close figure</li>
-<li><dl class="first docutils">
-<dt>sort:              [‘distance’ or ‘azimuth’] you can choose to sort </dt>
-<dd>the stations by distance to hypo. or by azimuth</dd>
-</dl>
-</li>
+<li>sort:              [‘distance’ or ‘azimuth’] you can choose to sort the stations by distance to hypocenter or by azimuth</li>
 <li>alignENZ:          if True, 3 columns are plotted (ENU) and missing traces are left blank</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.readCdFromBinaryFile">
 <code class="descname">readCdFromBinaryFile</code><span class="sig-paren">(</span><em>infile='kinematicG.Cd'</em>, <em>dtype='float64'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.readCdFromBinaryFile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read kinematic Cd from a input file
-Args:</p>
-<blockquote>
-<div><ul class="simple">
-<li>dsize: number of observations (Cd is a matrix of dsize x dsize)</li>
+<dd><p>Read kinematic Cd from a input file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>infile: Name of the input file</li>
 <li>dtype: type of data to read</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.readSac">
 <code class="descname">readSac</code><span class="sig-paren">(</span><em>sacfiles</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.readSac" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read sac data files</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>sacfiles  : A list of input file names</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.readStat">
 <code class="descname">readStat</code><span class="sig-paren">(</span><em>station_file</em>, <em>loc_format='LL'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.readStat" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read station file and populate the Xr attribute (station coordinates)
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Read station file and populate the Xr attribute (station coordinates)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">If loc_format is ‘XY’:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="35%" />
+<col width="35%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>STNAME</td>
+<td>X_COORD</td>
+<td>Y_COORD</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">If loc_format is ‘LL’:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="docutils">
+<colgroup>
+<col width="44%" />
+<col width="28%" />
+<col width="28%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>STNAME</td>
+<td>LON</td>
+<td>LAT</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>station_file: station filename including station coordinates</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>loc_format:  station file format (default= ‘LL’)</li>
 </ul>
-</div></blockquote>
-<p>file format:
-STNAME  X_COORD Y_COORD (if loc_format=’XY’)
-STNAME  LON LAT (if loc_format=’LL’)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.setStat">
 <code class="descname">setStat</code><span class="sig-paren">(</span><em>sta_name</em>, <em>x</em>, <em>y</em>, <em>loc_format='LL'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.setStat" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set station names and locations attributes
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Set station names and locations attributes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>sta_name: station names</li>
 <li>x: x coordinate (longitude or UTM)</li>
 <li>y: y coordinate (latitude or UTM)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>loc_format: location format (‘LL’ for lon/lat or ‘XY’ for UTM)</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.seismic.writeCd2BinaryFile">
 <code class="descname">writeCd2BinaryFile</code><span class="sig-paren">(</span><em>outfile='kinematicG.Cd'</em>, <em>dtype='float64'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.seismic.writeCd2BinaryFile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Write Kinematic Cd to an output file
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Write Kinematic Cd to an output file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>outfile: Name of the output file</li>
 <li>dtype:   Type of data to write.</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -219,63 +581,76 @@ Args:</p>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tsunami.html" class="btn btn-neutral float-right" title="tsunami class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="opticorr.html" class="btn btn-neutral" title="opticorr class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="opticorr.html"
-                        title="previous chapter">opticorr class</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="tsunami.html"
-                        title="next chapter">tsunami class</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/classes/seismic.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="tsunami.html" title="tsunami class"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="opticorr.html" title="opticorr class"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">csi 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../classes.html" >Classes</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../dataclasses.html" >Classes for types of data</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.1.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

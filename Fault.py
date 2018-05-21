@@ -26,10 +26,10 @@ class Fault(SourceInv):
     '''
     Classes implementing a fault. Parent class to all faults
 
-    Args:
+    :Args:
         * name      : Name of the fault.
 
-    Kwargs:
+    :Kwargs:
         * utmzone   : UTM zone  (optional, default=None)
         * lon0      : Longitude of the center of the UTM zone
         * lat0      : Latitude of the center of the UTM zone
@@ -109,7 +109,7 @@ class Fault(SourceInv):
 
         Initializes what is required for a fault with no patches
 
-        Returns: None
+        :Returns: None
         
         '''
 
@@ -130,7 +130,7 @@ class Fault(SourceInv):
 
         Returns a full copy (copy.deepcopy) of the fault object.
 
-        Returns:
+        :Returns:
             * fault         : fault object
 
         '''
@@ -151,14 +151,11 @@ class Fault(SourceInv):
         2nd Column is dip slip.
         3rd Column is tensile.
 
-        Kwargs:
-            * n             : Number of slip values. If None, it'll take the 
-                              number of patches.
-            * values        : Can be 'depth', 'strike', 'dip', 'length', 
-                              'width', 'area', 'index' or a numpy array
-                              The array can be of size (n,3) or (n,1)
-
-        Returns:
+        :Kwargs:
+            * n             : Number of slip values. If None, it'll take the number of patches.
+            * values        : Can be 'depth', 'strike', 'dip', 'length', 'width', 'area', 'index' or a numpy array The array can be of size (n,3) or (n,1)
+            
+        :Returns:
             None
 
         '''
@@ -212,12 +209,10 @@ class Fault(SourceInv):
         '''
         Add some other faults to plot with the modeled one.
 
-        Args:
-            * filename      : Name of the file. File is ascii format.
-                              First column is longitude. Second column is latitude.
-                              Separator between faults is > as in GMT style.
+        :Args:
+            * filename : Name of the file. File is ascii format. First column is longitude. Second column is latitude. Separator between faults is > as in GMT style.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -258,7 +253,7 @@ class Fault(SourceInv):
         Transpose the fault trace lat/lon into the UTM reference.
         UTM coordinates are stored in self.xf and self.yf in km
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -275,7 +270,7 @@ class Fault(SourceInv):
         Transpose the fault trace UTM coordinates into lat/lon.
         Lon/Lat coordinates are stored in self.lon and self.lat in degrees
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -292,7 +287,7 @@ class Fault(SourceInv):
         Takes all the patches in self.patchll and convert them to xy
         Patches are stored in self.patch
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -322,7 +317,7 @@ class Fault(SourceInv):
         Takes all the patches in self.patch and convert them to lonlat.
         Patches are stored in self.patchll
 
-        Returns:    
+        :Returns:    
             * None
         '''
 
@@ -353,7 +348,7 @@ class Fault(SourceInv):
         vertices that are shallower than fault top + delta_depth
         Fault trace is in self.xf and self.yf
 
-        Args:
+        :Args:
             * delta_depth       : Depth extension below top of the fault
 
         '''
@@ -394,15 +389,14 @@ class Fault(SourceInv):
         Surface fault trace is stored in self.xf, self.yf (UTM) and
         self.lon, self.lat (Lon/lat)
 
-        Args:
+        :Args:
             * Lon           : Array/List containing the Lon points.
             * Lat           : Array/List containing the Lat points.
 
-        Kwargs:
-            * utm           : If False, considers x and y are lon/lat
-                              If True, considers x and y are utm in km
+        :Kwargs:
+            * utm           : If False, considers x and y are lon/lat, If True, considers x and y are utm in km
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -431,15 +425,14 @@ class Fault(SourceInv):
         If utm is True, format is :
         X Y (in km)
 
-        Args:
+        :Args:
             * filename      : Name of the fault file.
 
-        Kwargs:
+        :Kwargs:
             * utm           : Specify nature of coordinates
-            * header        : Number of lines to skip 
-                              at the beginning of the file
+            * header        : Number of lines to skip at the beginning of the file
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -472,16 +465,14 @@ class Fault(SourceInv):
         line north-south. Descretized fault trace is stored in self.xi and 
         self.yi
 
-        Kwargs:
+        :Kwargs:
             * every         : Spacing between each point (in km) 
             * tol           : Tolerance in the spacing (in km) 
-            * fracstep      : fractional step in the chosen direction 
-                              for the discretization optimization
+            * fracstep      : fractional step in the chosen direction for the discretization optimization
             * xaxis         : Axis for the discretization (can be x or y)
-            * cum_error     : if True, accounts for cumulated error to define 
-                              the axis bound for the last patch
+            * cum_error     : if True, accounts for cumulated error to define the axis bound for the last patch
 
-        Returns:    
+        :Returns:    
             * None
         '''
 
@@ -572,11 +563,10 @@ class Fault(SourceInv):
         Computes the distance between the first point of the fault and every 
         other point. The distance is cumulative along the fault.
 
-        Args:   
-            * discretized           : if True, use the discretized fault trace 
-                                      (default False)
+        :Args:   
+            * discretized           : if True, use the discretized fault trace (default False)
 
-        Returns:
+        :Returns:
             * dis                   : Cumulative distance array
         '''
 
@@ -607,17 +597,16 @@ class Fault(SourceInv):
         This is a slow method, so it has been recoded in a few places 
         throughout the whole library.
 
-        Args:
+        :Args:
             * lon               : Longitude of the point.
 
             * lat               : Latitude of the point.
 
-        Kwargs:
+        :Kwargs:
             * discretized       : Uses the discretized trace.
-            * coord             : If ll or lonlat --> input in degree
-                                  If 'xy' or 'utm'    --> input in km
+            * coord             : 'll', 'lonlat', 'xy' or 'utm'  
 
-        Returns:    
+        :Returns:    
             * dalong            : Distance to the first point of the fault along the fault
 
             * dacross           : Shortest distance between the point and the fault
@@ -674,10 +663,10 @@ class Fault(SourceInv):
         '''
         Returns the index of a patch.
 
-        Args:
+        :Args:
             * p         : Patch from a fault object.
 
-        Returns:
+        :Returns:
             * iout      : index of the patch
         '''
 
@@ -702,10 +691,10 @@ class Fault(SourceInv):
         '''
         Returns the slip vector for a patch or tent
 
-        Args:
+        :Args:
             * p         : patch or tent
 
-        Returns:    
+        :Returns:    
             * iout      : Index of the patch or tent
         '''
 
@@ -722,13 +711,13 @@ class Fault(SourceInv):
         Writes the trace to a file. Format is ascii with two columns with
         either lon/lat (in degrees) or x/y (utm in km).
 
-        Args:
+        :Args:
             * filename      : Name of the file
 
-        Kwargs:
+        :Kwargs:
             * ref           : can be lonlat or utm.
 
-        Returns:    
+        :Returns:    
             * None
         '''
 
@@ -763,14 +752,12 @@ class Fault(SourceInv):
         '''
         Saves the Green's functions in different files.
 
-        Kwargs:
-            * dtype       : Format of the binary data saved 
-                                'd' for double
-                                'f' for float32
+        :Kwargs:
+            * dtype       : 'd' for double, 'f' for float32
             * outputDir   : Directory to save binary data.
             * suffix      : suffix for GFs name (dictionary)
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -803,13 +790,11 @@ class Fault(SourceInv):
         '''
         Saves the Data in binary files.
 
-        Kwargs:
-            * dtype       : Format of the binary data saved
-                                'd' for double
-                                'f' for float32
+        :Kwargs:
+            * dtype       : 'd' for double, 'f' for float32
             * outputDir   : Directory to save binary data
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -841,24 +826,17 @@ class Fault(SourceInv):
         Each of these entry is a dictionary that contains 'strikeslip', 'dipslip',
         'tensile' and/or 'coupling'
 
-        Args:
+        :Args:
             * data          : Data object (gps, insar, optical, ...)
 
-        Kwargs:
-            * vertical      : If True, will produce green's functions for
-                              the vertical displacements in a gps object.
-            * slipdir       : Direction of slip along the patches. 
-                              Can be any combination of s (strikeslip), 
-                              d (dipslip), t (tensile) and c (coupling)
-            * method        : Can be okada (Okada, 1982) (rectangular patches only)
-                              meade (Meade 2007) (triangular patches only)
-                              edks (Zhao & Rivera, 2002) 
-                              homogeneous (Okada for rectangles, Meade for triangles)
+        :Kwargs:
+            * vertical      : If True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir       : Direction of slip along the patches. Can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
+            * method        : Can be 'okada' (Okada, 1982, rectangular patches only), 'meade' (Meade 2007, triangular patches only), 'edks' (Zhao & Rivera, 2002), 'homogeneous' (Okada for rectangles, Meade for triangles)
             * verbose       : Writes stuff to the screen (overwrites self.verbose)
-            * convergence   : If coupling case, needs convergence azimuth 
-                              and rate [azimuth in deg, rate]
+            * convergence   : If coupling case, needs convergence azimuth and rate [azimuth in deg, rate]
 
-        Returns:
+        :Returns:
             * None
 
         TODO: Implement the homogeneous case for the Node-based triangular GFs
@@ -921,22 +899,16 @@ class Fault(SourceInv):
         If your patches are triangular, Meade's formulation is used (Meade, 2007)
         
 
-        Args:
+        :Args:
             * data          : Data object (gps, insar, optical, ...)
 
-        Kwargs:
-            * vertical      : If True, will produce green's functions for
-                              the vertical displacements in a gps object.
-            * slipdir       : Direction of slip along the patches. 
-                              Can be any combination of s (strikeslip), 
-                                                        d (dipslip), 
-                                                        t (tensile) and 
-                                                        c (coupling)
+        :Kwargs:
+            * vertical      : If True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir       : Direction of slip along the patches. Can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
             * verbose       : Writes stuff to the screen (overwrites self.verbose)
-            * convergence   : If coupling case, needs convergence azimuth 
-                              and rate [azimuth in deg, rate]
+            * convergence   : If coupling case, needs convergence azimuth and rate [azimuth in deg, rate]
 
-        Returns:
+        :Returns:
             * G             : Dictionary of the built Green's functions
         '''
         
@@ -1012,11 +984,11 @@ class Fault(SourceInv):
         '''
         Sets a custom Green's Functions matrix in the G dictionary.
 
-        Args:
+        :Args:
             * data          : Data concerned by the Green's function
             * G             : Green's function matrix
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1041,10 +1013,10 @@ class Fault(SourceInv):
         Writes the point sources to a pickle file. 
         Always writes the Facet based point sources.
 
-        Args:
+        :Args:
             * filename      : Name of the pickle file.
 
-        Returns:
+        :Returns:
             * None      
         '''
 
@@ -1083,10 +1055,10 @@ class Fault(SourceInv):
         Reads the point sources for computing Green's functions with EDKS 
         from a pickle file. Sets the sources in self.edksSources
 
-        Args:
+        :Args:
             * filename      : Name of the pickle file
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1124,30 +1096,27 @@ class Fault(SourceInv):
         
         A few variables need to be set in before running this method
 
-            Required:
-                self.kernelsEDKS    : Filename of the EDKS kernels.
+        :Required:
+
+            self.kernelsEDKS    : Filename of the EDKS kernels.
         
-            One of the Three:
-                self.sourceSpacing  : Spacing between the sources in each patch.
-                self.sourceNumber   : Number of sources per patches.
-                self.sourceArea     : Maximum Area of the sources.
+        :One of the Three:
+            self.sourceSpacing  : Spacing between the sources in each patch.
+
+            self.sourceNumber   : Number of sources per patches.
+            
+            self.sourceArea     : Maximum Area of the sources.
         
-        Args:
+        :Args:
             * data              : Data object 
 
-        Kwargs:
-            * vertical      : If True, will produce green's functions for
-                              the vertical displacements in a gps object.
-            * slipdir       : Direction of slip along the patches. 
-                              Can be any combination of s (strikeslip), 
-                                                        d (dipslip), 
-                                                        t (tensile) and 
-                                                        c (coupling)
+        :Kwargs:
+            * vertical      : If True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir       : Direction of slip along the patches. Any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
             * verbose       : Writes stuff to the screen (overwrites self.verbose)
-            * convergence   : If coupling case, needs convergence azimuth 
-                              and rate [azimuth in deg, rate]
+            * convergence   : If coupling case, needs convergence azimuth and rate [azimuth in deg, rate]
 
-        Returns:
+        :Returns:
             * G             : Dictionary of the built Green's functions
         '''
 
@@ -1335,25 +1304,18 @@ class Fault(SourceInv):
         if insar, GF are projected already). Basically, it will work better if you have 
         computed the GFs using csi.
 
-        Args:
+        :Args:
             * data          : Data object
 
-        Kwargs:
-            * strikeslip    : File containing the Green's functions for 
-                              strikeslip related displacements.
-            * dipslip       : File containing the Green's functions for 
-                              dipslip related displacements.
-            * tensile       : File containing the Green's functions for 
-                              tensile related displacements.
-            * coupling      : File containing the Green's functions for 
-                              coupling related displacements.
-            * vertical      : Deal with the UP component (gps: default is false,
-                              insar: it will be true anyway).
-            * dtype         : Type of binary data.
-                              d for double/float64
-                              f for float32
+        :Kwargs:
+            * strikeslip    : File containing the Green's functions for strikeslip related displacements.
+            * dipslip       : File containing the Green's functions for dipslip related displacements.
+            * tensile       : File containing the Green's functions for tensile related displacements.
+            * coupling      : File containing the Green's functions for coupling related displacements.
+            * vertical      : Deal with the UP component (gps: default is false, insar: it will be true anyway).
+            * dtype         : Type of binary data. d for double/float64, f for float32
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1428,20 +1390,16 @@ class Fault(SourceInv):
         If you provide InSAR GFs, these need to be projected onto the 
         LOS direction already.
 
-        Args:
+        :Args:
             * data          : Data structure 
 
-        Kwargs:
-            * strikeslip    : List of matrices of the Strikeslip 
-                              Green's functions
-            * dipslip       : List of matrices of the dipslip 
-                              Green's functions
-            * tensile       : List of matrices of the tensile Green's 
-                              functions
-            * coupling      : List of matrices of the coupling Green's 
-                              function
+        :Kwargs:
+            * strikeslip    : List of matrices of the Strikeslip Green's functions
+            * dipslip       : List of matrices of the dipslip Green's functions
+            * tensile       : List of matrices of the tensile Green's functions
+            * coupling      : List of matrices of the coupling Green's function
 
-        Returns:    
+        :Returns:    
             * None
         '''
 
@@ -1616,7 +1574,7 @@ class Fault(SourceInv):
         Drops point sources along the fault. Point sources can then be used 
         to compute GFs using the EDKS software.
 
-        The process is controlled by the attributes:
+        :The process is controlled by the attributes:
             - self.sourceSpacing      : Distance between sources
             - self.sourceArea         : Area of the sources
             - self.sourceNumber       : Number of sources per patch
@@ -1625,7 +1583,7 @@ class Fault(SourceInv):
 
         Sources are saved in self.plotSources and self.edksSources
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1648,14 +1606,13 @@ class Fault(SourceInv):
         is aligned with the azimuth. It uses the Greens functions stored 
         in self.G[data.name].
 
-        Args:
+        :Args:
             * data          : Name of the data set.
             * azimuth       : Direction in which to rotate the GFs
 
-        Returns:    
+        :Returns:    
             * rotatedGar    : GFs along the azimuth direction
-            * rotatedGrp    : GFs in the direction perpendicular to the 
-                              azimuth direction
+            * rotatedGrp    : GFs in the direction perpendicular to the azimuth direction
         '''
 
         # Check if strike and dip slip GFs have been computed
@@ -1684,10 +1641,10 @@ class Fault(SourceInv):
         Assembles a data vector for inversion using the list datas
         Assembled vector is stored in self.dassembled
 
-        Args:
+        :Args:
             * datas         : list of data objects
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1744,11 +1701,10 @@ class Fault(SourceInv):
 
         Assembled Green's function matrix is stored in self.Gassembled
 
-        Args:
-            * datas             : list of data sets. If only one data set is 
-                                  used, can be a data instance only.
+        :Args:
+            * datas             : list of data sets. If only one data set is used, can be a data instance only.
             
-        Kwargs:
+        :Kwargs:
             * polys             : None 
 
                  - For InSAR, Optical, GPS:
@@ -1759,38 +1715,23 @@ class Fault(SourceInv):
              
                  - For GPS only:
 
-                       - full                 : Estimates a rotation, 
-                                               translation and scaling
-                                               (Helmert transform).
-                       - strain               : Estimates the full strain 
-                                                tensor (Rotation, Translation,
-                                                Internal strain)
-                       - strainnorotation     : Estimates the strain tensor and a 
-                                                translation
+                       - full                 : Estimates a rotation, translation and scaling (Helmert transform).
+                       - strain               : Estimates the full strain tensor (Rotation, Translation, Internal strain)
+                       - strainnorotation     : Estimates the strain tensor and a translation
                        - strainonly           : Estimates the strain tensor
-                       - strainnotranslation  : Estimates the strain tensor and a 
-                                                rotation
+                       - strainnotranslation  : Estimates the strain tensor and a rotation
                        - translation          : Estimates the translation
-                       - translationrotation  : Estimates the translation and a 
-                                                rotation
+                       - translationrotation  : Estimates the translation and a rotation
             
-            * slipdir           : Directions of slip to include. 
-                                  Can be any combination of s, d, t, c or x 
-                                    s: strike slip
-                                    d: dip slip
-                                    t: tensile
-                                    c: coupling
+            * slipdir           : Directions of slip to include. Can be any combination of s (strike slip), d (dip slip), t (tensile), c (coupling)
 
-            * custom            : If True, gets the additional Green's function 
-                                  from the dictionary self.G[data.name]['custom']
+            * custom            : If True, gets the additional Green's function rom the dictionary self.G[data.name]['custom']
             
-            * computeNormFact   : bool
-                if True, compute new OrbNormalizingFactor
-                if False, uses parameters in self.OrbNormalizingFactor 
+            * computeNormFact   : True/False to recompute OrbNormalizingFactor
 
             * verbose           : Talk to me (overwrites self.verbose)
 
-        Returns:
+        :Returns:
             * None
         '''
     
@@ -1964,17 +1905,14 @@ class Fault(SourceInv):
         Assembles the data covariance matrices that have been built for each 
         data structure.
 
-        Args:
-            * datas         : List of data instances or one data instance
+        :Args:
+            * datas : List of data instances or one data instance
 
-        Kwargs:
-            * add_prediction: Precentage of displacement to add to the Cd 
-                              diagonal to simulate a Cp (dirty version of 
-                              a prediction error covariance, see Duputel et
-                              al 2013, GJI).
+        :Kwargs:
+            * add_prediction: Precentage of displacement to add to the Cd diagonal to simulate a Cp (dirty version of a prediction error covariance, see Duputel et al 2013, GJI).
             * verbose       : Talk to me (overwrites self.verbose)
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2021,13 +1959,13 @@ class Fault(SourceInv):
 
         Model covariance is hold in self.Cm
 
-        Args:
-            * sigma         : List of numbers the size of the slip components
-                              requried for the modeling
-        Kwargs:
+        :Args:
+            * sigma         : List of numbers the size of the slip components requried for the modeling
+
+        :Kwargs:
             * extra_params   : a list of extra parameters.
 
-        Returns:    
+        :Returns:    
             * None
         '''
 
@@ -2067,26 +2005,21 @@ class Fault(SourceInv):
                                     sensitivity=True, method='distance', 
                                     sensitivityNormalizing=False, irregular=False):
         '''
-        Implements the Laplacian smoothing with sensitivity (optional) into
-        a model covariance matrix. Description can be found in 
-        F. Ortega-Culaciati's PhD thesis.
+        Implements the Laplacian smoothing with sensitivity (optional) into a model covariance matrix. Description can be found in F. Ortega-Culaciati's PhD thesis.
 
-        extra_params allows to add some diagonal terms and expand the size 
-        of the matrix, in case the fault object is also hosting the estimation
-        of transformation parameters.
+        extra_params allows to add some diagonal terms and expand the size of the matrix, in case the fault object is also hosting the estimation of transformation parameters.
 
         Model covariance is hold in self.Cm
 
-        Args:
+        :Args:
             * lam               : Damping factor (list of size of slipdirections)
 
-        Kwargs:
-            * extra_params   : a list of extra parameters.
+        :Kwargs:
+            * extra_params      : a list of extra parameters.
             * sensitivity       : Weights the Laplacian by Sensitivity (default True)
-            * irregular         : Only used for rectangular patches. Allows to account 
-                                  for irregular meshing along dip.            
+            * irregular         : Only used for rectangular patches. Allows to account for irregular meshing along dip.            
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2179,18 +2112,17 @@ class Fault(SourceInv):
         the matrix, in case the fault object is also hosting the estimation of 
         transformation parameters. Model covariance is stored in self.Cm
 
-        Args:
+        :Args:
             * sigma         : Amplitude of the correlation.
             * lam           : Characteristic length scale.
 
-        Kwargs:
-            * lam0          : Normalizing distance 
-                              if None, lam0=min(distance between patches)
+        :Kwargs:
+            * lam0          : Normalizing distance. If None, lam0=min(distance between patches)
             * extra_params  : a list of extra parameters.
             * lim           : Limit distance parameter (see self.distancePatchToPatch)
             * verbose       : Talk to me (overwrites self.verrbose)
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2264,18 +2196,17 @@ class Fault(SourceInv):
             C_m(i,j) = \\frac{\sigma\lambda_0}{\lambda}^2 e^{-\\frac{||i,j||_2}{\lambda}}
 
             
-        Args:
+        :Args:
             * sigma         : Amplitude of the correlation.
             * lam           : Characteristic length scale.
 
-        Kwargs:
-            * lam0          : Normalizing distance 
-                              if None, lam0=min(distance between patches)
+        :Kwargs:
+            * lam0          : Normalizing distance. If None, lam0=min(distance between patches)
             * extra_params  : a list of extra parameters.
             * lim           : Limit distance parameter (see self.distancePatchToPatch)
             * verbose       : Talk to me (overwrites self.verrbose)
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2380,18 +2311,17 @@ class Fault(SourceInv):
 
         Model covariance is stored in self.Cm
 
-        Args:
+        :Args:
             * sigma         : Amplitude of the correlation.
             * lam           : Characteristic length scale.
 
-        Kwargs:
-            * lam0          : Normalizing distance 
-                              if None, lam0=min(distance between patches)
+        :Kwargs:
+            * lam0          : Normalizing distance. If None, lam0=min(distance between patches)
             * extra_params  : a list of extra parameters.
             * lim           : Limit distance parameter (see self.distancePatchToPatch)
             * verbose       : Talk to me (overwrites self.verrbose)
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2498,15 +2428,14 @@ class Fault(SourceInv):
         Write the patch center coordinates in an ascii file 
         the file format is so that it can by used directly in psxyz (GMT).
 
-        Args:
+        :Args:
             * filename      : Name of the file.
 
-        Kwargs:
-            * slip          : Put the slip as a value for the color.
-                              Can be None, strikeslip, dipslip, total, coupling
+        :Kwargs:
+            * slip          : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total, coupling
             * scale         : Multiply the slip value by a factor.
 
-        Retunrs:
+        :Returns:
             * None
         '''
 
@@ -2563,11 +2492,11 @@ class Fault(SourceInv):
         Takes a list of indexes of patches, sums the corresponding GFs and 
         replace the corresponding patches by the finalPatch in self.patch
         
-        Args:
+        :Args:
             * patches       : List of the patche indexes to sum 
             * finalPatch    : Geometry of the final patch.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2622,14 +2551,14 @@ class Fault(SourceInv):
             - self.earthquakeInPatch  : Number of earthquakes per patch
             - self.seismicityRate     : Seismicity rate for this patch
 
-        Args:
+        :Args:
             * earthquake    : seismiclocation object
 
-        Kwargs:
+        :Kwargs:
             * extra_div     : Extra divider to get the seismicity rate.
             * epsilon       : Epsilon value for precision of earthquake location.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2660,10 +2589,10 @@ class Fault(SourceInv):
         Smoothes the slip distribution using a Gaussian filter.
         Smooth slip distribution is in self.slip
 
-        Args:
+        :Args:
             * length        : Correlation length.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2693,11 +2622,10 @@ class Fault(SourceInv):
         Integrates slip on the patch by simply multiplying slip by the 
         patch area. Sets the results in self.volume
 
-        Kwargs:
-            * slip  : Can be strikeslip, dipslip, tensile, coupling or
-                      a list/array of floats.
+        :Kwargs:
+            * slip  : Can be strikeslip, dipslip, tensile, coupling or a list/array of floats.
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -2733,11 +2661,18 @@ class Fault(SourceInv):
         file from the EDKS software. Shear moduli are set in self.mu
 
         The model file format is as follows:        
-        N F
-        RHO_1 VP_1 VS_1 TH_1
-        RHO_2 VP_2 VS_2 TH_2
-        ...
-        RHO_N VP_N VS_N TH_N
+
+        +-----+----+----+----+
+        |  N  | F  |    |    | 
+        +=====+====+====+====+
+        |RHO_1|VP_1|VS_1|TH_1|
+        +-----+----+----+----+
+        |RHO_2|VP_2|VS_2|TH_2|
+        +-----+----+----+----+
+        | ... | ...| ...| ...|
+        +-----+----+----+----+
+        |RHO_N|VP_N|VS_N|TH_N|
+        +-----+----+----+----+
 
         where N is the number of layers, F a conversion factor to SI units
         RHO_i is the density of the i-th layer
@@ -2745,11 +2680,11 @@ class Fault(SourceInv):
         VS_i is the S-wave velocity in the i-th layer
         TH_i is the thickness of the i-th layer
 
-        Args:
+        :Args:
             * model_file    : path to model file
             * tents         : if True, set mu values every point source in patches                                
 
-        Returns:
+        :Returns:
             * None
         '''
         
@@ -2827,20 +2762,18 @@ class Fault(SourceInv):
         '''
         Some ordering of the Gfs to make the computation routines simpler.
 
-        Args:
+        :Args:
             * data          : instance of data
             * Gss           : Strike slip greens functions
             * Gds           : Dip slip greens functions
             * Gts           : Tensile greens functions
 
-        Kwargs:
-            * slipdir       : Direction of slip. Can be any combination of 's',
-                              'd', 't' or 'c'
-            *convergence    : Convergence vector for coupling GFs
-                              [azimuth in degree, rate]
+        :Kwargs:
+            * slipdir       : Direction of slip. Can be any combination of 's', 'd', 't' or 'c'
+            *convergence    : Convergence vector for coupling GFs [azimuth in degree, rate]
             *vertical       : If true, assumes verticals are used for the GPS case
 
-        Returns:
+        :Returns:
             * G             : Dictionary of GFs
         '''
 
@@ -2954,7 +2887,7 @@ class Fault(SourceInv):
         '''
         A rotation function for Green function.
 
-        Args:   
+        :Args:   
             * Gss           : Strike slip GFs
             * Gds           : Dip slip GFs
             * azim          : Direction to rotate (degrees)
@@ -3008,12 +2941,12 @@ class Fault(SourceInv):
         Gss and Gds are of a shape (3xnumber of sites, number of fault patches)
         The 3 is for East, North and Up displacements
 
-        Args:   
+        :Args:   
             * Gss           : Strike slip GFs
             * Gds           : Dip slip GFs
             * convergence   : [azimuth in degrees, rate]
     
-        Returns:
+        :Returns:
             * Gar           : Along coupling Greens functions
 
         '''

@@ -17,7 +17,7 @@ class SourceInv(object):
     Class implementing the geographical transform. This class will
     be parent to almost all the classes in csi.
 
-    Args:
+    :Args:
         * name      : Instance Name 
         * utmzone   : UTM zone  (optional, default=None)
         * ellps     : ellipsoid (optional, default='WGS84')
@@ -52,11 +52,11 @@ class SourceInv(object):
         Do the lat/lon to UTM transform. 
         Input is in degrees. UTM coordinates are returned in km.
 
-        Args:
+        :Args:
             * lon       : Longitude (deg)
             * lat       : Latitude (deg)
 
-        Returns:
+        :Returns:
             * x         : UTM coordinate x (km)
             * y         : UTM coordinate y (km)
         '''
@@ -79,11 +79,11 @@ class SourceInv(object):
         Do the UTm to lat/lon transform.
         Input is in km. Output is in degrees.
 
-        Args:
+        :Args:
             * x         : UTM longitude (km).
             * y         : UTM latitude (km)
 
-        Returns: 
+        :Returns: 
             * lon       : Longitude (degrees)
             * lat       : Latitude (degree)
         '''
@@ -100,13 +100,13 @@ class SourceInv(object):
         Zone can be specified via its international number or 
         one can specify the center of a custom UTM zone via lon0, lat0.
 
-        Kwargs:
+        :Kwargs:
             * ellps         : Reference Ellipsoid
 
-            - Method 1:
+            :Method 1:
                 * utmzone       : International UTM zone number
 
-            - Method 2: 
+            :Method 2: 
                 * lon0          : Longitude of the center of the custom UTM zone (deg)
                 * lat0          : Latitude of the center of the custom UTM zone (deg)
         '''

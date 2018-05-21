@@ -28,10 +28,10 @@ class fault3D(RectangularPatches):
     A class that handles faults in 3D. It inherits from RectangularPatches but
     allows to build the fault in 3D using tying points.
 
-    Args:
+    :Args:
         * name      : Name of the fault.
 
-    Kwargs:
+    :Kwargs:
         * utmzone   : UTM zone  (optional, default=None)
         * lon0      : Longitude of the center of the UTM zone
         * lat0      : Latitude of the center of the UTM zone
@@ -63,7 +63,7 @@ class fault3D(RectangularPatches):
         Uses the interpolator to return the dip angle evolution along strike at depth z.
         The interpolation scheme is piecewise linear.
 
-        Args:
+        :Args:
 
             * interp        : Dip interpolation function
             * z             : Depth.
@@ -110,28 +110,20 @@ class fault3D(RectangularPatches):
         Builds a dipping fault given a certain dip angle evolution. Dip angle is linearly
         interpolated between tying points given as arguments.
 
-        Args:
+        :Args:
             * dip               : Dip angle tying points 
-                                 [[alongstrike, depth, dip], [alongstrike, depth, dip], 
-                                   ..., [alongstrike, depth, dip]]
+
+                [[alongstrike, depth, dip], [alongstrike, depth, dip], ..., [alongstrike, depth, dip]]
+                                   
             * dipdirection      : Direction towards which the fault dips.
             * every             : patch length for the along trace discretization
             * minpatchsize      : minimum patch size
-            * trace_tol         : tolerance for the along trace patch discretization 
-                                  optimization
-            * trace_fracstep    : fractional step in x for the patch discretization 
-                                  optimization
+            * trace_tol         : tolerance for the along trace patch discretization optimization
+            * trace_fracstep    : fractional step in x for the patch discretization optimization
             * trace_xaxis       : x axis for the discretization ('x' or 'y')
-            * trace_cum_error   : if True, account for accumulated error to define 
-                                  the x axis bound for the last patch
+            * trace_cum_error   : if True, account for accumulated error to define the x axis bound for the last patch
 
-            Example: dip = [[0, 0, 20], [10, 10, 30], [80, 10, 90]] means that 
-                     from the origin point of the fault (self.xi[0], self.yi[0]), 
-                     the dip is 20 deg at 0 km and 0 km depth, 30 deg at km 10 
-                     and 10 km-depth and 90 deg at km 80 and 10 km-depth. 
-                     The routine starts by discretizing the surface trace, then 
-                     defines a dip evolution as a function of distance from the 
-                     fault origin and drapes the fault down to depth.
+            Example: dip = [[0, 0, 20], [10, 10, 30], [80, 10, 90]] means that from the origin point of the fault (self.xi[0], self.yi[0]), the dip is 20 deg at 0 km and 0 km depth, 30 deg at km 10 and 10 km-depth and 90 deg at km 80 and 10 km-depth. The routine starts by discretizing the surface trace, then defines a dip evolution as a function of distance from the fault origin and drapes the fault down to depth.
         '''
 
         # Initialize the structures

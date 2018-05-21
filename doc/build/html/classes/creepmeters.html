@@ -1,156 +1,514 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>creepmeters class &#8212; csi 1.0 documentation</title>
-    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="seismiclocations class" href="seismiclocations.html" />
-    <link rel="prev" title="timeseries class" href="timeseries.html" /> 
-  </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="seismiclocations.html" title="seismiclocations class"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="timeseries.html" title="timeseries class"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">csi 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../classes.html" >Classes</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../dataclasses.html" accesskey="U">Classes for types of data</a> &#187;</li> 
-      </ul>
-    </div>  
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>creepmeters class &mdash; csi 1.0 documentation</title>
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="csi 1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Classes for types of data" href="../dataclasses.html"/>
+        <link rel="next" title="Misc. Classes" href="../miscclasses.html"/>
+        <link rel="prev" title="multigps class" href="multigps.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> csi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Some Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basictutorial.html">A Basic Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CSIpublications.html">Citations and CSI Publications</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../classes.html">Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../mainclass.html">Principal CSI class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../faultclasses.html">Classes of faults</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../dataclasses.html">Classes for types of data</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gps.html">gps class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="insar.html">insar class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="opticorr.html">opticorr class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismic.html">seismic class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tsunami.html">tsunami class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="timeseries.html">timeseries class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismiclocations.html">seismiclocations class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="insartimeseries.html">insartimeseries class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gpstimeseries.html">gpstimeseries class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multigps.html">multigps class</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">creepmeters class</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../miscclasses.html">Misc. Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools.html">Useful Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oldclasses.html">Some Untested Classes</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">csi</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../classes.html">Classes</a> &raquo;</li>
+        
+          <li><a href="../dataclasses.html">Classes for types of data</a> &raquo;</li>
+        
+      <li>creepmeters class</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/classes/creepmeters.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="creepmeters-class">
 <h1>creepmeters class<a class="headerlink" href="#creepmeters-class" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="csi.creepmeters">
 <em class="property">class </em><code class="descclassname">csi.</code><code class="descname">creepmeters</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>A class that handles creepmeter data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>name      : Name of the dataset.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first last simple">
+<li>utmzone   : UTM zone  (optional, default=None)</li>
+<li>lon0      : Longitude of the center of the UTM zone</li>
+<li>lat0      : Latitude of the center of the UTM zone</li>
+<li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
+<li>verbose   : Speak to me (default=True)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
 <dt id="csi.creepmeters.date2real">
 <code class="descname">date2real</code><span class="sig-paren">(</span><em>date</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.date2real" title="Permalink to this definition">¶</a></dt>
-<dd><p>Pass from a datetime to a real number.</p>
+<dd><p>Pass from a datetime to a real number.
+Weird method… Who implemented that?</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>date  : datetime instance</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>float</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.deleteStation">
 <code class="descname">deleteStation</code><span class="sig-paren">(</span><em>station</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.deleteStation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Removes a station.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>station   : Name of the station to remove</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.distance">
 <code class="descname">distance</code><span class="sig-paren">(</span><em>station</em>, <em>point</em>, <em>direction</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.distance" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the distance between a station and a point.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Computes the distance between a station and a point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>station   : Name of a station.</li>
 <li>point     : [Lon, Lat].</li>
 <li>direction : Direction of the positive sign.</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None. Distance is stored in the {data} attribute under the station name.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.fitLinear">
 <code class="descname">fitLinear</code><span class="sig-paren">(</span><em>station</em>, <em>period=None</em>, <em>directory='.'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.fitLinear" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits a linear trend onto the offsets for the station ‘station’.
-Can specify a period=[startdate, enddate].
-ex:     fitLinear(‘xva1’, period=[(2006,01,23), (2007,12,31)])</p>
+<dd><p>Fits a linear trend onto the offsets for the station ‘station’.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>station   : station name</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>period    : list of 2 tuples (yyyy, mm, dd)</li>
+<li>directory : If station files have not been read before, this is the directory where to find the station files</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.fitLinearAllStations">
 <code class="descname">fitLinearAllStations</code><span class="sig-paren">(</span><em>period=None</em>, <em>directory='.'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.fitLinearAllStations" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits a linear trend to all the available stations.
-Can specify a period=[startdate, enddate]
-ex:     fitLinearAllStation(period=[(2006,01,23), (2007,12,31)])</p>
+<dd><p>Fits a linear trend to all the available stations. Can specify a period=[startdate, enddate]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>period    : list of 2 tuples (yyyy, mm, dd)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>directory : If station files have not been read before, this is the directory where to find the station files</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.lonlat2xy">
 <code class="descname">lonlat2xy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.lonlat2xy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts the lat lon positions into utm coordinates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.plotStation">
 <code class="descname">plotStation</code><span class="sig-paren">(</span><em>station</em>, <em>figure=100</em>, <em>save=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.plotStation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots one station evolution through time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>station   : name of the station</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>figure    : figure numner</li>
+<li>save      : name of the file if you want to save</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.position">
 <code class="descname">position</code><span class="sig-paren">(</span><em>station</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.position" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns lon,lat of a station.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Returns lon,lat of a station.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>station   : Name of a station.</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>lon, lat</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.readAllStations">
 <code class="descname">readAllStations</code><span class="sig-paren">(</span><em>directory='.'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.readAllStations" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reads all the station files.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>directory : directory where to find the station files</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.readStationData">
 <code class="descname">readStationData</code><span class="sig-paren">(</span><em>station</em>, <em>directory='.'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.readStationData" title="Permalink to this definition">¶</a></dt>
 <dd><p>From the name of a station, reads what is in station.day.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>station   : name of the station</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>directory : directory where to find the station.day file.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.readStationList">
 <code class="descname">readStationList</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.readStationList" title="Permalink to this definition">¶</a></dt>
-<dd><p>Reads the list of Stations.
-Args:</p>
-<blockquote>
-<div>filename        : Input file.</div></blockquote>
+<dd><p>Reads the list of Stations. Input file format is</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="58%" />
+<col width="21%" />
+<col width="21%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Station Name</td>
+<td>Lon</td>
+<td>Lat</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>filename        : Input file.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.creepmeters.selectbox">
 <code class="descname">selectbox</code><span class="sig-paren">(</span><em>minlon</em>, <em>maxlon</em>, <em>minlat</em>, <em>maxlat</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.creepmeters.selectbox" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select the earthquakes in a box defined by min and max, lat and lon.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><ul class="first last simple">
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>minlon        : Minimum longitude.</li>
 <li>maxlon        : Maximum longitude.</li>
 <li>minlat        : Minimum latitude.</li>
 <li>maxlat        : Maximum latitude.</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -158,63 +516,76 @@ Args:</p>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../miscclasses.html" class="btn btn-neutral float-right" title="Misc. Classes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="multigps.html" class="btn btn-neutral" title="multigps class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="timeseries.html"
-                        title="previous chapter">timeseries class</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="seismiclocations.html"
-                        title="next chapter">seismiclocations class</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/classes/creepmeters.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="seismiclocations.html" title="seismiclocations class"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="timeseries.html" title="timeseries class"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">csi 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../classes.html" >Classes</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../dataclasses.html" >Classes for types of data</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.1.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

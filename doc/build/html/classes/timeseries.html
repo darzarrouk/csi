@@ -1,252 +1,677 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>timeseries class &#8212; csi 1.0 documentation</title>
-    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="creepmeters class" href="creepmeters.html" />
-    <link rel="prev" title="tsunami class" href="tsunami.html" /> 
-  </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="creepmeters.html" title="creepmeters class"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="tsunami.html" title="tsunami class"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">csi 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../classes.html" >Classes</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../dataclasses.html" accesskey="U">Classes for types of data</a> &#187;</li> 
-      </ul>
-    </div>  
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>timeseries class &mdash; csi 1.0 documentation</title>
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="csi 1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Classes for types of data" href="../dataclasses.html"/>
+        <link rel="next" title="creepmeters class" href="creepmeters.html"/>
+        <link rel="prev" title="tsunami class" href="tsunami.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> csi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Some Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basictutorial.html">A Basic Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CSIpublications.html">Citations and CSI Publications</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../classes.html">Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../mainclass.html">Principal CSI class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../faultclasses.html">Classes of faults</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../dataclasses.html">Classes for types of data</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="gps.html">gps class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="insar.html">insar class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="opticorr.html">opticorr class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismic.html">seismic class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tsunami.html">tsunami class</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">timeseries class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="creepmeters.html">creepmeters class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="seismiclocations.html">seismiclocations class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="insartimeseries.html">insartimeseries class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gpstimeseries.html">gpstimeseries class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="multigps.html">multigps class</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../miscclasses.html">Misc. Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools.html">Useful Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oldclasses.html">Some Untested Classes</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">csi</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../classes.html">Classes</a> &raquo;</li>
+        
+          <li><a href="../dataclasses.html">Classes for types of data</a> &raquo;</li>
+        
+      <li>timeseries class</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/classes/timeseries.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="timeseries-class">
 <h1>timeseries class<a class="headerlink" href="#timeseries-class" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="csi.timeseries">
 <em class="property">class </em><code class="descclassname">csi.</code><code class="descname">timeseries</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>verbose=True</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>ellps='WGS84'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>A class that handles generic time series</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>name      : Name of the dataset.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first last simple">
+<li>utmzone   : UTM zone  (optional, default=None)</li>
+<li>lon0      : Longitude of the center of the UTM zone</li>
+<li>lat0      : Latitude of the center of the UTM zone</li>
+<li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
+<li>verbose   : Talk to me</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
 <dt id="csi.timeseries.SortInTime">
 <code class="descname">SortInTime</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.SortInTime" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sort ascending in time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.addPointInTime">
 <code class="descname">addPointInTime</code><span class="sig-paren">(</span><em>time</em>, <em>value=0.0</em>, <em>std=0.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.addPointInTime" title="Permalink to this definition">¶</a></dt>
-<dd><p>Augments the time series by one point.
-time is a datetime object.
-if east, north and up values are not provided, 0.0 is used.</p>
+<dd><p>Augments the time series by one point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>time      : datetime.datetime object</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first last simple">
+<li>value     : Value of the time series at time {time}</li>
+<li>std       : Uncertainty at time {time}</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.checkNaNs">
 <code class="descname">checkNaNs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.checkNaNs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the index of the NaNs</p>
+<dd><p>Returns the index of NaNs</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>numpy array of integers</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.computeDoubleDifference">
 <code class="descname">computeDoubleDifference</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.computeDoubleDifference" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the derivative of the TS with a central difference scheme.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None. Results is stored in self.derivative</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.findZeroIntersect">
 <code class="descname">findZeroIntersect</code><span class="sig-paren">(</span><em>data='data'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.findZeroIntersect" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns all the points just before the function crosses 0.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Returns all the points just before the function crosses 0.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>data      : Can be ‘data’, ‘synth’ or ‘derivative’.</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.fitFunction">
 <code class="descname">fitFunction</code><span class="sig-paren">(</span><em>function</em>, <em>m0</em>, <em>solver='L-BFGS-B'</em>, <em>iteration=1000</em>, <em>tol=1e-08</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.fitFunction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits a function to the timeseries
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Fits a function to the timeseries</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>function  : Prediction function,</li>
 <li>m0        : Initial model</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>solver    : Solver type (see list of solver in scipy.optimize.minimize)</li>
 <li>iteration : Number of iteration for the solver</li>
 <li>tol       : Tolerance</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None. Model vector is stored in the {m} attribute</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.fitTidalConstituents">
 <code class="descname">fitTidalConstituents</code><span class="sig-paren">(</span><em>steps=None</em>, <em>linear=False</em>, <em>tZero=datetime.datetime(2000</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em>, <em>chunks=None</em>, <em>cossin=False</em>, <em>constituents='all'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.fitTidalConstituents" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits tidal constituents on the time series.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Fits tidal constituents on the time series.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>steps     : list of datetime instances to add step functions in the estimation process.</li>
 <li>linear    : estimate a linear trend.</li>
 <li>tZero     : origin time (datetime instance).</li>
 <li>chunks    : List [ [start1, end1], [start2, end2]] where the fit is performed.</li>
+<li>cossin    : Add a cosine+sine term in the procedure.</li>
+<li>constituents  : list of tidal constituents to include (default is all). For a list, go check tidalfit class</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.getOffset">
 <code class="descname">getOffset</code><span class="sig-paren">(</span><em>date1</em>, <em>date2</em>, <em>nodate=nan</em>, <em>data='data'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.getOffset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the offset between date1 and date2.
-If the 2 dates are not available, returns NaN.
-Args:</p>
-<blockquote>
-<div>date1       : datetime object
-date2       : datetime object
-data        : can be ‘data’ or ‘std’</div></blockquote>
+<dd><p>Get the offset between date1 and date2.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>date1       : datetime object</li>
+<li>date2       : datetime object</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>nodate      : Value to be returned in case no value is available</li>
+<li>data        : can be ‘data’ or ‘std’</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>float</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.initialize">
 <code class="descname">initialize</code><span class="sig-paren">(</span><em>time=None</em>, <em>start=None</em>, <em>end=None</em>, <em>increment=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.initialize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize the time series.</p>
-<dl class="docutils">
-<dt>Kwargs:</dt>
-<dd><ul class="first last simple">
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>time          : list of datetime instances</li>
 <li>start         : datetime instance of the first period</li>
 <li>end           : datetime instance of the ending period</li>
 <li>increment     : increment of time between periods</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.lonlat2xy">
 <code class="descname">lonlat2xy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.lonlat2xy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pass the position into the utm coordinate system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.plot">
 <code class="descname">plot</code><span class="sig-paren">(</span><em>figure=1, styles=['.r'], show=True, data='data', subplot=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.plot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plots the time series.
-Args:</p>
-<blockquote>
-<div><p>figure  :   Figure id number (default=1)
-styles  :   List of styles (default=[‘.r’])
-show    :   Show to me (default=True)
-data    :   can be ‘data’, ‘derivative’, ‘synth’</p>
-<blockquote>
-<div>or a list of those</div></blockquote>
-</div></blockquote>
+<dd><p>Plots the time series.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>figure  :   Figure id number (default=1)</li>
+<li>styles  :   List of styles (default=[‘.r’])</li>
+<li>show    :   Show to me (default=True)</li>
+<li>data    :   can be ‘data’, ‘derivative’, ‘synth’ or a list of those</li>
+<li>subplot :   axes instance to be used for plotting. If None, creates a new one</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.readAscii">
 <code class="descname">readAscii</code><span class="sig-paren">(</span><em>infile</em>, <em>header=0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.readAscii" title="Permalink to this definition">¶</a></dt>
-<dd><p>Reads from an ascii file.
-Format:
-yr mo da hr mi sd value (err)</p>
+<dd><p>Reads from an ascii file. Format of the file is</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="10%" />
+<col width="12%" />
+<col width="8%" />
+<col width="10%" />
+<col width="8%" />
+<col width="13%" />
+<col width="12%" />
+<col width="27%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>year</td>
+<td>month</td>
+<td>day</td>
+<td>hour</td>
+<td>min</td>
+<td>second</td>
+<td>value</td>
+<td>err (optional)</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>infile    : Input file (ascii)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>header    : length of the file header</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.reference2timeseries">
 <code class="descname">reference2timeseries</code><span class="sig-paren">(</span><em>timeseries</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.reference2timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Removes to another gps timeseries the difference between self and timeseries</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><ul class="first last simple">
-<li>timeseries        : Another gpstimeseries</li>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>timeseries        : Another timeseries</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>float</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.removeMean">
 <code class="descname">removeMean</code><span class="sig-paren">(</span><em>start=None</em>, <em>end=None</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.removeMean" title="Permalink to this definition">¶</a></dt>
-<dd><p>Removes the mean between start and end.
-start and end are two instance of datetime.datetime.</p>
+<dd><p>Removes the mean between start and end.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>start : datetime.datetime object. If None, takes the first point of the time series</li>
+<li>end   : datetime.datetime object. If None, takes the last point of the time series</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None. Attribute {value} is directly modified.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.removePoints">
 <code class="descname">removePoints</code><span class="sig-paren">(</span><em>indexes</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.removePoints" title="Permalink to this definition">¶</a></dt>
-<dd><p>Removes the points from the time series
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Removes the points from the time series</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>indexes:  Indexes of the poitns to remove</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.smoothGlitches">
 <code class="descname">smoothGlitches</code><span class="sig-paren">(</span><em>biggerThan=999999.0</em>, <em>smallerThan=-999999.0</em>, <em>interpNum=5</em>, <em>interpolation='linear'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.smoothGlitches" title="Permalink to this definition">¶</a></dt>
-<dd><p>Removes the glitches and replace them by a value interpolated on interpNum points.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Removes the glitches and replace them by a value interpolated on interpNum points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>biggerThan    : Values higher than biggerThan are glitches.</li>
 <li>smallerThan   : Values smaller than smallerThan are glitches.</li>
 <li>interpNum     : Number of points to take before and after the glicth to predict its values.</li>
 <li>interpolation : Interpolation method.</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.trimTime">
 <code class="descname">trimTime</code><span class="sig-paren">(</span><em>start</em>, <em>end=datetime.datetime(2100</em>, <em>1</em>, <em>1</em>, <em>0</em>, <em>0)</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.trimTime" title="Permalink to this definition">¶</a></dt>
-<dd><p>Keeps the station between start and end.
-start and end are 2 datetime.datetime objects.</p>
+<dd><p>Keeps the data between start and end. start and end are 2 datetime.datetime objects.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
+<li>start     : datetime.datetime object</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
+<li>end       : datetime.datetime object</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.write2file">
 <code class="descname">write2file</code><span class="sig-paren">(</span><em>outfile</em>, <em>steplike=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.write2file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Writes the time series to a file.
-Args:</p>
-<blockquote>
-<div><ul class="simple">
+<dd><p>Writes the time series to a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>outfile   : output file.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first simple">
 <li>steplike  : doubles the output each time so that the plot looks like steps.</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="csi.timeseries.xy2lonlat">
 <code class="descname">xy2lonlat</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.timeseries.xy2lonlat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Pass the position from utm to lonlat.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><ul class="first last simple">
+<li>None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -254,63 +679,76 @@ Args:</p>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="creepmeters.html" class="btn btn-neutral float-right" title="creepmeters class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tsunami.html" class="btn btn-neutral" title="tsunami class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="tsunami.html"
-                        title="previous chapter">tsunami class</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="creepmeters.html"
-                        title="next chapter">creepmeters class</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/classes/timeseries.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="creepmeters.html" title="creepmeters class"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="tsunami.html" title="tsunami class"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">csi 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../classes.html" >Classes</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../dataclasses.html" >Classes for types of data</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.1.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

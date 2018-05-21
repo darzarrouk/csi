@@ -1,49 +1,184 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>fault3D class &#8212; csi 1.0 documentation</title>
-    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="RectangularPatches class" href="RectangularPatches.html" />
-    <link rel="prev" title="Fault class" href="Fault.html" /> 
-  </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="RectangularPatches.html" title="RectangularPatches class"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="Fault.html" title="Fault class"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">csi 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../classes.html" >Classes</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../faultclasses.html" accesskey="U">Classes of faults</a> &#187;</li> 
-      </ul>
-    </div>  
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>fault3D class &mdash; csi 1.0 documentation</title>
+  
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="csi 1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Classes of faults" href="../faultclasses.html"/>
+        <link rel="next" title="RectangularPatches class" href="RectangularPatches.html"/>
+        <link rel="prev" title="Fault class" href="Fault.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> csi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Some Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basictutorial.html">A Basic Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CSIpublications.html">Citations and CSI Publications</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../classes.html">Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../mainclass.html">Principal CSI class</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../faultclasses.html">Classes of faults</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="Fault.html">Fault class</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">fault3D class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="RectangularPatches.html">RectangularPatches class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="RectangularPatchesKin.html">RectangularPatchesKin class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="TriangularPatches.html">TriangularPatches class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="TriangularTents.html">TriangularTents class</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../dataclasses.html">Classes for types of data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../miscclasses.html">Misc. Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tools.html">Useful Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../oldclasses.html">Some Untested Classes</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">csi</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../classes.html">Classes</a> &raquo;</li>
+        
+          <li><a href="../faultclasses.html">Classes of faults</a> &raquo;</li>
+        
+      <li>fault3D class</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/classes/fault3D.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="fault3d-class">
 <h1>fault3D class<a class="headerlink" href="#fault3d-class" title="Permalink to this headline">¶</a></h1>
@@ -52,70 +187,61 @@
 <em class="property">class </em><code class="descclassname">csi.</code><code class="descname">fault3D</code><span class="sig-paren">(</span><em>name</em>, <em>utmzone=None</em>, <em>ellps='WGS84'</em>, <em>lon0=None</em>, <em>lat0=None</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.fault3D" title="Permalink to this definition">¶</a></dt>
 <dd><p>A class that handles faults in 3D. It inherits from RectangularPatches but
 allows to build the fault in 3D using tying points.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><ul class="first last simple">
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first simple">
 <li>name      : Name of the fault.</li>
 </ul>
-</dd>
-<dt>Kwargs:</dt>
-<dd><ul class="first last simple">
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Kwargs:</th><td class="field-body"><ul class="first last simple">
 <li>utmzone   : UTM zone  (optional, default=None)</li>
 <li>lon0      : Longitude of the center of the UTM zone</li>
 <li>lat0      : Latitude of the center of the UTM zone</li>
 <li>ellps     : ellipsoid (optional, default=’WGS84’)</li>
 <li>verbose   : Speak to me (default=True)</li>
 </ul>
-</dd>
-</dl>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="method">
 <dt id="csi.fault3D.buildPatches">
 <code class="descname">buildPatches</code><span class="sig-paren">(</span><em>dip=None</em>, <em>dipdirection=None</em>, <em>every=10</em>, <em>minpatchsize=1e-05</em>, <em>trace_tol=0.1</em>, <em>trace_fracstep=0.2</em>, <em>trace_xaxis='x'</em>, <em>trace_cum_error=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.fault3D.buildPatches" title="Permalink to this definition">¶</a></dt>
 <dd><p>Builds a dipping fault given a certain dip angle evolution. Dip angle is linearly
 interpolated between tying points given as arguments.</p>
-<dl class="docutils">
-<dt>Args:</dt>
-<dd><ul class="first simple">
-<li><dl class="first docutils">
-<dt>dip <span class="classifier-delimiter">:</span> <span class="classifier">Dip angle tying points </span></dt>
-<dd><dl class="first last docutils">
-<dt>[[alongstrike, depth, dip], [alongstrike, depth, dip], </dt>
-<dd>…, [alongstrike, depth, dip]]</dd>
-</dl>
-</dd>
-</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first">
+<li><p class="first">dip               : Dip angle tying points</p>
+<blockquote>
+<div><p>[[alongstrike, depth, dip], [alongstrike, depth, dip], …, [alongstrike, depth, dip]]</p>
+</div></blockquote>
 </li>
-<li>dipdirection      : Direction towards which the fault dips.</li>
-<li>every             : patch length for the along trace discretization</li>
-<li>minpatchsize      : minimum patch size</li>
-<li><dl class="first docutils">
-<dt>trace_tol <span class="classifier-delimiter">:</span> <span class="classifier">tolerance for the along trace patch discretization </span></dt>
-<dd>optimization</dd>
-</dl>
+<li><p class="first">dipdirection      : Direction towards which the fault dips.</p>
 </li>
-<li><dl class="first docutils">
-<dt>trace_fracstep <span class="classifier-delimiter">:</span> <span class="classifier">fractional step in x for the patch discretization </span></dt>
-<dd>optimization</dd>
-</dl>
+<li><p class="first">every             : patch length for the along trace discretization</p>
 </li>
-<li>trace_xaxis       : x axis for the discretization (‘x’ or ‘y’)</li>
-<li><dl class="first docutils">
-<dt>trace_cum_error <span class="classifier-delimiter">:</span> <span class="classifier">if True, account for accumulated error to define </span></dt>
-<dd>the x axis bound for the last patch</dd>
-</dl>
+<li><p class="first">minpatchsize      : minimum patch size</p>
+</li>
+<li><p class="first">trace_tol         : tolerance for the along trace patch discretization optimization</p>
+</li>
+<li><p class="first">trace_fracstep    : fractional step in x for the patch discretization optimization</p>
+</li>
+<li><p class="first">trace_xaxis       : x axis for the discretization (‘x’ or ‘y’)</p>
+</li>
+<li><p class="first">trace_cum_error   : if True, account for accumulated error to define the x axis bound for the last patch</p>
 </li>
 </ul>
-<dl class="last docutils">
-<dt>Example: dip = [[0, 0, 20], [10, 10, 30], [80, 10, 90]] means that </dt>
-<dd>from the origin point of the fault (self.xi[0], self.yi[0]), 
-the dip is 20 deg at 0 km and 0 km depth, 30 deg at km 10 
-and 10 km-depth and 90 deg at km 80 and 10 km-depth. 
-The routine starts by discretizing the surface trace, then 
-defines a dip evolution as a function of distance from the 
-fault origin and drapes the fault down to depth.</dd>
-</dl>
-</dd>
-</dl>
+<p class="last">Example: dip = [[0, 0, 20], [10, 10, 30], [80, 10, 90]] means that from the origin point of the fault (self.xi[0], self.yi[0]), the dip is 20 deg at 0 km and 0 km depth, 30 deg at km 10 and 10 km-depth and 90 deg at km 80 and 10 km-depth. The routine starts by discretizing the surface trace, then defines a dip evolution as a function of distance from the fault origin and drapes the fault down to depth.</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -123,13 +249,18 @@ fault origin and drapes the fault down to depth.</dd>
 <code class="descname">dipatZ</code><span class="sig-paren">(</span><em>interp</em>, <em>z</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.fault3D.dipatZ" title="Permalink to this definition">¶</a></dt>
 <dd><p>Uses the interpolator to return the dip angle evolution along strike at depth z.
 The interpolation scheme is piecewise linear.</p>
-<p>Args:</p>
-<blockquote>
-<div><ul class="simple">
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Args:</th><td class="field-body"><ul class="first last simple">
 <li>interp        : Dip interpolation function</li>
 <li>z             : Depth.</li>
 </ul>
-</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -137,63 +268,76 @@ The interpolation scheme is piecewise linear.</p>
 </div>
 
 
+           </div>
+           <div class="articleComments">
+            
+           </div>
           </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="RectangularPatches.html" class="btn btn-neutral float-right" title="RectangularPatches class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Fault.html" class="btn btn-neutral" title="Fault class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="Fault.html"
-                        title="previous chapter">Fault class</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="RectangularPatches.html"
-                        title="next chapter">RectangularPatches class</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/classes/fault3D.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="RectangularPatches.html" title="RectangularPatches class"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="Fault.html" title="Fault class"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">csi 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../classes.html" >Classes</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="../faultclasses.html" >Classes of faults</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.1.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
 </html>

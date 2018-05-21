@@ -21,14 +21,22 @@ from .SourceInv import SourceInv
 
 class seismic(SourceInv):
     
+    '''
+    A class that handles optical correlation results
+
+    :Args:
+       * name      : Name of the dataset.
+
+    :Kwargs:
+       * dtype     : Specifies a data type
+       * utmzone   : UTM zone  (optional, default=None)
+       * lon0      : Longitude of the center of the UTM zone
+       * lat0      : Latitude of the center of the UTM zone
+       * ellps     : ellipsoid (optional, default='WGS84')
+
+    '''
+
     def __init__(self,name,dtype='seismic',utmzone=None,ellps='WGS84',lon0=None,lat0=None):
-        '''
-        Args:
-            * name      : Name of the dataset.
-            * dtype     : data type (optional, default='seismic')
-            * utmzone   : UTM zone  (optional, default=None)
-            * ellps     : ellipsoid (optional, default='WGS84')
-        '''
         
         super(self.__class__,self).__init__(name,utmzone,ellps,lon0,lat0) 
 
@@ -57,11 +65,17 @@ class seismic(SourceInv):
     def setStat(self,sta_name,x,y,loc_format='LL'):
         '''
         Set station names and locations attributes
-        Args:
+
+        :Args:
             * sta_name: station names
             * x: x coordinate (longitude or UTM) 
             * y: y coordinate (latitude or UTM)
+
+        :Kwargs:
             * loc_format: location format ('LL' for lon/lat or 'XY' for UTM)
+
+        :Returns:
+            * None
         '''
 
         # Check input parameters
@@ -90,8 +104,12 @@ class seismic(SourceInv):
     def buildDiagCd(self,std):
         '''
         Build a diagonal Cd from standard deviations
-        Args:
-            std: array of standard deviations
+
+        :Args:
+            * std: array of standard deviations
+
+        :Returns:
+            * None
         '''
 
         assert len(std) == len(self.sta_name)
@@ -114,8 +132,12 @@ class seismic(SourceInv):
                        add_to_previous_Cd=False,average_correlation=False,exp_cor=False,exp_cor_len=10.):
         '''
         Build Cd from residuals
-        Args:
+
+        :Args:
+            * fault: An instance of a fault class 
             * model: Can be a AlTar kinematic model file (posterior mean model in a txt file) or a bigM vector
+
+        :Kwargs:
             * n_ramp_param: number of nuisance parameters (e.g., InSAR orbits, used with a model file)
             * eik_solver: eikonal solver (to be used with an AlTar kinematic model file)
             * npt**2: numper of point sources per patch (to be used with an AlTar kinematic model file)
@@ -124,6 +146,9 @@ class seismic(SourceInv):
             * average_correlation: Compute average correlation for the entire set of stations
             * exp_corr: Use an exponential correlation function
             * exp_corr_len: Correlation length
+
+        :Returns:
+            * None
         '''
         
         print('Computing Cd from residuals')
@@ -254,10 +279,13 @@ class seismic(SourceInv):
     def readCdFromBinaryFile(self,infile='kinematicG.Cd',dtype='float64'):
         '''
         Read kinematic Cd from a input file
-        Args:
-            * dsize: number of observations (Cd is a matrix of dsize x dsize)
+
+        :Kwargs:
             * infile: Name of the input file
             * dtype: type of data to read
+
+        :Returns:   
+            * None
         '''
         
         Cd = np.fromfile(infile,dtype=dtype)
@@ -270,9 +298,13 @@ class seismic(SourceInv):
     def writeCd2BinaryFile(self,outfile='kinematicG.Cd',dtype='float64'):
         '''
         Write Kinematic Cd to an output file
-        Args:
+
+        :kwargs:
             * outfile: Name of the output file
             * dtype:   Type of data to write. 
+
+        :Returns:
+            * None
         '''
         
         # Check if Cd exists
@@ -290,12 +322,27 @@ class seismic(SourceInv):
     def readStat(self,station_file,loc_format='LL'):
         '''
         Read station file and populate the Xr attribute (station coordinates)
-        Args:
+
+        :If loc_format is 'XY':
+        
+        +--------+---------+---------+
+        | STNAME | X_COORD | Y_COORD |
+        +--------+---------+---------+
+
+        :If loc_format is 'LL':
+
+        +--------+-----+-----+
+        | STNAME | LON | LAT |
+        +--------+-----+-----+
+
+        :Args:
             * station_file: station filename including station coordinates
+
+        :Kwargs:
             * loc_format:  station file format (default= 'LL')
-        file format:
-        STNAME  X_COORD Y_COORD (if loc_format='XY')
-        STNAME  LON LAT (if loc_format='LL')
+
+        :Returns:
+            * None
         '''
         
         # Assert if station file exists
@@ -325,6 +372,12 @@ class seismic(SourceInv):
     def readSac(self,sacfiles):
         '''
         Read sac data files
+
+        :Args:
+            * sacfiles  : A list of input file names
+
+        :Returns:
+            * None
         '''
         # Import personnal sac module
         import sacpy
@@ -355,6 +408,12 @@ class seismic(SourceInv):
     def initWave(self,waveform_engine):
         '''
         Initialize Green's function database engine
+
+        :Args:
+            * waveform_engine:  Green's function database engine
+
+        :Returns:
+            * None
         '''
         
         # Assign reference to waveform_engine
@@ -367,6 +426,12 @@ class seismic(SourceInv):
     def initWaveInt(self,waveform_engine):
         '''
         Initialize Bob Hermann's wavenumber integration engine
+
+        :Args:
+            * waveform_engine   : Bob Hermann's wavenumber intergration engine
+
+        :Returns:
+            * None
         '''
         
         # Assign reference to waveform_engine
@@ -381,6 +446,12 @@ class seismic(SourceInv):
     def initWaveKK(self,waveform_engine):
         '''
         Initialize Kikuchi Kanamori waveform engine
+
+        :Args:
+            * waveform_engine: Kikuchi-Kanamori waveform engine
+
+        :Returns:
+            * None
         '''
 
         # Assign reference to waveform engine
@@ -405,18 +476,24 @@ class seismic(SourceInv):
                        out_type='D',src_loc=None,cleanup=True,ofd=sys.stdout,efd=sys.stderr):
         '''
         Build Green's functions for a particular source location
-        Args:
+
+        :Args:
             * dir_name:  Name of the directory where synthetics will be created
             * strike:    Fault strike (in deg)
             * dip:       Fault dip (in deg)
             * rake:      Fault rake (in deg)
             * M0:        Seismic moment
             * rise_time: Rise time (in sec)
-            * stf_type: 
+
+        :Kwargs:
+            * stf_type: Type of source time function (default is 'triangle')
             * src_loc:  Point source coordinates (ndarray)
             * rfile_name: pulse file name if stf_type='rfile'
-            * ofd:       stream for standard output (optional, default=sys.stdout)
-            * efd:       stream for standard error  (optional, default=sys.stdout)        
+            * ofd:       stream for standard output (default=sys.stdout)
+            * efd:       stream for standard error  (default=sys.stdout)        
+
+        :Returns:
+            * None
         '''
         
         # Check Waveform Engine
@@ -455,7 +532,10 @@ class seismic(SourceInv):
              basemap=True,globalbasemap=False,basemap_dlon=2.5,basemap_dlat=2.5,endclose=True,sort=None,alignENZ=False):
         '''
         Plot seismic traces
-        Args:
+
+        :Note: Please complement explanations
+
+        :Kwargs:
            * synth_vector:      concatenated synthetic waveforms
            * nc:                number of collumns per page
            * nl:                number of rows per page
@@ -464,12 +544,15 @@ class seismic(SourceInv):
            * basename:          used as prefix for figure name
            * fault:             fault object used for epicenter loc 
            * basemap:           plot basemap with epicenter and stations location
-                                Can be tuned with basemap_dlon,basemap_dlat
+           * basemap_dlon:      Longitude steps for map
+           * basemap_dlat:      Latitude steps for map
            * globalbasemap:     plot whole globe for teleseismic loc
            * endclose:          if True, close figure
-           * sort:              ['distance' or 'azimuth'] you can choose to sort 
-                                the stations by distance to hypo. or by azimuth
+           * sort:              ['distance' or 'azimuth'] you can choose to sort the stations by distance to hypocenter or by azimuth
            * alignENZ:          if True, 3 columns are plotted (ENU) and missing traces are left blank
+
+        :Returns:
+           * None
         '''
         
         # Station list
@@ -675,3 +758,5 @@ class seismic(SourceInv):
         plt.savefig(o_pdf_name,orientation='landscape')
         if endclose:
             plt.close()
+
+#EOF

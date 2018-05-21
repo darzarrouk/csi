@@ -18,14 +18,22 @@ from .SourceInv import SourceInv
 
 class timeseries(SourceInv):
 
+    '''
+    A class that handles generic time series
+
+    :Args:
+       * name      : Name of the dataset.
+
+    :Kwargs:
+       * utmzone   : UTM zone  (optional, default=None)
+       * lon0      : Longitude of the center of the UTM zone
+       * lat0      : Latitude of the center of the UTM zone
+       * ellps     : ellipsoid (optional, default='WGS84')
+       * verbose   : Talk to me 
+
+    '''
+
     def __init__(self, name, utmzone=None, verbose=True, lon0=None, lat0=None, ellps='WGS84'):
-        '''
-        Args:
-            * name      : Name of the station.
-            * datatype  : can be 'gps' or 'insar' for now.
-            * utmzone   : UTM zone. Default is 10 (Western US).
-            * verbose   : Speak to me (default=True)
-        '''
 
         # base class ini
         super(timeseries, self).__init__(name, 
@@ -51,11 +59,14 @@ class timeseries(SourceInv):
         '''
         Initialize the time series.
 
-        Kwargs:
+        :Kwargs:
             * time          : list of datetime instances
             * start         : datetime instance of the first period
             * end           : datetime instance of the ending period
             * increment     : increment of time between periods
+
+        :Returns:
+            * None
         '''
 
         # check start and end
@@ -119,6 +130,9 @@ class timeseries(SourceInv):
     def lonlat2xy(self):
         '''
         Pass the position into the utm coordinate system.
+
+        :Returns:
+            * None
         '''
 
         x, y = self.putm(self.lon, self.lat)
@@ -131,6 +145,9 @@ class timeseries(SourceInv):
     def xy2lonlat(self):
         '''
         Pass the position from utm to lonlat.
+
+        :Returns:
+            * None
         '''
 
         lon, lat = self.putm(x*1000., y*1000.)
@@ -142,9 +159,20 @@ class timeseries(SourceInv):
 
     def readAscii(self, infile, header=0):
         '''
-        Reads from an ascii file.
-        Format:
-        yr mo da hr mi sd value (err)
+        Reads from an ascii file. Format of the file is
+
+        +------+-------+-----+------+-----+--------+-------+----------------+
+        | year | month | day | hour | min | second | value | err (optional) |
+        +------+-------+-----+------+-----+--------+-------+----------------+
+
+        :Args:
+            * infile    : Input file (ascii)
+        
+        :Kwargs:
+            * header    : length of the file header
+
+        :Returns:
+            * None
         '''
 
         # Read file
@@ -186,7 +214,10 @@ class timeseries(SourceInv):
 
     def checkNaNs(self):
         '''
-        Returns the index of the NaNs
+        Returns the index of NaNs
+
+        :Returns:
+            * numpy array of integers
         '''
 
         # All done
@@ -195,8 +226,12 @@ class timeseries(SourceInv):
     def removePoints(self, indexes):
         '''
         Removes the points from the time series
-        Args:
+
+        :Args:
             * indexes:  Indexes of the poitns to remove
+
+        :Returns:
+            * None
         '''
 
         self.value = np.delete(self.value, indexes)
@@ -209,6 +244,9 @@ class timeseries(SourceInv):
     def SortInTime(self):
         '''
         Sort ascending in time.
+
+        :Returns:
+            * None
         '''
 
         # argsort
@@ -224,8 +262,16 @@ class timeseries(SourceInv):
 
     def trimTime(self, start, end=dt.datetime(2100, 1, 1)):
         '''
-        Keeps the station between start and end.
-        start and end are 2 datetime.datetime objects.
+        Keeps the data between start and end. start and end are 2 datetime.datetime objects.
+
+        :Args:
+            * start     : datetime.datetime object
+
+        :Kwargs:
+            * end       : datetime.datetime object
+
+        :Returns:
+            * None
         '''
 
         # Assert
@@ -246,8 +292,13 @@ class timeseries(SourceInv):
     def addPointInTime(self, time, value=0.0, std=0.0):
         '''
         Augments the time series by one point.
-        time is a datetime object.
-        if east, north and up values are not provided, 0.0 is used.
+
+        :Args:
+            * time      : datetime.datetime object
+
+        :Kwargs:
+            * value     : Value of the time series at time {time}
+            * std       : Uncertainty at time {time}
         '''
 
         # Find the index
@@ -268,6 +319,9 @@ class timeseries(SourceInv):
     def computeDoubleDifference(self):
         '''
         Compute the derivative of the TS with a central difference scheme.
+
+        :Returns:
+            * None. Results is stored in self.derivative
         '''
 
         # Get arrays
@@ -291,11 +345,15 @@ class timeseries(SourceInv):
     def smoothGlitches(self, biggerThan=999999., smallerThan=-999999., interpNum=5, interpolation='linear'):
         '''
         Removes the glitches and replace them by a value interpolated on interpNum points.
-        Args:
+
+        :Kwargs:
             * biggerThan    : Values higher than biggerThan are glitches.
             * smallerThan   : Values smaller than smallerThan are glitches.
             * interpNum     : Number of points to take before and after the glicth to predict its values.
             * interpolation : Interpolation method.
+
+        :Returns:
+            * None
         '''
 
         # Find glitches
@@ -352,7 +410,13 @@ class timeseries(SourceInv):
     def removeMean(self, start=None, end=None):
         '''
         Removes the mean between start and end.
-        start and end are two instance of datetime.datetime.
+
+        :Kwargs:
+            * start : datetime.datetime object. If None, takes the first point of the time series
+            * end   : datetime.datetime object. If None, takes the last point of the time series
+
+        :Returns:
+            * None. Attribute {value} is directly modified.
         '''
 
         # Start end
@@ -378,12 +442,18 @@ class timeseries(SourceInv):
     def fitFunction(self, function, m0, solver='L-BFGS-B', iteration=1000, tol=1e-8):
         '''
         Fits a function to the timeseries
-        Args:
+
+        :Args:
             * function  : Prediction function, 
             * m0        : Initial model
+
+        :Kwargs:
             * solver    : Solver type (see list of solver in scipy.optimize.minimize)
             * iteration : Number of iteration for the solver
             * tol       : Tolerance
+
+        :Returns:
+            * None. Model vector is stored in the {m} attribute
         '''
 
         # Do the fit
@@ -402,11 +472,17 @@ class timeseries(SourceInv):
     def fitTidalConstituents(self, steps=None, linear=False, tZero=dt.datetime(2000, 1, 1), chunks=None, cossin=False, constituents='all'):
         '''
         Fits tidal constituents on the time series.
-        Args:
+
+        :Kwargs:
             * steps     : list of datetime instances to add step functions in the estimation process.
             * linear    : estimate a linear trend.
             * tZero     : origin time (datetime instance).
             * chunks    : List [ [start1, end1], [start2, end2]] where the fit is performed.
+            * cossin    : Add a cosine+sine term in the procedure.
+            * constituents  : list of tidal constituents to include (default is all). For a list, go check tidalfit class
+
+        :Returns:
+            * None
         '''
 
         # Initialize a tidalfit
@@ -427,12 +503,18 @@ class timeseries(SourceInv):
 
     def getOffset(self, date1, date2, nodate=np.nan, data='data'):
         '''
-        Get the offset between date1 and date2.
-        If the 2 dates are not available, returns NaN.
-        Args:
-            date1       : datetime object
-            date2       : datetime object
-            data        : can be 'data' or 'std'
+        Get the offset between date1 and date2. 
+
+        :Args:
+            * date1       : datetime object
+            * date2       : datetime object
+
+        :Kwargs:
+            * nodate      : Value to be returned in case no value is available
+            * data        : can be 'data' or 'std'
+
+        :Returns:
+            * float
         '''
 
         # Get the indexes
@@ -457,9 +539,15 @@ class timeseries(SourceInv):
     def write2file(self, outfile, steplike=False):
         '''
         Writes the time series to a file.
-        Args:   
+
+        :Args:   
             * outfile   : output file.
+
+        :Kwargs:
             * steplike  : doubles the output each time so that the plot looks like steps.
+
+        :Returns:
+            * None
         '''
 
         # Open the file
@@ -491,8 +579,12 @@ class timeseries(SourceInv):
     def findZeroIntersect(self, data='data'):
         '''
         Returns all the points just before the function crosses 0.
-        Args:
+
+        :Kwargs:
             * data      : Can be 'data', 'synth' or 'derivative'.
+
+        :Returns:
+            * None
         '''
 
         # Get the good data
@@ -517,12 +609,16 @@ class timeseries(SourceInv):
     def plot(self, figure=1, styles=['.r'], show=True, data='data', subplot=None):
         '''
         Plots the time series.
-        Args:
-            figure  :   Figure id number (default=1)
-            styles  :   List of styles (default=['.r'])
-            show    :   Show to me (default=True)
-            data    :   can be 'data', 'derivative', 'synth'
-                        or a list of those
+
+        :Args:
+            * figure  :   Figure id number (default=1)
+            * styles  :   List of styles (default=['.r'])
+            * show    :   Show to me (default=True)
+            * data    :   can be 'data', 'derivative', 'synth' or a list of those
+            * subplot :   axes instance to be used for plotting. If None, creates a new one
+
+        :Returns:
+            * None
         '''
 
         # Get values
@@ -573,8 +669,11 @@ class timeseries(SourceInv):
         '''
         Removes to another gps timeseries the difference between self and timeseries
 
-        Args:
-            * timeseries        : Another gpstimeseries
+        :Args:
+            * timeseries        : Another timeseries
+
+        :Returns:
+            * float
         '''
         
         # Mean 
@@ -601,6 +700,7 @@ class timeseries(SourceInv):
         # All done
         return difference
 
+#PRIVATE EMTHODS
 
     def _keepDates(self, u):
         '''

@@ -16,14 +16,22 @@ from .SourceInv import SourceInv
 
 class gpstimeseries(SourceInv):
 
+    '''
+    A class that handles a time series of gps data
+
+    :Args:
+       * name      : Name of the dataset.
+
+    :Kwargs:
+       * utmzone   : UTM zone  (optional, default=None)
+       * lon0      : Longitude of the center of the UTM zone
+       * lat0      : Latitude of the center of the UTM zone
+       * ellps     : ellipsoid (optional, default='WGS84')
+       * verbose   : Speak to me (default=True)
+
+    '''
+
     def __init__(self, name, utmzone=None, verbose=True, lon0=None, lat0=None, ellps='WGS84'):
-        '''
-        Args:
-            * name      : Name of the station.
-            * datatype  : can be 'gps' or 'insar' for now.
-            * utmzone   : UTM zone. Default is 10 (Western US).
-            * verbose   : Speak to me (default=True)
-        '''
 
         # Set things
         self.name = name
@@ -49,6 +57,9 @@ class gpstimeseries(SourceInv):
     def lonlat2xy(self):
         '''
         Pass the position into the utm coordinate system.
+
+        :Returns:
+            * None
         '''
 
         x, y = self.putm(self.lon, self.lat)
@@ -61,6 +72,9 @@ class gpstimeseries(SourceInv):
     def xy2lonlat(self):
         '''
         Pass the position from utm to lonlat.
+
+        :Returns:
+            * None
         '''
 
         lon, lat = self.putm(x*1000., y*1000.)
@@ -73,6 +87,15 @@ class gpstimeseries(SourceInv):
     def read_from_file(self, filename, verbose=False):
         '''
         Reads the time series from a file which has been written by write2file
+
+        :Args:
+            * filename      : name of the file
+
+        :Kwargs:
+            * verbose       : talk to me
+
+        :Returns:
+            * None
         '''
 
         # Open, read, close file
@@ -144,7 +167,17 @@ class gpstimeseries(SourceInv):
         '''
         Reads the time series from a file which has been downloaded on
         http://geodesy.unr.edu/NGLStationPages/gpsnetmap/GPSNetMap.html
-        Format xyz
+
+        This was true on 2015.
+
+        :Args:
+            * filename      : name of file
+
+        :Kwargs:
+            * verbose       : talk to me
+
+        :Returns:
+            * None
         '''
 
         # Get months description
@@ -217,7 +250,8 @@ class gpstimeseries(SourceInv):
     def read_from_JPL(self, filename):
         '''
         Reads the time series from a file which has been sent from JPL.
-        Format is a bit awkward...
+        Format is a bit awkward and you should not see that a lot.
+        Look inside the code to find out...
         '''
 
         # Open, read, close file
@@ -277,9 +311,21 @@ class gpstimeseries(SourceInv):
                       factor=1.):
         '''
         Reads the East, North and Up components of the station in a sql file.
-        This follows the organization of M. Simons' group at Caltech.
-        Args:
+        This follows the organization of M. Simons' group at Caltech. The sql file 
+        has tables called as indicated in the dictionary tables and sigma.
+
+        This method requires pandas and sqlalchemy
+
+        :Args:
             * filename  : Name of the sql file
+
+        :Kwargs:
+            * tables    : Dictionary of the names of the table for the east, north and up displacement time series
+            * sigma     : Dictionary of the names of the tables for the east, north and up uncertainties time series
+            * factor    : scaling factor
+
+        :Returns:
+            * None
         '''
 
         # Import necessary bits
@@ -337,6 +383,12 @@ class gpstimeseries(SourceInv):
         '''
         Reads the data from a time series file from CalTech (Avouac's group).
         Time is in decimal year...
+
+        :Args:
+            * filename      : Input file
+
+        :Returns:
+            * None
         '''
 
         # Open, read, close file
@@ -397,6 +449,9 @@ class gpstimeseries(SourceInv):
     def removeNaNs(self):
         '''
         Remove NaNs in the time series
+
+        :Returns:
+            * None
         '''
 
         # Get the indexes
@@ -419,11 +474,13 @@ class gpstimeseries(SourceInv):
     def initializeTimeSeries(self, time=None, start=None, end=None, interval=1, los=False):
         '''
         Initializes the time series by creating whatever is necessary.
-        Args:
+
+        :Kwargs:
             * time              Time vector
             * starttime:        Begining of the time series.
             * endtime:          End of the time series.
             * interval:         In days.
+            * los:              True/False
         '''
     
         # North-south time series
@@ -476,6 +533,16 @@ class gpstimeseries(SourceInv):
     def trimTime(self, start, end=dt.datetime(2100,1,1)):
         '''
         Keeps the epochs between start and end
+
+        :Args:
+            * start: starting date (datetime instance)
+        
+        :Kwargs:
+            * end: ending date (datetime instance)
+
+        :Returns:
+            * None
+
         '''
         
         # Trim
@@ -492,8 +559,16 @@ class gpstimeseries(SourceInv):
     def addPointInTime(self, time, east=0.0, north=0.0, up = 0.0, std_east=0.0, std_north=0.0, std_up=0.0):
         '''
         Augments the time series by one point.
-        time is a datetime object.
-        if east, north and up values are not provided, 0.0 is used.
+
+        :Args:
+            * time: datetime object.a
+
+        :Kwargs:
+            * east, north, up   : Time series values. Default is 0
+            * std_east, std_north, std_up: Uncertainty values. Default is 0
+
+        :Returns:
+            * None
         '''
 
         # insert
@@ -511,8 +586,11 @@ class gpstimeseries(SourceInv):
         '''
         Remove points from the time series.
 
-        Args:
+        :Args:
             * u         : List or array of indexes to remove
+
+        :Returns:
+            * None
         '''
 
         # Delete
@@ -529,12 +607,18 @@ class gpstimeseries(SourceInv):
     def fitFunction(self, function, m0, solver='L-BFGS-B', iteration=1000, tol=1e-8):
         '''
         Fits a function to the timeseries
-        Args:
+
+        :Args:
             * function  : Prediction function, 
             * m0        : Initial model
+
+        :Kwargs:
             * solver    : Solver type (see list of solver in scipy.optimize.minimize)
             * iteration : Number of iteration for the solver
             * tol       : Tolerance
+
+        :Returns:   
+            * None. Parameters are stored in attribute {m} of each time series object
         '''
 
         # Do it for the three components
@@ -549,11 +633,17 @@ class gpstimeseries(SourceInv):
             chunks=None, cossin=False, constituents='all'):
         '''
         Fits tidal constituents on the time series.
-        Args:
+
+        :Args:
             * steps     : list of datetime instances to add step functions in the estimation process.
             * linear    : estimate a linear trend.
             * tZero     : origin time (datetime instance).
             * chunks    : List [ [start1, end1], [start2, end2]] where the fit is performed.
+            * cossin    : Add an  extra cosine+sine term (weird...)
+            * constituents: list of constituents to fit (default is 'all')
+
+        :Returns:
+            * None
         '''
 
         # Do it for each time series
@@ -571,10 +661,17 @@ class gpstimeseries(SourceInv):
         '''
         Get the offset between date1 and date2.
         If the 2 dates are not available, returns NaN.
-        Args:
-            date1       : datetime object
-            date2       : datetime object
-            data        : can be 'data' or 'std'
+
+        :Args:
+            * date1       : datetime object
+            * date2       : datetime object
+
+        :Kwargs:
+            * data        : can be 'data' or 'std'
+            * nodate      : If there is no date, return this value
+
+        :Returns:
+            * tuple of floats
         '''
 
         # Get offsets
@@ -588,9 +685,15 @@ class gpstimeseries(SourceInv):
     def write2file(self, outfile, steplike=False):
         '''
         Writes the time series to a file.
-        Args:   
+
+        :Args:   
             * outfile   : output file.
+
+        :Kwargs:
             * steplike  : doubles the output each time so that the plot looks like steps.
+
+        :Returns:
+            * None
         '''
 
         # Open the file
@@ -645,8 +748,12 @@ class gpstimeseries(SourceInv):
         '''
         Projects the time series of east, north and up displacements into the 
         line-of-sight given as argument
-        Args:
-            * los       : list of three component
+
+        :Args:
+            * los       : list of three component. L2-norm of los must be equal to 1
+
+        :Returns:
+            * None. Results are stored in attribute {losvector}
         '''
 
         # Create a time series
@@ -682,8 +789,14 @@ class gpstimeseries(SourceInv):
         '''
         Removes to another gps timeseries the difference between self and timeseries
 
-        Args:
+        :Args:
             * timeseries        : Another gpstimeseries
+
+        :Kwargs:
+            * verbose           : Talk to me
+
+        :Returns:
+            * None
         '''
 
         # Verbose
@@ -712,11 +825,15 @@ class gpstimeseries(SourceInv):
     def plot(self, figure=1, styles=['.r'], show=True, data='data'):
         '''
         Plots the time series.
-        Args:
-            figure  :   Figure id number (default=1)
-            styles  :   List of styles (default=['.r'])
-            show    :   Show to me (default=True)
-            data    :   What do you show (data, synth)
+
+        :Kwargs:
+            * figure  :   Figure id number (default=1)
+            * styles  :   List of styles (default=['.r'])
+            * show    :   Show to me (default=True)
+            * data    :   What do you show (data, synth)
+
+        :Returns:
+            * None
         '''
 
         # list 

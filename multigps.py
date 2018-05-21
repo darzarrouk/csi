@@ -18,15 +18,23 @@ from .gpstimeseries import gpstimeseries
 
 class multigps(gps):
 
+    '''
+    A class that handles several networks of gps stations
+
+    :Args:
+       * name      : Name of the dataset.
+
+    :Kwargs:
+       * gpsobjects: list of instances of the gps class
+       * obs_per_station: how many data points per site
+       * utmzone   : UTM zone  (optional, default=None)
+       * lon0      : Longitude of the center of the UTM zone
+       * lat0      : Latitude of the center of the UTM zone
+       * ellps     : ellipsoid (optional, default='WGS84')
+       * verbose   : Speak to me (default=True)
+
+    '''
     def __init__(self, name, gpsobjects=None, utmzone=None, ellps='WGS84', obs_per_station=2, lon0=None, lat0=None):
-        '''
-        Args:
-            * name              : Name of the dataset.
-            * gpsobjects        : A list of GPS rates objects.
-            * utmzone           : UTM zone. (optional, default is 10 (Western US))
-            * ellps             : ellipsoid (optional, default='WGS84')
-            * obs_per_station   : Number of observations per stations.
-        '''
 
         # Base class init
         super(multigps,self).__init__(name,
@@ -60,9 +68,13 @@ class multigps(gps):
     
     def setgps(self, gpsobjects):
         '''
-        Takes list of gps and build a multi gps function.
-        Args:
+        Takes list of gps and set it 
+
+        :Args:
             * gpsobjects    : List of gps objects.
+
+        :Returns:
+            * None
         '''
 
         # Get the list
@@ -123,9 +135,12 @@ class multigps(gps):
     def getNumberOfTransformParameters(self, transformation):
         '''
         Returns the number of transform parameters for the given transformation.
-        Args:
-            * transformation: List [main_transformation, [transfo_subnet1, transfo_subnet2, ....] ]
-                 Each can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
+
+        :Args:
+            * transformation: List [main_transformation, [transfo_subnet1, transfo_subnet2, ....] ]. Each can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
+        
+        :Returns:
+            * int
         '''
 
         # Separate 
@@ -153,9 +168,12 @@ class multigps(gps):
     def getTransformEstimator(self, transformation):
         '''
         Returns the estimator for the transform.
-        Args:
-            * transformation : List [main_transformation, [transfo_subnet1, transfo_subnet2, ....] ]
-                    Each item can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
+
+        :Args:
+            * transformation : List [main_transformation, [transfo_subnet1, transfo_subnet2, ....] ]. Each item can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
+
+        :Returns:
+            * 2D array
         '''
 
         # Separate
@@ -214,7 +232,16 @@ class multigps(gps):
     def computeTransformation(self, fault, custom=False):
         '''
         Computes the transformation that is stored with a particular fault.
-        Stores it in transformation.
+
+        :Args:
+            * fault: instance of a fault class that has a {polysol} attribute
+
+        :Kwargs:
+            * custom: True/False. Do we have to account for custom GFs?
+
+        :Returns:
+            * None. Transformation is stroed in attribute {transformation}
+        
         '''
 
         # Get the transformation 

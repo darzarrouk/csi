@@ -18,13 +18,22 @@ from . import csiutils as utils
 
 class opticorr(SourceInv):
 
+    '''
+    A class that handles optical correlation results
+
+    :Args:
+       * name      : Name of the dataset.
+
+    :Kwargs:
+       * utmzone   : UTM zone  (optional, default=None)
+       * lon0      : Longitude of the center of the UTM zone
+       * lat0      : Latitude of the center of the UTM zone
+       * ellps     : ellipsoid (optional, default='WGS84')
+       * verbose   : Speak to me (default=True)
+
+    '''
+
     def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True, lon0=None, lat0=None):
-        '''
-        Args:
-            * name          : Name of the InSAR dataset.
-            * utmzone   : UTM zone. (optional, default is 10 (Western US))
-            * ellps     : ellipsoid (optional, default='WGS84')
-        '''
 
         # Base class init
         super(opticorr,self).__init__(name,
@@ -59,41 +68,23 @@ class opticorr(SourceInv):
         # All done
         return
 
-    def lonlat2xy(self, lon, lat):
-        '''
-        Uses the transformation in self to convert  lon/lat vector to x/y utm.
-        Args:
-            * lon           : Longitude array.
-            * lat           : Latitude array.
-        '''
-
-        x, y = self.putm(lon,lat)
-        x /= 1000.
-        y /= 1000.
-
-        return x, y
-
-    def xy2lonlat(self, x, y):
-        '''
-        Uses the transformation in self to convert x.y vectors to lon/lat.
-        Args:
-            * x             : Xarray
-            * y             : Yarray
-        '''
-
-        lon, lat = self.putm(x*1000., y*1000., inverse=True)
-        return lon, lat
-
     def read_from_varres(self,filename, factor=1.0, step=0.0, header=2, cov=False):
         '''
-        Read the COSI-Corr east-north offsets from the VarRes output.
-        Args:
+        Read the COSI-Corr east-north offsets from the VarRes output. This is what comes from the decimation process in imagedownsampling
+
+        :Args:
             * filename      : Name of the input file. Two files are opened filename.txt and filename.rsp.
+
+        :Kwargs:
             * factor        : Factor to multiply the east-north offsets.
             * step          : Add a value to the velocity.
             * header        : Size of the header.
             * cov           : Read an additional covariance file (binary float32, Nd*Nd elements).
+
+        :Returns:
+            * None
         '''
+
         if self.verbose:
             print ("Read from file {} into data set {}".format(filename, self.name))
 
@@ -145,7 +136,7 @@ class opticorr(SourceInv):
         self._checkLongitude()
 
         # Compute lon lat to utm
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # Compute corner to xy
         self.xycorner = np.zeros(self.corner.shape)
@@ -173,12 +164,22 @@ class opticorr(SourceInv):
 
     def read_from_xyz(self, filename, factor=1.0, step=0.0, header=0):
         '''
-        Reads the maps from a xyz file
-        lon lat east north east_err north_err
-        Args:
+        Reads the maps from a xyz file formatted as
+
+        +---+---+----+-----+--------+---------+
+        |lon|lat|east|north|east_err|north_err|
+        +---+---+----+-----+--------+---------+
+
+        :Args:
             * filename  : name of the input file.
+
+        :Kwargs:
             * factor    : scale by a factor.
             * step      : add a value.
+            * header    : length of the file header
+
+        :Returns:
+            * None
         '''
 
         # Initialize values
@@ -219,7 +220,7 @@ class opticorr(SourceInv):
         self._checkLongitude()
 
         # Compute lon lat to utm
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # Store the factor
         self.factor = factor
@@ -233,16 +234,23 @@ class opticorr(SourceInv):
     def read_from_binary(self, east, north, lon, lat, err_east=None, err_north=None, factor=1.0, step=0.0, dtype=np.float32, remove_nan=True):
         '''
         Read from a set of binary files or from a set of arrays.
-        Args:
+
+        :Args:
             * east      : array or filename of the east displacement 
             * north     : array or filename of the north displacement
             * lon       : array or filename of the longitude
             * lat       : array or filename of the latitude
+
+        :Kwargs:
             * err_east  : uncertainties on the east displacement (file or array)
             * err_north : uncertainties on the north displacememt (file or array)
             * factor    : multiplication factor
             * step      : offset
             * dtype     : type of binary file
+            * remove_nan: Remove nans or not
+
+        :Returns:
+            * None
         '''
 
         # Get east
@@ -299,7 +307,7 @@ class opticorr(SourceInv):
         self._checkLongitude()
 
         # Compute lon lat to utm
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # Store the factor
         self.factor = factor
@@ -313,9 +321,16 @@ class opticorr(SourceInv):
     def read_from_envi(self, filename, component='EW', remove_nan=True):
         '''
         Reads displacement map from an ENVI file.
-        Args:
+
+        :Args:
             * filename  : Name of the input file
+
+        :Kwargs:
             * component : 'EW' or 'NS'
+            * remove_nan: Remove Nans or not
+
+        :Returns:
+            * None
         '''
         
         assert component=='EW' or component=='NS', 'component must be EW or NS'
@@ -385,8 +400,15 @@ class opticorr(SourceInv):
     def splitFromShapefile(self, shapefile, remove_nan=True):
         '''
         Uses the paths defined in a Shapefile to select and return particular domains of self.
-        Args:   
+
+        :Args:   
             * shapefile : Input file (shapefile format).
+
+        :Kwargs:
+            * remove_nan: Remove nans
+
+        :Returns:
+            * None
         '''
 
         # Import necessary library
@@ -442,15 +464,21 @@ class opticorr(SourceInv):
         # All done
         return OutCosi
         
-    def read_from_grd(self, filename, factor=1.0, step=0.0, cov=False, flip=False, keepnans=False):
+    def read_from_grd(self, filename, factor=1.0, step=0.0, flip=False, keepnans=False):
         '''
         Reads velocity map from a grd file.
-        Args:
-            * filename  : Name of the input file 
-                    As we are reading two files, the files are:
-                    filename_east.grd and filename_north.grd
+
+        :Args:
+            * filename  : Name of the input file. As we are reading two files, the files are filename_east.grd and filename_north.grd
+
+        :Kwargs:
             * factor    : scale by a factor
             * step      : add a value.
+            * flip      : Flip image upside down (some netcdf files require this)
+            * keepnans  : Keeps NaNs or not
+
+        :Returns:
+            * None
         '''
 
         if self.verbose:
@@ -520,7 +548,7 @@ class opticorr(SourceInv):
         self._checkLongitude()
 
         # Convert to utm
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
+        self.x, self.y = self.ll2xy(self.lon, self.lat) 
 
         # Store the factor and step
         self.factor = factor
@@ -534,8 +562,15 @@ class opticorr(SourceInv):
     
     def read_with_reader(self, readerFunc, filePrefix, factor=1.0, cov=False):
         '''
-        Read data from a *.txt file using a user provided reading function. Assume the user
-        knows what they are doing and are returning the correct values.
+        Read data from a .txt file using a user provided reading function. Assume the user knows what they are doing and are returning the correct values.
+
+        :Args:
+            * readerFunc    : A method that knows how to read a file and returns lon, lat, east, north, east_err and north_err (1d arrays)
+
+        :Kwargs:
+            * filePrefix    : filename before .txt
+            * factor        : scaling factor
+            * cov           : read a covariance from a binary file
         '''
 
         lon,lat,east,north,east_err,north_err = readerFunc(filePrefix + '.txt')
@@ -550,7 +585,7 @@ class opticorr(SourceInv):
         self._checkLongitude()
 
         # Convert to utm
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat) 
+        self.x, self.y = self.ll2xy(self.lon, self.lat) 
 
         # Read the covariance 
         if cov:
@@ -570,11 +605,14 @@ class opticorr(SourceInv):
         ''' 
         Select the pixels in a box defined by min and max, lat and lon.
         
-        Args:
+        :Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
+
+        :Returns:
+            * None
         '''
 
         # Store the corners
@@ -616,11 +654,16 @@ class opticorr(SourceInv):
         '''
         From a dictionary of Green's functions, sets these correctly into the fault 
         object fault for future computation.
-        Args:
+
+        :Args:
             * fault     : Instance of Fault
             * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
-                          These can be a matrix or None.
+
+        :Kwargs:
             * vertical  : Do we use vertical predictions? Default is True
+
+        :Returns:
+            * None
         '''
         
         # Get values
@@ -650,6 +693,15 @@ class opticorr(SourceInv):
     def setOrbNormalizingFactor(self, x0, y0, normX, normY):
         '''
         Set orbit normalizing factors in insar object. 
+
+        :Args:
+            * x0    : Normalization reference x-axis
+            * y0    : Normalization reference y-axis
+            * normX : Normalizing length along x-axis
+            * normY : Normalizing length along y-axis
+
+        :Returns:
+            * None
         '''
 
         self.OrbNormalizingFactor = {}
@@ -664,8 +716,10 @@ class opticorr(SourceInv):
     def computeOrbNormalizingFactor(self):
         '''
         Compute orbit normalizing factors and store them in insar object. 
-        '''
 
+        :Returns:   
+            * None
+        '''
 
         x0 = self.x[0]
         y0 = self.y[0]
@@ -680,23 +734,30 @@ class opticorr(SourceInv):
         # All done
         return
 
-
     def getPolyEstimator(self, ptype, computeNormFact=True):
         '''
         Returns the Estimator for the polynomial form to estimate in the optical correlation data.
-        Args:
-            * ptype : integer.
-                if ptype==1:
-                    constant offset to the data
-                if ptype==3:
-                    constant and linear function of x and y
-                if ptype==4:
-                    constant, linear term and cross term.
+
+        :Args:
+            * ptype : Style of polynomial
+
+            +-------+------------------------------------------------------------+
+            | ptype | what it means                                              |
+            +=======+============================================================+
+            |   1   | apply a constant offset to the data (1 parameter)          |    
+            +-------+------------------------------------------------------------+
+            |   3   | apply offset and linear function of x and y (3 parameters) |
+            +-------+------------------------------------------------------------+
+            |   4   | apply offset, linear function and cross term (4 parameters)|
+            +-------+------------------------------------------------------------+
+
         Watch out: If vertical is True, you should only estimate polynomials for the horizontals.
 
-            * computeNormFact : bool
-                if True, compute new OrbNormalizingFactor
-                if False, uses parameters in self.OrbNormalizingFactor 
+        :Kwargs:
+            * computeNormFact : bool. If False, uses parameters in self.OrbNormalizingFactor 
+
+        :Returns:
+            * 2d array
 
         '''
 
@@ -747,8 +808,12 @@ class opticorr(SourceInv):
     def computePoly(self, fault, computeNormFact=True):
         '''
         Computes the orbital bias estimated in fault
-        Args:
+
+        :Args:
             * fault : Fault object that has a polysol structure.
+
+        :Kwargs:
+            * computeNormFact: if True, recompute the normalization.
         '''
 
         # Get the polynomial type
@@ -774,8 +839,12 @@ class opticorr(SourceInv):
     def computeCustom(self, fault):
         '''
         Computes the displacements associated with the custom green's functions.
-        Args:
+
+        :Args:
             * fault : Fault object with custom green's functions
+
+        :Returns:
+            * None. Stores the prediction in self.custompred
         '''
 
         # Get the GFs and the parameters
@@ -791,10 +860,22 @@ class opticorr(SourceInv):
         self.north_custompred = custompred[nd:2*nd]
 
         # All done
+        return
 
     def removePoly(self, fault, verbose=False, custom=False,computeNormFact=True):
         '''
         Removes a polynomial from the parameters that are in a fault.
+
+        :Args:
+            * fault     : instance of fault that has a polysol structure
+
+        :Kwargs:
+            * verbose   : Talk to me
+            * custom    : Is there custom GFs?
+            * computeNormFact: If True, recomputes Normalization factor
+
+        :Returns:
+            * None. Directly corrects the data
         '''
 
         # Compute the polynomial
@@ -820,9 +901,20 @@ class opticorr(SourceInv):
 
     def removeRamp(self, order=3, maskPoly=None):
         '''
+        :Note: No Idea who started implementing this, but it is clearly not finished...
+
         Pre-remove a ramp from the data that fall outside of mask. If no mask is provided,
         we use all the points to fit a mask.
+
+        :Kwargs:
+            * order : Polynomial order
+            * maskPoly  : path to make a mask
+
+        :Returns:
+            * None
         '''
+
+        raise NotImplementedError('This method is not fully implemented')
 
         assert order == 1 or order == 3, 'unsupported order for ramp removal'
         
@@ -865,14 +957,19 @@ class opticorr(SourceInv):
         d = np.hstack((east,north))
         m_ramp = np.linalg.lstsq(Gramp, d)[0]
         
-
+        # Not Finished
+        return
 
     def removeSynth(self, faults, direction='sd', poly=None, vertical=False, custom=False,computeNormFact=True):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
-        Args:
+
+        :Args:
             * faults        : List of faults.
+
+        :Kwargs:
             * direction     : Direction of slip to use.
+            * vertical      : use verticals
             * include_poly  : if a polynomial function has been estimated, include it.
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
             * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
@@ -891,12 +988,19 @@ class opticorr(SourceInv):
     def buildsynth(self, faults, direction='sd', poly=None, vertical=False, custom=False,computeNormFact=True):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
-        Args:
+
+        :Args:
             * faults        : List of faults.
+
+        :Kwargs:
             * direction     : Direction of slip to use.
+            * vertical      : use verticals
             * include_poly  : if a polynomial function has been estimated, include it.
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
             * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
+
+        :Returns:
+            * None
         '''
 
         # Number of data points
@@ -995,7 +1099,8 @@ class opticorr(SourceInv):
     def reject_pixel(self, u):
         '''
         Reject pixels.
-        Args:
+
+        :Args:
             * u         : Index of the pixel to reject.
         '''
 
@@ -1034,11 +1139,13 @@ class opticorr(SourceInv):
     def reject_pixels_fault(self, dis, faults):
         ''' 
         Rejects the pixels that are dis km close to the fault.
-        Args:
-            * dis       : Threshold distance.
-                          If the distance is negative, rejects the pixels that are
-                          more than -1.0*distance away from the fault.
+
+        :Args:
+            * dis       : Threshold distance. If the distance is negative, rejects the pixels that are more than -1.0*distance away from the fault.
             * faults    : list of fault objects.
+
+        :Returns:
+            * None
         '''
 
         # Variables to trim are  self.corner,
@@ -1080,13 +1187,17 @@ class opticorr(SourceInv):
         '''
         Project the GPS velocities onto a profile. 
         Works on the lat/lon coordinates system.
-        Args:
+
+        :Args:
             * name              : Name of the profile.
             * loncenter         : Profile origin along longitude.
             * latcenter         : Profile origin along latitude.
             * length            : Length of profile.
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
+
+        :Returns:
+            * None. Stores profile in self.profiles
         '''
 
         # the profiles are in a dictionary
@@ -1163,6 +1274,16 @@ class opticorr(SourceInv):
     def writeProfile2File(self, name, filename, fault=None):
         '''
         Writes the profile named 'name' to the ascii file filename.
+
+        :Args:
+            * name      : name of the profile
+            * filename  : output file name
+
+        :Kwargs:
+            * fault     : instance of a fault class
+
+        :Returns:
+            * None
         '''
 
         # open a file
@@ -1214,9 +1335,16 @@ class opticorr(SourceInv):
     def plotprofile(self, name, legendscale=5., fault=None):
         '''
         Plot profile.
-        Args:
+
+        :Args:
             * name      : Name of the profile.
+
+        :Kwargs:
             * legendscale: Length of the legend arrow.
+            * fault     : instance of a fault class
+        
+        :Returns:   
+            * None
         '''
 
         # Check the profile
@@ -1283,9 +1411,13 @@ class opticorr(SourceInv):
     def intersectProfileFault(self, name, fault):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
-        Args:
+
+        :Args:
             * name      : name of the profile.
             * fault     : fault object from verticalfault.
+
+        :Returns:
+            * Float
         '''
 
         # Grab the fault trace
@@ -1314,7 +1446,7 @@ class opticorr(SourceInv):
 
         # Get the center
         lonc, latc = prof['Center']
-        xc, yc = self.lonlat2xy(lonc, latc)
+        xc, yc = self.ll2xy(lonc, latc)
 
         # Get the sign 
         xa,ya = prof['EndPoints'][0]
@@ -1336,24 +1468,28 @@ class opticorr(SourceInv):
         raise NotImplementedError('do it later')
         return        
 
-        # Get the number of points                                                                               
-        N = self.vel.shape[0]                                                                           
-        
-        # RMS of the data                                                                                        
-        dataRMS = np.sqrt( 1./N * sum(self.vel**2) )                                               
-        
-        # Synthetics
-        if self.synth is not None:                                                                               
-            synthRMS = np.sqrt( 1./N *sum( (self.vel - self.synth)**2 ) )                
-            return dataRMS, synthRMS                                                                             
-        else:
-            return dataRMS, 0.                                                                                   
-        
-        # All done                                                                                               
-                                                                                                                 
+#        # Get the number of points      
+#        N = self.vel.shape[0]           
+#        
+#        # RMS of the data               
+#        dataRMS = np.sqrt( 1./N * sum(self.vel**2) )                                               
+#        
+#        # Synthetics
+#        if self.synth is not None:                      
+#            synthRMS = np.sqrt( 1./N *sum( (self.vel - self.synth)**2 ) )                
+#            return dataRMS, synthRMS                                                    
+#        else:
+#            return dataRMS, 0.                          
+#
+#        # All done  
+#        return
+
     def getVariance(self):
         '''                                                                                                      
         Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
+
+        :Returns:
+            * 2 floats
         '''
 
         # Get the number of points  
@@ -1380,36 +1516,42 @@ class opticorr(SourceInv):
 
     def getMisfit(self):
         '''                                                                                                      
-        Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals                    
+        Computes the Sum of the data and if synthetics are computed, the RMS of the residuals                    
         '''
 
         raise NotImplementedError('do it later')
         return
+    
+#        # Misfit of the data            
+#        dataMisfit = sum((self.vel))
+#
+#        # Synthetics
+#        if self.synth is not None:
+#            synthMisfit =  sum( (self.vel - self.synth) )
+#            return dataMisfit, synthMisfit
+#        else:
+#            return dataMisfit, 0.
+#
+#        # All done  
+#        return
 
-        # Misfit of the data                                                                                        
-        dataMisfit = sum((self.vel))
-
-        # Synthetics
-        if self.synth is not None:
-            synthMisfit =  sum( (self.vel - self.synth) )
-            return dataMisfit, synthMisfit
-        else:
-            return dataMisfit, 0.
-
-        # All done  
-
-    def plot(self, faults=None, figure=None, gps=None, decim=False, axis='equal', norm=None, data='data', show=True, drawCoastlines=True, expand=0.2):
+    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2):
         '''
         Plot the data set, together with a fault, if asked.
 
-        Args:
-            * ref       : utm or lonlat.
+        :Kwargs:
             * faults    : list of fault object.
             * figure    : number of the figure.
             * gps       : superpose a GPS dataset.
-            * decim     : plot the insar following the decimation process of varres.
-            * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast',
-                          'resEast', 'resNorth', 'data', 'synth' or 'res'
+            * decim     : plot the data following the decimation process of varres.
+            * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast', 'resEast', 'resNorth', 'data', 'synth' or 'res'
+            * norm      : tuple of float for the min and max of the colorbar
+            * show      : Show me
+            * drawCoastlines : True or False
+            * expand    : How to expand the map around the data in degrees.
+
+        :Returns:
+            * None
         '''
 
         # Get lons lats
@@ -1465,11 +1607,22 @@ class opticorr(SourceInv):
 
     def write2binary(self, prefix, dtype=np.float):
         '''
-        Writes the records in a binary file. The files will be called
-        prefix_north.dat    : North displacement
-        prefix_east.dat     : East displacement
-        prefix_lon.dat      : Longitude
-        prefix_lat.dat      : Latitude
+        Writes the records in a binary file. 
+        
+        :Output filenames: 
+            * {prefix}_north.dat    : North displacement
+            * {prefix}_east.dat     : East displacement
+            * {prefix}_lon.dat      : Longitude
+            * {prefix}_lat.dat      : Latitude
+
+        :Args:
+            * prefix    : prefix of the output file
+            
+        :Kwargs:
+            * dtype     : data type in the binary file
+
+        :Returns:
+            * None
         '''
         
         if self.verbose:
@@ -1503,12 +1656,19 @@ class opticorr(SourceInv):
     def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', useGMT=False):
         '''
         Uses surface to write the output to a grd file.
-        Args:
+
+        :Args:
             * fname     : Filename
+
+        :Kwargs:
             * oversample: Oversampling factor.
             * data      : can be 'data', 'synth' or 'res'.
             * interp    : Number of points along lon and lat (can be a list).
             * cmd       : command used for the conversion( i.e., surface or xyz2gmt)
+            * useGMT    : use GMT or scipy
+
+        :Returns:
+            * None
         '''
 
         if self.verbose:
@@ -1589,15 +1749,23 @@ class opticorr(SourceInv):
         # All done
         return
 
-
     def ModelResolutionDownsampling(self, faults, threshold, damping, startingsize=10., minimumsize=0.5, tolerance=0.1, plot=False):
         '''
         Downsampling algorythm based on Lohman & Simons, 2005, G3. 
-        Args:
-            faults          : List of faults, these need to have a buildGFs routine (ex: for RectangularPatches, it will be Okada).
-            threshold       : Resolution threshold, if above threshold, keep dividing.
-            damping         : Damping parameter. Damping is enforced through the addition of a identity matrix.
-            startingsize    : Starting size of the downsampling boxes.
+
+        :Args:
+            * faults          : List of faults, these need to have a buildGFs routine (ex: for RectangularPatches, it will be Okada).
+            * threshold       : Resolution threshold, if above threshold, keep dividing.
+            * damping         : Damping parameter. Damping is enforced through the addition of a identity matrix.
+
+        :Kwargs:
+            * startingsize    : Starting size of the downsampling boxes.
+            * minimumsize     : Minimum size for the downsampling blocks
+            * tolerance       : tolerance in the block size in km
+            * plot            : show me
+
+        :Returns:
+            * None
         '''
         
         # If needed

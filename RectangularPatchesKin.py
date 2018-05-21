@@ -27,10 +27,10 @@ class RectangularPatchesKin(RectangularPatches):
     A class that can handle what is required for a kinematic inversion 
     with AlTar for a fault with rectangular patches.
 
-    Args:
+    :Args:
         * name      : Name of the fault.
 
-    Kwargs:
+    :Kwargs:
         * utmzone   : UTM zone  (optional, default=None)
         * lon0      : Longitude of the center of the UTM zone
         * lat0      : Latitude of the center of the UTM zone
@@ -91,13 +91,12 @@ class RectangularPatchesKin(RectangularPatches):
         
         East/West UTM/Lon coordinates, depth attributes are set
 
-        Args:
+        :Args:
             * x     : east  coordinates 
             * y     : north coordinates
-            * UTM   : default=True, x and y is in UTM coordinates (in km)
-                        if    ==False x=lon and y=lat (in deg)
+            * UTM   : Set true is x and y are in km, false if x and y are in degrees
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -136,11 +135,11 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Set hypocenter attributes from fault coordinates
 
-        Args:
+        :Args:
             * h_strike: Along strike distance from the center of the top left patch
             * h_dip:    Along dip distance from the center of the top left patch
 
-        Returns:
+        :Returns:
             * None
         '''
         
@@ -207,15 +206,21 @@ class RectangularPatchesKin(RectangularPatches):
     def read3DsquareGrid(self, filename):
         '''
         This routine read the square fault geometry
-        Format: lon lat E[km] N[km] Dep[km] strike dip Area ID
 
-        These files are to be used with edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
-        or edks/MPI_EDKS/calcGreenFunctions_EDKS_subSquares.py
+        :Format: 
+        
+        +---+---+-----+-----+-------+------+---+----+--+
+        |lon|lat|E[km]|N[km]|Dep[km]|strike|dip|Area|ID|
+        +===+===+=====+=====+=======+======+===+====+==+
+        |   |   |     |     |       |      |   |    |  |
+        +---+---+-----+-----+-------+------+---+----+--+
+        |   |   |     |     |       |      |   |    |  |
+        +---+---+-----+-----+-------+------+---+----+--+
 
-        Args:
+        :Args:
             * filename      : name of output file
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -316,13 +321,13 @@ class RectangularPatchesKin(RectangularPatches):
         ''' 
         Get patch center coordinates from hypocenter
 
-        Args:
+        :Args:
             * p      : Patch number.
 
-        Kwargs:
+        :Kwargs:
             * sd_dist: If true, will return along dip and along strike distances
 
-        Returns:
+        :Returns:
             * Hypocenter coordinates
         '''
 
@@ -366,15 +371,15 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Set along dip and along strike indexing for patches
 
-        Args:
+        :Args:
             * Nstrike       : number of patches along strike
             * Ndip          : number of patches along dip
 
-        Kwargs:
+        :Kwargs:
             * leading       : leadinf index of self.patch (can be 'strike' or 'dip')
             * check_depth   : CHeck patch depths and indexes are consistent
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -429,10 +434,10 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Re-initializes the fault slip array to zero values.
 
-        Kwargs:
+        :Kwargs:
             * n     : Number of slip values. If None, it'll take the number of patches.
 
-        Returns:
+        :Returns:
             * None
         '''
         self.initializeslip(n=n)
@@ -449,11 +454,11 @@ class RectangularPatchesKin(RectangularPatches):
         Define a subgrid of point sources on the fault (multiple point src per patches)
         All patches must have the same size
 
-        Args: 
+        :Args: 
             * p_nstrike:   Number of subgrid points per patch along strike 
             * p_ndip:      Number of subgrid points per patch along dip            
 
-        Returns:
+        :Returns:
             * None
         '''
         
@@ -514,16 +519,20 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Set shear modulus values for seismic moment calculation
         from model_file:
-        Thickness  Vp  Vs  Rho (...) if format == 'CPS'
-        fort.2 (Kikuchi-Kanamori) if format == 'KK'
 
-        Args:
+        +------------------+--------------------------+
+        | if format = 'CPS'|Thickness, Vp, Vs, Rho    |
+        +==================+==========================+
+        | if format = 'KK' |file from Kikuchi Kanamori|
+        +------------------+--------------------------+
+
+        :Args:
             * model_file        : Input file
 
-        Kwargs:
+        :Kwargs:
             * modelformat       : Format of the model file
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -584,10 +593,9 @@ class RectangularPatchesKin(RectangularPatches):
     def setMuLambdaRho(self,model_file):
         '''
         Set shear modulus values for seismic moment calculation
-        from model_file:
-        Thickness  Vp  Vs  Rho (...)
+        from model_file: Thickness  Vp  Vs  Rho (...)
 
-        Args:
+        :Args:
             * model_file    : Input file name
 
         Retunrs:
@@ -641,19 +649,18 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Build Kikuchi-Kanamori Green's functions
 
-        Args:
+        :Args:
             * data: teleseismic data object
 
-        Kwargs:
+        :Kwargs:
             * rake: Rake angles (default [0.,90.])          
             * Mu: Shear modulus (optional)
             * slip: Slip amplitude for tsunami GF calculation (default: 1. m)
             * coord0: lon,lat,dep of reference point to shift GFs (optional)
             * causal: if True impose causality of the source (no slip before time=0.)
-            * filter: if True, filter the Green's functions 
-                      (according to i_master parameters in the KK run directory)
-                      if False, do not filter the Green's functions
-        Returns:
+            * filter: if True, filter the Green's functions (according to i_master parameters in the KK run directory)
+
+        :Returns:
             * None
         '''
 
@@ -745,24 +752,21 @@ class RectangularPatchesKin(RectangularPatches):
                                 differentiate=False):
         '''
         Build Kinematic Green's functions based on the discretized fault and 
-        a pre-calculated GF database. 
-        Green's functions will be calculated for a given shear modulus and a 
+        a pre-calculated GF database. Green's functions will be calculated for a given shear modulus and a 
         given slip (cf., slip) along a given rake angle (cf., rake)
 
-        Args:
+        :Args:
             * data          : Seismic data object
             * wave_engine   : waveform generator
             * slip          : slip amplitude (in m)
 
-        Kwargs:
-            * rakes         : rake angle (in deg). Can be a scalar or an array 
-                              of len(self.patch)
+        :Kwargs:
+            * rakes         : rake angle (in deg). Can be a scalar or an array of len(self.patch)
             * rake_key      : By default, GFs are stored in a dictionnarry 
             * Mu            : Shear modulus (optional)
-            * filter_coef   : Array or dictionnary of second-order filter 
-                              coefficients (optional), see scipy.signal.sosfilt
+            * filter_coef   : Array or dictionnary of second-order filter coefficients (optional), see scipy.signal.sosfilt
 
-        Returns:
+        :Returns:
             * None
         '''        
         
@@ -887,10 +891,10 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Assemble Cd from multiple kinematic datasets
 
-        Args:
+        :Args:
             * seismic_data      : Data to take care of
 
-        Returns:
+        :Returns:
             * None
         '''
         assert self.bigD is not None, 'bigD must be assigned'
@@ -914,11 +918,11 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Save bigCd matrix
 
-        Kwargs:
+        :Kwargs:
             * bigCdfile     : Output filename
             * dtype         : binary type for output
 
-        Returns:    
+        :Returns:    
             * None
         '''
 
@@ -940,10 +944,10 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Assign data_idx map for kinematic data
 
-        Args:
+        :Args:
             * seismic_data      : Data to take care of
 
-        Returns:
+        :Returns:
             * None
         '''
         if type(seismic_data) != list:
@@ -971,7 +975,7 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Build BigG and bigD matrices from Green's functions and data dictionaries
 
-        Args:
+        :Args:
             * eik_solver: Eikonal solver (e.g., FastSweep or None)
             * data:       Seismic data object or list of objects
             * rakes:      List of rake angles
@@ -979,13 +983,11 @@ class RectangularPatchesKin(RectangularPatches):
             * Nt:         Number of rupture time-steps
             * Dt:         Rupture time-steps
 
-        Kwargs:
-            * rakes_key:  If GFs are stored under different keywords 
-                          than rake value, provide them here
-            * fastsweep:  If True and vmax is set, solves min arrival time 
-                          using fastsweep algo. If false, uses analytical solution.
+        :Kwargs:
+            * rakes_key:  If GFs are stored under different keywords than rake value, provide them here
+            * fastsweep:  If True and vmax is set, solves min arrival time using fastsweep algo. If false, uses analytical solution.
 
-        Returns:
+        :Returns:
             * tmin:       Array of ???
         '''
 
@@ -1081,12 +1083,12 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Save bigG and bigD to binary file
 
-        Kwargs:
+        :Kwargs:
             * bigDfile  : bigD filename (optional)
             * bigGfile  : bigG gilename (optional)
             * dtype     : Data binary type 
 
-        Returns:
+        :Returns:
             * None
         '''
         
@@ -1109,7 +1111,7 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Load bigG and bigD to binary file
 
-        Kwargs:
+        :Kwargs:
             * bigDfile  : bigD filename (optional)
             * bigGfile  : bigG gilename (optional)
             * dtype     : data binary type
@@ -1140,15 +1142,15 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Save kinematic Green's functions in outputDir
 
-        Args:
+        :Args:
             * data        : seismic data object
 
-        Kwargs:
+        :Kwargs:
             * outputDir   : output directory where GFs will be stored
             * prefix      : Prefix for GFs files
             * rmdir       : CLeanup?
 
-        Returns:
+        :Returns:
             * None
         '''
            
@@ -1181,15 +1183,15 @@ class RectangularPatchesKin(RectangularPatches):
         '''
         Load kinematic Green's functions in i_path
 
-        Args:
+        :Args:
             * data        : seismic data object
             * rakes       : list of rake angle
 
-        Kwargs:
+        :Kwargs:
             * inputDir    : input directory where GFs are stored
             * prefix      : GFs files prefix
 
-        Returns:
+        :Returns:
             * None
         '''
 
@@ -1241,16 +1243,16 @@ class RectangularPatchesKin(RectangularPatches):
         (model should be specified in slip, tr and vr attributes, hypocenter 
         must be specified)
 
-        Args:
+        :Args:
             * n_ramp_param  : number of nuisance parameters (e.g., InSAR orbits)
             * eik_solver    : eikonal solver
 
-        Kwargs:
+        :Kwargs:
             * npt**2        : numper of point sources per patch 
             * Dtriangles    : ??
             * grid_space    : ??
 
-        Returns:
+        :Returns:
             * bigM matrix
         '''
 

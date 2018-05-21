@@ -22,13 +22,21 @@ from .gpstimeseries import gpstimeseries
 
 class insartimeseries(insar):
 
+    '''
+    A class that handles a time series of insar data
+
+    :Args:
+       * name      : Name of the dataset.
+
+    :Kwargs:
+       * utmzone   : UTM zone  (optional, default=None)
+       * lon0      : Longitude of the center of the UTM zone
+       * lat0      : Latitude of the center of the UTM zone
+       * ellps     : ellipsoid (optional, default='WGS84')
+       * verbose   : Speak to me (default=True)
+
+    '''
     def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True, lon0=None, lat0=None):
-        '''
-        Args:
-            * name          : Name of the InSAR dataset.
-            * utmzone   : UTM zone. (optional, default is 10 (Western US))
-            * ellps     : ellipsoid (optional, default='WGS84')
-        '''
 
         # Base class init
         super(insartimeseries,self).__init__(name,
@@ -64,12 +72,17 @@ class insartimeseries(insar):
         '''
         Sets the lon and lat array and initialize things.
 
-        Args:
+        :Args:
             * lon           : Can be an array or a string.
             * lat           : Can be an array or a string.
+
+        :Kwargs:
             * incidence     : Can be an array or a string.
             * heading       : Can be an array or a string.
             * elevation     : Can be an array or a string.
+
+        :Returns:
+            * None
         '''
 
         # Get some size
@@ -91,17 +104,21 @@ class insartimeseries(insar):
         return
 
     def initializeTimeSeries(self, time=None, start=None, end=None, increment=None,
-                                   steps=None, dtype='f'):
+                                   steps=None, dtype='d'):
         '''
-        Initializes the time series object using a series of dates.
-        Can give different inputs:
-        Mode 1
+        Initializes the time series object using a series of dates. Two modes of input are possible
+
+        :Mode 1:
             * time          : List of dates (datetime object)
-        Mode 2
+
+        :Mode 2:
             * start         : Starting date (datetime object)
             * end           : Ending date
             * increment     : Increment of time in days
             * steps         : How many steps
+
+        :Returns:
+            * None
         '''
 
         # Set up a list of Dates
@@ -134,20 +151,25 @@ class insartimeseries(insar):
         '''
         Builds the full Covariance matrix from values of sigma and lambda.
 
-        If function='exp':
+        :If function='exp':
 
-            Cov(i,j) = sigma*sigma * exp(-d[i,j] / lam)
 
-        elif function='gauss':
+        .. math::
+            C_d(i,j) = \\sigma^2 e^{-\\frac{||i,j||_2}{\\lambda}}
 
-            Cov(i,j) = sigma*sigma * exp(-(d[i,j]*d[i,j])/(2*lam))
+        :elif function='gauss':
 
-        Args:
+        .. math::
+            C_d(i,j) = \\sigma^2 e^{-\\frac{||i,j||_2^2}{2\\lambda}}
+
+        :Args:
             * sigma             : Sigma term of the covariance
             * lam               : Caracteristic length of the covariance
+
+        :Kwargs:
             * function          : Can be 'gauss' or 'exp'
-            * diagonalVar       : Substitute the diagonal by the standard deviation
-                                  of the measurement squared
+            * diagonalVar       : Substitute the diagonal by the standard deviation of the measurement squared
+            * normalizebystd    : Normalize Cd by the stddeviation (weird idea... why would you do that?)
         '''
 
         # Iterate over the time serie
@@ -162,8 +184,14 @@ class insartimeseries(insar):
         '''
         Given a datetime instance, returns the corresponding insar instance.
 
-        Args:
+        :Args:
             * date          : datetime instance.
+
+        :Kwargs:
+            * verbose       : talk to me
+
+        :Returns:
+            * insar : instance of insar class
         '''
 
         # Find the right index
@@ -183,11 +211,14 @@ class insartimeseries(insar):
         '''
         Select the pixels in a box defined by min and max, lat and lon.
 
-        Args:
+        :Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
+
+        :Returns:
+            * None. Directly kicks out pixels that are outside the box
         '''
 
         # Store the corners
@@ -213,8 +244,12 @@ class insartimeseries(insar):
     def setTimeSeries(self, timeseries):
         '''
         Sets the values in the time series.
-        Args:
+
+        :Args:
             * timeseries    : List of arrays of the right size.
+
+        :Returns:
+            * None
         '''
 
         # Assert
@@ -235,10 +270,12 @@ class insartimeseries(insar):
     def referenceTimeSeries2Date(self, date):
         '''
         References the time series to the date given as argument.
-        Args:
-            * date              : Can a be tuple/list of 3 integers (year, month, day)
-                                  or a tuple/list of 6 integers (year, month, day, hour, min, sec) 
-                                  or a datetime object.
+
+        :Args:
+            * date              : Can a be tuple/list of 3 integers (year, month, day) or a tuple/list of 6 integers (year, month, day, hour, min, sec) or a datetime object.
+
+        :Returns:
+            * None. Directly modifies time series
         '''
 
         # Make date
@@ -274,11 +311,14 @@ class insartimeseries(insar):
         '''
         Writes the time series in a h5file
 
-        Args:
+        :Args:
             * h5file        : Output h5file
 
-        Kwargs:
+        :Kwargs:
             * field         : name of the field in the h5 file
+
+        :Returns:
+            * None
         '''
 
         # Open the file
@@ -306,9 +346,12 @@ class insartimeseries(insar):
                             incidence=None, heading=None, inctype='onefloat', 
                             field='recons', keepnan=False, mask=None, readModel=False):
         '''
-        Read the output from a tipycal GIAnT h5 output file.
-        Args:
+        Read the output from a typical GIAnT h5 output file.
+
+        :Args:
             * h5file        : Input h5file
+
+        :Kwargs:
             * setmaster2zero: If index is provided, master will be replaced by zeros (no substraction)
             * zfile         : File with elevation 
             * lonfile       : File with longitudes 
@@ -316,14 +359,13 @@ class insartimeseries(insar):
             * filetype      : type of data in lon, lat and elevation file (default: 'f')
             * incidence     : Incidence angle (degree)
             * heading       : Heading angle (degree)
-            * inctype       : Type of the incidence and heading values (see insar.py for details)
-                              Can be 'onefloat', 'grd', 'binary', 'binaryfloat'
+            * inctype       : Type of the incidence and heading values (see insar.py for details). Can be 'onefloat', 'grd', 'binary', 'binaryfloat'
             * field         : Name of the field in the h5 file.
-            * mask          : Adds a common mask to the data.
-                                mask is an array the same size as the data with nans and 1
-                                It can also be a tuple with a key word in 
-                                the h5file, a value and 'above' or 'under'
+            * mask          : Adds a common mask to the data. mask is an array the same size as the data with nans and 1. It can also be a tuple with a key word in the h5file, a value and 'above' or 'under'
             * readModel     : Reads the model parameters
+
+        :Returns:
+            * None
         '''
 
         # open the h5file
@@ -453,6 +495,12 @@ class insartimeseries(insar):
     def readModelFromGIAnT(self):
         '''
         Read the model parameters from GIAnT after one has read the time series
+
+        :Note: One needs to run the readFromGIAnT method.
+
+        :Returns:
+            * None
+
         '''
 
         # This step needs tsinsar
@@ -488,8 +536,12 @@ class insartimeseries(insar):
     def removeDate(self, date):
         '''
         Remove one date from the time series.
-        Args:
+
+        :Args:
             * date      : tuple of (year, month, day) or (year, month, day ,hour, min,s)
+
+        :Returns:
+            * None
         '''
 
         # Make date
@@ -522,8 +574,12 @@ class insartimeseries(insar):
     def removeDates(self, dates):
         '''
         Remove a list of dates from the time series.
-        Args:
-            * dates     : List of dates to be removed.
+
+        :Args:
+            * dates     : List of dates to be removed. Each date can be a tuple (year, month, day) or (year, month, day, hour, min, sd).
+
+        :Returns:
+            * None
         '''
         
         # Iterate
@@ -536,8 +592,12 @@ class insartimeseries(insar):
     def dates2time(self, start=0):
         '''
         Computes a time vector in years, starting from the date #start.
-        Args:
+
+        :Kwargs:
             * start     : Index of the starting date.
+
+        :Returns:
+            * time, an array of floats
         '''
 
         # Create a list
@@ -562,12 +622,17 @@ class insartimeseries(insar):
         gps stations included in gps. In addition, it projects the gps displacements 
         along the LOS
 
-        Args:
+        :Args:
             * gps           : gps object
             * distance      : distance to consider around the stations
+
+        :Kwargs:
             * doprojection  : Projects the gps enu disp into the los as well
-            * reference     : if True, removes to the InSAR the average gps displacemnt in 
-                              the LOS for the points overlapping in time.
+            * reference     : if True, removes to the InSAR the average gps displacemnt in the LOS for the points overlapping in time.
+            * verbose       : Talk to me
+
+        :Returns:
+            * None
         '''
 
         # Print
@@ -644,22 +709,22 @@ class insartimeseries(insar):
         between InSAR and GPS at each insar epoch.
 
         We solve for the a, b, c terms in the equation:
-            d_sar = d_gps + a + b*range + c*azimuth + d*azimuth*range 
 
-        Args:
+        .. math:
+            d_{\\text{sar}} = d_{\\text{gps}} + a + b \\text{range} + c \\text{azimuth} + d\\text{azimuth}\\text{range} 
+
+        :Args:
             * gpstimeseries     : A gpstimeseries instance.
 
-        kwArgs:
+        :Kwargs:
             * daysaround        : How many days around the date do we consider
-            * distance          : Diameter of the circle surrounding a gps station
-                                  to gather InSAR points
+            * distance          : Diameter of the circle surrounding a gps station to gather InSAR points
             * verbose           : Talk to me
             * parameters        : 1, 3 or 4
             * propagate         : 'mean' if no gps data available
 
-        Returns:
-            * sar@gps           : a gpstimeseries instance with the InSAR values
-                                  around the GPS stations
+        :Returns:
+            * sargps            : a gpstimeseries instance with the InSAR values around the GPS stations
         '''
 
         # Save the references
@@ -757,8 +822,21 @@ class insartimeseries(insar):
 
     def getProfiles(self, prefix, loncenter, latcenter, length, azimuth, width, verbose=False):
         '''
-        Get a profile for each time step
-        for Arguments, check in insar getprofile
+        Get a profile for each time step for Arguments, check in insar getprofile
+
+        :Args:
+            * prefix    : Prefix to build the name of the profiles (each profile will be named 'prefix date')
+            * loncenter : Longitude of the center of the profile
+            * latcenter : Latitude of the center of the profile
+            * length    : length of the profile
+            * azimuth   : Azimuth of the profile
+            * width     : Width of the profile
+
+        :Kwargs:
+            * verbose   : talk to me
+
+        :Returns:
+            * None. Profiles are stored in the attribute {profiles}
         '''
 
         if verbose:
@@ -800,7 +878,18 @@ class insartimeseries(insar):
 
     def smoothProfiles(self, prefix, window, verbose=False, method='mean'):
         '''
-        Runs the average window mean on profiles.
+        Runs an simple mean or median filter on all profiles
+
+        :Args:
+            * prefix    : prefix of the profiles
+            * window    : width of the window (km)
+        
+        :Kwargs:
+            * method    : 'mean' or 'median'
+            * verbose   : talk to me
+
+        :Returns:
+            * None. Creates new profiles in the attribute {profiles} with names starting by "Smoothed"
         '''
 
         # Verbose
@@ -839,11 +928,13 @@ class insartimeseries(insar):
     def referenceProfiles2Date(self, prefix, date):
         '''
         Removes the profile at date 'date' to all the profiles in the time series.
-        Args:
+
+        :Args:
             * prefix        : Name of the profiles
-            * date          : Tuple of 3 or 6 numbers for the date
-                 date = (year(int), month(int), day(int))
-              or date = (year(int), month(int), day(int), hour(int), min(int), s(float))
+            * date          : Tuple of 3, (year(int), month(int), day(int)), or 6, (year(int), month(int), day(int), hour(int), min(int), s(float)), numbers for the date
+
+        :Returns:
+            * None. Creates a new set of profiles with names starting by "Referenced"
         '''
 
         # Make date
@@ -901,6 +992,17 @@ class insartimeseries(insar):
     def referenceProfiles(self, prefix, xmin, xmax, verbose=False):
         '''
         Removes the mean value of points between xmin and xmax for all the profiles.
+
+        :Args:
+            * prefix    : Prefix of the profiles
+            * xmin      : Minimum x-value
+            * xmax      : Maximum x-value
+
+        :Kwargs:
+            * verbose   : talk to me
+
+        :Returns:
+            * None. Directly modifies the profiles in attribute {profiles}
         '''
 
         # verbose
@@ -931,6 +1033,7 @@ class insartimeseries(insar):
     def cleanProfiles(self, prefix, xlim=None, zlim=None, verbose=False):
         '''
         Wrapper around cleanProfile of insar.
+        see cleanProfile method of insar class
         '''
 
         if verbose:
@@ -960,6 +1063,18 @@ class insartimeseries(insar):
     def writeProfiles2Files(self, profileprefix, outprefix, fault=None, verbose=False, smoothed=False):
         '''
         Write all the profiles to a file.
+
+        :Args:
+            * profileprefix : prefix of the profiles to write
+            * outprefix     : prefix of the output files
+
+        :Kwargs:
+            * fault         : add intersection with a fault
+            * verbose       : talk to me
+            * smoothed      : Do we write the smoothed profiles?
+
+        :Returns:
+            * None
         '''
 
         if verbose:
@@ -996,6 +1111,17 @@ class insartimeseries(insar):
     def writeProfiles2OneFile(self, profileprefix, filename, verbose=False, smoothed=False):
         '''
         Write the profiles to one file
+
+        :Args:
+            * profileprefix     : prefix of the profiles to write
+            * filename          : output filename
+
+        :Kwargs:
+            * verbose           : talk to me
+            * smoothed          : do we write the smoothed profiles?
+
+        :Returns:
+            * None
         '''
 
         # verbose
@@ -1079,6 +1205,21 @@ class insartimeseries(insar):
     def plotProfiles(self, prefix, figure=124, show=True, norm=None, xlim=None, zlim=None, marker='.', color='k'):
         '''
         Plots the profiles in 3D plot.
+
+        :Args:
+            * prefix        : prefix of the profile to plot
+
+        :Kwargs:
+            * figure        : figure number
+            * show          : True/False
+            * norm          : tuple of upper and lower limit along the z-axis
+            * xlim          : tuple of upper and lower limit along the x-axis (removes the points before plotting)
+            * zlim          : tuple of upper and lower limit along the z-axis (removes the points before plotting)
+            * marker        : matplotlib marker style
+            * color         : matplotlib color style
+
+        :Returns:
+            * None
         '''
 
         # Create the figure

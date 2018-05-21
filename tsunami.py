@@ -20,14 +20,22 @@ from .SourceInv import SourceInv
 
 class tsunami(SourceInv):
 
+    '''
+    A class that handles tsunami data.
+
+    :Args:
+       * name      : Name of the dataset.
+
+    :Kwargs:
+       * dtype     : data type 
+       * utmzone   : UTM zone  (optional, default=None)
+       * lon0      : Longitude of the center of the UTM zone
+       * lat0      : Latitude of the center of the UTM zone
+       * ellps     : ellipsoid (optional, default='WGS84')
+
+    '''
+
     def __init__(self,name,dtype='tsunami',utmzone=None,ellps='WGS84',lon0=None, lat0=None):
-        '''
-        Args:
-            * name      : Name of the dataset.
-            * dtype     : data type (optional, default='seismic')
-            * utmzone   : UTM zone  (optional, default=None)
-            * ellps     : ellipsoid (optional, default='WGS84')
-        '''
 
         super(self.__class__,self).__init__(name,utmzone,ellps=ellps,lon0=lon0,lat0=lat0)
 
@@ -48,7 +56,17 @@ class tsunami(SourceInv):
 
     def readFromTxtFile(self,filename,factor=1.0,fileinfo=None):
         '''
-        Read d, Cd from files filename.d filename.Cd
+        Read d, Cd from files filename.data filename.Cd
+
+        :Args:  
+            * filename  : prefix of the filenames filename.d and filename.Cd
+
+        :Kwargs:
+            * factor    : scaling factor
+            * fileinfo  : Information about the data (lon, lat and origintime)
+
+        :Returns:
+            * None
         '''
 
         self.Cd = np.loadtxt(filename+'.Cd')*factor*factor
@@ -72,8 +90,17 @@ class tsunami(SourceInv):
     def getGF(self,filename,fault,factor=1.0):
         '''
         Read GF from file filename.gf
-        returns GF_SS and GF_DS
+
+        :Args:
+            * filename  : prefix of the file filename.gf
+
+        :Kwargs:
+            * factor:   scaling factor
+        
+        :Returns:
+            * 2d arrays: returns GF_SS and GF_DS
         '''
+
         GF = np.loadtxt(filename+'.gf')*factor
         n  = GF.shape[1]/2
         assert n == len(fault.slip), 'Incompatible tsunami GF size'
@@ -87,12 +114,16 @@ class tsunami(SourceInv):
         '''
         From a dictionary of Green's functions, sets these correctly into the fault 
         object fault for future computation.
-        Args:
+
+        :Args:
             * fault     : Instance of Fault
-            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
-                          These can be a matrix or None.
-            * vertical  : Set here for consistency with other data objects, but will 
-                          always be set to False, whatever you do.
+            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'. These can be a matrix or None.
+
+        :Kwargs:
+            * vertical  : Set here for consistency with other data objects, but will always be set to False, whatever you do.
+
+        :Returns:
+            * None
         '''
 
         # Get the values
@@ -124,10 +155,16 @@ class tsunami(SourceInv):
     def buildsynth(self, faults, direction='sd', poly=None):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
-        Args:
+
+        :Args:
             * faults        : list of faults to include.
+
+        :Kwargs:
             * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
             * poly          : if True, add an offseta in the data
+
+        :Returns:   
+            * None. Synthetics are stored in the synth attribute
         '''
 
         Nd = len(self.d)
@@ -160,11 +197,13 @@ class tsunami(SourceInv):
         # All done
         return
 
-
     def plot(self, nobs_per_trace, plot_synth=False,alpha=1.,figsize=(13,10),left=0.07,bottom=0.1,
              right=0.99,top=0.9,wspace=0.31,hspace=0.47,scale=100.,ylim=None,yticks=None):
         '''
         Plot tsunami traces
+
+        :Note: We need a description of the options here...
+
         '''
         fig = plt.figure(figsize=figsize)
         fig.subplots_adjust(bottom=bottom,top=top,left=left,right=right,wspace=wspace,hspace=hspace)
@@ -213,7 +252,16 @@ class tsunami(SourceInv):
 
     def write2file(self, namefile, data='synth'):
         '''
-        Plot tsunami traces
+        Write to a text file
+
+        :Args:
+            * namefile  : Name of the output file
+
+        :Kwargs:
+            * data      : can be data or synth
+
+        :Returns:       
+            * None
         '''
         if data == 'synth':
             np.savetxt(namefile, self.synth.T)
@@ -227,10 +275,12 @@ class tsunami(SourceInv):
     def getRampEstimator(self,order):
         '''
         Returns the Estimator of a constant offset in the data
-        args:
-            * order : 1 -> estimate just a vertical shift in the data
-                      2 -> estimate a ramp in the data
-                      order given as argiment is in reality order*number_of_station
+
+        :Args:
+            * order : 1, estimate just a vertical shift in the data and ,2, estimate a ramp in the data. Order given as argument is in reality order*number_of_station
+
+        :Returns:
+            * a 2d array
         '''
 
         nsta = len(self.sta)
@@ -257,3 +307,5 @@ class tsunami(SourceInv):
             
 
         return shift
+
+#EOF
