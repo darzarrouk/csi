@@ -32,7 +32,6 @@ class gps(SourceInv):
         * lat0      : Latitude of the center of the UTM zone
         * ellps     : ellipsoid (optional, default='WGS84')
         * verbose   : Speak to me (default=True)
-
     '''
 
     # ----------------------------------------------------------------------

@@ -1045,7 +1045,7 @@ class geodeticplot(object):
 
     def insar(self, insar, norm=None, colorbar=True, data='data',
                        plotType='decimate', gmtCmap=None, 
-                       decim=1, zorder=3, edgewidth=1):
+                       decim=1, zorder=3, edgewidth=1, markersize=30):
         '''
         Args:
             * insar     : insar object from insar.
@@ -1054,11 +1054,18 @@ class geodeticplot(object):
             * data      : plot either 'data' or 'synth' or 'res'.
             * plotType  : Can be 'decimate' or 'scatter'
             * decim     : In case plotType='scatter', decimates the data by a factor decim.
+            * markersize: size of the dots
         '''
 
         # Assert
         assert data in ('data', 'synth', 'res', 'poly'), 'Data type to plot unknown'
         
+        # Take a fraction
+        if type(decim) is int:
+            ndata = np.random.randint(len(insar.vel), size=decim)
+        else:
+            ndata = np.random.randint(len(insar.vel), size=int(np.floor(decim*len(insar.vel))))
+
         # Choose data type
         if data == 'data':
             assert insar.vel is not None, 'No data to plot'
@@ -1124,11 +1131,11 @@ class geodeticplot(object):
                 self.carte.ax.add_collection(rect)
 
         elif plotType is 'scatter':
-            lon = insar.lon
+            lon = insar.lon[ndata]
             lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-            lat = insar.lat
-            sc = self.carte.scatter(lon[::decim], lat[::decim], s=30, 
-                                    c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, 
+            lat = insar.lat[ndata]
+            sc = self.carte.scatter(lon, lat, s=markersize, 
+                                    c=d[ndata], cmap=cmap, vmin=vmin, vmax=vmax, 
                                     linewidth=0.0, zorder=zorder)
 
         else:
@@ -1137,7 +1144,7 @@ class geodeticplot(object):
 
         # plot colorbar
         if colorbar:
-            scalarMap.set_array(d)
+            scalarMap.set_array(d[ndata])
             plt.colorbar(scalarMap,shrink=0.3, orientation='horizontal')
 
         # All done

@@ -106,11 +106,11 @@
 <li class="toctree-l3"><a class="reference internal" href="seismic.html">seismic class</a></li>
 <li class="toctree-l3"><a class="reference internal" href="tsunami.html">tsunami class</a></li>
 <li class="toctree-l3"><a class="reference internal" href="timeseries.html">timeseries class</a></li>
-<li class="toctree-l3"><a class="reference internal" href="creepmeters.html">creepmeters class</a></li>
 <li class="toctree-l3"><a class="reference internal" href="seismiclocations.html">seismiclocations class</a></li>
 <li class="toctree-l3"><a class="reference internal" href="insartimeseries.html">insartimeseries class</a></li>
 <li class="toctree-l3"><a class="reference internal" href="gpstimeseries.html">gpstimeseries class</a></li>
 <li class="toctree-l3"><a class="reference internal" href="multigps.html">multigps class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="creepmeters.html">creepmeters class</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../miscclasses.html">Misc. Classes</a></li>
@@ -948,7 +948,7 @@ Works on the lat/lon coordinates system.</p>
 
 <dl class="method">
 <dt id="csi.insar.plot">
-<code class="descname">plot</code><span class="sig-paren">(</span><em>faults=None</em>, <em>figure=None</em>, <em>gps=None</em>, <em>decim=False</em>, <em>norm=None</em>, <em>data='data'</em>, <em>show=True</em>, <em>drawCoastlines=True</em>, <em>expand=0.2</em>, <em>edgewidth=1</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insar.plot" title="Permalink to this definition">¶</a></dt>
+<code class="descname">plot</code><span class="sig-paren">(</span><em>faults=None</em>, <em>figure=None</em>, <em>gps=None</em>, <em>decim=False</em>, <em>norm=None</em>, <em>data='data'</em>, <em>show=True</em>, <em>drawCoastlines=True</em>, <em>expand=0.2</em>, <em>edgewidth=1</em>, <em>fraction=1.0</em>, <em>markersize=30</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insar.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the data set, together with a fault, if asked.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -966,6 +966,8 @@ Works on the lat/lon coordinates system.</p>
 <li>drawCoastlines: True/False</li>
 <li>expand    : How many degrees to expand the map relative to the data</li>
 <li>edgewidth : width of the edges of the squares when plotting the decimation pattern</li>
+<li>fraction  : Plot a fraction of the pixels (from 0. to 1.) or an integer number of pixels</li>
+<li>markersize: Size of the dots</li>
 </ul>
 </td>
 </tr>
@@ -980,7 +982,7 @@ Works on the lat/lon coordinates system.</p>
 
 <dl class="method">
 <dt id="csi.insar.plotprofile">
-<code class="descname">plotprofile</code><span class="sig-paren">(</span><em>name</em>, <em>legendscale=10.0</em>, <em>fault=None</em>, <em>norm=None</em>, <em>ref='utm'</em>, <em>synth=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insar.plotprofile" title="Permalink to this definition">¶</a></dt>
+<code class="descname">plotprofile</code><span class="sig-paren">(</span><em>name</em>, <em>legendscale=10.0</em>, <em>fault=None</em>, <em>norm=None</em>, <em>ref='utm'</em>, <em>synth=False</em>, <em>fraction=1.0</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insar.plotprofile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot profile.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -997,6 +999,7 @@ Works on the lat/lon coordinates system.</p>
 <li>norm      : Colorscale limits</li>
 <li>ref       : utm or lonlat</li>
 <li>synth     : Plot synthetics (True/False).</li>
+<li>fraction  : fraction of pixels to plot when plotting the data</li>
 </ul>
 </td>
 </tr>
@@ -1174,7 +1177,7 @@ Works on the lat/lon coordinates system.</p>
 
 <dl class="method">
 <dt id="csi.insar.read_from_mat">
-<code class="descname">read_from_mat</code><span class="sig-paren">(</span><em>filename</em>, <em>factor=1.0</em>, <em>step=0.0</em>, <em>incidence=35.88</em>, <em>heading=-13.115</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insar.read_from_mat" title="Permalink to this definition">¶</a></dt>
+<code class="descname">read_from_mat</code><span class="sig-paren">(</span><em>filename</em>, <em>factor=1.0</em>, <em>step=0.0</em>, <em>incidence=35.88</em>, <em>heading=-13.115</em>, <em>lonname='posx'</em>, <em>latname='posy'</em>, <em>dispname='velo'</em>, <em>errname='verr'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.insar.read_from_mat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reads velocity map from a mat file (Matlab). The format is the same as what is in Jolivet et al 2015, GRL (see supp mat).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1190,6 +1193,10 @@ Works on the lat/lon coordinates system.</p>
 <li>step      : add a step.</li>
 <li>incidence : incidence angle (degrees)</li>
 <li>heading   : satellite heading (degrees)</li>
+<li>lonname   : Name of the longitude field</li>
+<li>latname   : Name of the latitude field</li>
+<li>dispname  : name of the displacement field</li>
+<li>errname   : name of the uncertainties field</li>
 </ul>
 </td>
 </tr>

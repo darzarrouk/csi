@@ -516,7 +516,7 @@ class insar(SourceInv):
         # All done
         return
 
-    def read_from_mat(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.115):
+    def read_from_mat(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.115, lonname='posx', latname='posy', dispname='velo', errname='verr'):
         '''
         Reads velocity map from a mat file (Matlab). The format is the same as what is in Jolivet et al 2015, GRL (see supp mat).
 
@@ -528,6 +528,10 @@ class insar(SourceInv):
             * step      : add a step.
             * incidence : incidence angle (degrees)
             * heading   : satellite heading (degrees)
+            * lonname   : Name of the longitude field
+            * latname   : Name of the latitude field
+            * dispname  : name of the displacement field
+            * errname   : name of the uncertainties field
 
         :Note: 
             Last time this was tested was with a 2013 version of Matlab.
@@ -545,14 +549,17 @@ class insar(SourceInv):
         A = scio.loadmat(filename)
 
         # Get the phase values
-        self.vel = (A['velo'].flatten()+ step)*factor
-        self.err = A['verr'].flatten()
-        self.err[np.where(np.isnan(self.vel))] = np.nan
-        self.vel[np.where(np.isnan(self.err))] = np.nan
+        self.vel = (A[dispname].flatten()+ step)*factor
+        if errname is not None:
+            self.err = A[errname].flatten()
+            self.err[np.where(np.isnan(self.vel))] = np.nan
+            self.vel[np.where(np.isnan(self.err))] = np.nan
+        else:
+            self.err = np.zeros(self.vel.shape)
 
         # Deal with lon/lat
-        Lon = A['posx'].flatten()
-        Lat = A['posy'].flatten()
+        Lon = A[lonname].flatten()
+        Lat = A[latname].flatten()
         Lon,Lat = np.meshgrid(Lon,Lat)
         w,l = Lon.shape
         self.lon = Lon.reshape((w*l,)).flatten()
@@ -2361,7 +2368,7 @@ class insar(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False):
+    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False, fraction=1.):
         '''
         Plot profile.
 
@@ -2374,6 +2381,7 @@ class insar(SourceInv):
             * norm      : Colorscale limits
             * ref       : utm or lonlat
             * synth     : Plot synthetics (True/False).
+            * fraction  : fraction of pixels to plot when plotting the data
 
         :Returns:
             * None
@@ -2384,7 +2392,7 @@ class insar(SourceInv):
         assert len(x)>5, 'There is less than 5 points in your profile...'
 
         # Plot the insar
-        self.plot(faults=fault, norm=norm, show=False)
+        self.plot(faults=fault, norm=norm, show=False, fraction=fraction)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
@@ -2566,7 +2574,7 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1):
+    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, fraction=1., markersize=30):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2582,6 +2590,8 @@ class insar(SourceInv):
             * drawCoastlines: True/False
             * expand    : How many degrees to expand the map relative to the data
             * edgewidth : width of the edges of the squares when plotting the decimation pattern
+            * fraction  : Plot a fraction of the pixels (from 0. to 1.) or an integer number of pixels
+            * markersize: Size of the dots
 
         :Returns:
             * None
@@ -2617,7 +2627,7 @@ class insar(SourceInv):
 
         # Plot the insar
         if not decim:
-            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter')
+            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter', decim=fraction, markersize=markersize)
 
         # Plot the fault trace if asked
         if faults is not None:
