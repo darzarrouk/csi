@@ -1,0 +1,373 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>EDKSmp Tools &mdash; csi 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="csi 1.0 documentation" href="../index.html"/>
+        <link rel="up" title="Useful Tools" href="../tools.html"/>
+        <link rel="next" title="triangularDisp tools" href="triangularDisp.html"/>
+        <link rel="prev" title="eulerPoleUtils tools" href="eulerPoleUtils.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> csi
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Some Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basictutorial.html">A Basic Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CSIpublications.html">Citations and CSI Publications</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../classes.html">Classes</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../mainclass.html">Principal CSI class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../faultclasses.html">Classes of faults</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../dataclasses.html">Classes for types of data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../miscclasses.html">Misc. Classes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../tools.html">Useful Tools</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="csiutils.html">csiutils tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="eulerPoleUtils.html">eulerPoleUtils tools</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">EDKSmp Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="triangularDisp.html">triangularDisp tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="okadafull.html">okadafull tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="timefnutils.html">timefnutils tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../oldclasses.html">Some Untested Classes</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">csi</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../classes.html">Classes</a> &raquo;</li>
+        
+          <li><a href="../tools.html">Useful Tools</a> &raquo;</li>
+        
+      <li>EDKSmp Tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/tools/EDKSmp.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-csi.EDKSmp">
+<span id="edksmp-tools"></span><h1>EDKSmp Tools<a class="headerlink" href="#module-csi.EDKSmp" title="Permalink to this headline">¶</a></h1>
+<p>A bunch of routines to handle EDKS</p>
+<p>Written by F. Ortega in 2010.
+Modified by R. Jolivet in 2014.
+Modified by R. Jolivet in 2017 (multiprocessing added for point dropping)</p>
+<dl class="function">
+<dt id="csi.EDKSmp.dropSourcesInPatches">
+<code class="descclassname">csi.EDKSmp.</code><code class="descname">dropSourcesInPatches</code><span class="sig-paren">(</span><em>fault</em>, <em>verbose=False</em>, <em>returnSplittedPatches=False</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.EDKSmp.dropSourcesInPatches" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a fault object, returns sources to be given to sum_layered_sub.
+The number of sources is determined by the spacing provided in fault.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><ul class="first last simple">
+<li>fault                   : instance of Fault (Rectangular or Triangular).</li>
+<li>verbose                 : Talk to me</li>
+<li><dl class="first docutils">
+<dt>returnSplittedPactches <span class="classifier-delimiter">:</span> <span class="classifier">Returns a triangularPatches object with the splitted </span></dt>
+<dd>patches.</dd>
+</dl>
+</li>
+</ul>
+</dd>
+<dt>Return:</dt>
+<dd><ul class="first simple">
+<li>Ids                   : Id of the subpatches</li>
+<li>Xs                    : UTM x-coordinate of the subpatches (km)</li>
+<li>Ys                    : UTM y-coordinate of the subpatches (km)</li>
+<li>Zs                    : UTM z-coordinate of the subpatches (km)</li>
+<li>Strikes               : Strike angles of the subpatches (rad)</li>
+<li>Dips                  : Dip angles of the subpatches (rad)</li>
+<li>Areas                 : Area of the subpatches (km^2)</li>
+</ul>
+<p class="last">if returnSplittedPatches:
+* splitFault            : Fault object with the subpatches</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="csi.EDKSmp.pointdropper">
+<em class="property">class </em><code class="descclassname">csi.EDKSmp.</code><code class="descname">pointdropper</code><span class="sig-paren">(</span><em>fault</em>, <em>queue</em>, <em>charArea</em>, <em>istart</em>, <em>iend</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.EDKSmp.pointdropper" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="csi.EDKSmp.pointdropper.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#csi.EDKSmp.pointdropper.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the subpatch construction</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="csi.EDKSmp.sum_layered">
+<code class="descclassname">csi.EDKSmp.</code><code class="descname">sum_layered</code><span class="sig-paren">(</span><em>xs</em>, <em>ys</em>, <em>zs</em>, <em>strike</em>, <em>dip</em>, <em>rake</em>, <em>slip</em>, <em>width</em>, <em>length</em>, <em>npw</em>, <em>npy</em>, <em>xr</em>, <em>yr</em>, <em>edks</em>, <em>prefix</em>, <em>BIN_EDKS='EDKS_BIN'</em>, <em>cleanUp=True</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.EDKSmp.sum_layered" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Green’s functions for the given patches</p>
+<p>Args:</p>
+<blockquote>
+<div><p>&lt;– Sources –&gt; 1-D numpy arrays</p>
+<blockquote>
+<div><ul class="simple">
+<li>xs                : m, east coord to center of fault patch</li>
+<li>ys                : m, north coord to center of fault patch</li>
+<li>zs                : m,depth coord to center of fault patch (+ down)</li>
+<li>strike            : deg, clockwise from north</li>
+<li>dip               : deg, 90 is vertical</li>
+<li>rake              : deg, 0 left lateral strike slip, 90 up-dip slip</li>
+<li>slip              : m, slip in the rake direction</li>
+<li>width             : m, width of the patch</li>
+<li>length            : m, length of the patch</li>
+<li>npw               : integers, number of sources along strike</li>
+<li>npy               : integers, number of sources along dip</li>
+</ul>
+</div></blockquote>
+<p>&lt;– Receivers –&gt; 1-D numpy arrays</p>
+<blockquote>
+<div><ul class="simple">
+<li>xr                : m, east coordinate of receivers</li>
+<li>yr                : m, north coordinate of receivers</li>
+</ul>
+</div></blockquote>
+<p>&lt;– Elastic structure –&gt;</p>
+<blockquote>
+<div><ul class="simple">
+<li>edks              : string, full name of edks file, e.g., halfspace.edks</li>
+</ul>
+</div></blockquote>
+<p>&lt;– File Naming –&gt;</p>
+<blockquote>
+<div><ul class="simple">
+<li>prefix            : string, prefix for the files generated by sum_layered</li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<p>Kwargs:</p>
+<blockquote>
+<div><ul class="simple">
+<li>BIN_EDKS          : Environement variable where EDKS executables are.</li>
+<li>cleanUp           : Remove the intermediate files</li>
+<li>verbose           : Talk to me</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt>Return:</dt>
+<dd><dl class="first last docutils">
+<dt>&lt;– 2D arrays (#receivers, #fault patches) –&gt;</dt>
+<dd><ul class="first last simple">
+<li>ux                : m, east displacement</li>
+<li>uy                : m, west displacement</li>
+<li>uz                : m, up displacement (+ up)</li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="triangularDisp.html" class="btn btn-neutral float-right" title="triangularDisp tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="eulerPoleUtils.html" class="btn btn-neutral" title="eulerPoleUtils tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, R. Jolivet, Z. Duputel, B. Gombert, B. Riel, M. Simons et al..
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
