@@ -37,6 +37,8 @@ class pointdropper(mp.Process):
         self.istart = istart
         self.iend = iend
 
+        #print(istart, iend)
+
         # Save the queue
         self.queue = queue
 
@@ -206,8 +208,8 @@ def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
 
     # Create them
     workers = [pointdropper(fault, output, charArea, 
-                            i*npatches/nworkers, 
-                            (i+1)*npatches/nworkers) for i in range(nworkers)]
+                            np.int(np.floor(i*npatches/nworkers)), 
+                            np.int(np.floor((i+1)*npatches/nworkers))) for i in range(nworkers)]
     workers[-1].iend = npatches
 
     # Start them
