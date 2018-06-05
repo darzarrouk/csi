@@ -2919,9 +2919,9 @@ class Fault(SourceInv):
         rotation = np.arctan2(np.tan(strike) - np.tan(azimuth), 
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
 
-        # If azimuth within ]90, 270], change rotation
-        rotation[np.logical_and(azimuth*(180./np.pi)>90.,azimuth*(180./np.pi)<=270.)]\
-                += np.pi
+        # If strike within ]90, 270], change rotation
+        #rotation[np.logical_and(azimuth*(180./np.pi)>90.,azimuth*(180./np.pi)<=270.)] += np.pi
+        rotation[np.logical_and(strike*(180/np.pi)>90.,strike*(180./np.pi)<=270)] -= np.pi
 
         # Store rotation angles
         self.rotation = rotation.copy()
