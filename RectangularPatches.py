@@ -1584,6 +1584,9 @@ class RectangularPatches(Fault):
             * center        : if true, returns the coordinates of the center of the patch. if False, returns the UL corner.
             * checkindex    : Checks the index of the patch
 
+        :Returns:
+            * x, y, depth, width, length, strike, dip
+
         When we build the fault, the patches are not exactly rectangular. Therefore, 
         this routine will return the rectangle that matches with the two shallowest 
         points and that has an average dip angle to match with the other corners.
