@@ -267,15 +267,15 @@ class gps(SourceInv):
          
         If loc_format='XY', then the file should be as
         
-        +========+=========+=========+
+        +--------+---------+---------+
         | STNAME | X_COORD | Y_COORD |
-        +========+=========+=========+
+        +--------+---------+---------+
 
         If loc_format='LL', then the file should be as
 
-        +========+=====+=====+
+        +--------+-----+-----+
         | STNAME | LON | LAT |
-        +========+=====+=====+
+        +--------+-----+-----+
 
         :Args:
             * station_file: station filename including station coordinates

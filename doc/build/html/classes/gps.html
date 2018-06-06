@@ -1024,13 +1024,33 @@ If station is already in here, there is several options:</p>
 <code class="descname">readStat</code><span class="sig-paren">(</span><em>station_file</em>, <em>loc_format='LL'</em><span class="sig-paren">)</span><a class="headerlink" href="#csi.gps.readStat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read simple station ascii file and populate station attributes</p>
 <p>If loc_format=’XY’, then the file should be as</p>
-<p>+========+=========+=========+
-| STNAME | X_COORD | Y_COORD |
-+========+=========+=========+</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="35%" />
+<col width="35%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>STNAME</td>
+<td>X_COORD</td>
+<td>Y_COORD</td>
+</tr>
+</tbody>
+</table>
 <p>If loc_format=’LL’, then the file should be as</p>
-<p>+========+=====+=====+
-| STNAME | LON | LAT |
-+========+=====+=====+</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="44%" />
+<col width="28%" />
+<col width="28%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>STNAME</td>
+<td>LON</td>
+<td>LAT</td>
+</tr>
+</tbody>
+</table>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
