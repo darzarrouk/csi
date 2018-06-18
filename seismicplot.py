@@ -17,12 +17,17 @@ from .geodeticplot import geodeticplot
 
 class seismicplot(geodeticplot):
 
+    '''
+    A class to plot kinematic faults
+
+    :Kwargs:
+        * figure        : Number of the figure.
+        * ref           : 'utm' or 'lonlat'.
+        * pbaspect      : XXXXX?????
+
+    '''
+
     def __init__(self, figure=130, ref='utm', pbaspect=None):
-        '''
-        Args:
-            * figure        : Number of the figure.
-            * ref           : 'utm' or 'lonlat'.
-        '''
 
         # Base class init
         projection = 'cyl'      
@@ -31,12 +36,22 @@ class seismicplot(geodeticplot):
     def faultPatchesGrid(self, fault, slip='strikeslip', Norm=None, colorbar=True, 
                          plot_on_2d=False, revmap=False, data=None, plotgrid=True):
         '''
-        Args:
+        Plots a grid of fault patches
+
+        :Args:
             * fault         : Fault class from verticalfault.
+
+        :Kwargs:
             * slip          : Can be 'strikeslip', 'dipslip' or 'opening'
             * Norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
             * plot_on_2d    : if True, adds the patches on the map.
+            * revmap        : Reverse color map
+            * data          : add points in the x and y attributes of data
+            * plotgrid      : Show grid points
+
+        :Returns:
+            * None
         '''
 
         Xs,Ys = self.faultpatches(fault, slip=slip, Norm=Norm, colorbar=colorbar, 
@@ -67,10 +82,18 @@ class seismicplot(geodeticplot):
 
     def faulttrace(self, fault, color='r', add=False, data=None):
         '''
-        Args:
+        Plot the fault trace
+
+        :Args:
             * fault         : Fault class from verticalfault.
+
+        :Kwargs:
             * color         : Color of the fault.
             * add           : plot the faults in fault.addfaults    
+            * data          : Add locations of the x and y attribute of data
+
+        :Returns:
+            * None
         '''
 
         # Plot the added faults before
