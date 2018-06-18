@@ -365,8 +365,9 @@ class transformation(SourceInv):
             # Parameters
             Nplocal = 0
             for trans in self.G[dname]:
-                Nplocal += self.G[dname][trans].shape[1]
-                Ndlocal = self.G[dname][trans].shape[0]
+                Ndlocal = self.d[dname].shape[0]
+                if trans is not None:
+                    Nplocal += self.G[dname][trans].shape[1]
 
             # Strain case
             if 'strain' in self.G[dname]:
@@ -375,9 +376,10 @@ class transformation(SourceInv):
             Np += Nplocal
 
             # Data
-            assert all([self.G[dname][trans].shape[0]==Ndlocal \
-                    for trans in self.G[dname]]),\
-                    'GFs size issue for data set {}'.format(dname)
+            if Nplocal > 0:
+                assert all([self.G[dname][trans].shape[0]==Ndlocal \
+                            for trans in self.G[dname]]),\
+                            'GFs size issue for data set {}'.format(dname)
             dindex[dname] = (Nd, Nd+Ndlocal)
             Nd += Ndlocal
 
@@ -412,6 +414,9 @@ class transformation(SourceInv):
                 # Strain case
                 if trans == 'strain':
                     G[Nds:Nde,:3] = Glocal
+                elif trans is None:
+                    self.transOrder.append('{} --//-- {}'.format(dname, trans))
+                    self.transIndices.append((Npl,Npe))
                 else:
                     Npe = Npl + Glocal.shape[1]
                     G[Nds:Nde,Npl:Npe] = Glocal

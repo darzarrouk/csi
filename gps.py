@@ -2336,7 +2336,7 @@ class gps(SourceInv):
             print('--------------------------------------------------')
             print ("Remove the best fot euler rotation in GPS data set {}".format(self.name))
 
-        import eulerPoleUtils as eu
+        from . import eulerPoleUtils as eu
 
         # Get the list of stations
         if stations is not None:
@@ -2376,15 +2376,15 @@ class gps(SourceInv):
         Removes a rotation from the lon, lat and velocity of a rotation pole.
 
         :Args:
-            * elon   : Longitude of the rotation pole (in rad)
-            * elat   : Latitude of the rotation pole (in rad)
+            * elon   : Longitude of the rotation pole 
+            * elat   : Latitude of the rotation pole 
             * omega  : Amplitude of the rotation (in rad/yr).
 
         :Returns:
             * None
         '''
 
-        import eulerPoleUtils as eu
+        from . import eulerPoleUtils as eu
 
         # Convert pole parameters to Cartesian
         evec_xyz = eu.llh2xyz(elat, elon, 0.0)

@@ -612,7 +612,7 @@ class multifaultsolve(object):
 
     def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=None, bounds=None,
                                    method='SLSQP', rcond=None, 
-                                   iterations=100, tolerance=None, maxfun=100000,
+                                   iterations=100, tolerance=None, maxfun=1e10,
                                    checkIter=False, checkNorm=False):
         """
         Solves the least squares problem:
