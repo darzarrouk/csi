@@ -16,15 +16,25 @@ from .SourceInv import SourceInv
 
 class faultpostproc(SourceInv):
 
+    '''
+    A class that allows to compute various things from a fault object.
+    
+    :Args:
+        * name          : Name of the InSAR dataset.
+        * fault         : Fault object
+    
+    :Kwargs:
+        * Mu            : Shear modulus. Default is 24e9 GPa, because it is the PREM value for the upper 15km. Can be a scalar or a list/array of len=len(fault.patch)
+        * samplesh5     : file name of h5 file containing samples
+        * utmzone       : UTM zone  (optional, default=None)
+        * lon0          : Longitude of the center of the UTM zone
+        * lat0          : Latitude of the center of the UTM zone
+        * ellps         : ellipsoid (optional, default='WGS84')
+        * verbose       : Speak to me (default=True)
+     
+    '''
+
     def __init__(self, name, fault, Mu=24e9, samplesh5=None, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
-        '''
-        Args:
-            * name          : Name of the InSAR dataset.
-            * fault         : Fault object
-            * Mu            : Shear modulus. Default is 24e9 GPa, because it is the PREM value for the upper 15km. Can be a scalar or a list/array of len=len(fault.patch)
-            * utmzone       : UTM zone. Default is 10 (Western US).
-            * samplesh5     : file name of h5 file containing samples
-        '''
 
         # Base class init
         super(faultpostproc,self).__init__(name,
@@ -70,10 +80,13 @@ class faultpostproc(SourceInv):
         self.samplesh5 and copy the slip values to self.fault.slip (hopefully without loading 
         into memory).
 
-        kwargs:
-            decim :  decimation factor for skipping samples
-            indss :  tuples (size (2,)) containing desired indices of strike slip in h5File
-            indds :  tuples (size (2,)) containing desired indices of dip slip in h5File
+        :Kwargs:
+            * decim :  decimation factor for skipping samples
+            * indss :  tuples (size (2,)) containing desired indices of strike slip in h5File
+            * indds :  tuples (size (2,)) containing desired indices of dip slip in h5File
+
+        :Returns:
+            * None
         '''
 
         if self.samplesh5 is None:
@@ -107,6 +120,9 @@ class faultpostproc(SourceInv):
     def h5_finalize(self):
         '''
         Close the (potentially) open h5 file.
+
+        :Returns:
+            * None
         '''
         if hasattr(self, 'hfid'):
             self.hfid.close()
@@ -116,9 +132,13 @@ class faultpostproc(SourceInv):
     def lonlat2xy(self, lon, lat):
         '''
         Uses the transformation in self to convert  lon/lat vector to x/y utm.
-        Args:
+
+        :Args:
             * lon           : Longitude array.
             * lat           : Latitude array.
+
+        :Returns:
+            * None
         '''
 
         x, y = self.putm(lon,lat)
@@ -130,9 +150,13 @@ class faultpostproc(SourceInv):
     def xy2lonlat(self, x, y):
         '''
         Uses the transformation in self to convert x.y vectors to lon/lat.
-        Args:
+
+        :Args:
             * x             : Xarray
             * y             : Yarray
+
+        :Returns:
+            * lon, lat      : 2 float arrays
         '''
 
         lon, lat = self.putm(x*1000., y*1000., inverse=True)
@@ -141,8 +165,12 @@ class faultpostproc(SourceInv):
     def patchNormal(self, p):
         '''
         Returns the Normal to a patch.
-        Args:
+
+        :Args:
             * p             : Index of the desired patch.
+
+        :Returns:
+            * unit normal vector
         '''
 
         if self.fault.patchType == 'triangle':
@@ -171,7 +199,7 @@ class faultpostproc(SourceInv):
         '''
         Returns the slip vector in the cartesian space for the patch p. We do not deal with 
         the opening component. The fault slip may be a 3D array for multiple samples of slip.
-        Args:
+        :Args:
             * p             : Index of the desired patch.
         '''
 
@@ -203,7 +231,7 @@ class faultpostproc(SourceInv):
     def computePatchMoment(self, p) :
         '''
         Computes the Moment tensor for one patch.
-        Args:
+        :Args:
             * p             : patch index
         '''
 
@@ -689,7 +717,7 @@ class faultpostproc(SourceInv):
     def write2GCMT(self, form='full', filename=None):
         '''
         Writes in GCMT style
-        Args:
+        :Args:
             * form          : format is either 'full' to match with Zacharie binary
                                             or 'line' to match with the option -Sm in GMT
 
@@ -769,7 +797,7 @@ class faultpostproc(SourceInv):
     def stressdrop(self,shapefactor=2.44,threshold=0.2,threshold_rand=False,return_Area_Mo_Slip=False):
         '''
         Compute threshold-dependent moment-based average stress-dip (cf., Noda et al., GJI 2013)
-        Args:
+        :Args:
             * shapefactor: shape factor (e.g., 2.44 for a circular crack,)
             * threshold: Rupture Area = area for slip > threshold * slip_max
             * threashold_rand: if ='log-normal' randomly generate threshold with mean threshold[0] 

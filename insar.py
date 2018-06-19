@@ -1767,6 +1767,7 @@ class insar(SourceInv):
         dic['Length'] = length
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
+        dic['Indices'] = np.array(Bol)        
         dic['Lon'] = lon
         dic['Lat'] = lat
         dic['LOS Velocity'] = vel

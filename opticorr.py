@@ -1252,6 +1252,7 @@ class opticorr(SourceInv):
         dic['Length'] = length
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
+        dic['Indices'] = np.array(Bol)
         dic['East'] = east
         dic['North'] = north
         dic['East Synthetics'] = esynth

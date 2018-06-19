@@ -416,7 +416,7 @@ class transformation(SourceInv):
                     G[Nds:Nde,:3] = Glocal
                 elif trans is None:
                     self.transOrder.append('{} --//-- {}'.format(dname, trans))
-                    self.transIndices.append((Npl,Npe))
+                    self.transIndices.append((Npl, Npe))
                 else:
                     Npe = Npl + Glocal.shape[1]
                     G[Nds:Nde,Npl:Npe] = Glocal

@@ -897,9 +897,9 @@ class geodeticplot(object):
             assert len(data)==1, 'If multiple data are plotted, need to provide scale'
 
         # Get lon lat
-        lon = gps.lon
+        lon = copy.deepcopy(gps.lon)
         lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-        lat = gps.lat
+        lat = copy.deepcopy(gps.lat)
 
         # Make the dictionary of the things to plot
         Data = {}
