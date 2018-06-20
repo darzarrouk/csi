@@ -488,8 +488,9 @@ class transformation(SourceInv):
             # Get the design matrix and model
             T = []; m = []
             for trans in self.G[data.name]:
-                T.append(self.G[data.name][trans])
-                m.append(self.m[data.name][trans])
+                if trans is not None:
+                    T.append(self.G[data.name][trans])
+                    m.append(self.m[data.name][trans])
         
             # Predict
             T = np.hstack(T)

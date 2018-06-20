@@ -453,11 +453,11 @@ class geodeticplot(object):
 
         # discretized?
         if discretized:
-            lon = fault.loni
-            lat = fault.lati
+            lon = copy.deepcopy(fault.loni)
+            lat = copy.deepcopy(fault.lati)
         else:
-            lon = fault.lon
-            lat = fault.lat
+            lon = copy.deepcopy(fault.lon)
+            lat = copy.deepcopy(fault.lat)
 
         # Plot the added faults before
         if add:
@@ -853,8 +853,8 @@ class geodeticplot(object):
             vmax = val.max()
 
         # Plot
-        lon = stress.lon
-        lat = stress.lat
+        lon = copy.deepcopy(stress.lon)
+        lat = copy.deepcopy(stress.lat)
         lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         sc = self.carte.scatter(xloc, yloc, s=20, c=val, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
 
@@ -976,9 +976,9 @@ class geodeticplot(object):
             markersize = [markersize[0]*np.random.rand()*10. for d in data]
 
         # Get lon lat
-        lon = gps.lon
+        lon = copy.deepcopy(gps.lon)
         lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-        lat = gps.lat
+        lat = copy.deepcopy(gps.lat)
 
         # Initiate
         vmin = 999999999.
@@ -1049,9 +1049,9 @@ class geodeticplot(object):
 
         # Get the data
         d = gps.vel_los
-        lon = gps.lon;
+        lon = copy.deepcopy(gps.lon);
         lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-        lat = gps.lat
+        lat = copy.deepcopy(gps.lat)
 
         # Prepare the color limits
         if norm is None:
@@ -1113,9 +1113,9 @@ class geodeticplot(object):
             cmap = None
 
         # Get lon lat
-        lon = earthquakes.lon
+        lon = copy.deepcopy(earthquakes.lon)
         lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-        lat = earthquakes.lat
+        lat = copy.deepcopy(earthquakes.lat)
 
         # plot the earthquakes on the map if ask
         if '2d' in plot:
@@ -1176,9 +1176,9 @@ class geodeticplot(object):
         cmap = plt.get_cmap('jet')
 
         # Get lon lat
-        lon = fault.sim.lon
+        lon = copy.deepcopy(fault.sim.lon)
         lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-        lat = fault.sim.lat
+        lat = copy.deepcopy(fault.sim.lat)
 
         # Plot the insar
         sc = self.carte.scatter(lon, lat, s=30, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.1)
@@ -1286,9 +1286,9 @@ class geodeticplot(object):
                 self.carte.ax.add_collection(rect)
 
         elif plotType is 'scatter':
-            lon = insar.lon[ndata]
+            lon = copy.deepcopy(insar.lon[ndata])
             lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-            lat = insar.lat[ndata]
+            lat = copy.deepcopy(insar.lat[ndata])
             sc = self.carte.scatter(lon, lat, s=markersize, 
                                     c=d[ndata], cmap=cmap, vmin=vmin, vmax=vmax, 
                                     linewidth=0.0, zorder=zorder)
@@ -1396,9 +1396,9 @@ class geodeticplot(object):
                 self.carte.ax.add_collection(rect)
 
         elif plotType is 'scatter':
-            lon = corr.lon
+            lon = copy.deepcopy(corr.lon)
             lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-            lat = corr.lat
+            lat = copy.deepcopy(corr.lat)
             self.carte.scatter(lon[::decim], lat[::decim], s=10., c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=zorder)
 
         else:
