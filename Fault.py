@@ -2908,10 +2908,6 @@ class Fault(SourceInv):
         azimuth[azimuth< 0.] += 360.
         
         # Get strikes and dips
-        #if self.patchType is 'triangletent':
-        #    strike = super(self.__class__, self).getStrikes()
-        #    dip = super(self.__class__, self).getDips()
-        #else:
         strike, dip = self.getStrikes(), self.getDips()
 
         # Convert angle in radians

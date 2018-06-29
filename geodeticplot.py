@@ -681,7 +681,10 @@ class geodeticplot(object):
         # 1. Get the subpoints for each triangle
         from .EDKSmp import dropSourcesInPatches as Patches2Sources
         if hasattr(fault, 'edksSources') and not hasattr(fault, 'plotSources'):
-            fault.plotSources = copy.deepcopy(fault.edksSources)
+            if hasattr(fault, 'edksFacetSources'):
+                fault.plotSources = copy.deepcopy(fault.edksFacetSources)
+            else:
+                fault.plotSources = copy.deepcopy(fault.edksSources)
             fault.plotSources[1] /= 1e3
             fault.plotSources[2] /= 1e3
             fault.plotSources[3] /= 1e3

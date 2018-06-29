@@ -112,6 +112,16 @@ class TriangularTents(TriangularPatches):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
+    def getDepths(self):
+        '''
+        Returns the depth of each nodes.
+        '''
+
+        # All done in one line
+        return np.array([self.getTentInfo(t)[2] for t in self.tent])
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
     def getDips(self):
         '''
         Returns the dip of each nodes.
