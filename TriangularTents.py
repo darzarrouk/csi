@@ -145,7 +145,7 @@ class TriangularTents(TriangularPatches):
 
         # Get the patch
         u = None
-        if tent.__class__ is int:
+        if type(tent) in (int, np.int64, np.int32):
             u = tent
         else:
             u = self.getTentindex(tent)

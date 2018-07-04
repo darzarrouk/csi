@@ -1541,6 +1541,8 @@ class gps(SourceInv):
             self.station = np.delete(self.station, u, axis=0)
             self.lon = np.delete(self.lon, u, axis=0)
             self.lat = np.delete(self.lat, u, axis=0)
+            self.x = np.delete(self.x, u, axis=0)
+            self.y = np.delete(self.y, u, axis=0)
             self.vel_enu = np.delete(self.vel_enu, u, axis=0)
             self.err_enu = np.delete(self.err_enu, u, axis=0)
             if self.rot_enu is not None:
@@ -2366,12 +2368,12 @@ class gps(SourceInv):
         self.omega *= 180./np.pi
 
         # Remove the rotation
-        self.remove_rotation(self.elon*np.pi/180., self.elat*np.pi/180., self.omega*np.pi/180.)
+        self.compute_rotation(self.elon*np.pi/180., self.elat*np.pi/180., self.omega*np.pi/180.)
 
         # All done
         return
 
-    def remove_rotation(self, elon, elat, omega):
+    def compute_rotation(self, elon, elat, omega):
         '''
         Removes a rotation from the lon, lat and velocity of a rotation pole.
 
@@ -2395,9 +2397,6 @@ class gps(SourceInv):
                           np.zeros(self.lon.shape))
         self.Pxyz = Pxyz
         self.rot_enu = eu.euler2gps(self.epole, Pxyz.T)*self.factor
-
-        # Correct the velocities from the prediction
-        self.vel_enu = self.vel_enu - self.rot_enu
 
         # All done
         return 

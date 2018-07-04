@@ -1300,7 +1300,7 @@ class TriangularPatches(Fault):
 
         # Get the patch
         u = None
-        if patch.__class__ is int:
+        if type(patch) in (int, np.int64, np.int, np.int32):
             u = patch
         else:
             if checkindex:

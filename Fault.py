@@ -1608,7 +1608,7 @@ class Fault(SourceInv):
 
         :Args:
             * data          : Name of the data set.
-            * azimuth       : Direction in which to rotate the GFs
+            * azimuth       : Direction in which to rotate the GFs (degrees)
 
         :Returns:    
             * rotatedGar    : GFs along the azimuth direction
