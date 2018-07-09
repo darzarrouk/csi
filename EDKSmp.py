@@ -527,7 +527,7 @@ class interpolateEDKS(object):
             * xr, yr        : Receiver location (floats or np.array)
 
         :Kwargs:
-            * method        : Interpolation scheme. Can be linear, cubic or quintic.
+            * method        : Interpolation scheme. Can be linear, nearest or CloughTocher.
 
         :Returns:
             * G             : np.array
@@ -547,7 +547,22 @@ class interpolateEDKS(object):
             xr = np.array([xr])
             yr = np.array([yr])
 
-        # Show me
+        # convert sources from center to top edge of fault patch 
+        sind = np.sin( dip )
+        cosd = np.cos( dip )
+        sins = np.sin( strike )
+        coss = np.cos( strike )
+
+        # displacement in local coordinates (phi, delta)
+        dZ = (np.sqrt(area)/2.0) * sind
+        dD = (np.sqrt(area)/2.0) * cosd
+
+        # rotation to global coordinates 
+        xs = xs - dD * coss
+        ys = ys + dD * sins
+        zs = zs - dZ
+
+        #Show me
         if self.verbose:
             print('Interpolate GFs for {} sources and {} receivers'.format(len(xs), len(xr)))
 
@@ -555,7 +570,7 @@ class interpolateEDKS(object):
         M = self.src2mom(slip, area, strike, dip, rake)
 
         # Create an interpolator
-        #self.createInterpolator()
+        self.createInterpolator(method=method)
 
         # Calculate geometry -- dim(r) is (sources, receivers)
         if self.verbose:
@@ -565,42 +580,39 @@ class interpolateEDKS(object):
         # Interpolate
         if self.verbose:
             print('Interpolate')
-        #zrtdsx = self.interpolator([(d,z) for d,z in zip(distance.flatten(),depth.flatten())])
-        zrtdsx = []
-        points = np.array([(x,d) for x,d in zip((distance.flatten(),depth.flatten()))])
-        for i in range(10):
-            zrtdsx.append(sciint.griddata(np.hstack((self.distas, self.depths)).T, self.zrtdsx[:,i], points, method='linear', fill_value=0.))
+        # TODO: multiprocess this step
+        zrtdsx = self.interpolator([(d,z) for d,z in zip(distance.flatten(),depth.flatten())])
  
         # reconstruction of the actual displacement Xiaobi vs  Herrman
         # The coefficients created by tab5 are in Xiaobi's notation
         # The equations just below follow Herrman's notation; hence
-        zrtdsx[1] *= -1.
-        zrtdsx[4] *= -1.
-        zrtdsx[7] *= -1.
         zrtdsx = zrtdsx.reshape((len(xs), len(xr), 10))
+        zrtdsx[:,:,1] *= -1.
+        zrtdsx[:,:,4] *= -1.
+        zrtdsx[:,:,7] *= -1.
 
         # Vertical component  (positive down)
-        ws =   M[:,np.newaxis,1]*(zrtdsx[:,:,2]*c2az/2. - zrtdsx[:,:,0]/6. + zrtdsx[:,:,8]/3.) \
-                + M[:,np.newaxis,2]*(-zrtdsx[:,:,2]*c2az/2. - zrtdsx[:,:,0]/6. + zrtdsx[:,:,8]/3.) \
-                + M[:,np.newaxis,0]*( zrtdsx[:,:,0] + zrtdsx[:,:,8])/3. \
-                + M[:,np.newaxis,5]*  zrtdsx[:,:,2]*s2az \
-                + M[:,np.newaxis,3]*  zrtdsx[:,:,1]*caz \
-                + M[:,np.newaxis,4]*  zrtdsx[:,:,1]*saz
+        ws = M[:,np.newaxis,1]*( zrtdsx[:,:,2]*c2az/2. - zrtdsx[:,:,0]/6. + zrtdsx[:,:,8]/3.) \
+           + M[:,np.newaxis,2]*(-zrtdsx[:,:,2]*c2az/2. - zrtdsx[:,:,0]/6. + zrtdsx[:,:,8]/3.) \
+           + M[:,np.newaxis,0]*( zrtdsx[:,:,0] + zrtdsx[:,:,8])/3. \
+           + M[:,np.newaxis,5]*  zrtdsx[:,:,2]*s2az \
+           + M[:,np.newaxis,3]*  zrtdsx[:,:,1]*caz \
+           + M[:,np.newaxis,4]*  zrtdsx[:,:,1]*saz
    
         # Radial component    (positive away from the source)
         qr = M[:,np.newaxis,1]*( zrtdsx[:,:,5]*c2az/2. - zrtdsx[:,:,3]/6. + zrtdsx[:,:,9]/3.) \
-                + M[:,np.newaxis,2]*(-zrtdsx[:,:,5]*c2az/2. - zrtdsx[:,:,3]/6. + zrtdsx[:,:,9]/3.) \
-                + M[:,np.newaxis,0]*( zrtdsx[:,:,3] + zrtdsx[:,:,9])/3. \
-                + M[:,np.newaxis,5]*  zrtdsx[:,:,5]*s2az \
-                + M[:,np.newaxis,3]*  zrtdsx[:,:,4]*caz \
-                + M[:,np.newaxis,3]*  zrtdsx[:,:,4]*saz 
+           + M[:,np.newaxis,2]*(-zrtdsx[:,:,5]*c2az/2. - zrtdsx[:,:,3]/6. + zrtdsx[:,:,9]/3.) \
+           + M[:,np.newaxis,0]*( zrtdsx[:,:,3] + zrtdsx[:,:,9])/3. \
+           + M[:,np.newaxis,5]*  zrtdsx[:,:,5]*s2az \
+           + M[:,np.newaxis,3]*  zrtdsx[:,:,4]*caz \
+           + M[:,np.newaxis,4]*  zrtdsx[:,:,4]*saz 
    
         # Tangential component (positive if clockwise from zenithal view)
-        vt =   M[:,np.newaxis,1]*zrtdsx[:,:,7]*s2az/2. \
-                - M[:,np.newaxis,2]*zrtdsx[:,:,7]*s2az/2. \
-                - M[:,np.newaxis,5]*zrtdsx[:,:,7]*c2az \
-                + M[:,np.newaxis,3]*zrtdsx[:,:,6]*saz \
-                - M[:,np.newaxis,4]*zrtdsx[:,:,6]*caz 
+        vt = M[:,np.newaxis,1]*zrtdsx[:,:,7]*s2az/2. \
+           - M[:,np.newaxis,2]*zrtdsx[:,:,7]*s2az/2. \
+           - M[:,np.newaxis,5]*zrtdsx[:,:,7]*c2az \
+           + M[:,np.newaxis,3]*zrtdsx[:,:,6]*saz \
+           - M[:,np.newaxis,4]*zrtdsx[:,:,6]*caz 
 
         # Cartesian components
         Ux = qr*saz + vt*caz
@@ -610,7 +622,7 @@ class interpolateEDKS(object):
         # All done
         return Ux.T, Uy.T, Uz.T
 
-    def createInterpolator(self):
+    def createInterpolator(self, method='linear'):
         '''
         Create the interpolation method. This is based on scipy.interpolate.LinearNDInterpolator.
 
@@ -618,12 +630,22 @@ class interpolateEDKS(object):
             * None
         '''
 
-        # show me
-        if self.verbose:
-            print('Create the linear interpolator')
-
         # Create
-        self.interpolator = sciint.LinearNDInterpolator([(x,d) for x,d in zip(self.distas, self.depths)], self.zrtdsx, fill_value=0.)
+        if method is 'linear':
+            # show me
+            if self.verbose:
+                print('Create the linear interpolator')
+            self.interpolator = sciint.LinearNDInterpolator([(x,d) for x,d in zip(self.distas, self.depths)], self.zrtdsx, fill_value=0.)
+        elif method is 'CloughTocher':
+            # show me
+            if self.verbose:
+                print('Create the Clough-Tocher interpolator')
+            self.interpolator = sciint.CloughTocher2DInterpolator([(x,d) for x,d in zip(self.distas, self.depths)], self.zrtdsx, fill_value=0.)
+        elif method is 'nearest':
+            # show me
+            if self.verbose:
+                print('Create the Nearest neighbor interpolator')
+            self.interpolator = sciint.NearestNDInterpolator([(x,d) for x,d in zip(self.distas, self.depths)], self.zrtdsx)
 
         # All done
         return
@@ -651,14 +673,14 @@ class interpolateEDKS(object):
 
         # Sli
         s = []
-        s.append(np.cos(rake)*np.cos(strike)+np.cos(dip)*np.sin(rake)*np.sin(strike)*slip)
-        s.append(np.cos(rake)*np.sin(strike)-np.cos(dip)*np.sin(rake)*np.cos(strike)*slip)
-        s.append(-1.*np.sin(rake)*np.sin(dip)*slip)
+        s.append((np.cos(rake)*np.cos(strike)+np.cos(dip)*np.sin(rake)*np.sin(strike))*slip)
+        s.append((np.cos(rake)*np.sin(strike)-np.cos(dip)*np.sin(rake)*np.cos(strike))*slip)
+        s.append((-1.*np.sin(rake)*np.sin(dip))*slip)
 
         # Iterate
         Maki = np.zeros((3,3,len(dip)))
-        for ix in range(2):
-            for iy in range(2):
+        for ix in range(3):
+            for iy in range(3):
                 Maki[iy,ix,:] += nor[ix]*s[iy] + nor[iy]*s[ix]
 
         # Order
@@ -685,16 +707,20 @@ class interpolateEDKS(object):
         :Returns:
             * distance, depth, caz, saz, c2az, s2az 
         '''
+        
+        # Machine precision
+        eps = np.finfo(float).eps
 
+        # Compute geometry
         distance = np.sqrt( (xs[:,np.newaxis] - xr[np.newaxis,:])**2 +\
                             (ys[:,np.newaxis] - yr[np.newaxis,:])**2)
         depth = zs[:,np.newaxis]*np.ones(distance.shape)
         caz = (yr[np.newaxis,:] - ys[:,np.newaxis])/distance
         saz = (xr[np.newaxis,:] - xs[:,np.newaxis])/distance
-        caz[distance<1e-10] = 1.
-        saz[distance<1e-10] = 0.
-        c2az = 2*caz*caz - 1.
-        s2az = 2*saz*caz
+        caz[distance<=eps] = 1.
+        saz[distance<=eps] = 0.
+        c2az = 2.*caz*caz - 1.
+        s2az = 2.*saz*caz
 
         return distance, depth, caz, saz, c2az, s2az
 
