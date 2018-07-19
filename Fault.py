@@ -19,6 +19,7 @@ import os
 # Personals
 from .SourceInv import SourceInv
 from .EDKSmp import sum_layered
+from .EDKSmp import interpolateEDKS
 from .EDKSmp import dropSourcesInPatches as Patches2Sources
 
 #class Fault
@@ -879,8 +880,11 @@ class Fault(SourceInv):
         # Compute the Green's functions
         if method in ('okada', 'Okada', 'OKADA', 'ok92', 'meade', 'Meade', 'MEADE'):
             G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
-        elif method in ('edks', 'EDKS'):
-            G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
+        elif method in ('edks', 'EDKS', 'pyedks', 'pythonedks'):
+            if 'py' not in method:
+                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='fortran')
+            else:
+                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='python')
 
         # Separate the Green's functions for each type of data set
         data.setGFsInFault(self, G, vertical=vertical)
@@ -1087,7 +1091,7 @@ class Fault(SourceInv):
 
     # ----------------------------------------------------------------------
     def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True, 
-                      convergence=None):
+                      convergence=None, method='fortran'):
         '''
         Builds the Green's functions based on the solution by Zhao & Rivera 2002.
         The corresponding functions are in the EDKS code that needs to be installed and 
@@ -1115,6 +1119,7 @@ class Fault(SourceInv):
             * slipdir       : Direction of slip along the patches. Any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
             * verbose       : Writes stuff to the screen (overwrites self.verbose)
             * convergence   : If coupling case, needs convergence azimuth and rate [azimuth in deg, rate]
+            * method        : Can be 'fortran', which uses the sum_layered function of EDKS (linear interpolation that produces garbage when exceeding boundaries of the kernels) or 'python' which uses the class interpolateEDKS (linear interpolation that accounts for boundaries, slightly slower for large problems).
 
         :Returns:
             * G             : Dictionary of the built Green's functions
@@ -1231,15 +1236,27 @@ class Fault(SourceInv):
         if verbose:
             print('{} sources for {} patches and {} data points'.format(len(Ids), len(self.patch), len(xr)))
         
+        # Create interpolation class if python method is selected
+        if method in ('python'):
+            inter = interpolateEDKS(stratKernels, verbose=verbose)
+            inter.readHeader()
+            inter.readKernel()
+
         # Run EDKS Strike slip
         if 's' in slipdir:
             if verbose:
                 print('Running Strike Slip component for data set {}'.format(data.name))
-            iGss = np.array(sum_layered(xs, ys, zs, 
-                                        strike, dip, np.zeros(dip.shape), slip, 
-                                        np.sqrt(Areas), np.sqrt(Areas), 1, 1,
-                                        xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                        cleanUp=self.cleanUp, verbose=verbose))
+            if method in ('fortran'):
+                iGss = np.array(sum_layered(xs, ys, zs, 
+                                            strike, dip, np.zeros(dip.shape), slip, 
+                                            np.sqrt(Areas), np.sqrt(Areas), 1, 1,
+                                            xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
+                                            cleanUp=self.cleanUp, verbose=verbose))
+            elif method in ('python'):
+                iGss = np.array(inter.interpolate(xs, ys, zs, strike*np.pi/180., 
+                                                  dip*np.pi/180., np.zeros(dip.shape),
+                                                  Areas, np.ones(dip.shape), 
+                                                  xr, yr, method='linear'))
             if verbose:
                 print('Summing sub-sources...')
             Gss = np.zeros((3, iGss.shape[1],np.unique(Ids).shape[0]))
@@ -1253,11 +1270,18 @@ class Fault(SourceInv):
         if 'd' in slipdir:
             if verbose:
                 print('Running Dip Slip component for data set {}'.format(data.name))
-            iGds = np.array(sum_layered(xs, ys, zs, 
+            if method in ('fortran'):
+                iGds = np.array(sum_layered(xs, ys, zs, 
                                         strike, dip, np.ones(dip.shape)*90.0, slip, 
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1,
                                         xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
                                         cleanUp=self.cleanUp, verbose=verbose))
+            elif method in ('python'):
+                iGds = np.array(inter.interpolate(xs, ys, zs, strike*np.pi/180., 
+                                                  dip*np.pi/180., 
+                                                  np.ones(dip.shape)*np.pi/2.,
+                                                  Areas, np.ones(dip.shape), 
+                                                  xr, yr, method='linear'))
             if verbose:
                 print('Summing sub-sources...')
             Gds = np.zeros((3, iGds.shape[1], np.unique(Ids).shape[0]))
@@ -1272,6 +1296,8 @@ class Fault(SourceInv):
             assert False, 'Sorry, this is not working so far... Bryan should get it done soon...'
             if verbose:
                 print('Running tensile component for data set {}'.format(data.name))
+            if method not in ('fortran'): 
+                raise NotImplementedError('Tensile case not implemented in python yet')
             iGts = np.array(sum_layered(xs, ys, zs,
                                         strike, dip, np.zeros(dip.shape), slip,
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1, 

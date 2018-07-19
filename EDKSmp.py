@@ -17,7 +17,60 @@ import multiprocessing as mp
 from scipy.io import FortranFile
 import scipy.interpolate as sciint
 
-# Initialize a class to allow multiprocessing
+# Initialize a class to allow multiprocessing for EDKS interpolation in Python
+class interpolator(mp.Process):
+    '''
+    Multiprocessing class runing the edks interpolation.
+    This class requires one to build the interpolator in advance.
+
+    :Args:
+        * interpolators     : List of interpolators
+        * queue             : Instance of mp.Queue
+        * depths            : depths (first dimnesion of the interpolators) 
+        * distas            : distances (second dimension of the interpolators)
+        * istart            : starting point
+        * iend              : ending point
+
+    :Returns:
+        * None
+    '''
+
+    # ----------------------------------------------------------------------
+    # Initialize
+    def __init__(self, interpolators, queue, depths, distas, istart, iend):
+
+        # Save things
+        self.interpolators = interpolators
+        self.depths = depths
+        self.distas = distas
+        self.istart = istart
+        self.iend = iend
+
+        # Save the queue
+        self.queue = queue 
+
+        # Initialize the process
+        super(interpolator, self).__init__()
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # Run method
+    def run(self):
+        '''
+        Run the interpolation
+        '''
+        
+        values = []
+        for i in range(self.istart, self.iend):
+            values.append((i, self.interpolators[i](np.vstack((self.depths.flatten(),
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+# Initialize a class to allow multiprocessing to drop points
 class pointdropper(mp.Process):
     '''
     Initialize the multiprocessing class to run the point dropper.
@@ -580,13 +633,40 @@ class interpolateEDKS(object):
         # Interpolate
         if self.verbose:
             print('Interpolate')
-        # TODO: multiprocess this step
-        zrtdsx = self.interpolator([(d,z) for d,z in zip(distance.flatten(),depth.flatten())])
- 
+        zrtdsx = np.zeros((len(xs), len(xr), 10))
+        
+        # Multiprocessing
+        try:
+            nworkers = int(os.environ['OMP_NUM_THREADS'])
+        except:
+            nworkers = mp.cpu_count()
+
+        # Create a queue 
+        output = mp.Queue()
+
+        # Create the workers
+        workers = [interpolator(self.interpolators, output, depth, distance, 
+                                np.int(np.floor(i*10/nworkers)),
+                                np.int(np.floor((i+1)*10/nworkers))) for i in range(nworkers)]
+        workers[-1].iend = 10
+
+        # Start
+        for w in range(nworkers): workers[w].start()
+
+        # Get from the queue
+        for worker in workers:
+            values = output.get()
+            for tu in values:
+                zrtdsx[:,:,tu[0]] = tu[1].reshape((len(xs),len(xr)))
+
+        #for i,interp in enumerate(self.interpolators):
+        #    temp = interp(np.vstack((depth.flatten(), distance.flatten())).T)
+        #    zrtdsx[:,:,i] = temp.reshape((len(xs), len(xr)))
+
         # reconstruction of the actual displacement Xiaobi vs  Herrman
         # The coefficients created by tab5 are in Xiaobi's notation
         # The equations just below follow Herrman's notation; hence
-        zrtdsx = zrtdsx.reshape((len(xs), len(xr), 10))
+        #zrtdsx = zrtdsx.reshape((len(xs), len(xr), 10))
         zrtdsx[:,:,1] *= -1.
         zrtdsx[:,:,4] *= -1.
         zrtdsx[:,:,7] *= -1.
@@ -630,22 +710,31 @@ class interpolateEDKS(object):
             * None
         '''
 
-        # Create
-        if method is 'linear':
-            # show me
-            if self.verbose:
-                print('Create the linear interpolator')
-            self.interpolator = sciint.LinearNDInterpolator([(x,d) for x,d in zip(self.distas, self.depths)], self.zrtdsx, fill_value=0.)
-        elif method is 'CloughTocher':
-            # show me
-            if self.verbose:
-                print('Create the Clough-Tocher interpolator')
-            self.interpolator = sciint.CloughTocher2DInterpolator([(x,d) for x,d in zip(self.distas, self.depths)], self.zrtdsx, fill_value=0.)
-        elif method is 'nearest':
-            # show me
-            if self.verbose:
-                print('Create the Nearest neighbor interpolator')
-            self.interpolator = sciint.NearestNDInterpolator([(x,d) for x,d in zip(self.distas, self.depths)], self.zrtdsx)
+        # Create Arrays
+        depths = np.unique(self.depths)
+        distas = np.unique(self.distas)
+        values = self.zrtdsx.reshape((self.ndepth, self.ndista,10))
+
+        # Add surface condition
+        depths = np.insert(depths, 0, 0.)
+        values = np.insert(values, 0, values[0,:,:], axis=0)
+
+        # Add long distance condition (we are out of the box 100 time the max distas)
+        dmax = distas.max()*1e6
+        distas = np.insert(distas, len(distas), dmax)
+        values = np.insert(values, len(distas)-1, np.zeros((len(depths), 10)), axis=1)
+    
+        # Add depth condition
+        dmax = depths.max()*1e6
+        depths = np.insert(depths, len(depths), dmax)
+        values = np.insert(values, len(depths)-1, values[-1,:,:], axis=0)
+
+        # Create the interpolators
+        self.interpolators = [sciint.RegularGridInterpolator((depths, 
+                                                             distas), 
+                                                             values[:,:,i],
+                                                             method=method) \
+                                                             for i in range(10)]
 
         # All done
         return
