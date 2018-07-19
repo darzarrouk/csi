@@ -1255,7 +1255,7 @@ class Fault(SourceInv):
             elif method in ('python'):
                 iGss = np.array(inter.interpolate(xs, ys, zs, strike*np.pi/180., 
                                                   dip*np.pi/180., np.zeros(dip.shape),
-                                                  Areas, np.ones(dip.shape), 
+                                                  Areas, slip, 
                                                   xr, yr, method='linear'))
             if verbose:
                 print('Summing sub-sources...')
@@ -1280,7 +1280,7 @@ class Fault(SourceInv):
                 iGds = np.array(inter.interpolate(xs, ys, zs, strike*np.pi/180., 
                                                   dip*np.pi/180., 
                                                   np.ones(dip.shape)*np.pi/2.,
-                                                  Areas, np.ones(dip.shape), 
+                                                  Areas, slip, 
                                                   xr, yr, method='linear'))
             if verbose:
                 print('Summing sub-sources...')
