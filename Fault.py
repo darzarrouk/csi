@@ -833,7 +833,7 @@ class Fault(SourceInv):
         :Kwargs:
             * vertical      : If True, will produce green's functions for the vertical displacements in a gps object.
             * slipdir       : Direction of slip along the patches. Can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
-            * method        : Can be 'okada' (Okada, 1982, rectangular patches only), 'meade' (Meade 2007, triangular patches only), 'edks' (Zhao & Rivera, 2002), 'homogeneous' (Okada for rectangles, Meade for triangles)
+            * method        : Can be 'okada' (Okada, 1982, rectangular patches only), 'meade' (Meade 2007, triangular patches only), 'edks' (Zhao & Rivera, 2002), 'homogeneous' (Okada for rectangles, Meade for triangles). 'pyedks' is a special case for a pure python version of 'edks' (to be used if fortran is not available, you have a heavy number of potential multiprocesses or if some points are outside the interpolation area).
             * verbose       : Writes stuff to the screen (overwrites self.verbose)
             * convergence   : If coupling case, needs convergence azimuth and rate [azimuth in deg, rate]
 

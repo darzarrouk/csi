@@ -63,9 +63,18 @@ class interpolator(mp.Process):
         Run the interpolation
         '''
         
+        # Interpolate
         values = []
-        for i in range(self.istart, self.iend):
-            values.append((i, self.interpolators[i](np.vstack((self.depths.flatten(),
+        for inter in self.interpolators:
+            values.append(inter(np.vstack((self.depths[self.istart:self.iend],
+                                           self.distas[self.istart:self.iend])).T))
+        
+        # Save start/end
+        values.append((self.istart, self.iend))
+
+        # Store output
+        self.queue.put(values)
+        
         # All done
         return
     # ----------------------------------------------------------------------
@@ -633,7 +642,7 @@ class interpolateEDKS(object):
         # Interpolate
         if self.verbose:
             print('Interpolate')
-        zrtdsx = np.zeros((len(xs), len(xr), 10))
+        zrtdsx = np.zeros((len(xs)*len(xr), 10))
         
         # Multiprocessing
         try:
@@ -645,10 +654,12 @@ class interpolateEDKS(object):
         output = mp.Queue()
 
         # Create the workers
-        workers = [interpolator(self.interpolators, output, depth, distance, 
-                                np.int(np.floor(i*10/nworkers)),
-                                np.int(np.floor((i+1)*10/nworkers))) for i in range(nworkers)]
-        workers[-1].iend = 10
+        todo = len(distance.flatten())
+        workers = [interpolator(self.interpolators, output, 
+                                depth.flatten(), distance.flatten(), 
+                                np.int(np.floor(i*todo/nworkers)),
+                                np.int(np.floor((i+1)*todo/nworkers))) for i in range(nworkers)]
+        workers[-1].iend = todo
 
         # Start
         for w in range(nworkers): workers[w].start()
@@ -656,8 +667,12 @@ class interpolateEDKS(object):
         # Get from the queue
         for worker in workers:
             values = output.get()
-            for tu in values:
-                zrtdsx[:,:,tu[0]] = tu[1].reshape((len(xs),len(xr)))
+            istart,iend = values.pop()
+            for iv,value in enumerate(values):
+                zrtdsx[istart:iend,iv] = value
+        
+        # Reshape
+        zrtdsx = zrtdsx.reshape((len(xs),len(xr),10))
 
         #for i,interp in enumerate(self.interpolators):
         #    temp = interp(np.vstack((depth.flatten(), distance.flatten())).T)
