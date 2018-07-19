@@ -491,6 +491,9 @@ class interpolateEDKS(object):
         # Set kernel
         self.kernel = kernel
 
+        # Make sure we start on the right foot
+        self.interpolationDone = False
+
         # All done
         return
 
@@ -639,75 +642,84 @@ class interpolateEDKS(object):
             print('Calculate geometry')
         distance, depth, caz, saz, c2az, s2az = self._getGeometry(xs, ys, zs, xr, yr)
 
-        # Interpolate
-        if self.verbose:
-            print('Interpolate')
-        zrtdsx = np.zeros((len(xs)*len(xr), 10))
-        
-        # Multiprocessing
-        try:
-            nworkers = int(os.environ['OMP_NUM_THREADS'])
-        except:
-            nworkers = mp.cpu_count()
+        if not self.interpolationDone:
 
-        # Create a queue 
-        output = mp.Queue()
+            # Interpolate
+            if self.verbose:
+                print('Interpolate')
+            
+            # Create holder
+            self.interpKernels = np.zeros((len(xs)*len(xr), 10))
+            
+            # Multiprocessing
+            try:
+                nworkers = int(os.environ['OMP_NUM_THREADS'])
+            except:
+                nworkers = mp.cpu_count()
 
-        # Create the workers
-        todo = len(distance.flatten())
-        workers = [interpolator(self.interpolators, output, 
-                                depth.flatten(), distance.flatten(), 
-                                np.int(np.floor(i*todo/nworkers)),
-                                np.int(np.floor((i+1)*todo/nworkers))) for i in range(nworkers)]
-        workers[-1].iend = todo
+            # Create a queue 
+            output = mp.Queue()
 
-        # Start
-        for w in range(nworkers): workers[w].start()
+            # Create the workers
+            todo = len(distance.flatten())
+            workers = [interpolator(self.interpolators, output, 
+                                    depth.flatten(), distance.flatten(), 
+                                    np.int(np.floor(i*todo/nworkers)),
+                                    np.int(np.floor((i+1)*todo/nworkers))) for i in range(nworkers)]
+            workers[-1].iend = todo
 
-        # Get from the queue
-        for worker in workers:
-            values = output.get()
-            istart,iend = values.pop()
-            for iv,value in enumerate(values):
-                zrtdsx[istart:iend,iv] = value
-        
-        # Reshape
-        zrtdsx = zrtdsx.reshape((len(xs),len(xr),10))
+            # Start
+            for w in range(nworkers): workers[w].start()
 
-        #for i,interp in enumerate(self.interpolators):
-        #    temp = interp(np.vstack((depth.flatten(), distance.flatten())).T)
-        #    zrtdsx[:,:,i] = temp.reshape((len(xs), len(xr)))
+            # Get from the queue
+            for worker in workers:
+                values = output.get()
+                istart,iend = values.pop()
+                for iv,value in enumerate(values):
+                    self.interpKernels[istart:iend,iv] = value
+            
+            # Reshape
+            self.interpKernels = self.interpKernels.reshape((len(xs),len(xr),10))
 
-        # reconstruction of the actual displacement Xiaobi vs  Herrman
-        # The coefficients created by tab5 are in Xiaobi's notation
-        # The equations just below follow Herrman's notation; hence
-        #zrtdsx = zrtdsx.reshape((len(xs), len(xr), 10))
-        zrtdsx[:,:,1] *= -1.
-        zrtdsx[:,:,4] *= -1.
-        zrtdsx[:,:,7] *= -1.
+            # reconstruction of the actual displacement Xiaobi vs  Herrman
+            # The coefficients created by tab5 are in Xiaobi's notation
+            # The equations just below follow Herrman's notation; hence
+            self.interpKernels[:,:,1] *= -1.
+            self.interpKernels[:,:,4] *= -1.
+            self.interpKernels[:,:,7] *= -1.
+
+            # Set it to True
+            self.interpolationDone = True
+
+        else:
+            if self.verbose:
+                print('Use interpolated kernels')
+
+        # Get what's done 
+        kernels = self.interpKernels
 
         # Vertical component  (positive down)
-        ws = M[:,np.newaxis,1]*( zrtdsx[:,:,2]*c2az/2. - zrtdsx[:,:,0]/6. + zrtdsx[:,:,8]/3.) \
-           + M[:,np.newaxis,2]*(-zrtdsx[:,:,2]*c2az/2. - zrtdsx[:,:,0]/6. + zrtdsx[:,:,8]/3.) \
-           + M[:,np.newaxis,0]*( zrtdsx[:,:,0] + zrtdsx[:,:,8])/3. \
-           + M[:,np.newaxis,5]*  zrtdsx[:,:,2]*s2az \
-           + M[:,np.newaxis,3]*  zrtdsx[:,:,1]*caz \
-           + M[:,np.newaxis,4]*  zrtdsx[:,:,1]*saz
+        ws = M[:,np.newaxis,1]*( kernels[:,:,2]*c2az/2. - kernels[:,:,0]/6. + kernels[:,:,8]/3.) \
+           + M[:,np.newaxis,2]*(-kernels[:,:,2]*c2az/2. - kernels[:,:,0]/6. + kernels[:,:,8]/3.) \
+           + M[:,np.newaxis,0]*( kernels[:,:,0] + kernels[:,:,8])/3. \
+           + M[:,np.newaxis,5]*  kernels[:,:,2]*s2az \
+           + M[:,np.newaxis,3]*  kernels[:,:,1]*caz \
+           + M[:,np.newaxis,4]*  kernels[:,:,1]*saz
    
         # Radial component    (positive away from the source)
-        qr = M[:,np.newaxis,1]*( zrtdsx[:,:,5]*c2az/2. - zrtdsx[:,:,3]/6. + zrtdsx[:,:,9]/3.) \
-           + M[:,np.newaxis,2]*(-zrtdsx[:,:,5]*c2az/2. - zrtdsx[:,:,3]/6. + zrtdsx[:,:,9]/3.) \
-           + M[:,np.newaxis,0]*( zrtdsx[:,:,3] + zrtdsx[:,:,9])/3. \
-           + M[:,np.newaxis,5]*  zrtdsx[:,:,5]*s2az \
-           + M[:,np.newaxis,3]*  zrtdsx[:,:,4]*caz \
-           + M[:,np.newaxis,4]*  zrtdsx[:,:,4]*saz 
+        qr = M[:,np.newaxis,1]*( kernels[:,:,5]*c2az/2. - kernels[:,:,3]/6. + kernels[:,:,9]/3.) \
+           + M[:,np.newaxis,2]*(-kernels[:,:,5]*c2az/2. - kernels[:,:,3]/6. + kernels[:,:,9]/3.) \
+           + M[:,np.newaxis,0]*( kernels[:,:,3] + kernels[:,:,9])/3. \
+           + M[:,np.newaxis,5]*  kernels[:,:,5]*s2az \
+           + M[:,np.newaxis,3]*  kernels[:,:,4]*caz \
+           + M[:,np.newaxis,4]*  kernels[:,:,4]*saz 
    
         # Tangential component (positive if clockwise from zenithal view)
-        vt = M[:,np.newaxis,1]*zrtdsx[:,:,7]*s2az/2. \
-           - M[:,np.newaxis,2]*zrtdsx[:,:,7]*s2az/2. \
-           - M[:,np.newaxis,5]*zrtdsx[:,:,7]*c2az \
-           + M[:,np.newaxis,3]*zrtdsx[:,:,6]*saz \
-           - M[:,np.newaxis,4]*zrtdsx[:,:,6]*caz 
+        vt = M[:,np.newaxis,1]*kernels[:,:,7]*s2az/2. \
+           - M[:,np.newaxis,2]*kernels[:,:,7]*s2az/2. \
+           - M[:,np.newaxis,5]*kernels[:,:,7]*c2az \
+           + M[:,np.newaxis,3]*kernels[:,:,6]*saz \
+           - M[:,np.newaxis,4]*kernels[:,:,6]*caz 
 
         # Cartesian components
         Ux = qr*saz + vt*caz

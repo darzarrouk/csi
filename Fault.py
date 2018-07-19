@@ -845,7 +845,7 @@ class Fault(SourceInv):
 
         # Chech something
         if self.patchType == 'triangletent':
-            assert method is 'edks', 'Homogeneous case not implemented for {} faults'.format(self.patchType)
+            assert method in ('edks', 'pyedks'), 'Homogeneous case not implemented for {} faults'.format(self.patchType)
 
         # Check something
         if method in ('homogeneous', 'Homogeneous'):
