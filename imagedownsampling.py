@@ -871,7 +871,8 @@ class imagedownsampling(object):
     
         if self.verbose:
             print(" ")
-
+        
+    
         # All done
         return
 

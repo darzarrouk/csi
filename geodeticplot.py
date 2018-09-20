@@ -23,7 +23,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d.art3d as art3d
 
 # CSI
-from .SourceInv import SourceInv
+import SourceInv
 
 class geodeticplot(object):
 
@@ -1415,7 +1415,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def slipdirection(self, fault, linewidth=1., color='k', scale=1.):
+    def slipdirection(self, fault, lon0, lat0, linewidth=1., color='k', scale=1.):
         '''
         Plots slip direction on the fault
 
@@ -1432,22 +1432,33 @@ class geodeticplot(object):
         '''
 
         # Check utmzone
-        assert self.utmzone==fault.utmzone, 'Fault object {} not in the same utmzone...'.format(fault.name)
+        #assert self.utmzone==fault.utmzone, 'Fault object {} not in the same utmzone...'.format(fault.name)
         
         # Check if it exists
         if not hasattr(fault,'slipdirection'):
             fault.computeSlipDirection(scale=scale)
-
+        
         # Loop on the vectors
         for v in fault.slipdirection:
             # Z increase downward
             v[0][2] *= -1.0
             v[1][2] *= -1.0
+            
             # Make lists
             x, y, z = zip(v[0],v[1])
+            
+            # Convert x y from UTM to lon lat
+            x = list(x)
+            y = list(y)
+            si = SourceInv.SourceInv('test',lon0=lon0,lat0=lat0)
+            (x[0], y[0]) = si.xy2ll(x[0], y[0])
+            (x[1], y[1]) = si.xy2ll(x[1], y[1])
+            x = tuple(x)
+            y = tuple(y)
+            
             # Plot
             self.faille.plot3D(x, y, z, color=color, linewidth=linewidth)
-
+            
         # All done
         return
 

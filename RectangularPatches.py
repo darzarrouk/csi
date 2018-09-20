@@ -1308,11 +1308,13 @@ class RectangularPatches(Fault):
         for p in range(len(self.patch)):  
             
             # Get some geometry
-            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True) 
+            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(p, center=True)        
+                      
+            
             # Get the slip vector
             slip = self.getslip(self.patch[p]) 
             rake = np.arctan2(slip[1],slip[0])
-
+            
             # Compute the vector
             if flipstrike:
                 x = (np.sin(strike+np.pi)*np.cos(rake) + np.sin(strike+np.pi)*np.cos(dip)*np.sin(rake))
@@ -1503,7 +1505,7 @@ class RectangularPatches(Fault):
                     [lon4, lat4, z4] ]
 
         # Replace
-        self.patchll[iPatch] = patch
+        self.patchll[iPatch] = patchll
 
         # All done
         return
@@ -1974,50 +1976,56 @@ class RectangularPatches(Fault):
         self.sim = gpsclass('simulation', utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0)
 
         # Create a lon lat grid
-        if lonlat is None:
-            if (box is None) and (disk is None) :
-                n = box[-1]
-                lon = np.linspace(self.lon.min(), self.lon.max(), n)
-                lat = np.linspace(self.lat.min(), self.lat.max(), n)
-                lon, lat = np.meshgrid(lon,lat)
-                lon = lon.flatten()
-                lat = lat.flatten()
-            elif (box is not None):
-                n = box[-1]
-                lon = np.linspace(box[0], box[1], n)
-                lat = np.linspace(box[2], box[3], n)
-                lon, lat = np.meshgrid(lon,lat)
-                lon = lon.flatten()
-                lat = lat.flatten()
-            elif (disk is not None):
-                lon = []; lat = []
-                xd, yd = self.ll2xy(disk[0], disk[1])
-                xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
-                ampx = (xmax-xmin)
-                ampy = (ymax-ymin)
-                n = 0
-                while n<disk[3]:
-                    x, y = np.random.rand(2)
-                    x *= ampx; x -= ampx/2.; x += xd
-                    y *= ampy; y -= ampy/2.; y += yd
-                    if ((x-xd)**2 + (y-yd)**2) <= (disk[2]**2):
-                        lo, la = self.xy2ll(x,y)
-                        lon.append(lo); lat.append(la)
-                        n += 1
-                lon = np.array(lon); lat = np.array(lat)
-        else:
-            lon = np.array(lonlat[0])
-            lat = np.array(lonlat[1])
+#        if lonlat is None:
+#            if (box is None) and (disk is None) :
+#                n = box[-1]
+#                lon = np.linspace(self.lon.min(), self.lon.max(), n)
+#                lat = np.linspace(self.lat.min(), self.lat.max(), n)
+#                lon, lat = np.meshgrid(lon,lat)
+#                lon = lon.flatten()
+#                lat = lat.flatten()
+#            elif (box is not None):
+#                n = box[-1]
+#                lon = np.linspace(box[0], box[1], n)
+#                lat = np.linspace(box[2], box[3], n)
+#                lon, lat = np.meshgrid(lon,lat)
+#                lon = lon.flatten()
+#                lat = lat.flatten()
+#            elif (disk is not None):
+#                lon = []; lat = []
+#                xd, yd = self.ll2xy(disk[0], disk[1])
+#                xmin = xd-disk[2]; xmax = xd+disk[2]; ymin = yd-disk[2]; ymax = yd+disk[2]
+#                ampx = (xmax-xmin)
+#                ampy = (ymax-ymin)
+#                n = 0
+#                while n<disk[3]:
+#                    x, y = np.random.rand(2)
+#                    x *= ampx; x -= ampx/2.; x += xd
+#                    y *= ampy; y -= ampy/2.; y += yd
+#                    if ((x-xd)**2 + (y-yd)**2) <= (disk[2]**2):
+#                        lo, la = self.xy2ll(x,y)
+#                        lon.append(lo); lat.append(la)
+#                        n += 1
+#                lon = np.array(lon); lat = np.array(lat)
+#        else:
+#            lon = np.array(lonlat[0])
+#            lat = np.array(lonlat[1])
 
         # Clean it
-        if (lon.max()>360.) or (lon.min()<-180.0) or (lat.max()>90.) or (lat.min()<-90):
-            self.sim.x = lon
-            self.sim.y = lat
-        else:
-            self.sim.lon = lon
-            self.sim.lat = lat
-            # put these in x y utm coordinates
-            self.sim.lonlat2xy()
+#        if (lon.max()>360.) or (lon.min()<-180.0) or (lat.max()>90.) or (lat.min()<-90):
+#            self.sim.x = lon
+#            self.sim.y = lat
+#        else:
+        n = box[4]
+        lon = np.arange(box[0], box[1], n)
+        lat = np.arange(box[2], box[3], n)
+        lon, lat = np.meshgrid(lon,lat)
+        lon = lon.flatten()
+        lat = lat.flatten()
+        self.sim.lon = lon
+        self.sim.lat = lat
+        # put these in x y utm coordinates
+        self.sim.lonlat2xy()
 
         # Initialize the vel_enu array
         self.sim.vel_enu = np.zeros((lon.size, 3))

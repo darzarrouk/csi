@@ -658,7 +658,7 @@ class imagecovariance(object):
                 plt.savefig(figname)
 
         # Create a figure
-        fig = plt.figure(figure)
+        fig = plt.figure(figure,figsize=(10,10))
         plt.clf()
 
         # How many data sets
