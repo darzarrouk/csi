@@ -1282,6 +1282,165 @@ class TriangularPatches(Fault):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
+    def pointRotation3D(self, iPatch, iPoint, theta, p_axis1, p_axis2):
+        '''
+        Rotate a point with an arbitrary axis (fault tip)
+        Used in rotatePatch
+        
+        :Args:
+            * iPatch: index of the patch to be rotated
+            * iPoint: index of the patch corner (point) to be rotated
+            * theta : angle of rotation in degrees
+            * p_axis1 : first point of axis (ex: one side of a fault)
+            * p_axis2 : second point to define the axis (ex: the other side of a fault)
+            
+        :Returns:
+            * rotated point
+        Reference: 'Rotate A Point About An Arbitrary Axis (3D)' - Paul Bourke 
+        '''
+        def to_radians(angle):
+            return np.divide(np.dot(angle, np.pi), 180.0)
+    
+        def to_degrees(angle):
+            return np.divide(np.dot(angle, 180.0), np.pi)
+        
+        point = self.patch[iPatch][iPoint]
+        
+        # Translate so axis is at origin    
+        p = point - p_axis1
+    
+        N = p_axis2 - p_axis1
+        Nm = np.sqrt(N[0]**2 + N[1]**2 + N[2]**2)
+        
+        # Rotation axis unit vector
+        n = [N[0]/Nm, N[1]/Nm, N[2]/Nm]
+    
+        # Matrix common factors     
+        c = np.cos(to_radians(theta))
+        t = 1 - np.cos(to_radians(theta))
+        s = np.sin(to_radians(theta))
+        X = n[0]
+        Y = n[1]
+        Z = n[2]
+    
+        # Matrix 'M'
+        d11 = t*X**2 + c
+        d12 = t*X*Y - s*Z
+        d13 = t*X*Z + s*Y
+        d21 = t*X*Y + s*Z
+        d22 = t*Y**2 + c
+        d23 = t*Y*Z - s*X
+        d31 = t*X*Z - s*Y
+        d32 = t*Y*Z + s*X
+        d33 = t*Z**2 + c
+    
+        #            |p.x|
+        # Matrix 'M'*|p.y|
+        #            |p.z|
+        q = np.empty((3))
+        q[0] = d11*p[0] + d12*p[1] + d13*p[2]
+        q[1] = d21*p[0] + d22*p[1] + d23*p[2]
+        q[2]= d31*p[0] + d32*p[1] + d33*p[2]
+        
+        # Translate axis and rotated point back to original location    
+        return np.array(q + p_axis1)
+    # ----------------------------------------------------------------------
+        
+    # ----------------------------------------------------------------------
+    def rotatePatch(self, iPatch , theta, p_axis1, p_axis2, verbose=False):
+        '''
+        Rotate a patch with an arbitrary axis (fault tip)
+        Used by fault class uncertainties
+        
+        :Args:
+            * iPatch: index of the patch to be rotated
+            * theta : angle of rotation in degrees
+            * p_axis1 : first point of axis (ex: one side of a fault)
+            * p_axis2 : second point to define the axis (ex: the other side of a fault)
+            
+        :Returns:
+            * rotated patch
+        '''
+        if verbose:
+            print('Rotating patch {} '.format(iPatch))
+        
+        # Calculate rotated patch
+        rotated_patch = [self.pointRotation3D(iPatch,0, theta, p_axis1, p_axis2),
+                         self.pointRotation3D(iPatch,1, theta, p_axis1, p_axis2),
+                         self.pointRotation3D(iPatch,2, theta, p_axis1, p_axis2)]
+        
+        patch = rotated_patch
+        
+        # Replace
+        self.patch[iPatch] = np.array(patch)
+
+        # Build the ll patch
+        lon1, lat1 = self.xy2ll(patch[0][0], patch[0][1])
+        z1 = patch[0][2]
+        lon2, lat2 = self.xy2ll(patch[1][0], patch[1][1])
+        z2 = patch[1][2]
+        lon3, lat3 = self.xy2ll(patch[2][0], patch[2][1])
+        z3 = patch[2][2]
+
+        # append the ll patch
+        patchll = [ [lon1, lat1, z1],
+                    [lon2, lat2, z2],
+                    [lon3, lat3, z3] ]
+
+        # Replace
+        self.patchll[iPatch] = np.array(patchll)
+        return 
+    # ----------------------------------------------------------------------    
+
+    # ----------------------------------------------------------------------
+    # Translate a patch
+    def translatePatch(self, iPatch , tr_vector):
+        '''
+        Translate a patch
+        Used by class uncertainties
+        
+        :Args:
+            * iPatch: index of the patch to be rotated
+            * tr_vector: array, translation vector in 3D
+            
+        :Returns:
+            * None
+        '''        
+        # Calculate rotated patch
+        tr_p1 = np.array( [ self.patch[iPatch][0][0]+tr_vector[0], 
+                          self.patch[iPatch][0][1]+tr_vector[1], 
+                          self.patch[iPatch][0][2]+tr_vector[2]])
+        tr_p2 = np.array( [self.patch[iPatch][1][0]+tr_vector[0], 
+                          self.patch[iPatch][1][1]+tr_vector[1], 
+                          self.patch[iPatch][1][2]+tr_vector[2]])
+        tr_p3 = np.array( [self.patch[iPatch][2][0]+tr_vector[0], 
+                          self.patch[iPatch][2][1]+tr_vector[1], 
+                          self.patch[iPatch][2][2]+tr_vector[2]])
+        
+        tr_patch=[tr_p1, tr_p2, tr_p3]
+                                             
+        # Replace
+        self.patch[iPatch] = tr_patch
+
+        # Build the ll patch
+        lon1, lat1 = self.xy2ll(tr_patch[0][0], tr_patch[0][1])
+        z1 = tr_patch[0][2]
+        lon2, lat2 = self.xy2ll(tr_patch[1][0], tr_patch[1][1])
+        z2 = tr_patch[1][2]
+        lon3, lat3 = self.xy2ll(tr_patch[2][0], tr_patch[2][1])
+        z3 = tr_patch[2][2]
+
+        # append the ll patch
+        patchll = [ [lon1, lat1, z1],
+                    [lon2, lat2, z2],
+                    [lon3, lat3, z3] ]
+
+        # Replace
+        self.patchll[iPatch] = np.array(patchll)
+        return 
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
     def getpatchgeometry(self, patch, center=False, retNormal=False, checkindex=True):
         '''
         Returns the patch geometry as needed for triangleDisp.

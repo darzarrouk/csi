@@ -47,6 +47,9 @@ from .timeseries import timeseries
 ## Green's functions
 from . import okadafull
 
+## Uncertainties in the Green's functions
+from .uncertainties import uncertainties
+
 ## Fancy stuff
 from .explorefault import explorefault
 

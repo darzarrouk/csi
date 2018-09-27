@@ -95,6 +95,7 @@ class Fault(SourceInv):
         # Create structure to store the GFs and the assembled d vector
         self.Gassembled = None
         self.dassembled = None
+        self.Cd = None
 
         # Adjacency map for the patches
         self.adjacencyMap = None
@@ -2775,6 +2776,52 @@ class Fault(SourceInv):
         # All done
         return          
     # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def calcGFsCp(self, datasets, edks=False, **edks_params):
+        '''
+        Calculate Green's Functions using Okada or EDKS 
+        Used in class uncertainties
+        
+        :Args:
+            * datasets : List of data objects
+                ex: dataset=[gps]+[insar1,insar2]
+        
+        :Kwargs:
+            * edks : If True, GFs calculated using a layered Earth model calculated with EDKS.
+                     If False, GFs with Okada
+                     
+        If edks is True, please specify in **edks_params: 
+            ex: Cp_dip(fault,datasets,[40,50],multi_segments=2,edks=True,edksdir='PATH',modelname='CIA',sourceSpacing=0.5)
+            * modelname : xxx.edks = Filename of the EDKS kernels
+            * sourceSpacing      : source spacing to calculate the Green's Functions
+                OR sourceNumber   : Number of sources per patches.
+                OR sourceArea     : Maximum Area of the sources.
+                
+        :Returns:
+            * Gassembled
+        '''
+        if edks is False:
+            for data in datasets:
+                self.buildGFs(data, slipdir='sd')
+            self.assembleGFs(datasets, slipdir='sd', polys=None)
+        else:
+            self.kernelsEDKS = edks_params['modelname']+'.edks'
+            if 'Spacing' in str(edks_params.items()[1][0]):
+                self.sourceSpacing = edks_params['sourceSpacing']
+            elif 'Number' in str(edks_params.items()[1][0]):
+                self.sourceNumber = edks_params['sourceNumber']
+            else:
+                self.sourceArea = edks_params['sourceArea']
+        
+            for data in datasets:
+                self.buildGFs(data, slipdir='sd', method= 'edks')
+            self.assembleGFs(datasets, slipdir='sd', polys=None)
+           
+        return self.Gassembled
+    # ----------------------------------------------------------------------
+        
+
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
