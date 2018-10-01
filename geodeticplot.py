@@ -23,7 +23,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d.art3d as art3d
 
 # CSI
-import SourceInv
+from .SourceInv import SourceInv
 
 class geodeticplot(object):
 

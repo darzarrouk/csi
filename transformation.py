@@ -10,6 +10,7 @@ import pyproj as pp
 import matplotlib.pyplot as plt
 import scipy.interpolate as sciint
 from scipy.linalg import block_diag
+import itertools
 import copy
 import sys
 import os
@@ -112,7 +113,7 @@ class transformation(SourceInv):
         for data, transformation in zip(datas, transformations):
             
             # Check something
-            assert data.dtype in ('insar', 'gps', 'tsunami'), \
+            assert data.dtype in ('insar', 'gps', 'tsunami', 'multigps'), \
                     'Unknown data type {}'.format(data.dtype)
 
             # Check the GFs
@@ -133,6 +134,10 @@ class transformation(SourceInv):
                     T = data.getTransformEstimator('strainonly', computeNormFact=False)
                 else:
                     T = data.getTransformEstimator(trans, computeNormFact=False)
+
+                # One case is tricky so we build strings
+                if type(trans) is list:
+                    trans = ''.join(itertools.chain.from_iterable(trans))
                 self.G[data.name][trans] = T
 
             # Set data in the GFs
