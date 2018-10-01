@@ -1720,7 +1720,8 @@ class Fault(SourceInv):
 
     # ----------------------------------------------------------------------
     def assembleGFs(self, datas, polys=None, slipdir='sd', verbose=True, 
-                                 custom=False, computeNormFact=True):
+                                 custom=False, computeNormFact=True, 
+                                 allPatchesEqual=False):
         '''
         Assemble the Green's functions corresponding to the data in datas.
         This method allows to specify which transformation is going
@@ -1755,6 +1756,8 @@ class Fault(SourceInv):
             * custom            : If True, gets the additional Green's function rom the dictionary self.G[data.name]['custom']
             
             * computeNormFact   : True/False to recompute OrbNormalizingFactor
+
+            * allPatchesEqual   : Special case where all patches/nodes will be considered as one single parameter for the inversion. Basically, this leads to the summation of the GFs matrix in a single column per slip direction.
 
             * verbose           : Talk to me (overwrites self.verbose)
 
@@ -1803,6 +1806,8 @@ class Fault(SourceInv):
         # Get the number of parameters
         if self.N_slip == None:
             self.N_slip = self.slip.shape[0]
+        if allPatchesEqual:
+            self.N_slip = 1
         Nps = self.N_slip*len(slipdir)
         Npo = 0
         for data in datas :
@@ -1881,8 +1886,13 @@ class Fault(SourceInv):
             # Fill Glocal
             ec = 0
             for sp in sliplist:
-                Nclocal = self.G[data.name][sp].shape[1] 
-                Glocal[:,ec:ec+Nclocal] = self.G[data.name][sp]
+                if allPatchesEqual:
+                    Nclocal = 1
+                    Gt = self.G[data.name][sp].sum(axis=1)
+                else:
+                    Nclocal = self.G[data.name][sp].shape[1] 
+                    Gt = self.G[data.name][sp]
+                Glocal[:,ec:ec+Nclocal] = Gt.reshape(Glocal[:,ec:ec+Nclocal].shape)
                 ec += Nclocal
 
             # Put Glocal into the big G

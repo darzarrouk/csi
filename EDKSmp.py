@@ -742,25 +742,14 @@ class interpolateEDKS(object):
         distas = np.unique(self.distas)
         values = self.zrtdsx.reshape((self.ndepth, self.ndista,10))
 
-        # Add surface condition
-        depths = np.insert(depths, 0, 0.)
-        values = np.insert(values, 0, values[0,:,:], axis=0)
-
-        # Add long distance condition (we are out of the box 100 time the max distas)
-        dmax = distas.max()*1e6
-        distas = np.insert(distas, len(distas), dmax)
-        values = np.insert(values, len(distas)-1, np.zeros((len(depths), 10)), axis=1)
-    
-        # Add depth condition
-        dmax = depths.max()*1e6
-        depths = np.insert(depths, len(depths), dmax)
-        values = np.insert(values, len(depths)-1, values[-1,:,:], axis=0)
-
-        # Create the interpolators
+        # Create the interpolators (if points fall outside the interpolating box, 
+        # the value will be extrapolated)
         self.interpolators = [sciint.RegularGridInterpolator((depths, 
                                                              distas), 
                                                              values[:,:,i],
-                                                             method=method) \
+                                                             method=method, 
+                                                             bounds_error=False, 
+                                                             fill_value=None) \
                                                              for i in range(10)]
 
         # All done

@@ -165,12 +165,15 @@ class multigps(gps):
         # All done
         return Npo
 
-    def getTransformEstimator(self, transformation):
+    def getTransformEstimator(self, transformation, computeNormFact=True):
         '''
         Returns the estimator for the transform.
 
         :Args:
             * transformation : List [main_transformation, [transfo_subnet1, transfo_subnet2, ....] ]. Each item can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
+
+        :Kwargs:
+            * computeNormFact: compute and store the normalizing factor
 
         :Returns:
             * 2D array
@@ -192,7 +195,8 @@ class multigps(gps):
         orb = np.zeros((ns,nc))
 
         # Get the main transforms
-        Morb = super(multigps,self).getTransformEstimator(mainTrans)
+        Morb = super(multigps,self).getTransformEstimator(mainTrans, 
+                                                          computeNormFact=computeNormFact)
 
         # Put it where it should be
         if Morb is not None:
@@ -207,7 +211,7 @@ class multigps(gps):
         lst_up = 2*self.station.shape[0]
         for trans, gp in zip(subTrans, self.gpsobjects):
             # Get the transform
-            Sorb = gp.getTransformEstimator(trans)
+            Sorb = gp.getTransformEstimator(trans, computeNormFact=computeNormFact)
             if Sorb is not None:
                 # Set the indexes right
                 ced = cst + Sorb.shape[1]
