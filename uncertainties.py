@@ -16,7 +16,7 @@ class uncertainties(object):
        
     # ----------------------------------------------------------------------
     # Initialize class
-    def __init__(self, name, faults, datasets, verbose=True):
+    def __init__(self, name, faults, datasets, export=None, verbose=True):
         '''
         Class calculating the covariance matrix of the predictions.
     
@@ -25,6 +25,8 @@ class uncertainties(object):
             * faults    : Prior fault geometry, can be a list of several faults
             * datasets  : List of data objects
                           ex: dataset=[gps]+[insar1,insar2]
+            * export    : None by default
+                          or string with path to directory
     
         '''
         
@@ -38,6 +40,7 @@ class uncertainties(object):
         self.name = name
         self.faults = faults
         self.datasets = datasets
+        self.export = export
         # check the utm zone
         if np.shape(self.faults)!=():
             self.utmzone = faults[0].utmzone
@@ -65,7 +68,19 @@ class uncertainties(object):
             else:
                 self.Cd = self.faults.Cd
         
-        # Set the covariance matrices as empty arrays
+        # Set the kernels and covariance matrices as empty arrays
+        self.KDip = []
+        self.KStrike = []
+        self.KPosition = []
+        self.KElastic = []
+        self.KernelsFull = []
+        
+        self.CovDip = []
+        self.CovStrike = []
+        self.CovPosition = []
+        self.CovElastic = []
+        self.CovFull = []
+        
         self.CpDip = []
         self.CpStrike = []
         self.CpPosition = []
@@ -182,7 +197,19 @@ class uncertainties(object):
             k = np.transpose(np.matmul(kernels, mprior))
             C1 = np.matmul(k, [[np.float(sigma)**2]])
             CpDip = np.matmul(C1, np.transpose(k))
-
+            
+            self.KDip = kernels
+            self.CovDip = np.array([[np.float(sigma)**2]])
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KDip
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KDip))
+            if self.CovFull==[]:
+                self.CovFull = self.CovDip
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovDip)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovDip]]))
+                
             self.CpDip = CpDip
             if self.CpFull==[]:
                 self.CpFull = self.CpDip
@@ -190,6 +217,13 @@ class uncertainties(object):
                 self.CpFull = np.add(self.CpFull, self.CpDip)
             self.CdFull = np.add(self.Cd, self.CpFull)
             
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KDip.astype('f').tofile(os.path.join(self.export,self.name+'KDip.bin'))
+                self.CovDip.astype('f').tofile(os.path.join(self.export,self.name+'CovDip.bin'))
+                
             print('---------------------------------')
             print('---------------------------------')
             print('CdFull successfully updated with CpDip')
@@ -324,12 +358,31 @@ class uncertainties(object):
             C1 = np.matmul(k, Covdip)
             CpDip = np.matmul(C1, np.transpose(k))
             
+            self.KDip = kernels
+            self.CovDip = Covdip
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KDip
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KDip))
+            if self.CovFull==[]:
+                self.CovFull = self.CovDip
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovDip)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovDip]]))
+                
             self.CpDip = CpDip
             if self.CpFull==[]:
                 self.CpFull = self.CpDip
             else:
                 self.CpFull = np.add(self.CpFull, self.CpDip)
             self.CdFull = np.add(self.Cd, self.CpFull)
+            
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KDip.astype('f').tofile(os.path.join(self.export,self.name+'KDip.bin'))
+                self.CovDip.astype('f').tofile(os.path.join(self.export,self.name+'CovDip.bin'))            
             
             print('---------------------------------')
             print('---------------------------------')
@@ -468,6 +521,18 @@ class uncertainties(object):
             C1 = np.matmul(k, [[np.float(sigma)**2]])
             CpStrike = np.matmul(C1, np.transpose(k))
             
+            self.KStrike = kernels
+            self.CovStrike = np.array([[np.float(sigma)**2]])
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KStrike
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KStrike))
+            if self.CovFull==[]:
+                self.CovFull = self.CovStrike
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovStrike)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovStrike]]))            
+            
             self.CpStrike = CpStrike
             if self.CpFull==[]:
                 self.CpFull = self.CpStrike
@@ -475,6 +540,13 @@ class uncertainties(object):
                 self.CpFull = np.add(self.CpFull, self.CpStrike)
             self.CdFull = np.add(self.Cd, self.CpFull)
             
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KStrike.astype('f').tofile(os.path.join(self.export,self.name+'KStrike.bin'))
+                self.CovStrike.astype('f').tofile(os.path.join(self.export,self.name+'CovStrike.bin'))
+                
             print('---------------------------------')
             print('---------------------------------')
             print('CdFull successfully updated with Cpstrike')
@@ -632,6 +704,18 @@ class uncertainties(object):
             C1 = np.matmul(k, Covstk)
             CpStrike = np.matmul(C1, np.transpose(k))
             
+            self.KStrike = kernels
+            self.CovStrike = Covstk
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KStrike
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KStrike))
+            if self.CovFull==[]:
+                self.CovFull = self.CovStrike
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovStrike)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovStrike]]))    
+            
             self.CpStrike = CpStrike
             if self.CpFull==[]:
                 self.CpFull = self.CpStrike
@@ -639,6 +723,13 @@ class uncertainties(object):
                 self.CpFull = np.add(self.CpFull, self.CpStrike)
             self.CdFull = np.add(self.Cd, self.CpFull)
             
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KStrike.astype('f').tofile(os.path.join(self.export,self.name+'KStrike.bin'))
+                self.CovStrike.astype('f').tofile(os.path.join(self.export,self.name+'CovStrike.bin'))
+                
             print('---------------------------------')
             print('---------------------------------')
             print('CdFull successfully updated with CpStrike') 
@@ -778,6 +869,18 @@ class uncertainties(object):
             C1 = np.matmul(k, Covstk)
             CpStrike = np.matmul(C1, np.transpose(k))
             
+            self.KStrike = kernels
+            self.CovStrike = Covstk
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KStrike
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KStrike))
+            if self.CovFull==[]:
+                self.CovFull = self.CovStrike
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovStrike)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovStrike]]))                
+            
             self.CpStrike = CpStrike
             if self.CpFull==[]:
                 self.CpFull = self.CpStrike
@@ -785,6 +888,13 @@ class uncertainties(object):
                 self.CpFull = np.add(self.CpFull, self.CpStrike)
             self.CdFull = np.add(self.Cd, self.CpFull)
             
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KStrike.astype('f').tofile(os.path.join(self.export,self.name+'KStrike.bin'))
+                self.CovStrike.astype('f').tofile(os.path.join(self.export,self.name+'CovStrike.bin'))
+                
             print('---------------------------------')
             print('---------------------------------')
             print('CdFull successfully updated with CpStrike')       
@@ -912,6 +1022,18 @@ class uncertainties(object):
             C1 = np.matmul(k, [[np.float(sigma)**2]])
             CpPosition = np.matmul(C1, np.transpose(k))
             
+            self.KPosition = kernels
+            self.CovPosition = np.array([[np.float(sigma)**2]])
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KPosition
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KPosition))
+            if self.CovFull==[]:
+                self.CovFull = self.CovPosition
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovPosition)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovPosition]]))                
+            
             self.CpPosition = CpPosition
             if self.CpFull==[]:
                 self.CpFull = self.CpPosition
@@ -919,6 +1041,13 @@ class uncertainties(object):
                 self.CpFull = np.add(self.CpFull, self.CpPosition)
             self.CdFull = np.add(self.Cd, self.CpFull)
             
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KPosition.astype('f').tofile(os.path.join(self.export,self.name+'KPosition.bin'))
+                self.CovPosition.astype('f').tofile(os.path.join(self.export,self.name+'CovPosition.bin'))
+                
             print('---------------------------------')
             print('---------------------------------')
             print('CdFull successfully updated with CpPosition')
@@ -1069,6 +1198,18 @@ class uncertainties(object):
             C1 = np.matmul(k, Covpos)
             CpPosition = np.matmul(C1, np.transpose(k))
             
+            self.KPosition = kernels
+            self.CovPosition = Covpos
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KPosition
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KPosition))
+            if self.CovFull==[]:
+                self.CovFull = self.CovPosition
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovPosition)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovPosition]]))                  
+            
             self.CpPosition = CpPosition
             if self.CpFull==[]:
                 self.CpFull = self.CpPosition
@@ -1076,6 +1217,13 @@ class uncertainties(object):
                 self.CpFull = np.add(self.CpFull, self.CpPosition)
             self.CdFull = np.add(self.Cd, self.CpFull)
             
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KPosition.astype('f').tofile(os.path.join(self.export,self.name+'KPosition.bin'))
+                self.CovPosition.astype('f').tofile(os.path.join(self.export,self.name+'CovPosition.bin'))
+                
             print('---------------------------------')
             print('---------------------------------')
             print('CdFull successfully updated with CpPosition')     
@@ -1219,6 +1367,18 @@ class uncertainties(object):
             C1 = np.matmul(k, Covpos)
             CpPosition = np.matmul(C1, np.transpose(k))
             
+            self.KPosition = kernels
+            self.CovPosition = Covpos
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KPosition
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KPosition))
+            if self.CovFull==[]:
+                self.CovFull = self.CovPosition
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovPosition)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovPosition]]))                   
+            
             self.CpPosition = CpPosition
             if self.CpFull==[]:
                 self.CpFull = self.CpPosition
@@ -1226,6 +1386,13 @@ class uncertainties(object):
                 self.CpFull = np.add(self.CpFull, self.CpPosition)
             self.CdFull = np.add(self.Cd, self.CpFull)
             
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KPosition.astype('f').tofile(os.path.join(self.export,self.name+'KPosition.bin'))
+                self.CovPosition.astype('f').tofile(os.path.join(self.export,self.name+'CovPosition.bin'))
+                
             print('---------------------------------')
             print('---------------------------------')
             print('CdFull successfully updated with CpPosition')   
@@ -1329,6 +1496,18 @@ class uncertainties(object):
             C1 = np.matmul(k, Covmu)
             CpElastic = np.matmul(C1, np.transpose(k))
             
+            self.KElastic = kernels
+            self.CovElastic = Covmu
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KElastic
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KElastic))
+            if self.CovFull==[]:
+                self.CovFull = self.CovElastic
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovElastic)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovElastic]]))                   
+            
             self.CpElastic = CpElastic
             if self.CpFull==[]:
                 self.CpFull = self.CpElastic
@@ -1336,6 +1515,13 @@ class uncertainties(object):
                 self.CpFull = np.add(self.CpFull, self.CpElastic)
             self.CdFull = np.add(self.Cd, self.CpFull)
             
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KElastic.astype('f').tofile(os.path.join(self.export,self.name+'KElastic.bin'))
+                self.CovElastic.astype('f').tofile(os.path.join(self.export,self.name+'CovElastic.bin'))
+                            
             print('---------------------------------')
             print('---------------------------------')
             print('CdFull successfully updated with CpElastic')
@@ -1418,6 +1604,18 @@ class uncertainties(object):
             C1 = np.matmul(k, Covmu)
             CpElastic = np.matmul(C1, np.transpose(k))
             
+            self.KElastic = kernels
+            self.CovElastic = Covmu
+            if self.KernelsFull==[]:
+                self.KernelsFull = self.KElastic
+            else:
+                self.KernelsFull = np.concatenate((self.KernelsFull,self.KElastic))
+            if self.CovFull==[]:
+                self.CovFull = self.CovElastic
+            else:
+                Z = np.zeros((np.shape(self.CovFull)[0],np.shape(self.CovElastic)[0]),dtype=int)
+                self.CovFull = np.asarray(np.bmat([[self.CovFull, Z], [Z, self.CovElastic]]))                      
+            
             self.CpElastic = CpElastic
             if self.CpFull==[]:
                 self.CpFull = self.CpElastic
@@ -1425,6 +1623,13 @@ class uncertainties(object):
                 self.CpFull = np.add(self.CpFull, self.CpElastic)
             self.CdFull = np.add(self.Cd, self.CpFull)
             
+            if self.export is not None:
+                self.CdFull.astype('f').tofile(os.path.join(self.export,self.name+'CdFull.bin'))
+                self.KernelsFull.astype('f').tofile(os.path.join(self.export,self.name+'KernelsFull.bin'))
+                self.CovFull.astype('f').tofile(os.path.join(self.export,self.name+'CovFull.bin'))
+                self.KElastic.astype('f').tofile(os.path.join(self.export,self.name+'KElastic.bin'))
+                self.CovElastic.astype('f').tofile(os.path.join(self.export,self.name+'CovElastic.bin'))
+                            
             print('---------------------------------')
             print('---------------------------------')
             print('CdFull successfully updated with CpElastic')
