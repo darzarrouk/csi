@@ -1413,8 +1413,10 @@ class uncertainties(object):
         
         :Args:
             * pert : value of the perturbation applied to the elastic modulus of each layer to precompute the kernels
-                     ex: pert = 0.1 or pert = 10
-            * sigma : list, prior uncertainty (standard deviation) in the elastic properties
+                     (difference between logarithms)
+                     pert = log(mu) - log(mu0), with mu new value and mu0 initial value
+                     ex: pert = 1
+            * sigma : list, prior uncertainty (standard deviation) in the logarithm of mu
                       1 sigma has to be specified for each layer
                       ex: sigma = [0.12, 0.12, 0.12, 0.4, 0.4, 0.4] for a velocity model with 6 layers
             * mprior : array, initial model used to calculate Cp
