@@ -1,9 +1,7 @@
 # TODO for CSI 1.0
 
 # Technical points: Deadline -- 23/03/2016
-DONE . Add Custom for Opticor object (Romain)
 . Check the usefulness and pertinence of the 2 faultpostproc objects (redundancy?) (Zach)
-DONE . Check the strike of triangles in TriangularPatches and TriangularTents (Baptiste)
 . Create a setup.py that handles csi, okada4py and edks (Romain)
 . Check matplotlib behavior on different machines (Romain)
 . Do we include the calculation of EDKS kernels in CSI? (Zach)
