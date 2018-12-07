@@ -289,6 +289,47 @@ class timeseries(SourceInv):
         # All done
         return
 
+    def adddata(self, time, values=None, std=None):
+        '''
+        Augments the time series
+
+        :Args:
+            * time      : list of datetime objects
+
+        :Kwargs:
+            * values    : list array or None
+            * std       : list array or None
+
+        :Returns:
+            * None
+        '''
+
+        # List
+        if type(time) is not list:
+            time = list(time)
+
+        # Check 
+        if values is not None:
+            assert len(time)==len(values), 'Values size inconsistent: {}/{}'.format(len(time), len(values))
+        else:
+            values = np.zeros((len(time),))
+        if std is not None:
+            assert len(time)==len(values), 'Std size inconsistent: {}/{}'.format(len(time), len(std))
+        else:
+            std = np.zeros((len(time),))
+
+        # Augment
+        self.time += time
+        self.values = np.append(self.values, values)
+        self.std = np.append(self.std, std)
+
+        # Sort
+        self.SortInTime()
+
+        # All done
+        return
+
+
     def addPointInTime(self, time, value=0.0, std=0.0):
         '''
         Augments the time series by one point.

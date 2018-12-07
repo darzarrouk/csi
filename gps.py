@@ -371,6 +371,8 @@ class gps(SourceInv):
             return self.synth[u,0], self.synth[u,1], self.synth[u,2]
         elif data in ('los'):
             return self.vel_los[u]
+        else:
+            return getattr(self, data)[u,:]
 
     def geterr(self, station):
         '''
