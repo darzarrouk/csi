@@ -68,7 +68,7 @@ class insartimeseries(insar):
         # All done
         return
 
-    def setLonLat(self, lon, lat, incidence=None, heading=None, elevation=None):
+    def setLonLat(self, lon, lat, incidence=None, heading=None, elevation=None, dtype='d'):
         '''
         Sets the lon and lat array and initialize things.
 
