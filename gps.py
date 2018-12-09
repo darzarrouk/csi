@@ -344,6 +344,16 @@ class gps(SourceInv):
         if self.synth is not None: synth = self.synth[self.station==station]
         if hasattr(self, 'vel_los'): los = self.vel_los[self.station==station]
 
+        # Squeeze
+        if vel is not None:
+            vel = vel.squeeze()
+        if err is not None:
+            err = err.squeeze()
+        if synth is not None:
+            synth = synth.squeeze()
+        if los is not None:
+            los = los.squeeze()
+
         # All done
         return lon, lat, vel, err, synth, los
 
