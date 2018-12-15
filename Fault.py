@@ -2831,7 +2831,50 @@ class Fault(SourceInv):
         return self.Gassembled
     # ----------------------------------------------------------------------
         
+    # ----------------------------------------------------------------------
+    # Interpolate slip/coupling on the fault
+    def interpolateSlip(self, lon, lat, slip='strikeslip', rebuild=False, coord='LL'):
+        '''
+        Creates an interpolator and interpolates the slip values to the 
+        position given in {lon} and {lat}.
 
+        :Args:
+            * lon           : Longitude
+            * lat           : Latitude
+        
+        :Kwargs:
+            * slip          : Which slip value to take
+            * rebuild       : Rebuild the interpolator
+            * coord         : LL or utm (in km)
+        '''
+
+        # String 
+        strVal = slip+'Int'
+
+        # Check if an interpolator exists
+        if not hasattr(self, strVal) or rebuild:
+            if slip == 'strikeslip':
+                value = self.slip[:,0]
+            elif slip == 'dipslip':
+                value = self.slip[:,1]
+            elif slip == 'tensile':
+                value = self.slip[:,2]
+            elif slip == 'coupling':
+                value = self.coupling
+            x = [c[0] for c in self.getcenters()]
+            y = [c[1] for c in self.getcenters()]
+            interp = sciint.LinearNDInterpolator(np.vstack((x,y)).T, value)
+            setattr(self, strVal, interp)
+
+        # Coordinates
+        if coord == 'LL':
+            x,y = self.ll2xy(lon, lat)
+        else:
+            x,y = lon,lat
+
+        # All done
+        return getattr(self, strVal)(x,y)
+    # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
