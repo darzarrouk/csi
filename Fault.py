@@ -15,6 +15,7 @@ import scipy.spatial.distance as scidis
 import copy
 import sys
 import os
+import pickle
 
 # Personals
 from .SourceInv import SourceInv
@@ -2874,6 +2875,29 @@ class Fault(SourceInv):
 
         # All done
         return getattr(self, strVal)(x,y)
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # pickle myself
+    def pickle(self, filename):
+        '''
+        Pickle myself.
+
+        :Args:
+            * filename      : Name of the pickle fault.
+        '''
+
+        # Open the file
+        fout = open(filename, 'wb')
+
+        # Pickle
+        pickle.dump(self, fout)
+
+        # Close 
+        fout.close()
+
+        # All done
+        return
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
