@@ -3055,8 +3055,8 @@ class Fault(SourceInv):
         azimuth = copy.deepcopy(azim)
 
         # Check nature of azimuth (float or array)
-        if type(azimuth) in [float,int]:
-            azimuth = azimuth*np.ones(self.N_slip)
+        if type(azimuth) in [float,int,np.float64]:
+            azimuth = azimuth*np.ones((self.N_slip,))
 
         # Make azimuth positive
         azimuth[azimuth< 0.] += 360.
@@ -3070,7 +3070,7 @@ class Fault(SourceInv):
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
 
         # If strike within ]90, 270], change rotation
-        #rotation[np.logical_and(azimuth*(180./np.pi)>90.,azimuth*(180./np.pi)<=270.)] += np.pi
+        rotation[np.logical_and(azimuth*(180./np.pi)>90.,azimuth*(180./np.pi)<=270.)] += np.pi
         rotation[np.logical_and(strike*(180/np.pi)>90.,strike*(180./np.pi)<=270)] -= np.pi
 
         # Store rotation angles
