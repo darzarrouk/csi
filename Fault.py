@@ -879,6 +879,10 @@ class Fault(SourceInv):
                     print('---------------------------------')
                 vertical = True
 
+        # Check something
+        if 'c' in slipdir and convergence is None:
+            convergence = self.convergence
+
         # Compute the Green's functions
         if method in ('okada', 'Okada', 'OKADA', 'ok92', 'meade', 'Meade', 'MEADE'):
             G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
