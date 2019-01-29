@@ -751,7 +751,7 @@ class timeseries(SourceInv):
         self.time = [self.time[i] for i in u]
         self.value = self.value[u]
         self.error = self.error[u]
-        if hasattr(self, 'synth'):
+        if hasattr(self, 'synth') and self.synth is not None:
             self.synth = self.synth[u]
 
         # All done
