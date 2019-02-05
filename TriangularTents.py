@@ -1329,7 +1329,7 @@ class TriangularTents(TriangularPatches):
         dis = np.zeros((x.shape[0]))
 
         # Loop
-        for i in xrange(1,x.shape[0]):
+        for i in np.arange(1,x.shape[0]):
             d = np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
             dis[i] = dis[i-1] + d
 
