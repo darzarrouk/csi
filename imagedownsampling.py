@@ -374,7 +374,7 @@ class imagedownsampling(object):
         # All done
         return
 
-    def downsample(self, plot=False, decimorig=10):
+    def downsample(self, plot=False, decimorig=10, nworkers=None):
         '''
         From the saved list of blocks, computes the downsampled data set and the informations that come along.
         '''
@@ -417,10 +417,11 @@ class imagedownsampling(object):
         output = mp.Queue()
 
         # Check how many workers
-        try:
-            nworkers = int(os.environ['OMP_NUM_THREADS'])
-        except:
-            nworkers = mp.cpu_count()
+        if nworkers is None:
+            try:
+                nworkers = int(os.environ['OMP_NUM_THREADS'])
+            except:
+                nworkers = mp.cpu_count()
 
         # Create the workers
         seqblocks = _split_seq(blocks, nworkers)
@@ -498,7 +499,7 @@ class imagedownsampling(object):
         self.setDownsamplingScheme(sampler)
 
         # Downsample
-        self.downsample(plot=plot, decimorig=decimorig)
+        self.downsample(plot=plot, decimorig=decimorig, nworkers=1)
 
         # All done
         return
@@ -521,8 +522,8 @@ class imagedownsampling(object):
         # Read the file
         self.readDownsamplingScheme(prefix)
 
-        # Downsample
-        self.downsample(plot=plot, decimorig=decimorig)
+        # Downsample (on 1 worker otherwise we loose the order)
+        self.downsample(plot=plot, decimorig=decimorig, nworkers=1)
 
         # All done
         return
