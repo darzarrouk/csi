@@ -679,14 +679,14 @@ class seismic(SourceInv):
                 ymax=ylims[1]
 
             if stationYlims: # If true, scaling is the same for every channel of each stations. 
-            ymin = +999999
-            ymax = -999999
-            for kkk in self.d.keys():
-                if self.d[kkk].kstnm==self.d[dkey].kstnm:
-                    if ymin>self.d[kkk].depvar.min()*1000.:
-                        ymin=self.d[kkk].depvar.min()*1000.
-                    if ymax<self.d[kkk].depvar.max()*1000.:
-                        ymax=self.d[kkk].depvar.max()*1000.
+                ymin = +999999
+                ymax = -999999
+                for kkk in self.d.keys():
+                    if self.d[kkk].kstnm==self.d[dkey].kstnm:
+                        if ymin>self.d[kkk].depvar.min()*1000.:
+                            ymin=self.d[kkk].depvar.min()*1000.
+                        if ymax<self.d[kkk].depvar.max()*1000.:
+                            ymax=self.d[kkk].depvar.max()*1000.
             
             ax.set_ylim([ymin*1.1,ymax*1.1])
             if Y_max:                
