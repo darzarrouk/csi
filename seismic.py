@@ -529,7 +529,8 @@ class seismic(SourceInv):
     def plot(self,synth_vector=None,nc=3,nl=5, title = 'Seismic data', sta_lst=None, basename=None,
              figsize=[11.69,8.270],xlims=None,ylims=[-20.,20.],bottom=0.06,top=0.87,left=0.06,right=0.95,wspace=0.25,
              hspace=0.35,grid=True,axis_visible=True,inc=False,Y_max=False,Y_units='mm',fault=None,
-             basemap=True,globalbasemap=False,basemap_dlon=2.5,basemap_dlat=2.5,endclose=True,sort=None,alignENZ=False):
+             basemap=True,globalbasemap=False,basemap_dlon=2.5,basemap_dlat=2.5,endclose=True,sort=None,alignENZ=False,
+             stationYlims=False):
         '''
         Plot seismic traces
 
@@ -550,6 +551,7 @@ class seismic(SourceInv):
            * endclose:          if True, close figure
            * sort:              ['distance' or 'azimuth'] you can choose to sort the stations by distance to hypocenter or by azimuth
            * alignENZ:          if True, 3 columns are plotted (ENU) and missing traces are left blank
+           * stationYlims       if True, every channels of each stations will have the same ylim
 
         :Returns:
            * None
@@ -675,7 +677,18 @@ class seismic(SourceInv):
                 ymin = ylims[0]
             if ymax<ylims[1]:
                 ymax=ylims[1]
-            ax.set_ylim([ymin,ymax])
+
+            if stationYlims: # If true, scaling is the same for every channel of each stations. 
+            ymin = +999999
+            ymax = -999999
+            for kkk in self.d.keys():
+                if self.d[kkk].kstnm==self.d[dkey].kstnm:
+                    if ymin>self.d[kkk].depvar.min()*1000.:
+                        ymin=self.d[kkk].depvar.min()*1000.
+                    if ymax<self.d[kkk].depvar.max()*1000.:
+                        ymax=self.d[kkk].depvar.max()*1000.
+            
+            ax.set_ylim([ymin*1.1,ymax*1.1])
             if Y_max:                
                 # label = r'%s %s %s %s $(\phi,\Delta, A) = %6.1f^{\circ}, %6.1f^{\circ}, %.0f%s$'%(
                 #     self.d[dkey].knetwk,self.d[dkey].kstnm, self.d[dkey].kcmpnm[-1], self.d[dkey].khole,
