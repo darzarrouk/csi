@@ -853,7 +853,7 @@ class RectangularPatchesKin(RectangularPatches):
                     o_sac.b    += 0.5*delta
                     o_sac.npts -= 1
                 # GFs filtering
-                if filter_coef != None:
+                if filter_coef is not None:
                     if filter_coef.__class__ is dict:
                         sos = filter_coef[dkey]
                     else:
