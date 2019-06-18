@@ -2,6 +2,8 @@
 A class that deals with InSAR data, after decimation using VarRes.
 
 Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
+Edited by T. Shreve, May 2019. Commented out line 319 due to issues coordinates and plotting in the SW hemisphere.
+Edited buildsynth to include pressure sources.
 '''
 
 # Externals
@@ -20,22 +22,13 @@ from . import csiutils as utils
 
 class insar(SourceInv):
 
-    '''
-    A class that handles one insar image
-
-    :Args:
-       * name      : Name of the dataset.
-
-    :Kwargs:
-       * utmzone   : UTM zone  (optional, default=None)
-       * lon0      : Longitude of the center of the UTM zone
-       * lat0      : Latitude of the center of the UTM zone
-       * ellps     : ellipsoid (optional, default='WGS84')
-       * verbose   : Speak to me (default=True)
-
-    '''
-
     def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True, lon0=None, lat0=None):
+        '''
+        Args:
+            * name          : Name of the InSAR dataset.
+            * utmzone   : UTM zone. (optional, default is 10 (Western US))
+            * ellps     : ellipsoid (optional, default='WGS84')
+        '''
 
         # Base class init
         super(insar,self).__init__(name,
@@ -70,12 +63,8 @@ class insar(SourceInv):
     def mergeInsar(self, sar):
         '''
         Combine the existing data set with another insar object.
-
-        :Args:
+        Args:
             * sar     : Instance of the insar class
-
-        :Returns:
-            * None
         '''
 
         # Assert we have the same geographic transformation
@@ -117,9 +106,6 @@ class insar(SourceInv):
     def checkNaNs(self):
         '''
         Checks and remove data points that have NaNs in vel, err, lon, lat or los.
-
-        :Returns:
-            * None
         '''
 
         # Check
@@ -157,22 +143,12 @@ class insar(SourceInv):
     def read_from_ascii_simple(self, filename, factor=1.0, step=0.0, header=0, los=None):
         '''
         Read the InSAR data from an ascii file with 3 cols.
-
-        +-------+-------+-------+
-        | Lon   | Lat   | value |
-        +-------+-------+-------+
-
-        :Args:
+        Args:
             * filename      : Name of the input file.
-
-        :Kwargs:
+            Lon | Lat | los measurement
             * factor        : Factor to multiply the LOS velocity.
             * step          : Add a value to the velocity.
             * header        : Size of the header.
-            * los           : file containing line-of-sight vector for each point
-
-        :Returns:
-            * None
         '''
 
         # Open the file
@@ -235,21 +211,11 @@ class insar(SourceInv):
     def read_from_ascii(self, filename, factor=1.0, step=0.0, header=0):
         '''
         Read the InSAR data from an ascii file.
-
-        +-----+-----+-------+-----+----------+-----------+--------+
-        | Lon | Lat | Value | Err | los east | los north | los up |
-        +-----+-----+-------+-----+----------+-----------+--------+
-
-        :Args:
-            * filename      : Name of the input file.
-
-        :Kwargs:
+        Args:
+            * filename      : Name of the input file. Lon | Lat | los measurement | los uncertainty | los E | los N | los U.
             * factor        : Factor to multiply the LOS velocity.
             * step          : Add a value to the velocity.
             * header        : Size of the header.
-
-        :Returns:
-            * None
         '''
 
         # Open the file
@@ -299,20 +265,13 @@ class insar(SourceInv):
 
     def read_from_varres(self,filename, factor=1.0, step=0.0, header=2, cov=False):
         '''
-        Read the InSAR LOS rates from the VarRes output. This is the routine used to 
-        read the output from the imagedownsampling class
-
-        :Args:
+        Read the InSAR LOS rates from the VarRes output.
+        Args:
             * filename      : Name of the input file. Two files are opened filename.txt and filename.rsp.
-
-        :Kwargs:
             * factor        : Factor to multiply the LOS velocity.
             * step          : Add a value to the velocity.
             * header        : Size of the header.
             * cov           : Read an additional covariance file (binary float32, Nd*Nd elements).
-
-        :Returns:
-            * None
         '''
 
         if self.verbose:
@@ -358,7 +317,7 @@ class insar(SourceInv):
         fsp.close()
 
         # set lon to (0, 360.)
-        self._checkLongitude()
+        #self._checkLongitude()
 
         # Compute lon lat to utm
         self.x, self.y = self.ll2xy(self.lon,self.lat)
@@ -383,32 +342,12 @@ class insar(SourceInv):
         # All done
         return
 
-    def read_from_binary(self, data, lon, lat, err=None, factor=1.0, 
+    def read_from_binary(self, data, lon, lat, err=None, factor=1.0,
                                step=0.0, incidence=None, heading=None, azimuth=None,
-                               dtype=np.float32, remove_nan=True, downsample=1, 
+                               dtype=np.float32, remove_nan=True, downsample=1,
                                remove_zeros=True):
         '''
         Read from binary file or from array.
-
-        :Args:
-            * data  : binary file or array with data
-            * lon   : binary file or array with longitude
-            * lat   : binary file or array with latitude
-
-        :Kwargs:
-            * err           : binary file or array with uncertainty
-            * factor        : scaling factor
-            * step          : constant factor
-            * incidence     : incidence angle (degrees, float or binary)
-            * heading       : satellite heading (degrees, float or binary)
-            * azimuth       : LOS azimuth angle (degrees, float or binary)
-            * dtype         : numpy type of data to read from file
-            * remove_nan    : Remove NaNs if True
-            * downsample    : downsampling factor 
-            * remove_zeros  : Removes Zeros if True
-
-        :Returns:
-            * None
         '''
 
         # Get the data
@@ -442,7 +381,7 @@ class insar(SourceInv):
 
         # If zeros
         if remove_zeros:
-            iZeros = np.flatnonzero(np.logical_or(vel!=0., 
+            iZeros = np.flatnonzero(np.logical_or(vel!=0.,
                                                   lon!=0.,
                                                   lat!=0.))
         else:
@@ -453,12 +392,6 @@ class insar(SourceInv):
             iFinite = np.flatnonzero(np.isfinite(vel))
         else:
             iFinite = range(len(vel))
-
-        # First try 
-        self.vel = vel
-        self.lon = lon
-        self.lat = lat
-        self.err = err
 
         # Compute the LOS
         if heading is not None:
@@ -472,13 +405,13 @@ class insar(SourceInv):
                 self.los = self.los[::downsample,:]
         elif azimuth is not None:
             if type(incidence) is np.ndarray:
-                self.incaz2los(incidence, azimuth, origin='binaryfloat', 
+                self.incaz2los(incidence, azimuth, origin='binaryfloat',
                         dtype=dtype)
                 self.los = self.los[::downsample,:]
             elif type(incidence) in (float, np.float):
                 self.incaz2los(incidence, azimuth, origin='float')
             elif type(incidence) is str:
-                self.incaz2los(incidence, azimuth, origin='binary', 
+                self.incaz2los(incidence, azimuth, origin='binary',
                                 dtype=dtype)
                 self.los = self.los[::downsample,:]
         else:
@@ -516,25 +449,13 @@ class insar(SourceInv):
         # All done
         return
 
-    def read_from_mat(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.115, lonname='posx', latname='posy', dispname='velo', errname='verr'):
+    def read_from_mat(self, filename, factor=1.0, step=0.0, incidence=35.88, heading=-13.115):
         '''
-        Reads velocity map from a mat file (Matlab). The format is the same as what is in Jolivet et al 2015, GRL (see supp mat).
-
-        :Args:
+        Reads velocity map from a mat file.
+        Args:
             * filename  : Name of the input file
-
-        :Kwargs:
             * factor    : scale by a factor.
             * step      : add a step.
-            * incidence : incidence angle (degrees)
-            * heading   : satellite heading (degrees)
-            * lonname   : Name of the longitude field
-            * latname   : Name of the latitude field
-            * dispname  : name of the displacement field
-            * errname   : name of the uncertainties field
-
-        :Note: 
-            Last time this was tested was with a 2013 version of Matlab.
         '''
 
         # Initialize values
@@ -549,17 +470,14 @@ class insar(SourceInv):
         A = scio.loadmat(filename)
 
         # Get the phase values
-        self.vel = (A[dispname].flatten()+ step)*factor
-        if errname is not None:
-            self.err = A[errname].flatten()
-            self.err[np.where(np.isnan(self.vel))] = np.nan
-            self.vel[np.where(np.isnan(self.err))] = np.nan
-        else:
-            self.err = np.zeros(self.vel.shape)
+        self.vel = (A['velo'].flatten()+ step)*factor
+        self.err = A['verr'].flatten()
+        self.err[np.where(np.isnan(self.vel))] = np.nan
+        self.vel[np.where(np.isnan(self.err))] = np.nan
 
         # Deal with lon/lat
-        Lon = A[lonname].flatten()
-        Lat = A[latname].flatten()
+        Lon = A['posx'].flatten()
+        Lat = A['posy'].flatten()
         Lon,Lat = np.meshgrid(Lon,Lat)
         w,l = Lon.shape
         self.lon = Lon.reshape((w*l,)).flatten()
@@ -589,17 +507,14 @@ class insar(SourceInv):
 
     def incaz2los(self, incidence, azimuth, origin='onefloat', dtype=np.float32):
         '''
-        From the incidence and the azimuth, defines the LOS vector.
-        
-        :Args:
+        From the incidence and the heading, defines the LOS vector.
+        Args:
             * incidence : Incidence angle.
             * azimuth   : Azimuth angle of the LOS
-
-        :Kwargs:
-            * origin    :  Can be 'onefloat' (one number), 'grd' (grd file), 'binary' (binary file), 'binaryfloat' (array of float)
-
-        :Returns:
-            * None
+            * origin    : What are these numbers onefloat: One number
+                                                      grd: grd files
+                                                   binary: Binary files
+                                              binaryfloat: Arrays of float
         '''
 
         # Save values
@@ -653,16 +568,13 @@ class insar(SourceInv):
     def inchd2los(self, incidence, heading, origin='onefloat'):
         '''
         From the incidence and the heading, defines the LOS vector.
-
-        :Args:
+        Args:
             * incidence : Incidence angle.
             * heading   : Heading angle.
-
-        :Kwargs:
-            * origin    :  Can be 'onefloat' (one number), 'grd' (grd file), 'binary' (binary file), 'binaryfloat' (array of float)
-
-        :Returns:
-            * None
+            * origin    : What are these numbers onefloat: One number
+                                                      grd: grd files
+                                                   binary: Binary files
+                                              binaryfloat: Arrays of float
         '''
 
         # Save values
@@ -717,20 +629,10 @@ class insar(SourceInv):
                       los=None, keepnans=False):
         '''
         Reads velocity map from a grd file.
-
-        :Args:
+        Args:
             * filename  : Name of the input file
-
-        :Kwargs:
             * factor    : scale by a factor
             * step      : add a value.
-            * incidence : Incidence angle (degrees)
-            * heading   : Hdeaing angle (degrees)
-            * los       : Los vector
-            * keepnans  : Keep the NaNs or not
-
-        :Returns:
-            * None
         '''
 
         print ("Read from file {} into data set {}".format(filename, self.name))
@@ -755,7 +657,7 @@ class insar(SourceInv):
             self.vel = (np.array(fin.variables['z'][:]) + step) * factor
         else:
             self.vel = (np.array(fin.variables['z'][:,:]).flatten() + step)*factor
-        self.err = np.zeros((self.vel.shape)) 
+        self.err = np.zeros((self.vel.shape))
         self.err[np.where(np.isnan(self.vel))] = np.nan
         self.vel[np.where(np.isnan(self.err))] = np.nan
 
@@ -828,12 +730,12 @@ class insar(SourceInv):
                     losz = losz[u]
                 # Do as if binary
                 losList = [losx, losy, losz]
-
             # Store these guys
             self.los = np.zeros((len(losx),3))
             self.los[:,0] = losx
             self.los[:,1] = losy
             self.los[:,2] = losz
+
         else:
             print('Warning: not enough information to compute LOS')
             print('LOS will be set to 1,0,0')
@@ -851,20 +753,11 @@ class insar(SourceInv):
     def ModelResolutionDownsampling(self, faults, threshold, damping, startingsize=10., minimumsize=0.5, tolerance=0.1, plot=False):
         '''
         Downsampling algorythm based on Lohman & Simons, 2005, G3.
-
-        :Args:
-            * faults            : List of faults, these need to have a buildGFs routine (ex: for RectangularPatches, it will be Okada).
-            * threshold         : Resolution threshold, if above threshold, keep dividing.
-            * damping           : Damping parameter. Damping is enforced through the addition of a identity matrix.
-
-        :Kwargs:
-            * startingsize      : Starting size of the downsampling boxes.
-            * minimumsize       : Minimum size of the boxes
-            * tolerance         : Tolerance for the box sizes
-            * plot              : True/False
-
-        :Returns:
-            * None
+        Args:
+            faults          : List of faults, these need to have a buildGFs routine (ex: for RectangularPatches, it will be Okada).
+            threshold       : Resolution threshold, if above threshold, keep dividing.
+            damping         : Damping parameter. Damping is enforced through the addition of a identity matrix.
+            startingsize    : Starting size of the downsampling boxes.
         '''
 
         # If needed
@@ -911,30 +804,25 @@ class insar(SourceInv):
         # All done
         return
 
-    def buildCd(self, sigma, lam, function='exp', diagonalVar=False, 
+    def buildCd(self, sigma, lam, function='exp', diagonalVar=False,
                 normalizebystd=False):
         '''
-        Builds the full Covariance matrix from values of sigma and lambda. If function='exp', then
+        Builds the full Covariance matrix from values of sigma and lambda.
 
-        .. math::
-            C_d(i,j) = \sigma^2 e^{-\\frac{||i,j||_2}{\lambda}}
+        If function='exp':
 
-        while if function='gauss'
+            Cov(i,j) = sigma*sigma * exp(-d[i,j] / lam)
 
-        .. math::
-            C_d(i,j) = \sigma^2 e^{-\\frac{||i,j||_2^2}{2\lambda}}
+        elif function='gauss':
 
-        :Args:
+            Cov(i,j) = sigma*sigma * exp(-(d[i,j]*d[i,j])/(2*lam))
+
+        Args:
             * sigma             : Sigma term of the covariance
             * lam               : Caracteristic length of the covariance
-
-        :Kwargs:
             * function          : Can be 'gauss' or 'exp'
-            * diagonalVar       : Substitute the diagonal by the standard deviation of the measurement squared
-            * normalizebystd    : Normalize the covariance matrix
-
-        :Returns:
-            * None
+            * diagonalVar       : Substitute the diagonal by the standard deviation
+                                  of the measurement squared
         '''
 
         # Assert
@@ -977,13 +865,6 @@ class insar(SourceInv):
     def distancePixel2Pixel(self, i, j):
         '''
         Returns the distance in km between two pixels.
-
-        :Args:
-            * i     : Index of a pixel
-            * j     : Index of another pixel
-
-        :Returns:
-            * float
         '''
 
         # Get values
@@ -1001,18 +882,11 @@ class insar(SourceInv):
     def distance2point(self, lon, lat):
         '''
         Returns the distance of all pixels to a point.
-
-        :Args:
-            * lon   : Longitude 
-            * lat   : Latitude
-
-        :Returns:
-            * float
         '''
 
         # Get coordinates
         x = self.x
-        y = self.y 
+        y = self.y
 
         # Get point coordinates
         xp, yp = self.ll2xy(lon, lat)
@@ -1020,35 +894,15 @@ class insar(SourceInv):
         # compute distance
         return np.sqrt( (x-xp)**2 + (y-yp)**2 )
 
-    def returnAverage(self, u):
-        '''
-        Returns the average value, the los and the errors averaged for a given set 
-        of indices of pixels {u}.
-
-        :Args:
-            * u         : Set of indices.
-
-        :Returns:   
-            * vel, err, los : 2 floats and an array
-        '''
-        vel = np.nanmean(self.vel[u])
-        err = np.nanstd(self.vel[u])
-        los = np.nanmean(self.los[u,:], axis=0)
-        los /= np.linalg.norm(los)
-        return vel, err, los
-
     def returnAverageNearPoint(self, lon, lat, distance):
         '''
         Returns the phase value, the los and the errors averaged over a distance
         from a point (lon, lat).
 
-        :Args:
+        Args:
             * lon       : longitude of the point
             * lat       : latitude of the point
             * distance  : distance around the point
-
-        :Returns:
-            * vel, err, los: 2 floats and an array
         '''
 
         # Get the distances
@@ -1059,32 +913,30 @@ class insar(SourceInv):
 
         # return the values
         if len(u)>0:
-            return self.returnAverage(u)
+            vel = np.nanmean(self.vel[u])
+            err = np.nanstd(self.vel[u])
+            los = np.nanmean(self.los[u,:], axis=0)
+            los /= np.linalg.norm(los)
+            return vel, err, los
         else:
             return None, None, None
 
     def extractAroundGPS(self, gps, distance, doprojection=True):
         '''
-        Returns a gps object with values projected along the LOS around the 
+        Returns a gps object with values projected along the LOS around the
         gps stations included in gps. In addition, it projects the gps displacements
         along the LOS
 
-        :Args:
+        Args:
             * gps           : gps or gpstimeseries object
             * distance      : distance to consider around the stations
-
-        :Kwargs:
             * doprojection  : Projects the gps enu disp into the los as well
-
-        :Returns:
-            * gps           : Instance of gps class
-
         '''
 
         # Create a gps object
         out = copy.deepcopy(gps)
 
-        # Create a holder in the new gps object 
+        # Create a holder in the new gps object
         out.vel_los = []
         out.err_los = []
         out.los = []
@@ -1096,7 +948,7 @@ class insar(SourceInv):
             out.err_los.append(err)
             out.los.append(los)
 
-        # Convert to arrays 
+        # Convert to arrays
         out.vel_los = np.array(out.vel_los)
         out.err_los = np.array(out.err_los)
         out.los = np.array(out.los)
@@ -1112,14 +964,11 @@ class insar(SourceInv):
         '''
         Select the pixels in a box defined by min and max, lat and lon.
 
-        :Args:
+        Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
-
-        :Returns:
-            * None
         '''
 
         # Store the corners
@@ -1129,24 +978,17 @@ class insar(SourceInv):
         self.maxlat = maxlat
 
         # Select on latitude and longitude
-        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) \
-                & (self.lon>minlon) & (self.lon<maxlon))
-    
-        # Do it 
+        u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) & (self.lon>minlon) & (self.lon<maxlon))
+
+        # Do it
         self.keepPixels(u)
 
         # All done
         return
 
     def keepPixels(self, u):
-        ''' 
+        '''
         Keep the pixels indexed u and ditch the other ones
-
-        :Args:
-            * u     : array of integers
-
-        :Returns:
-            * None
         '''
 
         # Select the stations
@@ -1154,8 +996,7 @@ class insar(SourceInv):
         self.lat = self.lat[u]
         self.x = self.x[u]
         self.y = self.y[u]
-        if self.vel is not None:
-            self.vel = self.vel[u]
+        self.vel = self.vel[u]
         if self.err is not None:
             self.err = self.err[u]
         if self.los is not None:
@@ -1178,39 +1019,41 @@ class insar(SourceInv):
         '''
         From a dictionary of Green's functions, sets these correctly into the fault
         object fault for future computation.
-
-        :Args:
+        Args:
             * fault     : Instance of Fault
-            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'. These can be a matrix or None.
-
-        :Kwargs:
-            * vertical  : Set here for consistency with other data objects, but will always be set to True, whatever you do.
-
-        :Returns:
-            * None
+            * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
+                          These can be a matrix or None.
+            * vertical  : Set here for consistency with other data objects, but will
+                          always be set to True, whatever you do.
         '''
+        if fault.type is "Fault":
+            # Get the values
+            try:
+                GssLOS = G['strikeslip']
+            except:
+                GssLOS = None
+            try:
+                GdsLOS = G['dipslip']
+            except:
+                GdsLOS = None
+            try:
+                GtsLOS = G['tensile']
+            except:
+                GtsLOS = None
+            try:
+                GcpLOS = G['coupling']
+            except:
+                GcpLOS = None
 
-        # Get the values
-        try:
-            GssLOS = G['strikeslip']
-        except:
-            GssLOS = None
-        try:
-            GdsLOS = G['dipslip']
-        except:
-            GdsLOS = None
-        try:
-            GtsLOS = G['tensile']
-        except:
-            GtsLOS = None
-        try:
-            GcpLOS = G['coupling']
-        except:
-            GcpLOS = None
-
-        # set the GFs
-        fault.setGFs(self, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS],
-                    coupling=[GcpLOS], vertical=True)
+            # set the GFs
+            fault.setGFs(self, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS],
+                        coupling=[GcpLOS], vertical=True)
+        elif fault.type is "Pressure":
+            try:
+                GpLOS = G['pressure']
+            except:
+                GpLOS = None
+            fault.setGFs(self, deltapressure=[GpLOS], vertical=True)
 
         # All done
         return
@@ -1219,16 +1062,6 @@ class insar(SourceInv):
     def setTransformNormalizingFactor(self, x0, y0, normX, normY, base):
         '''
         Set orbit normalizing factors in insar object.
-
-        :Args:
-            * x0    : Transofmration center along x
-            * y0    : Transformation center along y
-            * normX : normalization length along X
-            * normY : normalization length along Y
-            * base  : Baseline used to compute the normalization
-
-        :Returns:
-            * None
         '''
 
         self.TransformNormalizingFactor = {}
@@ -1244,10 +1077,6 @@ class insar(SourceInv):
     def computeTransformNormalizingFactor(self):
         '''
         Compute orbit normalizing factors and store them in insar object.
-        Computes x0, y0, normX, normY and base used as normalizing factors.
-
-        :Returns:
-            * None
         '''
 
         x0 = np.mean(self.x)
@@ -1255,13 +1084,13 @@ class insar(SourceInv):
         normX = np.abs(self.x - x0).max()
         normY = np.abs(self.y - y0).max()
         base_max = np.max([normX, normY])
-
+        #print(self.x,self.y)
+        print('normalizing factors are ', x0,y0,normX,normY)
         self.TransformNormalizingFactor = {}
         self.TransformNormalizingFactor['x'] = normX
         self.TransformNormalizingFactor['y'] = normY
         self.TransformNormalizingFactor['ref'] = [x0, y0]
         self.TransformNormalizingFactor['base'] = base_max
-
         # All done
         return
 
@@ -1269,28 +1098,21 @@ class insar(SourceInv):
         '''
         Returns the Estimator for the transformation to estimate in the InSAR data.
 
-        :Args:
+        Args:
             * trans     : Transformation type
+                trans can be an integer
+                    if trans==1:
+                        constant offset to the data
+                    if trans==3:
+                        constant and linear function of x and y
+                    if trans==4:
+                        constant, linear term and cross term.
+                trans can be 'strain'
 
-        +-------+------------------------------------------------------------+
-        | trans | what it means                                              |
-        +=======+============================================================+
-        |   1   | apply a constant offset to the data (1 parameter)          |    
-        +-------+------------------------------------------------------------+
-        |   3   | apply offset and linear function of x and y (3 parameters) |
-        +-------+------------------------------------------------------------+
-        |   4   | apply offset, linear function and cross term (4 parameters)|
-        +-------+------------------------------------------------------------+
-        | strain| Estimates aerial strain tensor (poorly constrained)        |
-        +-------+------------------------------------------------------------+
-
-        :Kwargs:
+        Kwargs:
             * computeNormFact   : Recompute the normalization factor
-
-        :Returns:
-            * 2D array of the transformation matrix
         '''
-        
+
         # Several cases
         if type(trans) is int:
             T = self.getPolyEstimator(trans, computeNormFact=computeNormFact)
@@ -1304,16 +1126,10 @@ class insar(SourceInv):
         '''
         Returns the matrix to estimate the 2d aerial strain tensor.
 
-        :When building the estimator:
-            Third column is the Epsilon_xx component
-            Fourth column is the Epsilon_xy component
-            Fifth column is the Epsilon_yy component
-
-        :Kwargs:
-            * computeNormFact   : Recompute the normalization factor
-
-        :Returns:
-            * 2D array
+        When buildin gthe estimator:
+        Third column is the Epsilon_xx component
+        Fourth column is the Epsilon_xy component
+        Fifth column is the Epsilon_yy component
         '''
 
         # Get the number of gps stations
@@ -1342,7 +1158,7 @@ class insar(SourceInv):
         Hfe = np.zeros((ns,nc))
         Hfn = np.zeros((ns,nc))
 
-        # Fill in 
+        # Fill in
         Hfe[:,0] = base_x
         Hfe[:,1] = 0.5*base_y
         Hfn[:,1] = 0.5*base_x
@@ -1357,24 +1173,18 @@ class insar(SourceInv):
     def getPolyEstimator(self, ptype, computeNormFact=True):
         '''
         Returns the Estimator for the polynomial form to estimate in the InSAR data.
+        Args:
+            * ptype : integer.
+                if ptype==1:
+                    constant offset to the data
+                if ptype==3:
+                    constant and linear function of x and y
+                if ptype==4:
+                    constant, linear term and cross term.
 
-        :Args:
-            * ptype : Style of polynomial
-
-            +-------+------------------------------------------------------------+
-            | ptype | what it means                                              |
-            +=======+============================================================+
-            |   1   | apply a constant offset to the data (1 parameter)          |    
-            +-------+------------------------------------------------------------+
-            |   3   | apply offset and linear function of x and y (3 parameters) |
-            +-------+------------------------------------------------------------+
-            |   4   | apply offset, linear function and cross term (4 parameters)|
-            +-------+------------------------------------------------------------+
-
-            * computeNormFact : bool. If False, uses parameters in self.TransformNormalizingFactor
-
-        :Returns:
-            * 2d Array
+            * computeNormFact : bool
+                if True, compute new TransformNormalizingFactor
+                if False, uses parameters in self.TransformNormalizingFactor
         '''
 
         # number of data points
@@ -1382,7 +1192,8 @@ class insar(SourceInv):
 
         # Create the Estimator
         orb = np.zeros((nd, ptype))
-        orb[:,0] = 1.0
+        if ptype > 0.0:
+            orb[:,0] = 1.0
 
         if ptype >= 3:
             # Compute normalizing factors
@@ -1410,16 +1221,9 @@ class insar(SourceInv):
 
     def computePoly(self, fault, computeNormFact=True):
         '''
-        Computes the orbital bias estimated in fault and stores in self.orbit
-
-        :Args:
+        Computes the orbital bias estimated in fault
+        Args:
             * fault : Fault object that has a polysol structure.
-
-        :Kwargs:
-            * computeNormFact   : Recompute the normalizing factors
-
-        :Returns:
-            * None
         '''
 
         # Get the polynomial type
@@ -1439,13 +1243,7 @@ class insar(SourceInv):
 
     def computeCustom(self, fault):
         '''
-        Computes the displacements associated with the custom green's functions and stores them in self.custompred
-
-        :Args:
-            * fault : instance of fault with the custom GFs
-
-        :Returns:
-            * None
+        Computes the displacements associated with the custom green's functions.
         '''
 
         # Get GFs and parameters
@@ -1461,17 +1259,6 @@ class insar(SourceInv):
     def removePoly(self, fault, verbose=False, custom=False ,computeNormFact=True):
         '''
         Removes a polynomial from the parameters that are in a fault.
-
-        :Args:
-            * fault     : Instance of a fault class that has polysol attribute
-
-        :Kwargs:
-            * verbose   : talk to me
-            * custom    : Is there custom GFs
-            * computeNormFact: Recompute normalizing factor?
-
-        :Returns:
-            * None
         '''
 
         # compute the polynomial
@@ -1481,10 +1268,8 @@ class insar(SourceInv):
         if verbose:
             params = fault.polysol[self.name].tolist()
             print('Correcting insar {} from polynomial function: {}'.format(self.name, tuple(p for p in params)))
-
         # Correct
         self.vel -= self.orbit
-
         # Correct Custom
         if custom:
             self.computeCustom(fault)
@@ -1496,9 +1281,6 @@ class insar(SourceInv):
     def removeTransformation(self, fault, verbose=False, custom=False):
         '''
         Wrapper of removePoly to ensure consistency between data sets.
-
-        :Returns:
-            * None
         '''
 
         self.removePoly(fault, verbose=verbose, custom=custom)
@@ -1509,19 +1291,13 @@ class insar(SourceInv):
     def removeSynth(self, faults, direction='sd', poly=None, vertical=True, custom=False, computeNormFact=True):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
-
-        :Args:
+        Args:
             * faults        : List of faults.
-
-        :Kwargs:
             * direction     : Direction of slip to use.
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
             * computeNormFact : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
-
-        :Returns:
-            * None
         '''
 
         # Build synthetics
@@ -1535,20 +1311,14 @@ class insar(SourceInv):
 
     def buildsynth(self, faults, direction='sd', poly=None, vertical=True, custom=False, computeNormFact=True):
         '''
-        Computes the synthetic data using the faults and the associated slip distributions.
-
-        :Args:
-            * faults        : List of faults.
-
-        :Kwargs:
-            * direction     : Direction of slip to use.
+        Computes the synthetic data using either the faults and the associated slip distributions or the pressure sources.
+        Args:
+            * faults        : List of faults or pressure sources.
+            * direction     : Direction of slip to use or None for pressure sources.
             * poly          : if a polynomial function has been estimated, build and/or include
             * vertical      : always True - used here for consistency among data types
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
             * computeNormFact : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
-
-        :Returns:
-            * None. Synthetics are stored in self.synth
         '''
 
         # Check list
@@ -1563,44 +1333,66 @@ class insar(SourceInv):
 
         # Loop on each fault
         for fault in faults:
+            if fault.type is "Fault":
+                # Get the good part of G
+                G = fault.G[self.name]
 
-            # Get the good part of G
-            G = fault.G[self.name]
+                if ('s' in direction) and ('strikeslip' in G.keys()):
+                    Gs = G['strikeslip']
+                    Ss = fault.slip[:,0]
+                    losss_synth = np.dot(Gs,Ss)
+                    self.synth += losss_synth
+                if ('d' in direction) and ('dipslip' in G.keys()):
+                    Gd = G['dipslip']
+                    Sd = fault.slip[:,1]
+                    losds_synth = np.dot(Gd, Sd)
+                    self.synth += losds_synth
+                if ('t' in direction) and ('tensile' in G.keys()):
+                    Gt = G['tensile']
+                    St = fault.slip[:,2]
+                    losop_synth = np.dot(Gt, St)
+                    self.synth += losop_synth
+                if ('c' in direction) and ('coupling' in G.keys()):
+                    Gc = G['coupling']
+                    Sc = fault.coupling
+                    losdc_synth = np.dot(Gc,Sc)
+                    self.synth += losdc_synth
 
-            if ('s' in direction) and ('strikeslip' in G.keys()):
-                Gs = G['strikeslip']
-                Ss = fault.slip[:,0]
-                losss_synth = np.dot(Gs,Ss)
-                self.synth += losss_synth
-            if ('d' in direction) and ('dipslip' in G.keys()):
-                Gd = G['dipslip']
-                Sd = fault.slip[:,1]
-                losds_synth = np.dot(Gd, Sd)
-                self.synth += losds_synth
-            if ('t' in direction) and ('tensile' in G.keys()):
-                Gt = G['tensile']
-                St = fault.slip[:,2]
-                losop_synth = np.dot(Gt, St)
-                self.synth += losop_synth
-            if ('c' in direction) and ('coupling' in G.keys()):
-                Gc = G['coupling']
-                Sc = fault.coupling
-                losdc_synth = np.dot(Gc,Sc)
-                self.synth += losdc_synth
+                if custom:
+                    Gc = G['custom']
+                    Sc = fault.custom[self.name]
+                    losdc_synth = np.dot(Gc, Sc)
+                    self.synth += losdc_synth
 
-            if custom:
-                Gc = G['custom']
-                Sc = fault.custom[self.name]
-                losdc_synth = np.dot(Gc, Sc)
-                self.synth += losdc_synth
+                if poly is not None:
+                    # Compute the polynomial
+                    self.computePoly(fault,computeNormFact=computeNormFact)
+                    if poly is 'include':
+                        self.removePoly(fault, computeNormFact=computeNormFact)
+                    else:
+                        self.synth += self.orbit
+            #Loop on each pressure source
+            elif fault.type is "Pressure":          ##Check this is correct before implementing for GPS, opti, etc.
+                # Get the good part of G
+                G = fault.G[self.name]
+                Gp = G['pressure']
+                Sp = fault.deltapressure[0]         ##Is this correct???
+                losdp_synth = np.dot(Gp,Sp)
+                self.synth += losdp_synth
+                if custom:
+                    Gc = G['custom']
+                    Sc = fault.custom[self.name]
+                    losdc_synth = np.dot(Gc, Sc)
+                    self.synth += losdc_synth
 
-            if poly is not None:
-                # Compute the polynomial
-                self.computePoly(fault,computeNormFact=computeNormFact)
-                if poly is 'include':
-                    self.removePoly(fault, computeNormFact=computeNormFact)
-                else:
-                    self.synth += self.orbit
+                if poly is not None:
+                    # Compute the polynomial
+                    self.computePoly(fault,computeNormFact=computeNormFact)
+                    if poly is 'include':
+                        self.removePoly(fault, computeNormFact=computeNormFact)
+                    else:
+                        self.synth += self.orbit
+
 
         # All done
         return
@@ -1639,12 +1431,8 @@ class insar(SourceInv):
     def reject_pixel(self, u):
         '''
         Reject pixels.
-
-        :Args:
+        Args:
             * u         : Index of the pixel to reject.
-
-        :Returns:   
-            * None
         '''
 
         self.lon = np.delete(self.lon, u)
@@ -1673,13 +1461,9 @@ class insar(SourceInv):
     def reject_pixels_fault(self, dis, faults):
         '''
         Rejects the pixels that are dis km close to the fault.
-
-        :Args:
+        Args:
             * dis       : Threshold distance.
             * faults    : list of fault objects.
-        
-        :Returns:
-            * None
         '''
 
         # Variables to trim are  self.corner,
@@ -1721,17 +1505,13 @@ class insar(SourceInv):
         '''
         Project the SAR velocities onto a profile.
         Works on the lat/lon coordinates system.
-
-        :Args:
+        Args:
             * name              : Name of the profile.
             * loncenter         : Profile origin along longitude.
             * latcenter         : Profile origin along latitude.
             * length            : Length of profile.
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
-
-        :Returns:
-            * None. Profiles are stored in self.profiles
         '''
 
         # the profiles are in a dictionary
@@ -1767,7 +1547,6 @@ class insar(SourceInv):
         dic['Length'] = length
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
-        dic['Indices'] = np.array(Bol)        
         dic['Lon'] = lon
         dic['Lat'] = lat
         dic['LOS Velocity'] = vel
@@ -1785,22 +1564,16 @@ class insar(SourceInv):
         # All done
         return
 
-    def getprofileAlongCurve(self, name, lon, lat, width, widthDir=90.):
+    def getprofileAlongCurve(self, name, lon, lat, width, widthDir):
         '''
         Project the SAR velocities onto a profile.
         Works on the lat/lon coordinates system.
-
-        :Args:
+        Args:
             * name              : Name of the profile.
             * lon               : Longitude of the Line around which we do the profile
             * lat               : Latitude of the Line around which we do the profile
             * width             : Width of the zone around the line.
-
-        :Kwargs:
-            * widthDir          : Direction to compute the zone
-
-        :Returns:
-            * None. Profiles are stored in {profiles} attribute
+            * widthDir          : Direction to of the width.
         '''
 
         # the profiles are in a dictionary
@@ -1845,17 +1618,12 @@ class insar(SourceInv):
         '''
         Removes the mean value of points between xmin and xmax.
         Optionally, can remove the linear best fit between these 2 values
-
-        :Args:
+        Args:
             * name      : Name of the profile
             * xmin      : minimum value along X-axis to consider
             * xmax      : Maximum value along X-axis to consider
-
-        :Kwargs:
-            * method    : 'mean' will remove the mean value between xmin and xmax, 'linear' will remove the linear best fit between xmin and xmax
-
-        :Returns:
-            * None. Directly modifies the profile in self.profiles
+            * method    : 'mean' will remove the mean value between xmin and xmax
+                          'linear' will remove the linear best fit between xmin and xmax
         '''
 
         # Get the profile
@@ -1886,16 +1654,6 @@ class insar(SourceInv):
     def cleanProfile(self, name, xlim=None, zlim=None):
         '''
         Cleans a specified profile.
-
-        :Args:
-            * name      : Name of the profile to clean
-
-        :Kwargs:
-            * xlim      : tuple of xmin and xmax. Keep the points between xmin and xmax
-            * zlim      : tuple of zlim and zmax. Keep the points between zmin and zmax
-
-        :Returns:
-            * None. Directly modifies the profile in self.profiles
         '''
 
         # Get profile
@@ -1923,17 +1681,7 @@ class insar(SourceInv):
 
     def smoothProfile(self, name, window, method='mean'):
         '''
-        Computes smoothed  profile. Simple mean of median moving window.
-
-        :Args:
-            * name      : Name of the profile
-            * window    : Length of the window (km)
-
-        :Kwargs:
-            * method    : mean or median
-
-        :Returns:
-            * None. Creates a new profile in the self.profiles dictionary with the same name and the prefix 'Smoothed'
+        Computes smoothed  profile.
         '''
 
         # Get profile
@@ -1963,9 +1711,9 @@ class insar(SourceInv):
 
                 # Get the mean
                 if method in ('mean'):
-                    m = np.nanmean(vel[uu])
+                    m = vel[uu].mean()
                 elif method in ('median'):
-                    m = np.nanmedian(vel[uu])
+                    m = np.median(vel[uu])
 
                 # Get the mean distance
                 d = dis[uu].mean()
@@ -1995,11 +1743,42 @@ class insar(SourceInv):
         # All done
         return
 
+    def _getindexXlimProfile(self, name, xmin, xmax):
+        '''
+        Returns the index of the points that are in between xmin & xmax.
+        '''
+
+        # Get the distance array
+        distance = self.profiles[name]['Distance']
+
+        # Get the indexes
+        ii = np.flatnonzero(distance>=xmin)
+        jj = np.flatnonzero(distance<=xmax)
+        uu = np.intersect1d(ii,jj)
+
+        # All done
+        return uu
+
+    def _getindexZlimProfile(self, name, zmin, zmax):
+        '''
+        Returns the index of the points that are in between zmin & zmax.
+        '''
+
+        # Get the velocity
+        velocity = self.profiles[name]['LOS Velocity']
+
+        # Get the indexes
+        ii = np.flatnonzero(velocity>=zmin)
+        jj = np.flatnonzero(velocity<=zmax)
+        uu = np.intersect1d(ii,jj)
+
+        # All done
+        return uu
+
     def curve2prof(self, xl, yl, width, widthDir):
         '''
         Routine returning the profile along a curve.
-
-        :Args:
+        Args:
             * xl                : List of the x coordinates of the line.
             * yl                : List of the y coordinates of the line.
             * width             : Width of the zone around the line.
@@ -2117,20 +1896,13 @@ class insar(SourceInv):
         '''
         Runs along a fault to determine variations of the phase offset in the
         along strike direction.
-
-        :Args:
+        Args:
             * name              : name of the results stored in AlongStrikeOffsets
             * fault             : a fault object.
-
-        :Kwargs:
             * interpolation     : interpolation distance
             * width             : width of the profiles used
             * length            : length of the profiles used
             * faultwidth        : width of the fault zone.
-            * tolerance         : tolerance in km
-            * azimuthpad        : ??
-
-        :Note: Not tested in a looong time...
         '''
 
         # the Along strike measurements are in a dictionary
@@ -2273,13 +2045,6 @@ class insar(SourceInv):
     def writeAlongStrikeOffsets2File(self, name, filename):
         '''
         Write the variations of the offset along strike in a file.
-
-        :Args:
-            * name: name of the along strike offset
-            * filename  : output file name
-
-        :Returns:
-            * None
         '''
 
         # Open a file
@@ -2302,22 +2067,9 @@ class insar(SourceInv):
         # Close file
         fout.close()
 
-        # All done
-        return
-
     def writeProfile2File(self, name, filename, fault=None):
         '''
         Writes the profile named 'name' to the ascii file filename.
-
-        :Args:
-            * name      : name of the profile
-            * filename  : output file name
-
-        :Kwargs:
-            * fault     : instance of a fault class for the intersection
-
-        :Returns:
-            * None
         '''
 
         # open a file
@@ -2369,23 +2121,16 @@ class insar(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False, fraction=1.):
+    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False):
         '''
         Plot profile.
-
-        :Args:
+        Args:
             * name      : Name of the profile.
-
-        :Kwargs:
             * legendscale: Length of the legend arrow.
             * fault     : Fault object
             * norm      : Colorscale limits
             * ref       : utm or lonlat
             * synth     : Plot synthetics (True/False).
-            * fraction  : fraction of pixels to plot when plotting the data
-
-        :Returns:
-            * None
         '''
 
         # Check the profile
@@ -2393,7 +2138,7 @@ class insar(SourceInv):
         assert len(x)>5, 'There is less than 5 points in your profile...'
 
         # Plot the insar
-        self.plot(faults=fault, norm=norm, show=False, fraction=fraction)
+        self.plot(faults=fault, norm=norm, show=False)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
@@ -2449,13 +2194,9 @@ class insar(SourceInv):
     def intersectProfileFault(self, name, fault):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
-
-        :Args:
+        Args:
             * name      : name of the profile.
             * fault     : fault object from verticalfault.
-
-        :Returns:
-            * float
         '''
 
         # Import shapely
@@ -2509,9 +2250,6 @@ class insar(SourceInv):
     def getRMS(self):
         '''
         Computes the RMS of the data and if synthetics are computed, the RMS of the residuals
-
-        :Returns:
-            * 2 floats
         '''
 
         # Get the number of points
@@ -2532,9 +2270,6 @@ class insar(SourceInv):
     def getVariance(self):
         '''
         Computes the Variance of the data and if synthetics are computed, the RMS of the residuals
-
-        :Returns:
-            * 2 floats
         '''
 
         # Get the number of points
@@ -2553,14 +2288,10 @@ class insar(SourceInv):
             return dataVariance, 0.
 
         # All done
-        return
 
     def getMisfit(self):
         '''
-        Computes the sum of the data and if synthetics are computed, the sum of the residual
-
-        :Returns:
-            * 2 floats
+        Computes the Summed Misfit of the data and if synthetics are computed, the RMS of the residuals
         '''
 
         # Misfit of the data
@@ -2575,27 +2306,16 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, fraction=1., markersize=30):
+    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1):
         '''
         Plot the data set, together with a fault, if asked.
 
-        :Kwargs:
-            * faults    : list of instances of fault class
+        Args:
             * ref       : utm or lonlat.
             * faults    : list of fault objects.
             * figure    : number of the figure.
             * gps       : list of gps objects.
             * decim     : plot the insar following the decimation process of varres.
-            * norm      : tuple of min and max for the colorbar
-            * data      : 'data', 'synth' or 'res'
-            * drawCoastlines: True/False
-            * expand    : How many degrees to expand the map relative to the data
-            * edgewidth : width of the edges of the squares when plotting the decimation pattern
-            * fraction  : Plot a fraction of the pixels (from 0. to 1.) or an integer number of pixels
-            * markersize: Size of the dots
-
-        :Returns:
-            * None
         '''
 
         # Get lons lats
@@ -2628,14 +2348,15 @@ class insar(SourceInv):
 
         # Plot the insar
         if not decim:
-            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter', decim=fraction, markersize=markersize)
+            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter')
 
         # Plot the fault trace if asked
         if faults is not None:
             if type(faults) is not list:
                 faults = [faults]
             for fault in faults:
-                fig.faulttrace(fault)
+                if fault.type is "Fault":
+                    fig.faulttrace(fault)
 
         # Show
         if show:
@@ -2646,29 +2367,19 @@ class insar(SourceInv):
         # All done
         return
 
-    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface', 
+    def write2grd(self, fname, oversample=1, data='data', interp=100, cmd='surface',
                         tension=None, useGMT=False, verbose=False, outDir='./'):
         '''
-        Write to a grd file (netcdf usable in GMT).
-
-        :Args:
+        Uses surface to write the output to a grd file.
+        Args:
             * fname     : Filename
-
-        :Kwargs:
             * oversample: Oversampling factor.
             * data      : can be 'data' or 'synth'.
             * interp    : Number of points along lon and lat.
             * cmd       : command used for the conversion( i.e., surface or xyz2grd)
-            * tension   : Tension parameter if surface is used
-            * useGMT    : if False, uses scipy for the interpolation
-            * verbose   : False
-            * outDir    : output directory
-
-        :Returns:
-            * None
         '''
 
-        # Filename 
+        # Filename
         fname = os.path.join(outDir, fname)
 
         # Get variables
@@ -2739,17 +2450,11 @@ class insar(SourceInv):
 
     def write2file(self, fname, data='data', outDir='./'):
         '''
-        Writes to a text file       
-
-        :Args:
+        Uses surface to write the output to a grd file.
+        Args:
             * fname     : Filename
-
-        :Kwargs:
             * data      : can be 'data', 'synth' or 'resid'
             * outDir    : output Directory
-
-        :Returns:
-            * None
         '''
 
         # Get variables
@@ -2776,15 +2481,10 @@ class insar(SourceInv):
         '''
         Writes the decimation scheme to a file plottable by GMT psxy command.
 
-        :Args:
+        Args:
             * filename  : Name of the output file (ascii file)
-
-        :Kwargs:
-            * data      : Add the value with a -Z option for each rectangle. Can be 'data', 'synth', 'res', 'transformation'
-            * outDir    : output directory
-
-        :Returns:
-            * None
+            * data      : Add the value with a -Z option for each rectangle
+                          Can be 'data', 'synth', 'res', 'transformation'
         '''
 
         # Open the file
@@ -2820,52 +2520,10 @@ class insar(SourceInv):
 
         # All done
         return
-
-    def checkLOS(self, figure=1, factor=100., decim=1):
-        '''
-        Plots the LOS vectors in a 3D plot.
-
-        :Kwargs:
-            * figure:   Figure number.
-            * factor:   Increases the size of the vectors.
-            * decim :   plot one out of {decim} vectors.
-
-        :Returns:
-            * None
-        '''
-
-        # Display
-        print('Checks the LOS orientation')
-
-        # Create a figure
-        fig = plt.figure(figure)
-
-        # Create an axis instance
-        ax = fig.add_subplot(111, projection='3d')
-
-        # Loop over the LOS
-        for i in range(0,self.vel.shape[0],decim):
-            x = [self.x[i], self.x[i]+self.los[i,0]*factor]
-            y = [self.y[i], self.y[i]+self.los[i,1]*factor]
-            z = [0, self.los[i,2]*factor]
-            ax.plot3D(x, y, z, '-k')
-
-        ax.set_xlabel('Easting')
-        ax.set_ylabel('Northing')
-        ax.set_zlabel('Up')
-
-        # Show it
-        plt.show()
-
-        # All done
-        return
-
-#PRIVATE METHODS
-
     def _getazimuth(self, x, y, i, pad=2):
         '''
         Get the azimuth of a line.
-        :Args:
+        Args:
             * x,y       : x,y values of the line.
             * i         : index of the position of interest.
             * pad       : number of points to take into account.
@@ -2890,7 +2548,7 @@ class insar(SourceInv):
     def _getoffset(self, x, y, w, plot=True):
         '''
         Computes the offset around zero along a profile.
-        :Args:
+        Args:
             * x         : X-axis of the profile
             * y         : Y-axis of the profile
             * w         : Width of the zero zone.
@@ -2932,35 +2590,38 @@ class insar(SourceInv):
         # all done
         return off
 
-    def _getindexXlimProfile(self, name, xmin, xmax):
+    def checkLOS(self, figure=1, factor=100., decim=1):
         '''
-        Returns the index of the points that are in between xmin & xmax.
+        Plots the LOS vectors in a 3D plot.
+        Args:
+            * figure:   Figure number.
+            * factor:   Increases the size of the vectors.
         '''
 
-        # Get the distance array
-        distance = self.profiles[name]['Distance']
+        # Display
+        print('Checks the LOS orientation')
 
-        # Get the indexes
-        ii = np.flatnonzero(distance>=xmin)
-        jj = np.flatnonzero(distance<=xmax)
-        uu = np.intersect1d(ii,jj)
+        # Create a figure
+        fig = plt.figure(figure)
+
+        # Create an axis instance
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Loop over the LOS
+        for i in range(0,self.vel.shape[0],decim):
+            x = [self.x[i], self.x[i]+self.los[i,0]*factor]
+            y = [self.y[i], self.y[i]+self.los[i,1]*factor]
+            z = [0, self.los[i,2]*factor]
+            ax.plot3D(x, y, z, '-k')
+
+        ax.set_xlabel('Easting')
+        ax.set_ylabel('Northing')
+        ax.set_zlabel('Up')
+
+        # Show it
+        plt.show()
 
         # All done
-        return uu
+        return
 
-    def _getindexZlimProfile(self, name, zmin, zmax):
-        '''
-        Returns the index of the points that are in between zmin & zmax.
-        '''
-
-        # Get the velocity
-        velocity = self.profiles[name]['LOS Velocity']
-
-        # Get the indexes
-        ii = np.flatnonzero(velocity>=zmin)
-        jj = np.flatnonzero(velocity<=zmax)
-        uu = np.intersect1d(ii,jj)
-
-        # All done
-        return uu
 #EOF

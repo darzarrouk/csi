@@ -70,20 +70,20 @@ class mpgradcurv(mp.Process):
 
                 # Get block
                 block = self.downsampler.blocks[i]
-                
+
                 # Split it in 4 blocks
                 subBlocks = self.downsampler.cutblockinfour(block)
-                
+
                 # Create list
                 xg = []; yg = []; means = []
-                
+
                 for subblock in subBlocks:
                     # Create a path
                     p = path.Path(subblock, closed=False)
                     # Find those who are inside
                     ii = p.contains_points(self.downsampler.PIXXY)
                     # Check if total area is sufficient
-                    check = self.downsampler._isItAGoodBlock(block, 
+                    check = self.downsampler._isItAGoodBlock(block,
                             np.flatnonzero(ii).shape[0])
                     if check:
                         if self.downsampler.datatype is 'insar':
@@ -133,7 +133,7 @@ class mpdownsampler(mp.Process):
             * datatype  : 'insar' or 'opticorr'
         '''
 
-        # Save 
+        # Save
         self.downsampler = downsampler
         self.blocks = blocks
         self.blocksll = blocksll
@@ -150,7 +150,7 @@ class mpdownsampler(mp.Process):
         Run the phase averaging.
         '''
 
-        # Initialize lists 
+        # Initialize lists
         X, Y, Lon, Lat, Wgt = [], [], [], [], []
         if self.downsampler.datatype is 'insar':
             Vel, Err, Los = [], [], []
@@ -161,10 +161,10 @@ class mpdownsampler(mp.Process):
 
         # Over each block, we average the position and the phase to have a new point
         for block, blockll in zip(self.blocks, self.blocksll):
-            
+
             # Create a path
             p = path.Path(block, closed=False)
-            
+
             # Find those who are inside
             ii = p.contains_points(self.downsampler.PIXXY)
 
@@ -214,12 +214,12 @@ class mpdownsampler(mp.Process):
                 Lon.append(lon)
                 Lat.append(lat)
                 Wgt.append(wgt)
-    
+
         # Save
         if self.downsampler.datatype is 'insar':
             self.queue.put([X, Y, Lon, Lat, Wgt, Vel, Err, Los, outBlocks, outBlocksll])
         elif self.downsampler.datatype is 'opticorr':
-            self.queue.put([X, Y, Lon, Lat, Wgt, East, North, Err_east, Err_north, blocks_to_remove, 
+            self.queue.put([X, Y, Lon, Lat, Wgt, East, North, Err_east, Err_north, blocks_to_remove,
                         outBlocks, outBlocksll])
 
         # All done
@@ -298,14 +298,14 @@ class imagedownsampling(object):
                       [lonmin, latmax],
                       [lonmax, latmax],
                       [lonmax, latmin]]
-        
+
         # Get the original pixel spacing
         self.spacing = distance.cdist([[image.x[0], image.y[0]]], [[image.x[i], image.y[i]] for i in range(1, image.x.shape[0])])[0]
         self.spacing = self.spacing.min()
 
         if self.verbose:
             print('Effective pixel spacing: {}'.format(self.spacing))
-	
+
         # Deduce the original pixel area
         self.pixelArea = self.spacing**2
 
@@ -318,7 +318,7 @@ class imagedownsampling(object):
         Args:
             * startingsize  : Size of the first regular downsampling (it'll be the effective maximum size of windows)
             * minimumsize   : Minimum Size of the blocks.
-            * tolerance     : Between 0 and 1. If 1, all the pixels must have a value so that the box is kept, 
+            * tolerance     : Between 0 and 1. If 1, all the pixels must have a value so that the box is kept,
                                                If 0, no pixels are needed... Default is 0.5
             * decimorig     : Decimation ofr plotting purposes only.
         '''
@@ -340,7 +340,6 @@ class imagedownsampling(object):
                           [x+startingsize, y-startingsize],
                           [x, y-startingsize] ]
                 blocks.append(block)
-
         # Set blocks
         self.setBlocks(blocks)
 
@@ -359,12 +358,12 @@ class imagedownsampling(object):
 
         # Save the blocks
         self.blocks = blocks
-        
+
         # Build the list of blocks in lon, lat
         blocksll = []
         for block in blocks:
             c1, c2, c3, c4 = block
-            blockll = [ self.xy2ll(c1[0], c1[1]), 
+            blockll = [ self.xy2ll(c1[0], c1[1]),
                         self.xy2ll(c2[0], c2[1]),
                         self.xy2ll(c3[0], c3[1]),
                         self.xy2ll(c4[0], c4[1]) ]
@@ -374,7 +373,7 @@ class imagedownsampling(object):
         # All done
         return
 
-    def downsample(self, plot=False, decimorig=10, nworkers=None):
+    def downsample(self, plot=False, decimorig=10,Norm=None):
         '''
         From the saved list of blocks, computes the downsampled data set and the informations that come along.
         '''
@@ -387,7 +386,7 @@ class imagedownsampling(object):
             newimage = opticorr('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False,
                                 lon0=self.lon0, lat0=self.lat0)
 
-        # Get the blocks 
+        # Get the blocks
         blocks = self.blocks
         blocksll = self.blocksll
 
@@ -412,16 +411,14 @@ class imagedownsampling(object):
 
         # Build the previous geometry
         self.PIXXY = np.vstack((self.image.x, self.image.y)).T
-
         # Create a queue to hold the results
         output = mp.Queue()
 
         # Check how many workers
-        if nworkers is None:
-            try:
-                nworkers = int(os.environ['OMP_NUM_THREADS'])
-            except:
-                nworkers = mp.cpu_count()
+        try:
+            nworkers = int(os.environ['OMP_NUM_THREADS'])
+        except:
+            nworkers = mp.cpu_count()
 
         # Create the workers
         seqblocks = _split_seq(blocks, nworkers)
@@ -481,7 +478,7 @@ class imagedownsampling(object):
 
         # plot y/n
         if plot:
-            self.plotDownsampled(decimorig=decimorig)
+            self.plotDownsampled(decimorig=decimorig,Norm=Norm)
 
         # All done
         return
@@ -499,7 +496,7 @@ class imagedownsampling(object):
         self.setDownsamplingScheme(sampler)
 
         # Downsample
-        self.downsample(plot=plot, decimorig=decimorig, nworkers=1)
+        self.downsample(plot=plot, decimorig=decimorig)
 
         # All done
         return
@@ -510,7 +507,7 @@ class imagedownsampling(object):
         the image.
         Args:
             * prefix        : Prefix of the rsp file.
-            * tolerance     : Minimum surface covered in a patch to be kept. 
+            * tolerance     : Minimum surface covered in a patch to be kept.
             * plot          : Plot the downsampled data (True/False)
             * decimorig     : Simple decimation factor of the data for
                               lighter plotting.
@@ -522,8 +519,8 @@ class imagedownsampling(object):
         # Read the file
         self.readDownsamplingScheme(prefix)
 
-        # Downsample (on 1 worker otherwise we loose the order)
-        self.downsample(plot=plot, decimorig=decimorig, nworkers=1)
+        # Downsample
+        self.downsample(plot=plot, decimorig=decimorig)
 
         # All done
         return
@@ -585,14 +582,97 @@ class imagedownsampling(object):
         # all done
         return b1, b2, b3, b4
 
-    def distanceBased(self, chardist=15, expodist=1, plot=False, decimorig=10):
+    def cutblockinthree(self, block):
+        '''
+        Used to create a smoother downsampled grid. From a single block, returns three blocks. Not used for now.
+        T.L. Shreve, January 2018
+        Args:
+            * block         : block as defined in initialstate.
+        '''
+
+        # Get the four corners
+        cs1, cs2, cs3, cs4 = block
+        xs1, ys1 = cs1
+        xs2, ys2 = cs2
+        xs3, ys3 = cs3
+        xs4, ys4 = cs4
+
+        # Compute the position of the center
+        xsc, ysc = self.getblockcenter(block)
+        #Where is the large block touching the smaller blocks? [top/bottom/left/right]
+        touch = top
+        # Form the 3 blocks (if the block is touched by smaller blocks beneath it)
+        if touch is 'bottom':
+            bs1 = [ [xs1, ys1],
+                   [xs2, ys2],
+                   [xs2, ysc],
+                   [xs1, ysc] ]
+            bs2 = [ [xs4, ysc],
+                   [xsc, ysc],
+                   [xsc, ys4],
+                   [xs4, ys4] ]
+            bs3 = [ [xsc, ysc],
+                   [xs3, ysc],
+                   [xs3, ys3],
+                   [xsc, ys3] ]
+        # Form the 3 blocks (if the block is touched by smaller blocks above it)
+        elif touch is 'top':
+            bs1 = [ [xs1, ys1],
+                   [xsc, ys1],
+                   [xsc, ysc],
+                   [xs1, ysc] ]
+            bs2 = [ [xsc, ys2],
+                   [xs2, ys2],
+                   [xs2, ysc],
+                   [xsc, ysc] ]
+            bs3 = [ [xs3, ysc],
+                   [xs4, ysc],
+                   [xs4, ys4],
+                   [xs3, ys3] ]
+       # Form the 3 blocks (if the block is touched by smaller blocks to the left)
+        elif touch is 'left':
+            bs1 = [ [xs1, ys1],
+                   [xsc, ys1],
+                   [xsc, ysc],
+                   [xs1, ysc] ]
+            bs2 = [ [xsc, ys2],
+                   [xs4, ys2],
+                   [xsc, ys4],
+                   [xsc, ys2] ]
+            bs3 = [ [xsc, ysc],
+                   [xs3, ysc],
+                   [xs3, ys3],
+                   [xsc, ys3] ]
+       # Form the 3 blocks (if the block is touched by smaller blocks to the right)
+        elif touch is 'right':
+            bs1 = [ [xs1, ys1],
+                   [xsc, ys1],
+                   [xsc, ys3],
+                   [xs3, ys3] ]
+            bs2 = [ [xsc, ys2],
+                   [xs2, ys2],
+                   [xs2, ysc],
+                   [xsc, ysc] ]
+            bs3 = [ [xs4, ysc],
+                   [xsc, ysc],
+                   [xsc, ys4],
+                   [xs4, ys4] ]
+
+
+
+        # all done
+        return bs1, bs2, bs3
+
+
+
+    def distanceBased(self, chardist=15, expodist=1, plot=False, decimorig=10,Norm=None):
         '''
         Downsamples the dataset depending on the distance from the fault
         R.Grandin, April 2015
         Args:
             * chardist      : Characteristic distance of downsampling.
             * expodist      : Exponent of the distance-based downsampling criterion.
-            * damping       : Damping coefficient (damping is made through an identity matrix).   
+            * damping       : Damping coefficient (damping is made through an identity matrix).
             * slipdirection : Which direction to accout for to build the slip Green's functions.
         '''
 
@@ -600,25 +680,25 @@ class imagedownsampling(object):
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Distance-based downsampling ")
-           
-        # by default, try to do at least one pass 
+
+        # by default, try to do at least one pass
         do_downsamp=True
-        
+
         # Iteration counter #
         it=0
-        
+
         # Loops until done
         while do_downsamp:
-                        
+
             # If some block has to be downsampled, "do_resamp" will be set back to "True"
             do_downsamp=False
-        
+
             # Check if block size is minimum
             Bsize = self._is_minimum_size(self.blocks)
-            
+
             # Iteration #
             it += 1
-            if self.verbose: 
+            if self.verbose:
                 print('Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
 
             # New list of blocks
@@ -638,11 +718,11 @@ class imagedownsampling(object):
                 # otherwise, leave the block unchanged
                 else:
                     newblocks.append(block)
-                
+
             # Set the blocks
             self.setBlocks(newblocks)
             # Do the downsampling
-            self.downsample(plot=plot, decimorig=decimorig)
+            self.downsample(plot=plot, decimorig=decimorig,Norm=Norm)
 
         # All done
         return
@@ -680,7 +760,7 @@ class imagedownsampling(object):
         workers = [mpgradcurv(self, Bsize, seqindices[w], output) for w in range(nworkers)]
 
         # start the workers
-        for w in range(nworkers): workers[w].start()  
+        for w in range(nworkers): workers[w].start()
 
         # Collect
         for w in range(nworkers):
@@ -707,7 +787,7 @@ class imagedownsampling(object):
         Args:
             * threshold     : Gradient threshold
         '''
-        
+
         if self.verbose:
             print ("---------------------------------")
             print ("---------------------------------")
@@ -734,7 +814,7 @@ class imagedownsampling(object):
         # Loops until done
         while not (testable<threshold).all() and it<itmax:
 
-            # Check 
+            # Check
             assert testable.shape[0]==len(self.blocks), 'Gradient vector has a size different than number of blocks'
 
             # Cut if asked
@@ -761,7 +841,7 @@ class imagedownsampling(object):
 
             # Iteration #
             it += 1
-            if self.verbose: 
+            if self.verbose:
                 print('Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
 
             # Compute resolution
@@ -775,10 +855,10 @@ class imagedownsampling(object):
             Bsize = self._is_minimum_size(self.blocks)
 
             if self.verbose and verboseLevel is not 'minimum':
-                sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(testable.min(), 
+                sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(testable.min(),
                     testable.max(), testable.mean(), testable.std()))
                 sys.stdout.flush()
-    
+
             # Plot at the end of that iteration
             if plot:
                 self.plotDownsampled(decimorig=decimorig)
@@ -791,17 +871,17 @@ class imagedownsampling(object):
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
         Args:
             * threshold     : Threshold.
-            * damping       : Damping coefficient (damping is made through an identity matrix).   
+            * damping       : Damping coefficient (damping is made through an identity matrix).
             * slipdirection : Which direction to accout for to build the slip Green's functions.
         '''
-        
+
         if self.verbose:
             print ("---------------------------------")
             print ("---------------------------------")
             print ("Downsampling Iterations")
 
         # Check if vertical is set properly
-        if not vertical and self.datatype is 'insar': 
+        if not vertical and self.datatype is 'insar':
             print("----------------------------------")
             print("----------------------------------")
             print(" Watch Out!!!!")
@@ -824,7 +904,7 @@ class imagedownsampling(object):
         # Loops until done
         while not (self.Rd<threshold).all():
 
-            # Check 
+            # Check
             assert self.Rd.shape[0]==len(self.blocks), 'Resolution matrix has a size different than number of blocks'
 
             # Cut if asked
@@ -851,7 +931,7 @@ class imagedownsampling(object):
 
             # Iteration #
             it += 1
-            if self.verbose: 
+            if self.verbose:
                 print('Iteration {}: Testing {} data samples '.format(it, len(self.blocks)))
 
             # Compute resolution
@@ -862,18 +942,17 @@ class imagedownsampling(object):
             self.Rd[np.where(Bsize)] = 0.0
 
             if self.verbose and verboseLevel is not 'minimum':
-                sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(self.Rd.min(), 
+                sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(self.Rd.min(),
                     self.Rd.max(), self.Rd.mean(), self.Rd.std()))
                 sys.stdout.flush()
 
             # Plot at the end of that iteration
             if plot:
                 self.plotDownsampled(decimorig=decimorig)
-    
+
         if self.verbose:
             print(" ")
-        
-    
+
         # All done
         return
 
@@ -882,11 +961,11 @@ class imagedownsampling(object):
         Computes the resolution matrix in the data space.
         Args:
             * slipdirection: Directions to include when computing the resolution operator.
-            * damping       : Damping coefficient (damping is made through an identity matrix).   
+            * damping       : Damping coefficient (damping is made through an identity matrix).
         '''
 
         # Check if vertical is set properly
-        if not vertical and self.datatype is 'insar': 
+        if not vertical and self.datatype is 'insar':
             print("----------------------------------")
             print("----------------------------------")
             print(" Watch Out!!!!")
@@ -895,7 +974,7 @@ class imagedownsampling(object):
             print(" displacements...")
             vertical = True
 
-        # Create the Greens function 
+        # Create the Greens function
         G = None
 
         # Compute the greens functions for each fault and cat these together
@@ -911,17 +990,17 @@ class imagedownsampling(object):
         # Compute the data resolution matrix
         Npar = G.shape[1]
         if self.datatype is 'opticorr':
-            Ndat = G.shape[0]/2 
+            Ndat = G.shape[0]/2
         Ginv = np.dot(np.linalg.inv(np.dot(G.T,G)+ damping*np.eye(Npar)),G.T)
         Rd = np.dot(G, Ginv)
         self.Rd = np.diag(Rd).copy()
 
-        # If we are dealing with cosicorr data, the diagonal is twice as long as the umber of blocks
+        # If we are dealing with cosicorr data, the diagonal is twice as long as the number of blocks
         if self.datatype is 'opticorr':
             self.Rd = np.sqrt( self.Rd[:Ndat]**2 + self.Rd[-Ndat:]**2 )
 
         # All done
-        return 
+        return
 
     def getblockarea(self, block):
         '''
@@ -929,7 +1008,7 @@ class imagedownsampling(object):
         Args:
             * block : Block as defined in initialstate.
         '''
-        
+
         # All done in one line
         return np.abs(block[0][0]-block[1][0]) * np.abs(block[0][1] - block[2][1])
 
@@ -1005,7 +1084,7 @@ class imagedownsampling(object):
                 data = original.north
             elif data2plot is 'east':
                 data = original.east
-                
+
         # Vmin, Vmax
         if Norm is not None:
             vmin, vmax = Norm
@@ -1029,7 +1108,7 @@ class imagedownsampling(object):
                 full.plot(fault.xf, fault.yf, '-k')
         else:
             # image
-            sca = full.scatter(original.lon[::decimorig], original.lat[::decimorig], s=10, c=data[::decimorig], cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.) 
+            sca = full.scatter(original.lon[::decimorig], original.lat[::decimorig], s=10, c=data[::decimorig], cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
             # Faults
             for fault in self.faults:
                 full.plot(fault.lon, fault.lat, '-k')
@@ -1064,14 +1143,14 @@ class imagedownsampling(object):
             patch.set_color(scalarMap.to_rgba(val))
             patch.set_edgecolors('k')
             down.add_collection(patch)
-        
+
         # Faults
         for fault in self.faults:
             if ref is 'utm':
                 down.plot(fault.xf, fault.yf, '-k')
             else:
                 down.plot(fault.lon, fault.lat, '-k')
-        
+
         # Color bar
         cb = mpl.colorbar.ColorbarBase(colr, cmap=cmap, norm=cNorm ,orientation='horizontal')
 
@@ -1116,7 +1195,7 @@ class imagedownsampling(object):
             plt.figure()
             plt.hist(self.Curvature, bins=10)
             plt.title('Curvature')
-        
+
         # Resolution
         if hasattr(self, 'Resolution'):
             plt.figure()
@@ -1135,7 +1214,7 @@ class imagedownsampling(object):
             plt.show()
 
         return
-        
+
     def reject_pixels_fault(self, distance, fault):
         '''
         Removes pixels that are too close to the fault in the downsampled image.
@@ -1159,11 +1238,11 @@ class imagedownsampling(object):
 
         # All done
         return
-    
+
     def buildDownsampledCd(self, mu, lam, function='exp'):
         '''
         Builds the covariance matrix by weihgting following the downsampling scheme
-        Args:   
+        Args:
             * mu        : Autocovariance
             * lam       : Characteristic distance
             * function  : 'exp'   --> C = mu**2 exp(-d/lam)
@@ -1184,17 +1263,17 @@ class imagedownsampling(object):
         # Iterate
         for i in range(nSamples):
             for j in range(i, nSamples):
-                
+
                 # Get blocks
                 iBlock = self.blocks[i]
                 jBlock = self.blocks[j]
-                    
+
                 # Get the pixels concerned
                 iPath = path.Path(iBlock, closed=False)
                 jPath = path.Path(jBlock, closed=False)
                 ii = iPath.contains_points(PIXXY)
                 jj = jPath.contains_points(PIXXY)
-                
+
                 # How many pixels
                 iSamples = len(np.flatnonzero(ii))
                 jSamples = len(np.flatnonzero(jj))
@@ -1244,10 +1323,10 @@ class imagedownsampling(object):
         Reads a downsampling scheme from a rsp file.
         and set it as self.blocks
         Args:
-            * prefix          : Prefix of a .rsp file written by 
+            * prefix          : Prefix of a .rsp file written by
                                 writeDownsampled2File.
         '''
-    
+
         # Replace spaces
         prefix = prefix.replace(" ", "_")
 
@@ -1263,7 +1342,7 @@ class imagedownsampling(object):
         # Close the file
         frsp.close()
 
-        # Loop 
+        # Loop
         for line in Lines[2:]:
             ulx, uly, drx, dry = [np.float(line.split()[i]) for i in range(2,6)]
             c1 = [ulx, uly]
@@ -1282,7 +1361,7 @@ class imagedownsampling(object):
         '''
         Writes the downsampled image data to a file.
         The file will be called prefix.txt.
-        If rsp is True, then it writes a file called prefix.rsp 
+        If rsp is True, then it writes a file called prefix.rsp
         containing the boxes of the downsampling.
         If prefix has white spaces, those are replaced by "_".
         '''
@@ -1299,7 +1378,7 @@ class imagedownsampling(object):
         if self.datatype is 'insar':
             ftxt.write('Number xind yind east north data err wgt Elos Nlos Ulos\n')
         elif self.datatype is 'opticorr':
-            ftxt.write('Number Lon Lat East North EastErr NorthErr \n') 
+            ftxt.write('Number Lon Lat East North EastErr NorthErr \n')
         ftxt.write('********************************************************\n')
         if rsp:
             frsp.write('xind yind UpperLeft-x,y DownRight-x,y\n')
@@ -1321,7 +1400,7 @@ class imagedownsampling(object):
                 nlos = self.newimage.los[i,1]
                 ulos = self.newimage.los[i,2]
                 strg = '{:4d} {:4d} {:4d} {:3.6f} {:3.6f} {} {} {} {} {} {}\n'\
-                    .format(i, x, y, lon, lat, vel, err, wgt, elos, nlos, ulos) 
+                    .format(i, x, y, lon, lat, vel, err, wgt, elos, nlos, ulos)
             elif self.datatype is 'opticorr':
                 east = self.newimage.east[i]
                 north = self.newimage.north[i]
@@ -1356,7 +1435,7 @@ class imagedownsampling(object):
     def _is_minimum_size(self, blocks):
         '''
         Returns a Boolean array.
-        True if block is minimum size, 
+        True if block is minimum size,
         False either.
         '''
 
@@ -1383,7 +1462,7 @@ class imagedownsampling(object):
         Args:
             * block     : Block instance of the imagedownsampling class.
         '''
-        
+
         # Get the four corners
         c1, c2, c3, c4 = block
         x1, y1 = c1
@@ -1403,10 +1482,10 @@ class imagedownsampling(object):
             distCorner3=np.min(np.hypot(fault.xf-x3,fault.yf-y3))
             distCorner4=np.min(np.hypot(fault.xf-x4,fault.yf-y4))
             distMin=np.min([distMin,distCorner1,distCorner2,distCorner3,distCorner4])
-        
+
         # all done
         return distMin
-        
+
     def blockSize(self,block):
         '''
         Returns block size.
@@ -1414,10 +1493,10 @@ class imagedownsampling(object):
         Args:
             * block     : Block instance of the imagedownsampling class.
         '''
-        
+
         # compute the size
         BlockSizeW = block[1][0] - block[0][0]
-        
+
         # all done
         return BlockSizeW
 

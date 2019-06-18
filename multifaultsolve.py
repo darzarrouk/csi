@@ -6,6 +6,8 @@ This class allows then to:
 
 Written by R. Jolivet, April 2013.
 
+Updated by T. Shreve, May 2019, to include a pressure source.
+
 '''
 
 import copy
@@ -21,7 +23,7 @@ class multifaultsolve(object):
 
         Args:
             * name          : Name of the project.
-            * faults        : List of faults from verticalfault.
+            * faults        : List of faults from verticalfault or pressure .
         '''
 
         self.verbose = verbose
@@ -56,7 +58,7 @@ class multifaultsolve(object):
                 self.ready = False
                 print("d has not been assembled in fault structure {}".format(fault.name))
 
-        # Check that the sizes of the data vectors are consistent        
+        # Check that the sizes of the data vectors are consistent
         self.d = faults[0].dassembled
         for fault in faults:
             if (fault.dassembled != self.d).all():
@@ -74,24 +76,29 @@ class multifaultsolve(object):
         # Store an array of the patch areas
         patchAreas = []
         for fault in faults:
-            if fault.patchType == 'triangletent':
-                fault.computeTentArea()
-                for tentIndex in range(fault.slip.shape[0]):
-                    patchAreas.append(fault.area_tent[tentIndex])
-            elif fault.patchType in ('notafault', 'transformation'):
-                print('Not a fault detected')
-            else:
-                fault.computeArea()
-                for patchIndex in range(fault.slip.shape[0]):
-                    patchAreas.append(fault.area[patchIndex])
-        self.patchAreas = np.array(patchAreas)
+            if fault.type is "Fault":
+                if fault.patchType == 'triangletent':
+                    fault.computeTentArea()
+                    for tentIndex in range(fault.slip.shape[0]):
+                        patchAreas.append(fault.area_tent[tentIndex])
+                elif fault.patchType in ('notafault', 'transformation'):
+                    print('Not a fault detected')
+                else:
+                    fault.computeArea()
+                    for patchIndex in range(fault.slip.shape[0]):
+                        patchAreas.append(fault.area[patchIndex])
+                self.patchAreas = np.array(patchAreas)
+                self.type = "Fault"
+            elif fault.type is "Pressure":
+                self.type = "Pressure"
+        #Store an array of volume of pressure source?
 
         # All done
         return
 
     def assembleGFs(self):
         '''
-        Assembles the Green's functions matrix G for the concerned faults.
+        Assembles the Green's functions matrix G for the concerned faults or pressure sources.
         '''
 
         # Get the faults
@@ -121,8 +128,9 @@ class multifaultsolve(object):
             # Store the G matrix
             self.G[:,st:se] = fault.Gassembled
             # Keep track of indexing
-            if fault.patchType not in ('notafault', 'transformation'):
-                self.affectIndexParameters(fault)
+            if fault.type is "Fault":
+                if fault.patchType not in ('notafault', 'transformation'):
+                    self.affectIndexParameters(fault)
 
         # self ready
         self.ready = True
@@ -182,10 +190,6 @@ class multifaultsolve(object):
         Prints to screen  which parameters are what...
         '''
 
-        # Prepare the table
-        if self.verbose:
-            print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format('Fault Name', 'Strike Slip', 'Dip Slip', 'Tensile', 'Coupling', 'Extra Parms'))
-
         # initialize the counters
         ns = 0
         ne = 0
@@ -200,55 +204,95 @@ class multifaultsolve(object):
             # Where does this fault starts
             nfs = copy.deepcopy(ns)
 
-            # Initialize the values
-            ss = 'None'
-            ds = 'None'
-            ts = 'None'
-            cp = 'None'
+            if fault.type is "Fault":
+                #Prepare the table
+                if self.verbose:
+                    print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format('Fault Name', 'Strike Slip', 'Dip Slip', 'Tensile', 'Coupling', 'Extra Parms'))
+                # Initialize the values
+                ss = 'None'
+                ds = 'None'
+                ts = 'None'
+                cp = 'None'
 
-            # Conditions on slip
-            if 's' in fault.slipdir:
-                ne += fault.slip.shape[0]
-                ss = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
-                ns += fault.slip.shape[0]
-            if 'd' in fault.slipdir:
-                ne += fault.slip.shape[0]
-                ds = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
-                ns += fault.slip.shape[0]
-            if 't' in fault.slipdir:
-                ne += fault.slip.shape[0]
-                ts = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
-                ns += fault.slip.shape[0]
-            if 'c' in fault.slipdir:
-                ne += fault.slip.shape[0]
-                cp = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
-                ns += fault.slip.shape[0]
+                # Conditions on slip
+                if 's' in fault.slipdir:
+                    ne += fault.slip.shape[0]
+                    ss = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
+                    ns += fault.slip.shape[0]
+                if 'd' in fault.slipdir:
+                    ne += fault.slip.shape[0]
+                    ds = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
+                    ns += fault.slip.shape[0]
+                if 't' in fault.slipdir:
+                    ne += fault.slip.shape[0]
+                    ts = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
+                    ns += fault.slip.shape[0]
+                if 'c' in fault.slipdir:
+                    ne += fault.slip.shape[0]
+                    cp = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
+                    ns += fault.slip.shape[0]
 
-            # How many slip parameters
-            if ne>nSlip:
-                nSlip = ne
+                # How many slip parameters
+                if ne>nSlip:
+                    nSlip = ne
 
-            # conditions on orbits (the rest is orbits)
-            np = ne - nfs
-            no = fault.Gassembled.shape[1] - np
-            if no>0:
-                ne += no
-                op = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
-                ns += no
-            else:
-                op = 'None'
+                # conditions on orbits (the rest is orbits)
+                np = ne - nfs
+                no = fault.Gassembled.shape[1] - np
+                if no>0:
+                    ne += no
+                    op = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
+                    ns += no
+                else:
+                    op = 'None'
 
-            # print things
-            if self.verbose:
-                print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
+                # print things
+                if self.verbose:
+                    print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format(fault.name, ss, ds, ts, cp, op))
 
-            # Store details
-            self.paramDescription[fault.name] = {}
-            self.paramDescription[fault.name]['Strike Slip'] = ss
-            self.paramDescription[fault.name]['Dip Slip'] = ds
-            self.paramDescription[fault.name]['Tensile Slip'] = ts
-            self.paramDescription[fault.name]['Coupling'] = cp
-            self.paramDescription[fault.name]['Extra Parameters'] = op
+                # Store details
+                self.paramDescription[fault.name] = {}
+                self.paramDescription[fault.name]['Strike Slip'] = ss
+                self.paramDescription[fault.name]['Dip Slip'] = ds
+                self.paramDescription[fault.name]['Tensile Slip'] = ts
+                self.paramDescription[fault.name]['Coupling'] = cp
+                self.paramDescription[fault.name]['Extra Parameters'] = op
+
+            elif fault.type is "Pressure":
+                #Prepare the table
+                if self.verbose:
+                    print('{:30s}||{:12s}||{:12s}'.format('Fault Name', 'Pressure', 'Extra Parms'))
+                # Initialize the values
+                dp = 'None'
+
+                ne += 1
+                dp = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
+                ns += 1 #fault.slip.shape[0]
+
+
+                # How many slip parameters
+                if ne>nSlip:
+                    nSlip = ne
+
+                # conditions on orbits (the rest is orbits)
+                np = ne - nfs
+                no = fault.Gassembled.shape[1] - np
+                if no>0:
+                    ne += no
+                    op = '{:12s}'.format('{:4d} - {:4d}'.format(ns, ne))
+                    ns += no
+                else:
+                    op = 'None'
+
+                # print things
+                if self.verbose:
+                    print('{:30s}||{:12s}||{:12s}'.format(fault.name, dp, op))
+
+                # Store details
+                self.paramDescription[fault.name] = {}
+                self.paramDescription[fault.name]['pressure'] = dp
+                self.paramDescription[fault.name]['Extra Parameters'] = op
+
 
         # Store the number of slip parameters
         self.nSlip = nSlip
@@ -335,83 +379,83 @@ class multifaultsolve(object):
             st = self.fault_indexes[fault.name][0]
             se = self.fault_indexes[fault.name][1]
             fault.mpost = self.mpost[st:se]
+            if fault.type is "Fault":
+                # case of a transformation object
+                if fault.patchType=='transformation':
 
-            # case of a transformation object
-            if fault.patchType=='transformation':
+                    fault.distributem()
 
-                fault.distributem()
-            
-            else:
+                else:
 
-                # Affect the indexes
-                self.affectIndexParameters(fault)
+                    # Affect the indexes
+                    self.affectIndexParameters(fault)
 
-                # put the slip values in slip
+                    # put the slip values in slip
+                    st = 0
+                    if 's' in fault.slipdir:
+                        se = st + fault.slip.shape[0]
+                        fault.slip[:,0] = fault.mpost[st:se]
+                        st += fault.slip.shape[0]
+                    if 'd' in fault.slipdir:
+                        se = st + fault.slip.shape[0]
+                        fault.slip[:,1] = fault.mpost[st:se]
+                        st += fault.slip.shape[0]
+                    if 't' in fault.slipdir:
+                        se = st + fault.slip.shape[0]
+                        fault.slip[:,2] = fault.mpost[st:se]
+                        st += fault.slip.shape[0]
+                    if 'c' in fault.slipdir:
+                        se = st + fault.slip.shape[0]
+                        fault.coupling = fault.mpost[st:se]
+                        st += fault.slip.shape[0]
+
+                    # check
+                    if hasattr(fault, 'NumberCustom'):
+                        fault.custom = {} # Initialize dictionnary
+                        # Get custom params for each dataset
+                        for dset in fault.datanames:
+                            if 'custom' in fault.G[dset].keys():
+                                nc = fault.G[dset]['custom'].shape[1] # Get number of param for this dset
+                                se = st + nc
+                                fault.custom[dset] = fault.mpost[st:se]
+                                st += nc
+            elif fault.type is "Pressure":
                 st = 0
-                if 's' in fault.slipdir:
-                    se = st + fault.slip.shape[0]
-                    fault.slip[:,0] = fault.mpost[st:se]
-                    st += fault.slip.shape[0]
-                if 'd' in fault.slipdir:
-                    se = st + fault.slip.shape[0]
-                    fault.slip[:,1] = fault.mpost[st:se]
-                    st += fault.slip.shape[0]
-                if 't' in fault.slipdir:
-                    se = st + fault.slip.shape[0]
-                    fault.slip[:,2] = fault.mpost[st:se]
-                    st += fault.slip.shape[0]
-                if 'c' in fault.slipdir:
-                    se = st + fault.slip.shape[0]
-                    fault.coupling = fault.mpost[st:se]
-                    st += fault.slip.shape[0]
-
-                # check
-                if hasattr(fault, 'NumberCustom'):
-                    fault.custom = {} # Initialize dictionnary
-                    # Get custom params for each dataset
-                    for dset in fault.datanames:
-                        if 'custom' in fault.G[dset].keys():
-                            nc = fault.G[dset]['custom'].shape[1] # Get number of param for this dset
-                            se = st + nc
-                            fault.custom[dset] = fault.mpost[st:se]
-                            st += nc
-
-                # Get the polynomial/orbital/helmert values if they exist
-                fault.polysol = {}
-                fault.polysolindex = {}
-                for dset in fault.datanames:
-                    if dset in fault.poly.keys():
-                        if (fault.poly[dset].__class__ is not str) \
-                                and (fault.poly[dset].__class__ is not list)\
-                                and (fault.poly[dset] is not None):
-                            if (fault.poly[dset] > 0):
-                                se = st + fault.poly[dset]
-                                fault.polysol[dset] = fault.mpost[st:se]
-                                fault.polysolindex[dset] = range(st,se)
-                                st += fault.poly[dset]
-                        elif (fault.poly[dset].__class__ is str):
-                            if fault.poly[dset] is 'full':
-                                nh = fault.helmert[dset]
-                                se = st + nh
-                                fault.polysol[dset] = fault.mpost[st:se]
-                                fault.polysolindex[dset] = range(st,se)
-                                st += nh
-                            if fault.poly[dset] in ('strain', 'strainnorotation', 
-                                                    'strainonly', 'strainnotranslation', 
-                                                    'translation', 'translationrotation'):
-                                nh = fault.strain[dset]
-                                se = st + nh
-                                fault.polysol[dset] = fault.mpost[st:se]
-                                fault.polysolindex[dset] = range(st,se)
-                                st += nh
-                        elif (fault.poly[dset].__class__ is list):
-                            nh = fault.transformation[dset]
+                se = st + 1
+                print(fault.mpost[st:se])
+                fault.deltapressure = fault.mpost[st:se]
+            # Get the polynomial/orbital/helmert values if they exist
+            fault.polysol = {}
+            fault.polysolindex = {}
+            for dset in fault.datanames:
+                if dset in fault.poly.keys():
+                    if (fault.poly[dset].__class__ is not str) and (fault.poly[dset].__class__ is not list):
+                        if (fault.poly[dset] > 0):
+                            se = st + fault.poly[dset]
+                            fault.polysol[dset] = fault.mpost[st:se]
+                            fault.polysolindex[dset] = range(st,se)
+                            st += fault.poly[dset]
+                    elif (fault.poly[dset].__class__ is str):
+                        if fault.poly[dset] is 'full':
+                            nh = fault.helmert[dset]
                             se = st + nh
                             fault.polysol[dset] = fault.mpost[st:se]
                             fault.polysolindex[dset] = range(st,se)
                             st += nh
-                        else:
-                            fault.polysol[dset] = None
+                        if fault.poly[dset] in ('strain', 'strainnorotation', 'strainonly', 'strainnotranslation', 'translation', 'translationrotation'):
+                            nh = fault.strain[dset]
+                            se = st + nh
+                            fault.polysol[dset] = fault.mpost[st:se]
+                            fault.polysolindex[dset] = range(st,se)
+                            st += nh
+                    elif (fault.poly[dset].__class__ is list):
+                        nh = fault.transformation[dset]
+                        se = st + nh
+                        fault.polysol[dset] = fault.mpost[st:se]
+                        fault.polysolindex[dset] = range(st,se)
+                        st += nh
+                    else:
+                        fault.polysol[dset] = None
 
         # All done
         return
@@ -563,12 +607,31 @@ class multifaultsolve(object):
             print ("---------------------------------")
             print ("Computing the Generalized Inverse")
 
+        def computeMwDiff(m, Mw_thresh, patchAreas, mu):
+            """
+            Ahhhhh hard coded shear modulus.
+            Probably need to edit this to include tensile as well ???
+            """
+            Npatch = len(self.patchAreas)
+            shearModulus = mu #22.5e9
+            if len(m) < 2*Npatch:             #If only one component of slip (dip or strikeslip)
+                slip = np.sqrt(m[:Npatch]**2)
+            else:                                #If both components of slip (dip or strikeslip)
+                slip = np.sqrt(m[:Npatch]**2+m[Npatch:2*Npatch]**2)
+            moment =  np.abs(np.dot(shearModulus * patchAreas, slip))
+            if moment>0.:
+                Mw = 2.0 / 3.0 * (np.log10(moment) - 9.1)
+                print("Magnitude is")
+                print(Mw)
+            else:
+                Mw = -6.0
+            return np.array([Mw_thresh - Mw])
+
         # Get the matrixes and vectors
         G = self.G
         d = self.d
         Cd = self.Cd
         Cm = self.Cm
-
         # Get the number of model parameters
         Nm = Cm.shape[0]
 
@@ -603,16 +666,24 @@ class multifaultsolve(object):
         Res = d - np.dot( G, mprior )
         Two = np.dot( np.dot( G.T, iCd ), Res )
         mpost = mprior + np.dot( One, Two )
-
+        Err = d - np.dot( G, mpost )
         # Store m_post
         self.mpost = mpost
+        print ("Compute cost function")
+        print(np.sum(Err**2))
+        mu = 22.5e9
+        Mw_thresh = 10
+        if self.type is "Fault":
+            computeMwDiff(self.mpost, Mw_thresh, self.patchAreas*1.e6, mu)
+
+
 
         # All done
         return
 
     def ConstrainedLeastSquareSoln(self, mprior=None, Mw_thresh=None, bounds=None,
-                                   method='SLSQP', rcond=None, 
-                                   iterations=100, tolerance=None, maxfun=1e10,
+                                   method='SLSQP', rcond=None,
+                                   iterations=100, tolerance=None, maxfun=100000,
                                    checkIter=False, checkNorm=False):
         """
         Solves the least squares problem:
@@ -709,7 +780,7 @@ class multifaultsolve(object):
             moment =  np.abs(np.dot(shearModulus * patchAreas, slip))
             if moment>0.:
                 Mw = 2.0 / 3.0 * (np.log10(moment) - 9.1)
-                #print(Mw)
+                print("Magnitude is"+ Mw)
             else:
                 Mw = -6.0
             return np.array([Mw_thresh - Mw])
@@ -722,7 +793,7 @@ class multifaultsolve(object):
                 mu = np.append(mu,fault.mu)
             if None in mu.tolist(): # If mu not set in one fault, fix it for all of them
                 mu = 22.5e9
-                
+
             constraints = {'type': 'ineq',
                            'fun': computeMwDiff,
                            'args': (Mw_thresh, self.patchAreas*1.e6, mu)}
@@ -741,9 +812,9 @@ class multifaultsolve(object):
             F = np.vstack((np.dot(L.T, G), M.T))
             b = np.hstack((np.dot(L.T, d_zero), np.zeros_like(mprior)))
             m = nnls(F, b)[0] + mprior
-        
+
         else:
-            if self.verbose:            
+            if self.verbose:
                 print("Performing constrained minimzation")
             options = {'disp': checkIter, 'maxiter': iterations}
             if method=='L-BFGS-B':
@@ -752,7 +823,8 @@ class multifaultsolve(object):
                            constraints=constraints, method=method, bounds=bounds,
                            options=options, tol=tolerance)
             m = res.x
-
+        #final data + prior misfits is
+        self.cost = res.fun
         # Store result
         self.mpost = m
 
@@ -762,11 +834,11 @@ class multifaultsolve(object):
     def simpleSampler(self, priors, initialSample, nSample, nBurn, plotSampler=False,
                             writeSamples=False, dryRun=False, adaptiveDelay=300):
         '''
-        Uses a Metropolis algorithme to sample the posterior distribution of the model 
-        following Bayes's rule. This is exactly what is done in AlTar, but using an 
-        open-source library called pymc. This routine is made for simple problems with 
+        Uses a Metropolis algorithme to sample the posterior distribution of the model
+        following Bayes's rule. This is exactly what is done in AlTar, but using an
+        open-source library called pymc. This routine is made for simple problems with
         few parameters (i.e. More than 30 params needs a very fast computer).
-        
+
         Args:
             * priors        : List of priors. Each prior is specified by a list.
                      Example: priors = [ ['Name of parameter', 'Uniform', min, max]
@@ -778,14 +850,14 @@ class multifaultsolve(object):
             * writeSamples  : Write the samples to a binary file.
             * dryRun        : If True, builds the sampler, saves it, but does not run.
                               This can be used for debugging.
-            * adaptiveDelay : Recompute the covariance of the proposal every adaptiveDelay 
+            * adaptiveDelay : Recompute the covariance of the proposal every adaptiveDelay
                               steps
 
         The result is stored in self.samples
         The variable mpost is the mean of the final sample set.
         '''
 
-        if self.verbose:        
+        if self.verbose:
             # Print
             print ("---------------------------------")
             print ("---------------------------------")
@@ -793,7 +865,7 @@ class multifaultsolve(object):
             print ("sample the posterior PDFs of the ")
             print ("  model: P(m|d) = C P(m) P(d|m)  ")
 
-        # Import 
+        # Import
         try:
             import pymc
         except:
@@ -853,17 +925,17 @@ class multifaultsolve(object):
             return G.dot(np.array(theta).squeeze())
 
         # Build the observation
-        likelihood = pymc.MvNormal('Data', mu=forward, tau=np.linalg.inv(Cd), 
+        likelihood = pymc.MvNormal('Data', mu=forward, tau=np.linalg.inv(Cd),
                                            value=dobs, observed=True)
 
         # PDFs
         PDFs = [prior,likelihood]
-    
+
         # Create a sampler
         sampler = pymc.MCMC(PDFs)
 
         # Make sure we use Metropolis
-        sampler.use_step_method(pymc.AdaptiveMetropolis, prior, delay=adaptiveDelay, 
+        sampler.use_step_method(pymc.AdaptiveMetropolis, prior, delay=adaptiveDelay,
                                 shrink_if_necessary=True)
 
         # if dryRun:
@@ -896,14 +968,14 @@ class multifaultsolve(object):
         # Write Samples?
         if writeSamples:
             self.writeSamples2hdf5()
-            
+
         # Plot
         if plotSampler:
             for iprior, prior in enumerate(priors):
                 trace = sampler.trace('prior')[:][:,iprior]
                 fig = plt.figure()
                 plt.subplot2grid((1,4), (0,0), colspan=3)
-                plt.plot([0, len(trace)], [trace.mean(), trace.mean()], 
+                plt.plot([0, len(trace)], [trace.mean(), trace.mean()],
                          '--', linewidth=2)
                 plt.plot(trace, 'o-')
                 plt.title(prior[0])
@@ -948,7 +1020,7 @@ class multifaultsolve(object):
         for name in samples.keys():
             fout.create_dataset(name, data=samples[name])
         fout.close()
-        
+
         # All done
         return
 
@@ -1231,12 +1303,12 @@ class multifaultsolve(object):
         Writes the cfg file containing the priors to be used by altar.
         Args:
             * priors	    : type of prior and corresponding parameters for each slip mode
-			      ex: prior['Strike Slip']='gaussian' & prior['Dip Slip']='uniform'        
+			      ex: prior['Strike Slip']='gaussian' & prior['Dip Slip']='uniform'
 	        * params	    : Parameters associated with each type of prior
 			        - params['gaussian']=[[center,sigma]]
 			        - params['uniform']=[[low,high]]
             * modelName     : Name of the model
-            * files         : Names of problem files 
+            * files         : Names of problem files
             * prefix        : Prefix of problem
             * chains        : Number of chains.
 
@@ -1263,7 +1335,7 @@ class multifaultsolve(object):
 
         # Write init priors
         fout.write('; Priors \n')
-        fout.write('; Init Priors \n')      
+        fout.write('; Init Priors \n')
         k = 0
         init_priors = []
         init_cudapriors = []
@@ -1272,29 +1344,29 @@ class multifaultsolve(object):
                 if parDescr[fault.name][slipmode].replace(' ','') != 'None':
                     fout.write("; {} parameters of {} fault segment\n".format(slipmode,fault.name))
                     fout.write("[ init_prior_{} ]\n".format(k))
-                
+
                     ind = parDescr[fault.name][slipmode].replace(' ','').partition('-')
                     idx_begin = int(ind[0])
                     idx_end = int(ind[2])
                     fout.write("idx_begin = {}\n".format(idx_begin))
                     fout.write("idx_end = {}\n".format(idx_end))
-                    
+
                     if priors[slipmode] == 'gaussian':
                         fout.write("center = {}\n".format(params['gaussian'][0]))
                         fout.write("sigma = {}\n".format(params['gaussian'][1]))
                         fout.write(' \n')
                         init_priors.append("altar.priors.gaussian.Gaussian#init_prior_{}".format(k))
                         init_cudapriors.append("altar.priors.gaussian.cudaGaussian#init_prior_{}".format(k))
-                        
+
                     else:
                         fout.write("low = {}\n".format(params['uniform'][0]))
                         fout.write("high = {}\n".format(params['uniform'][1]))
                         fout.write(' \n')
                         init_priors.append("altar.priors.uniform.Uniform#init_prior_{}".format(k))
                         init_cudapriors.append("altar.priors.uniform.cudaUniform#init_prior_{}".format(k))
-                        
-                    k +=1                
-    
+
+                    k +=1
+
                 else:
                     continue
 
@@ -1309,29 +1381,29 @@ class multifaultsolve(object):
                 if parDescr[fault.name][slipmode].replace(' ','') != 'None':
                     fout.write("; {} parameters of {} fault segment\n".format(slipmode,fault.name))
                     fout.write("[ run_prior_{} ]\n".format(k))
-                
+
                     ind = parDescr[fault.name][slipmode].replace(' ','').partition('-')
                     idx_begin = int(ind[0])
                     idx_end = int(ind[2])
                     fout.write("idx_begin = {}\n".format(idx_begin))
                     fout.write("idx_end = {}\n".format(idx_end))
-                    
+
                     if priors[slipmode] == 'gaussian':
                         fout.write("center = {}\n".format(params['gaussian'][0]))
                         fout.write("sigma = {}\n".format(params['gaussian'][1]))
                         fout.write(' \n')
-                        run_priors.append("altar.priors.gaussian.Gaussian#run_prior_{}".format(k))       
-                        run_cudapriors.append("altar.priors.gaussian.cudaGaussian#run_prior_{}".format(k))                        
-                                         
+                        run_priors.append("altar.priors.gaussian.Gaussian#run_prior_{}".format(k))
+                        run_cudapriors.append("altar.priors.gaussian.cudaGaussian#run_prior_{}".format(k))
+
                     else:
                         fout.write("low = {}\n".format(params['uniform'][0]))
                         fout.write("high = {}\n".format(params['uniform'][1]))
                         fout.write(' \n')
                         run_priors.append("altar.priors.uniform.Uniform#run_prior_{}".format(k))
-                        run_cudapriors.append("altar.priors.uniform.cudaUniform#run_prior_{}".format(k))                        
-                                                
-                    k +=1                
-    
+                        run_cudapriors.append("altar.priors.uniform.cudaUniform#run_prior_{}".format(k))
+
+                    k +=1
+
                 else:
                     continue
 
@@ -1344,7 +1416,7 @@ class multifaultsolve(object):
         fout.write("Cd_file = {{modelDir}}/{}\n".format(files[1]))
         fout.write("gf_file = {{modelDir}}/{}\n".format(files[2]))
         fout.write("\n")
-    
+
         # Write Problem
         fout.write("; Problems\n")
         fout.write("[ altar.problem.Problem # problem ] ; if problem is a Problem\n")
@@ -1356,8 +1428,8 @@ class multifaultsolve(object):
         fout.write("[ altar.problem.cudaProblem # problem ] ; if problem is a cudaProblem\n")
         fout.write("init_priors = {}\n".format(','.join(init_cudapriors)))
         fout.write("run_priors = {}\n".format(','.join(run_cudapriors)))
-        fout.write("models = altar.models.linear.cudaLinear#{}\n".format(modelName))        
-        
+        fout.write("models = altar.models.linear.cudaLinear#{}\n".format(modelName))
+
         # All done
         return
 
