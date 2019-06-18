@@ -336,10 +336,6 @@ class Yang(Pressure):
         ###NEED TO DOUBLE CHECK THIS
         if float(z1) < float(b)**2/float(a):
             raise Exception('radius of curvature has to be less than the depth...')
-        # Depth
-        mm = [float(z1)]
-        if D<mm:
-            D=mm
         # Set parameters
         self.ellipshape = {'x0': lon1, 'x0m': x1, 'y0': lat1,'y0m': y1,'z0': z1,'a': a,'A': A1,'dip': dip,'strike': strike}                   #Or as array?
 
@@ -347,7 +343,7 @@ class Yang(Pressure):
         fin.close()
 
         # depth
-        self.depth = D
+        self.depth = float(z1)
 
         # All done
         return

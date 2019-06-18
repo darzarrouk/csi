@@ -329,10 +329,6 @@ class Mogi(Pressure):
         #if radius is not much smaller than depth, mogi equations don't hold
         if float(a)/float(z1)> 0.1 :
             warnings.warn('Results may be inaccurate if depth is not much greater than radius',Warning)
-        # Depth
-        mm = [float(z1)]
-        if D<mm:
-            D=mm
         # Set parameters --  including strike and dip just for plotting?
         self.ellipshape = {'x0': lon1, 'x0m': x1, 'y0': lat1,'y0m': y1,'z0': z1,'a': a,'A': 1.0,'strike': 0.0,'dip': 0.0}
         #Or as array?
@@ -345,7 +341,7 @@ class Mogi(Pressure):
         fin.close()
 
         # depth
-        self.depth = D
+        self.depth = float(z1)
 
         # All done
         return

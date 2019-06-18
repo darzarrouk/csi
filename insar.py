@@ -2306,7 +2306,7 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1):
+    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None]):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2329,7 +2329,7 @@ class insar(SourceInv):
         latmax = self.lat.max()+expand
 
         # Create a figure
-        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax, figsize=figsize)
 
         # Draw the coastlines
         if drawCoastlines:
