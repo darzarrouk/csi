@@ -20,6 +20,11 @@ import matplotlib.colors as colors
 import matplotlib.cm as cmx
 import matplotlib.collections as colls
 
+# Cartopy 
+import cartopy 
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
 # mpl_toolkits
 import mpl_toolkits.basemap as basemap
 from mpl_toolkits.mplot3d import Axes3D
@@ -32,10 +37,10 @@ from .SourceInv import SourceInv
 class geodeticplot(object):
 
     def __init__(self, figure=None, pbaspect=None,
-                 projection='cyl',
                  lonmin=None, latmin=None, lonmax=None, latmax=None,
                  resolution='i',
                  figsize=[None,None]):
+        #projection='cyl',
         '''
         Args:
             * figure        : Number of the figure.
@@ -48,6 +53,14 @@ class geodeticplot(object):
         self.latmin = latmin
         self.latmax = latmax
 
+        # Lon0 lat0
+        self.lon0 = lonmin + (lonmax-lonmin)/2.
+        self.lat0 = latmin + (latmax-latmin)/2.
+
+        # Projection
+        self.projection = ccrs.TransverseMercator(central_longitude=self.lon0, 
+                                                  central_latitude=self.lat0)
+
         # Open a figure
         fig1 = plt.figure(figure, figsize=figsize[0])
         faille = fig1.add_subplot(111, projection='3d')
@@ -56,20 +69,15 @@ class geodeticplot(object):
         else:
             nextFig=figure+1
         fig2  = plt.figure(nextFig, figsize=figsize[1])
-        ax = fig2.add_subplot(111)
-        carte = basemap.Basemap(projection=projection,
-                                llcrnrlon=lonmin,
-                                llcrnrlat=latmin,
-                                urcrnrlon=lonmax,
-                                urcrnrlat=latmax,
-                                resolution=resolution, ax=ax)
+        carte = fig2.add_subplot(111, projection=self.projection)
+        carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax])
 
         # Set the axes
         faille.set_xlabel('Longitude')
         faille.set_ylabel('Latitude')
         faille.set_zlabel('Depth (km)')
-        carte.ax.set_xlabel('Longitude')
-        carte.ax.set_ylabel('Latitude')
+        carte.set_xlabel('Longitude')
+        carte.set_ylabel('Latitude')
 
         # store plots
         self.faille = faille
@@ -121,8 +129,7 @@ class geodeticplot(object):
 
         # Fits the horizontal axis to the asked values
         if fitOnBox:
-            self.carte.ax.set_xlim([self.lonmin, self.lonmax])
-            self.carte.ax.set_ylim([self.latmin, self.latmax])
+            self.carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax])
             self.faille.set_xlim(self.carte.ax.get_xlim())
             self.faille.set_ylim(self.carte.ax.get_ylim())
 
@@ -138,7 +145,8 @@ class geodeticplot(object):
         # All done
         return
 
-    def savefig(self, prefix, mapaxis='equal', ftype='pdf', dpi=None, bbox_inches=None, triDaxis='auto', saveFig=['fault', 'map']):
+    def savefig(self, prefix, mapaxis='equal', ftype='pdf', dpi=None, bbox_inches=None, 
+                      triDaxis='auto', saveFig=['fault', 'map']):
         '''
         Save to file.
         ftype can be: 'eps', 'pdf', 'png'
@@ -146,7 +154,7 @@ class geodeticplot(object):
 
         # Change axis of the map
         if mapaxis is not None:
-            self.carte.ax.axis(mapaxis)
+            self.carte.axis(mapaxis)
 
         # Change the axis of the 3d proj
         if triDaxis is not None:
@@ -182,7 +190,7 @@ class geodeticplot(object):
         Sets the title of the map.
         '''
 
-        self.carte.ax.set_title(titre, y=1.08)
+        self.carte.set_title(titre, y=1.08)
 
         # All done
         return
@@ -239,8 +247,7 @@ class geodeticplot(object):
         Sets the xlim and ylim on the map.
         '''
 
-        self.carte.ax.xlim(xlim)
-        self.carte.ax.ylim(ylim)
+        self.carte.set_extent([xlim[0], xlim[1], ylim[0], ylim[1]])
 
         # All done
         return
@@ -266,6 +273,8 @@ class geodeticplot(object):
             * meridians     : Number of meridians to draw or array of meridians
             * drawOnFault   : Draw on 3D fault as well
         '''
+
+        # coastlines in cartopy are multipolygon objects. Polygon has exterior, which has xy
 
         # Draw landmask
         if drawLand:
