@@ -422,40 +422,41 @@ class multifaultsolve(object):
             elif fault.type is "Pressure":
                 st = 0
                 se = st + 1
-                print(fault.mpost[st:se])
                 fault.deltapressure = fault.mpost[st:se]
             # Get the polynomial/orbital/helmert values if they exist
             fault.polysol = {}
             fault.polysolindex = {}
             for dset in fault.datanames:
                 if dset in fault.poly.keys():
-                    if (fault.poly[dset].__class__ is not str) and (fault.poly[dset].__class__ is not list):
-                        if (fault.poly[dset] > 0):
-                            se = st + fault.poly[dset]
-                            fault.polysol[dset] = fault.mpost[st:se]
-                            fault.polysolindex[dset] = range(st,se)
-                            st += fault.poly[dset]
-                    elif (fault.poly[dset].__class__ is str):
-                        if fault.poly[dset] is 'full':
-                            nh = fault.helmert[dset]
-                            se = st + nh
-                            fault.polysol[dset] = fault.mpost[st:se]
-                            fault.polysolindex[dset] = range(st,se)
-                            st += nh
-                        if fault.poly[dset] in ('strain', 'strainnorotation', 'strainonly', 'strainnotranslation', 'translation', 'translationrotation'):
-                            nh = fault.strain[dset]
-                            se = st + nh
-                            fault.polysol[dset] = fault.mpost[st:se]
-                            fault.polysolindex[dset] = range(st,se)
-                            st += nh
-                    elif (fault.poly[dset].__class__ is list):
-                        nh = fault.transformation[dset]
-                        se = st + nh
-                        fault.polysol[dset] = fault.mpost[st:se]
-                        fault.polysolindex[dset] = range(st,se)
-                        st += nh
-                    else:
+                    if (fault.poly[dset] is None):
                         fault.polysol[dset] = None
+                    else:
+
+                        if (fault.poly[dset].__class__ is not str) and (fault.poly[dset].__class__ is not list):
+                            if (fault.poly[dset] > 0):
+                                se = st + fault.poly[dset]
+                                fault.polysol[dset] = fault.mpost[st:se]
+                                fault.polysolindex[dset] = range(st,se)
+                                st += fault.poly[dset]
+                        elif (fault.poly[dset].__class__ is str):
+                            if fault.poly[dset] is 'full':
+                                nh = fault.helmert[dset]
+                                se = st + nh
+                                fault.polysol[dset] = fault.mpost[st:se]
+                                fault.polysolindex[dset] = range(st,se)
+                                st += nh
+                            if fault.poly[dset] in ('strain', 'strainnorotation', 'strainonly', 'strainnotranslation', 'translation', 'translationrotation'):
+                                nh = fault.strain[dset]
+                                se = st + nh
+                                fault.polysol[dset] = fault.mpost[st:se]
+                                fault.polysolindex[dset] = range(st,se)
+                                st += nh
+                        elif (fault.poly[dset].__class__ is list):
+                            nh = fault.transformation[dset]
+                            se = st + nh
+                            fault.polysol[dset] = fault.mpost[st:se]
+                            fault.polysolindex[dset] = range(st,se)
+                            st += nh
 
         # All done
         return

@@ -1817,11 +1817,8 @@ class Fault(SourceInv):
                     self.poly[data.name] = polys
         elif polys.__class__ is list:
             for data, poly in zip(datas, polys):
-                print(poly.__class__,data.name)
-                print((poly.__class__ is not str))
                 if (poly.__class__ is not str) and (poly is not None) and (poly.__class__ is not list):
                     self.poly[data.name] = poly*data.obs_per_station
-                    print(data.obs_per_station)
                 else:
                     self.poly[data.name] = poly
 

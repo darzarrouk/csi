@@ -103,7 +103,7 @@ class mpgradcurv(mp.Process):
                     A[:,0] = 1.
                     A[:,1] = xg
                     A[:,2] = yg
-                    cffs = np.linalg.lstsq(A,means)
+                    cffs = np.linalg.lstsq(A,means,rcond=None)
                     gradient.append(np.abs(np.mean(cffs[0][1:])))
                     curvature.append(np.std(means - np.dot(A,cffs[0])))
                 else:

@@ -426,7 +426,8 @@ class insar(SourceInv):
             err = err[iKeep]
         lon = lon[iKeep]
         lat = lat[iKeep]
-        self.los = self.los[iKeep,:]
+        if self.los is not None:
+            self.los = self.los[iKeep,:]
 
         # Set things in self
         self.vel = vel

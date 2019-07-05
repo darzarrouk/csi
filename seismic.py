@@ -11,7 +11,9 @@ import copy
 import shutil
 import numpy  as np
 import pyproj as pp
-from mpl_toolkits.basemap import Basemap
+import cartopy
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import scipy.signal as signal
 
@@ -618,10 +620,11 @@ class seismic(SourceInv):
 
         # Make basemap object first to save time
         if basemap==True and fault is not None and globalbasemap==False:
-            m = Basemap(llcrnrlon=fault.hypo_lon-basemap_dlon, llcrnrlat=fault.hypo_lat-basemap_dlat,
-                        urcrnrlon=fault.hypo_lon+basemap_dlon, urcrnrlat=fault.hypo_lat+basemap_dlat,
-                        projection='lcc',lat_1=fault.hypo_lat-basemap_dlat/2.,lat_2=fault.hypo_lat+basemap_dlat/2.,
-                        lon_0=fault.hypo_lon, resolution ='h',area_thresh=50. )  
+            carte = plt.figure()
+            m = carte.add_subplot(111, projection=ccrs.PlateCarree())
+            m.set_extent([fault.hypo_lon-basemap_dlon, fault.hypo_lon+basemap_dlon, fault.hypo_lat-basemap_dlat, fault.hypo_lat+basemap_dlat],
+                         projection=ccrs.PlateCarree())
+            m.add_feature(cfeature.COASTLINE)
         
         for dkey in sta_name:
             # Data vector
@@ -731,34 +734,19 @@ class seismic(SourceInv):
                 W  = pos[1][0]-pos[0][0] ; H  = pos[1][1]-pos[0][1] ;		
                 #ax2 = plt.axes([pos[1][0]-W*0.6,pos[0][1]+H*0.01,H*1.08,H*1.00])
                 ax2 = plt.axes([pos[1][0]-W*0.2,pos[0][1]+H*0.01,W*0.2,H*1.00])
-                m.drawcoastlines(linewidth=0.5,zorder=900)
-                m.fillcontinents(color='0.75',lake_color=None)
-                m.drawparallels(np.arange(fault.hypo_lat-basemap_dlat,fault.hypo_lat+basemap_dlat,3.0),linewidth=0.2)
-                m.drawmeridians(np.arange(fault.hypo_lon-basemap_dlon,fault.hypo_lon+basemap_dlon,3.0),linewidth=0.2)
-                m.drawmapboundary(fill_color='w')
-                xc,yc = m(fault.hypo_lon,fault.hypo_lat)
-                xs,ys = m(self.lon,self.lat)                
-                stx,sty=m(self.d[dkey].stlo,self.d[dkey].stla)                
-                m.plot(xs,ys,'o',color=(1.00000,  0.74706,  0.00000),ms=4.0,alpha=1.0,zorder=1000)
-                m.plot([stx],[sty],'o',color=(1,.27,0),ms=8,alpha=1.0,zorder=1001)
-                m.scatter([xc],[yc],c='b',marker=(5,1,0),s=120,zorder=1002)	     
+                m.gridlines(linewidth=0.2, linestyle=(0, (1, 1)), 
+                            xloc=np.arange(fault.hypo_lat-basemap_dlat,fault.hypo_lat+basemap_dlat,3.0), 
+                            yloc=np.arange(fault.hypo_lon-basemap_dlon,fault.hypo_lon+basemap_dlon,3.0))
+                m.plot(self.lon,self.lat,'o',color=(1.00000,  0.74706,  0.00000),ms=4.0,alpha=1.0,zorder=1000)
+                m.plot([self.d[dkey].stlo],[self.d[dkey].stla],'o',color=(1,.27,0),ms=8,alpha=1.0,zorder=1001)
+                m.scatter([fault.hypo_lon],[fault.hypo_lat],c='b',marker=(5,1,0),s=120,zorder=1002)	     
 
             elif globalbasemap==True:
-                m = Basemap(projection='ortho',lat_0=fault.hypo_lat,lon_0=fault.hypo_lon,resolution='c')
-                pos  = ax.get_position().get_points()
-                W  = pos[1][0]-pos[0][0] ; H  = pos[1][1]-pos[0][1] ;		
-                ax2 = plt.axes([pos[1][0]-W*0.4,pos[0][1]+H*0.01,H*0.68,H*.60])
-                m.drawcoastlines(linewidth=0.5,zorder=900)
-                m.fillcontinents(color='0.75',lake_color=None)
-                #m.drawparallels(np.arange(fault.hypo_lat-basemap_dlat,fault.hypo_lat+basemap_dlat,3.0),linewidth=0.2)
-                #m.drawmeridians(np.arange(fault.hypo_lon-basemap_dlon,fault.hypo_lon+basemap_dlon,3.0),linewidth=0.2)
-                #m.drawmapboundary(fill_color='w')
-                xc,yc = m(fault.hypo_lon,fault.hypo_lat)
-                xs,ys = m(self.lon,self.lat)                
-                stx,sty=m(self.d[dkey].stlo,self.d[dkey].stla)                
-                m.plot(xs,ys,'o',color=(1.00000,  0.74706,  0.00000),ms=4.0,alpha=1.0,zorder=1000)
-                m.plot([stx],[sty],'o',color=(1,.27,0),ms=8,alpha=1.0,zorder=1001)
-                m.scatter([xc],[yc],c='b',marker=(5,1,0),s=120,zorder=1002)	                   
+                ax = plt.axes(projection=ccrs.Orthographic(fault.hypo_lon, fault.hypo_lat))
+                ax.add_feature(COASTLINE)
+                m.plot(self.lon,self.lat,'o',color=(1.00000,  0.74706,  0.00000),ms=4.0,alpha=1.0,zorder=1000)
+                m.plot([self.d[dkey].stlo],[self.d[dkey].stla],'o',color=(1,.27,0),ms=8,alpha=1.0,zorder=1001)
+                m.scatter([fault.hypo_lon],[fault.hypo_lat],c='b',marker=(5,1,0),s=120,zorder=1002)	     
                         
             count += 1
             nchan += 1

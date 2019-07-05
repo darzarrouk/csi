@@ -14,7 +14,7 @@ import sys
 try:
     from scipy import factorial
 except ImportError:
-    from scipy.misc import factorial
+    from scipy.special import factorial
 from numpy import arange as xrange
 
 ###########################Time-series utils##############################

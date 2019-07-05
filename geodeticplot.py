@@ -26,7 +26,6 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 # mpl_toolkits
-import mpl_toolkits.basemap as basemap
 from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d.art3d as art3d
 
@@ -36,9 +35,8 @@ from .SourceInv import SourceInv
 
 class geodeticplot(object):
 
-    def __init__(self, figure=None, pbaspect=None,
-                 lonmin=None, latmin=None, lonmax=None, latmax=None,
-                 resolution='i',
+    def __init__(self,lonmin, latmin, lonmax, latmax,
+                 figure=None, pbaspect=None,resolution='auto',
                  figsize=[None,None]):
         #projection='cyl',
         '''
@@ -58,8 +56,9 @@ class geodeticplot(object):
         self.lat0 = latmin + (latmax-latmin)/2.
 
         # Projection
-        self.projection = ccrs.TransverseMercator(central_longitude=self.lon0, 
-                                                  central_latitude=self.lat0)
+        #self.projection = ccrs.TransverseMercator(central_longitude=self.lon0, 
+        #                                          central_latitude=self.lat0)
+        self.projection = ccrs.PlateCarree()
 
         # Open a figure
         fig1 = plt.figure(figure, figsize=figsize[0])
@@ -70,7 +69,7 @@ class geodeticplot(object):
             nextFig=figure+1
         fig2  = plt.figure(nextFig, figsize=figsize[1])
         carte = fig2.add_subplot(111, projection=self.projection)
-        carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax])
+        carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax], crs=self.projection)
 
         # Set the axes
         faille.set_xlabel('Longitude')
@@ -121,7 +120,7 @@ class geodeticplot(object):
 
         # Change axis of the map
         if mapaxis is not None:
-            self.carte.ax.axis(mapaxis)
+            self.carte.axis(mapaxis)
 
         # Change the axis of the 3d projection
         if triDaxis is not None:
@@ -130,8 +129,8 @@ class geodeticplot(object):
         # Fits the horizontal axis to the asked values
         if fitOnBox:
             self.carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax])
-            self.faille.set_xlim(self.carte.ax.get_xlim())
-            self.faille.set_ylim(self.carte.ax.get_ylim())
+            self.faille.set_xlim(self.carte.get_xlim())
+            self.faille.set_ylim(self.carte.get_ylim())
 
         # Delete figures
         if 'map' not in showFig:
@@ -253,8 +252,8 @@ class geodeticplot(object):
         return
 
     def drawCoastlines(self, color='k', linewidth=1.0, linestyle='solid',
-            resolution='i', drawLand=True, drawMapScale=None,
-            parallels=4, meridians=4, drawOnFault=True, drawCountries=True,
+            resolution='auto', drawLand=True, drawMapScale=None,
+            parallels=4, meridians=4, drawOnFault=False, drawCountries=True,
             zorder=1):
         '''
         Draws the coast lines in the desired area.
@@ -263,7 +262,7 @@ class geodeticplot(object):
             * linewidth     : Width of lines
             * linestyle     : Style of lines
             * resolution    : Resolution of the coastline.
-                              Can be c (crude), l (low), i (intermediate), h (high), f (full)
+                              Can be auto, intermediate, coarse, low, high
             * drawLand      : Fill the continents (True/False)
             * drawMapScale  : Draw a map scale (None or length in km)
             * drawCountries : Draw County boundaries?
@@ -274,103 +273,105 @@ class geodeticplot(object):
             * drawOnFault   : Draw on 3D fault as well
         '''
 
+        # Draw continents?
+        landcolor = None
+        if drawLand: landcolor = 'lightgrey'
+
         # coastlines in cartopy are multipolygon objects. Polygon has exterior, which has xy
+        self.coastlines = cfeature.GSHHSFeature(scale=resolution, edgecolor=color, facecolor=landcolor, 
+                                                linewidth=linewidth, linestyle=linestyle, zorder=zorder, alpha=0.6)
 
-        # Draw landmask
-        if drawLand:
-            continents = self.carte.fillcontinents(color='0.9', alpha=0.7, zorder=zorder)
-
-        # MapScale
+        ## MapScale
         if drawMapScale is not None:
-            lon = self.lonmin + (self.lonmax-self.lonmin)/6.
-            lat = self.latmin + (self.latmax-self.latmin)/6.
-            try:
-                self.carte.drawmapscale(lon, lat,
-                                        self.lonmin + (self.lonmax-self.lonmin)/2.,
-                                        self.latmin + (self.latmax-self.latmin)/2.,
-                                        drawMapScale, units='km', barstyle='simple', zorder=zorder)
-            except:
-                print('Map Scale cannot be plotted with this projection')
+            assert False, 'Cannot draw a map scale yet. To be implemented...'
 
         # Draw and get the line object
-        coasts = self.carte.drawcoastlines(color=color, linewidth=linewidth, linestyle=linestyle, zorder=zorder)
+        self.carte.add_feature(self.coastlines)
         if drawOnFault:
             segments = []
-            for path in coasts.get_paths():
-                segments.append(np.hstack((path.vertices,np.zeros((path.vertices.shape[0],1)))))
+            for geom in self.coastlines.geometries():
+                for poly in geom:
+                    x = np.array(poly.exterior.xy[0])
+                    y = np.array(poly.exterior.xy[1])
+                    segments.append(np.vstack((x,y,np.zeros(x.shape))).T)
             if len(segments)>0:
                 cote = art3d.Line3DCollection(segments)
-                cote.set_edgecolor(coasts.get_color())
-                cote.set_linestyle(coasts.get_linestyle())
-                cote.set_linewidth(coasts.get_linewidth())
+                cote.set_edgecolor(landcolor)
+                cote.set_linestyle(linestyle)
+                cote.set_linewidth(linewidth)
                 self.faille.add_collection3d(cote)
 
         # Draw countries
         if drawCountries:
-            countries = self.carte.drawcountries(linewidth=linewidth/2., color='darkgray', zorder=zorder)
+            self.countries = cfeature.NaturalEarthFeature(scale='110m', category='cultural', name='admin_0_countries', 
+                                                          linewidth=linewidth/2., edgecolor='k', facecolor='lightgray', 
+                                                          alpha=0.6, zorder=zorder)
+            self.carte.add_feature(self.countries)
             if drawOnFault:
                 segments = []
-                for path in coasts.get_paths():
-                    segments.append(np.hstack((path.vertices,np.zeros((path.vertices.shape[0],1)))))
+                for geom in self.countries.geometries():
+                    for poly in geom:
+                        x = np.array(poly.exterior.xy[0])
+                        y = np.array(poly.exterior.xy[1])
+                        segments.append(np.vstack((x,y,np.zeros(x.shape))).T)
                 if len(segments)>0:
                     border = art3d.Line3DCollection(segments)
-                    border.set_edgecolor(countries.get_color())
-                    border.set_linestyle(countries.get_linestyle())
-                    border.set_linewidth(countries.get_linewidth())
+                    border.set_edgecolor(None)
+                    border.set_linestyle(linestyle)
+                    border.set_linewidth(linewidth/2.)
                     self.faille.add_collection3d(border)
 
-        # Draw parallels
-        lmin = self.carte.latmin
-        lmax = self.carte.latmax
+        # Parallels
+        lmin,lmax = self.latmin, self.latmax
         if type(parallels) is int:
             parallels = np.linspace(lmin, lmax, parallels+1)
         elif type(parallels) is float:
             parallels = np.arange(lmin, lmax+parallels, parallels)
         parallels = np.round(parallels, decimals=2)
-        parDir = self.carte.drawparallels(parallels, labels=[0,1,0,0], linewidth=0.4, color='gray', zorder=zorder)
-        if drawOnFault and parDir!={}:
-            segments = []
-            colors = []
-            linestyles = []
-            linewidths = []
-            for p in parDir:
-                par = parDir[p][0][0]
-                segments.append(np.hstack((par.get_path().vertices,np.zeros((par.get_path().vertices.shape[0],1)))))
-                colors.append(par.get_color())
-                linestyles.append(par.get_linestyle())
-                linewidths.append(par.get_linewidth())
-            parallel = art3d.Line3DCollection(segments, colors=colors, linestyles=linestyles, linewidths=linewidths)
-            self.faille.add_collection3d(parallel)
 
-        # Draw meridians
-        lmin = self.carte.lonmin
-        lmax = self.carte.lonmax
+        # Meridians
+        lmin,lmax = self.lonmin, self.lonmax
         if type(meridians) is int:
             meridians = np.linspace(lmin, lmax, meridians+1)
         elif type(meridians) is float:
             meridians = np.arange(lmin, lmax+meridians, meridians)
         meridians = np.round(meridians, decimals=2)
-        merDir = self.carte.drawmeridians(meridians, labels=[0,0,1,0], linewidth=0.4, color='gray', zorder=zorder)
-        if drawOnFault and merDir!={}:
-            segments = []
-            colors = []
-            linestyles = []
-            linewidths = []
-            for m in merDir:
-                mer = merDir[m][0][0]
-                segments.append(np.hstack((mer.get_path().vertices,np.zeros((mer.get_path().vertices.shape[0],1)))))
-                colors.append(mer.get_color())
-                linestyles.append(mer.get_linestyle())
-                linewidths.append(mer.get_linewidth())
-            meridian = art3d.Line3DCollection(segments, colors=colors, linestyles=linestyles, linewidths=linewidths)
-            self.faille.add_collection3d(meridian)
+
+        # Draw them
+        gl = self.carte.gridlines(color='gray', xlocs=meridians, ylocs=parallels, linestyle=(0, (1, 1)))
+
+        #if drawOnFault and parDir!={}:
+        #    segments = []
+        #    colors = []
+        #    linestyles = []
+        #    linewidths = []
+        #    for p in parDir:
+        #        par = parDir[p][0][0]
+        #        segments.append(np.hstack((par.get_path().vertices,np.zeros((par.get_path().vertices.shape[0],1)))))
+        #        colors.append(par.get_color())
+        #        linestyles.append(par.get_linestyle())
+        #        linewidths.append(par.get_linewidth())
+        #    parallel = art3d.Line3DCollection(segments, colors=colors, linestyles=linestyles, linewidths=linewidths)
+        #    self.faille.add_collection3d(parallel)
+
+        #merDir = self.carte.drawmeridians(meridians, labels=[0,0,1,0], linewidth=0.4, color='gray', zorder=zorder)
+        #if drawOnFault and merDir!={}:
+        #    segments = []
+        #    colors = []
+        #    linestyles = []
+        #    linewidths = []
+        #    for m in merDir:
+        #        mer = merDir[m][0][0]
+        #        segments.append(np.hstack((mer.get_path().vertices,np.zeros((mer.get_path().vertices.shape[0],1)))))
+        #        colors.append(mer.get_color())
+        #        linestyles.append(mer.get_linestyle())
+        #        linewidths.append(mer.get_linewidth())
+        #    meridian = art3d.Line3DCollection(segments, colors=colors, linestyles=linestyles, linewidths=linewidths)
+        #    self.faille.add_collection3d(meridian)
 
         # Restore axis
-        self.faille.set_xlim(self.carte.ax.get_xlim())
-        self.faille.set_ylim(self.carte.ax.get_ylim())
-
-        # Save coast
-        self.coasts = coasts
+        self.faille.set_xlim(self.carte.get_xlim())
+        self.faille.set_ylim(self.carte.get_ylim())
 
         # All done
         return
@@ -411,7 +412,7 @@ class geodeticplot(object):
 
     def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True,
                      plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
-                     transparency=0.0, factor=1.0, zorder=0):
+                     transparency=0.0, factor=1.0, zorder=3):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -502,7 +503,7 @@ class geodeticplot(object):
                 rect.set_edgecolors('gray')
                 rect.set_linewidth(linewidth)
                 rect.set_zorder(zorder)
-                self.carte.ax.add_collection(rect)
+                self.carte.add_collection(rect)
 
         # put up a colorbar
         if colorbar:
@@ -513,7 +514,7 @@ class geodeticplot(object):
         return
 
     def pressuresource(self, fault, delta='pressure', Norm=None, colorbar=True, revmap=False, linewidth=1.0, cmap='jet',
-                     transparency=0.0, factor=1.0, zorder=0, plot_on_2d=False):
+                     transparency=0.0, factor=1.0, zorder=3, plot_on_2d=False):
         '''
         Args:
             * fault         : Fault class from verticalfault.
@@ -595,7 +596,7 @@ class geodeticplot(object):
 
         # # If 2d. Just plots center for now, should plot ellipse projection onto surface
         if plot_on_2d:
-             self.carte.ax.scatter(fault.ellipshape['x0'],fault.ellipshape['y0'])
+             self.carte.scatter(fault.ellipshape['x0'],fault.ellipshape['y0'])
 
         # put up a colorbar
         if colorbar:
@@ -938,7 +939,7 @@ class geodeticplot(object):
                     'weight' : 'normal',
                     'size'   : 15}
             for lo, la, sta in zip(lon.tolist(), lat.tolist(), gps.station):
-                self.carte.ax.text(lo, la, sta, fontdict=font)
+                self.carte.text(lo, la, sta, fontdict=font)
 
         # All done
         return
@@ -1151,7 +1152,7 @@ class geodeticplot(object):
         return
 
     def insar(self, insar, norm=None, colorbar=True, data='data',
-                       plotType='decimate', gmtCmap=None,
+                       plotType='decimate',
                        decim=1, zorder=3, edgewidth=1):
         '''
         Args:
@@ -1192,14 +1193,7 @@ class geodeticplot(object):
             vmax = norm[1]
 
         # Prepare the colormap
-        if gmtCmap is not None:
-            try:
-                import basemap_utils as bu
-                cmap = bu.gmtColormap(gmtCmap)
-            except ImportError:
-                cmap = plt.get_cmap('jet')
-        else:
-            cmap = plt.get_cmap('jet')
+        cmap = plt.get_cmap('jet')
         cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
@@ -1227,7 +1221,7 @@ class geodeticplot(object):
                 rect.set_color(scalarMap.to_rgba(disp))
                 rect.set_edgecolors('k')
                 rect.set_zorder(zorder)
-                self.carte.ax.add_collection(rect)
+                self.carte.add_collection(rect)
 
         elif plotType is 'scatter':
 
@@ -1252,7 +1246,7 @@ class geodeticplot(object):
         return
 
     def cosicorr(self, corr, norm=None, colorbar=True, data='dataEast',
-                plotType='decimate', gmtCmap=None, decim=1, zorder=3):
+                plotType='decimate', decim=1, zorder=3):
         '''
         Args:
             * corr      : instance of the class cosicorr
@@ -1297,14 +1291,7 @@ class geodeticplot(object):
             vmax = norm[1]
 
         # Prepare the colormap
-        if gmtCmap is not None:
-            try:
-                import basemap_utils as bu
-                cmap = bu.gmtColormap(gmtCmap)
-            except ImportError:
-                cmap = plt.get_cmap('jet')
-        else:
-            cmap = plt.get_cmap('jet')
+        cmap = plt.get_cmap('jet')
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
@@ -1332,7 +1319,7 @@ class geodeticplot(object):
                 rect.set_color(scalarMap.to_rgba(disp))
                 rect.set_edgecolors('k')
                 rect.set_zorder(zorder)
-                self.carte.ax.add_collection(rect)
+                self.carte.add_collection(rect)
 
         elif plotType is 'scatter':
             lon = corr.lon
