@@ -464,7 +464,7 @@ class opticorr(SourceInv):
         # All done
         return OutCosi
         
-    def read_from_grd(self, filename, factor=1.0, step=0.0, flip=False, keepnans=False):
+    def read_from_grd(self, filename, factor=1.0, step=0.0, flip=False, keepnans=False, variableName='z'):
         '''
         Reads velocity map from a grd file.
 
@@ -476,6 +476,7 @@ class opticorr(SourceInv):
             * step      : add a value.
             * flip      : Flip image upside down (some netcdf files require this)
             * keepnans  : Keeps NaNs or not
+            * variableName  : Name of the variable in the netcdf file
 
         :Returns:
             * None
@@ -503,11 +504,11 @@ class opticorr(SourceInv):
             fnorth = netcdf(filename+'_north.grd', format='NETCDF4')
         
         # Shape
-        self.grd_shape = feast.variables['z'][:].shape
+        self.grd_shape = feast.variables[variableName][:].shape
 
         # Get the values
-        self.east = (feast.variables['z'][:].flatten() + step)*factor
-        self.north = (fnorth.variables['z'][:].flatten() + step)*factor
+        self.east = (feast.variables[variableName][:].flatten() + step)*factor
+        self.north = (fnorth.variables[variableName][:].flatten() + step)*factor
         self.err_east = np.ones((self.east.shape)) * factor
         self.err_north = np.ones((self.north.shape)) * factor
         self.err_east[np.where(np.isnan(self.east))] = np.nan
@@ -523,6 +524,9 @@ class opticorr(SourceInv):
             nLon, nLat = feast.variables['dimension'][:]
             Lon = np.linspace(LonS, LonE, num=nLon)
             Lat = np.linspace(LatS, LatE, num=nLat)
+        elif 'lon' in feast.variables.keys():
+            Lon = feast.variables['lon'][:]
+            Lat = feast.variables['lat'][:]
         self.lonarr = Lon.copy()
         self.latarr = Lat.copy()
         Lon, Lat = np.meshgrid(Lon,Lat)
