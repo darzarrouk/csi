@@ -343,7 +343,7 @@ class insar(SourceInv):
         return
 
     def read_from_binary(self, data, lon, lat, err=None, factor=1.0,
-                               step=0.0, incidence=None, heading=None, azimuth=None,
+                               step=0.0, incidence=None, heading=None, azimuth=None, los=None,
                                dtype=np.float32, remove_nan=True, downsample=1,
                                remove_zeros=True):
         '''
@@ -414,6 +414,11 @@ class insar(SourceInv):
                 self.incaz2los(incidence, azimuth, origin='binary',
                                 dtype=dtype)
                 self.los = self.los[::downsample,:]
+        elif los is not None:
+            if type(los) is np.ndarray:
+                self.los = los[::downsample,:]
+            elif type(los) is str:
+                self.los = np.fromfile(los, 'f').reshape((len(vel), 3))
         else:
             self.los = None
 
