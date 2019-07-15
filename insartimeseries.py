@@ -10,7 +10,10 @@ import pyproj as pp
 import matplotlib.pyplot as plt
 import matplotlib.dates as mpdates
 import sys
-import h5py
+try:
+    import h5py
+except:
+    print('No hdf5 capabilities detected')
 import datetime as dt
 import scipy.interpolate as sciint
 import copy

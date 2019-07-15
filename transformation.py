@@ -56,6 +56,7 @@ class transformation(SourceInv):
 
         # Something important
         self.patchType = 'transformation'
+        self.type = 'transformation'
         self.slipdir = ''
 
         # All done

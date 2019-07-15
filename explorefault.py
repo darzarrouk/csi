@@ -10,7 +10,10 @@ R. Jolivet 2017
 
 # Externals
 import sys, os, copy
-import h5py
+try:
+    import h5py
+except:
+    print('No hdf5 capabilities detected')
 import numpy as np
 import matplotlib.pyplot as plt
 

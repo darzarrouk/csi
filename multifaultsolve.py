@@ -81,8 +81,6 @@ class multifaultsolve(object):
                     fault.computeTentArea()
                     for tentIndex in range(fault.slip.shape[0]):
                         patchAreas.append(fault.area_tent[tentIndex])
-                elif fault.patchType in ('notafault', 'transformation'):
-                    print('Not a fault detected')
                 else:
                     fault.computeArea()
                     for patchIndex in range(fault.slip.shape[0]):
@@ -91,6 +89,8 @@ class multifaultsolve(object):
                 self.type = "Fault"
             elif fault.type is "Pressure":
                 self.type = "Pressure"
+            elif fault.type in ('notafault', 'transformation'):
+                print('Not a fault detected')
         #Store an array of volume of pressure source?
 
         # All done
@@ -129,8 +129,7 @@ class multifaultsolve(object):
             self.G[:,st:se] = fault.Gassembled
             # Keep track of indexing
             if fault.type is "Fault":
-                if fault.patchType not in ('notafault', 'transformation'):
-                    self.affectIndexParameters(fault)
+                self.affectIndexParameters(fault)
 
         # self ready
         self.ready = True
@@ -204,9 +203,10 @@ class multifaultsolve(object):
             # Where does this fault starts
             nfs = copy.deepcopy(ns)
 
-            if fault.type is "Fault":
+            if fault.type is "Fault" or fault.type is 'transformation':
                 #Prepare the table
                 if self.verbose:
+                    print('-----------------')
                     print('{:30s}||{:12s}||{:12s}||{:12s}||{:12s}||{:12s}'.format('Fault Name', 'Strike Slip', 'Dip Slip', 'Tensile', 'Coupling', 'Extra Parms'))
                 # Initialize the values
                 ss = 'None'
