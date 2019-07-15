@@ -103,6 +103,23 @@ class insar(SourceInv):
         # All done
         return
 
+    def checkZeros(self):
+        '''
+        Checks and remove data points that have Zeros in vel, lon or lat
+        '''
+
+        # Check
+        if self.vel is not None:
+            uVel = np.flatnonzero(self.vel==0.)
+        else:
+            uVel = np.array([])
+
+        # Reject pixels
+        self.reject_pixel(uVel)
+
+        # All done
+        return
+
     def checkNaNs(self):
         '''
         Checks and remove data points that have NaNs in vel, err, lon, lat or los.
