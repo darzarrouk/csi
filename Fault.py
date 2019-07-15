@@ -1883,7 +1883,6 @@ class Fault(SourceInv):
         if 'c' in slipdir:
             sliplist.append('coupling')
 
-        print("where slip direction is", slipdir)
         # Allocate G and d
         G = np.zeros((Nd, Np))
 
