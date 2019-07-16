@@ -665,7 +665,8 @@ class TriangularPatches(Fault):
             * filename      : Name of the file.
 
         :Kwargs:
-            * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total, coupling
+            * add_slip      : Put the slip as a value for the color. 
+                              Can be None, strikeslip, dipslip, total, coupling
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
             * stdh5         : Get the standard deviation from a h5 file

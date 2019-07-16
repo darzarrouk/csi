@@ -155,6 +155,9 @@ class transformation(SourceInv):
                 self.d[data.name] = np.hstack((data.east.T.flatten(),
                                                data.north.T.flatten()))
 
+        # Consistency
+        self.poly = self.transformations
+
         # All done 
         return
     # ----------------------------------------------------------------------
@@ -407,9 +410,13 @@ class transformation(SourceInv):
             self.transOrder.append('strain')
             self.transIndices.append((0,3))
 
+        # Keep track of data names
+        self.datanames = []
+
         # Iterate over the data and transforms
         for data in datas:
             dname = data.name
+            self.datanames.append(data.name)
             # Which transform do we care about
             transformations = self.transformations[dname]
             # Which lines do we care about
@@ -597,6 +604,9 @@ class transformation(SourceInv):
             if dname not in self.m:
                 self.m[dname] = {}
             self.m[dname][trans] = self.mpost[index[0]:index[1]]
+
+        # Consistency
+        self.polysol = self.m
 
         # All done
         return
