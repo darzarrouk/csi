@@ -366,7 +366,8 @@ class TriangularPatches(Fault):
 
     # ----------------------------------------------------------------------
     def readPatchesFromFile(self, filename, readpatchindex=True, 
-                            donotreadslip=False, inputCoordinates='lonlat'):
+                            donotreadslip=False, gmtslip=True,
+                            inputCoordinates='lonlat'):
         '''
         Reads patches from a GMT formatted file.
 
@@ -377,6 +378,7 @@ class TriangularPatches(Fault):
             * inputCoordinates  : Default is 'lonlat'. Can be 'utm'
             * readpatchindex    : Default True.
             * donotreadslip     : Default is False. If True, does not read the slip
+            * gmtslip           : A -Zxxx is in the header of each patch
             * inputCoordinates  : Default is 'lonlat', can be 'xyz'
 
         :Returns:
@@ -401,6 +403,12 @@ class TriangularPatches(Fault):
         D = 0.0
         d = 10000.
 
+        # Index
+        if gmtslip:
+            ipatch = 3
+        else:
+            ipatch = 2
+
         # Loop over the file
         i = 0
         while i<len(A):
@@ -409,11 +417,11 @@ class TriangularPatches(Fault):
             assert A[i].split()[0] is '>', 'Not a patch, reformat your file...'
             # Get the Patch Id
             if readpatchindex:
-                self.index_parameter.append([np.int(A[i].split()[3]),np.int(A[i].split()[4]),np.int(A[i].split()[5])])
+                self.index_parameter.append([np.int(A[i].split()[ipatch]),np.int(A[i].split()[ipatch+1]),np.int(A[i].split()[ipatch+2])])
             # Get the slip value
             if not donotreadslip:
                 if len(A[i].split())>7:
-                    slip = np.array([np.float(A[i].split()[7]), np.float(A[i].split()[8]), np.float(A[i].split()[9])])
+                    slip = np.array([np.float(A[i].split()[ipatch+4]), np.float(A[i].split()[ipatch+5]), np.float(A[i].split()[ipatch+6])])
                 else:
                     slip = np.array([0.0, 0.0, 0.0])
                 Slip.append(slip)
