@@ -1465,6 +1465,50 @@ class gps(SourceInv):
         # All done
         return
 
+    def reject_stations_awayfault(self, dis, faults):
+        ''' 
+        Rejects the pixels that are {dis} km away from the faults
+
+        :Args:
+            * dis       : Threshold distance.
+            * faults    : list of fault objects.
+
+        :Returns:
+            * None
+        '''
+
+        # Import stuff
+        import shapely.geometry as geom
+
+        # Check something 
+        if faults.__class__ is not list:
+            faults = [faults]
+
+        # Build a line object with the fault
+        mll = []
+        for f in faults:
+            xf = f.xf
+            yf = f.yf
+            mll.append(np.vstack((xf,yf)).T.tolist())
+        Ml = geom.MultiLineString(mll)
+
+        # Build the distance map
+        d = []
+        for i in range(len(self.x)):
+            p = [self.x[i], self.y[i]]
+            PP = geom.Point(p)
+            d.append(Ml.distance(PP))
+        d = np.array(d)
+
+        # Find the close ones
+        u = np.where(d>=dis)[0].tolist()
+        
+        # reject them
+        self.reject_stations(self.station[u].tolist())
+
+        # All done
+        return
+
     def reject_stations_fault(self, dis, faults):
         ''' 
         Rejects the pixels that are dis km close to the fault.

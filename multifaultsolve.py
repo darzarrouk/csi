@@ -138,6 +138,11 @@ class multifaultsolve(object):
         self.Nd = Nd
         self.Np = Np
 
+        # CHeck 
+        if self.verbose:
+            print('Number of data: {}'.format(self.Nd))
+            print('Number of parameters: {}'.format(self.Np))
+
         # Describe which parameters are what
         self.describeParams(faults)
 
