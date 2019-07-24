@@ -1,5 +1,5 @@
 '''
-A class that deals with COSI-Corr data, after decimation using VarRes.
+A class that deals with Optical correlation data
 
 Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 '''
@@ -49,7 +49,7 @@ class opticorr(SourceInv):
         if self.verbose:
             print ("---------------------------------")
             print ("---------------------------------")
-            print ("Initialize Cosicorr data set {}".format(self.name))
+            print ("Initialize Opticorr data set {}".format(self.name))
 
         # Initialize some things
         self.east = None
@@ -70,7 +70,7 @@ class opticorr(SourceInv):
 
     def read_from_varres(self,filename, factor=1.0, step=0.0, header=2, cov=False):
         '''
-        Read the COSI-Corr east-north offsets from the VarRes output. This is what comes from the decimation process in imagedownsampling
+        Read the Optical Corr east-north offsets from the VarRes output. This is what comes from the decimation process in imagedownsampling
 
         :Args:
             * filename      : Name of the input file. Two files are opened filename.txt and filename.rsp.
@@ -422,7 +422,7 @@ class opticorr(SourceInv):
         shape = shp.Reader(shapefile)
 
         # Create the list of new objects
-        OutCosi = []
+        OutOpti = []
 
         # Iterate over the shape records
         for record, iR in zip(shape.shapeRecords(), range(len(shape.shapeRecords()))):
@@ -452,17 +452,17 @@ class opticorr(SourceInv):
             else:
                 err_north = None
 
-            # Create a new cosicorr object
-            cosi = opticorr('{} #{}'.format(self.name, iR), utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+            # Create a new opticorr object
+            opti = opticorr('{} #{}'.format(self.name, iR), utmzone=self.utmzone, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
 
             # Put the values in there
-            cosi.read_from_binary(east, north, lon, lat, err_east=err_east, err_north=err_north, remove_nan=True)
+            opti.read_from_binary(east, north, lon, lat, err_east=err_east, err_north=err_north, remove_nan=True)
 
             # Store this object
-            OutCosi.append(cosi)
+            OutOpti.append(opti)
 
         # All done
-        return OutCosi
+        return OutOpti
         
     def read_from_grd(self, filename, factor=1.0, step=0.0, flip=False, keepnans=False, variableName='z'):
         '''
@@ -694,7 +694,7 @@ class opticorr(SourceInv):
         # All done
         return
 
-    def setOrbNormalizingFactor(self, x0, y0, normX, normY):
+    def setTransformNormalizingFactor(self, x0, y0, normX, normY):
         '''
         Set orbit normalizing factors in insar object. 
 
@@ -708,16 +708,16 @@ class opticorr(SourceInv):
             * None
         '''
 
-        self.OrbNormalizingFactor = {}
-        self.OrbNormalizingFactor['x'] = normX
-        self.OrbNormalizingFactor['y'] = normY
-        self.OrbNormalizingFactor['ref'] = [x0, y0]
+        self.TransformNormalizingFactor = {}
+        self.TransformNormalizingFactor['x'] = normX
+        self.TransformNormalizingFactor['y'] = normY
+        self.TransformNormalizingFactor['ref'] = [x0, y0]
 
         # All done
         return
 
 
-    def computeOrbNormalizingFactor(self):
+    def computeTransformNormalizingFactor(self):
         '''
         Compute orbit normalizing factors and store them in insar object. 
 
@@ -730,13 +730,41 @@ class opticorr(SourceInv):
         normX = np.abs(self.x - x0).max()
         normY = np.abs(self.y - y0).max()
 
-        self.OrbNormalizingFactor = {}
-        self.OrbNormalizingFactor['x'] = normX
-        self.OrbNormalizingFactor['y'] = normY
-        self.OrbNormalizingFactor['ref'] = [x0, y0]
+        self.TransformNormalizingFactor = {}
+        self.TransformNormalizingFactor['x'] = normX
+        self.TransformNormalizingFactor['y'] = normY
+        self.TransformNormalizingFactor['ref'] = [x0, y0]
 
         # All done
         return
+
+    def getTransformEstimator(self, trans, computeNormFact=True):
+        '''
+        Returns the Estimator for the transformation to estimate in the InSAR data.
+
+        Args:
+            * trans     : Transformation type
+                trans can be an integer
+                    if trans==1:
+                        constant offset to the data
+                    if trans==3:
+                        constant and linear function of x and y
+                    if trans==4:
+                        constant, linear term and cross term.
+                trans can be 'strain'
+
+        Kwargs:
+            * computeNormFact   : Recompute the normalization factor
+        '''
+
+        # Several cases
+        if type(trans) is int:
+            T = self.getPolyEstimator(trans, computeNormFact=computeNormFact)
+        else: 
+            assert False, 'No {} transformation available'.format(trans)
+
+        # All done
+        return T
 
     def getPolyEstimator(self, ptype, computeNormFact=True):
         '''
@@ -758,7 +786,7 @@ class opticorr(SourceInv):
         Watch out: If vertical is True, you should only estimate polynomials for the horizontals.
 
         :Kwargs:
-            * computeNormFact : bool. If False, uses parameters in self.OrbNormalizingFactor 
+            * computeNormFact : bool. If False, uses parameters in self.TransformNormalizingFactor 
 
         :Returns:
             * 2d array
@@ -766,23 +794,23 @@ class opticorr(SourceInv):
         '''
 
         # Get the basic size of the polynomial
-        basePoly = ptype / self.obs_per_station
+        basePoly = int(ptype / self.obs_per_station)
         assert basePoly >= 3 or basePoly == 1, """
-            only support 0th, 1st and 2nd order polynomials
-            """
+            only support 0th, 1st and 2nd order polynomials, here {} asked
+            """.format(basePoly)
 
         # Get number of points
         nd = self.east.shape[0]
 
 		# Compute normalizing factors
         if computeNormFact:
-            self.computeOrbNormalizingFactor()
+            self.computeTransformNormalizingFactor()
         else:
-            assert hasattr(self, 'OrbNormalizingFactor'), 'You must set OrbNormalizingFactor first'
+            assert hasattr(self, 'TransformNormalizingFactor'), 'You must set TransformNormalizingFactor first'
             
-        normX = self.OrbNormalizingFactor['x']
-        normY = self.OrbNormalizingFactor['y']
-        x0, y0 = self.OrbNormalizingFactor['ref']
+        normX = self.TransformNormalizingFactor['x']
+        normY = self.TransformNormalizingFactor['y']
+        x0, y0 = self.TransformNormalizingFactor['ref']
 
         # Pre-compute position-dependent functional forms
         f1 = self.factor * np.ones((nd,))
@@ -976,7 +1004,7 @@ class opticorr(SourceInv):
             * vertical      : use verticals
             * include_poly  : if a polynomial function has been estimated, include it.
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
-            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
+            * computeNormFact : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
         '''
 
         # Build synthetics
@@ -1001,7 +1029,7 @@ class opticorr(SourceInv):
             * vertical      : use verticals
             * include_poly  : if a polynomial function has been estimated, include it.
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
-            * computeNormFact : if False, uses OrbNormalizingFactor set with self.setOrbNormalizingFactor
+            * computeNormFact : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
 
         :Returns:
             * None
@@ -1592,11 +1620,11 @@ class opticorr(SourceInv):
 
         # Plot the decimation process, if asked
         if decim:
-            fig.cosicorr(self, norm=norm, colorbar=True, data=data, plotType='decimate')
+            fig.opticorr(self, norm=norm, colorbar=True, data=data, plotType='decimate')
 
         # Plot the data
         if not decim:
-            fig.cosicorr(self, norm=norm, colorbar=True, data=data, plotType='scatter')
+            fig.opticorr(self, norm=norm, colorbar=True, data=data, plotType='scatter')
 
         # Show
         if show:

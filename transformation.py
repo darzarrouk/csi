@@ -114,7 +114,7 @@ class transformation(SourceInv):
         for data, transformation in zip(datas, transformations):
             
             # Check something
-            assert data.dtype in ('insar', 'gps', 'tsunami', 'multigps'), \
+            assert data.dtype in ('insar', 'gps', 'tsunami', 'multigps', 'opticorr'), \
                     'Unknown data type {}'.format(data.dtype)
 
             # Check the GFs

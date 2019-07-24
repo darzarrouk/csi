@@ -45,7 +45,7 @@ class imagecovariance(object):
         '''
         Args:
             * name      : Name of the downsampler.
-            * image     : InSAR or Cosicorr data set to be downsampled.
+            * image     : InSAR or Opticorr data set to be downsampled.
             * faults    : List of faults.
         '''
 
@@ -454,7 +454,7 @@ class imagecovariance(object):
             y = data['Covariogram'][:idx]
             x = data['Distance'][:idx]
             error = data['Covariogram Std'][:idx]
-            weights = 1/error
+            weights = 1/len(error)
 
             # Save the type of function
             data['function'] = function
@@ -482,7 +482,8 @@ class imagecovariance(object):
             res = sp.minimize(costFunction, mprior, 
                     args=(x, covariance, y, weights, function), 
                     method='L-BFGS-B',
-                    bounds=[[0., np.inf], [0., np.inf], [0.01, np.inf]], tol=tol)
+                    bounds=[[0., np.inf], [0., np.inf], [0.01, np.inf]], tol=tol, 
+                    options={'maxiter': 200, 'disp': True})
             pars = res.x
 
             # Save parameters
@@ -514,7 +515,7 @@ class imagecovariance(object):
         Args:
             * image     : dataset of type opticorr or insar.
             * dname     : Name of the covariance estimator.
-                          if image is cosicorrates, the datasets used are "dname East" and "dname North".
+                          if image is opticorr, the datasets used are "dname East" and "dname North".
             * write2file: Write to a binary file (np.float32).
         '''
 
@@ -534,7 +535,7 @@ class imagecovariance(object):
             # Build the covariance
             Cd = self._buildcov(sigma, lamb, function, x, y)
 
-        # Case 2: Cosicorr
+        # Case 2: opticorr
         elif image.dtype is 'opticorr':
             
             # Create the two names
@@ -642,16 +643,16 @@ class imagecovariance(object):
         if plotData:
             plt.figure(figure+1)
             self.image.plot(figure=figure+1, show=False)
-            if hasattr(self, 'selectedZones'):
-                for zone in self.selectedZones:
-                    x = [zone[0], zone[0], zone[1], zone[1], zone[0]]
-                    y = [zone[2], zone[3], zone[3], zone[2], zone[2]]
-                    self.image.fig.carte.plot(x, y, '-b', zorder=20)
-            if hasattr(self, 'maskedZones'):
-                for zone in self.maskedZones:
-                    x = [zone[0], zone[0], zone[1], zone[1], zone[0]]
-                    y = [zone[2], zone[3], zone[3], zone[2], zone[2]]
-                    self.image.fig.carte.plot(x, y, '-r', zorder=20)
+            #if hasattr(self, 'selectedZones'):
+            #    for zone in self.selectedZones:
+            #        x = [zone[0], zone[0], zone[1], zone[1], zone[0]]
+            #        y = [zone[2], zone[3], zone[3], zone[2], zone[2]]
+            #        self.image.fig.carte.plot(x, y, '-b', zorder=20)
+            #if hasattr(self, 'maskedZones'):
+            #    for zone in self.maskedZones:
+            #        x = [zone[0], zone[0], zone[1], zone[1], zone[0]]
+            #        y = [zone[2], zone[3], zone[3], zone[2], zone[2]]
+            #        self.image.fig.carte.plot(x, y, '-r', zorder=20)
             if savefig:
                 figname = 'Data_{}.png'.format(self.name.replace(' ','_'))
                 figname = os.path.join(savedir, figname)
@@ -716,9 +717,6 @@ class imagecovariance(object):
         # Show me
         if show:
             plt.show()
-
-        # Close evrything
-        plt.close('all')
 
         # All done
         return

@@ -219,7 +219,7 @@ class mpdownsampler(mp.Process):
         if self.downsampler.datatype is 'insar':
             self.queue.put([X, Y, Lon, Lat, Wgt, Vel, Err, Los, outBlocks, outBlocksll])
         elif self.downsampler.datatype is 'opticorr':
-            self.queue.put([X, Y, Lon, Lat, Wgt, East, North, Err_east, Err_north, blocks_to_remove,
+            self.queue.put([X, Y, Lon, Lat, Wgt, East, North, Err_east, Err_north, 
                         outBlocks, outBlocksll])
 
         # All done
@@ -231,7 +231,7 @@ class imagedownsampling(object):
         '''
         Args:
             * name      : Name of the downsampler.
-            * image     : InSAR or Cosicorr data set to be downsampled.
+            * image     : InSAR or opticorr data set to be downsampled.
             * faults    : List of faults.
         '''
 
@@ -990,12 +990,12 @@ class imagedownsampling(object):
         # Compute the data resolution matrix
         Npar = G.shape[1]
         if self.datatype is 'opticorr':
-            Ndat = G.shape[0]/2
+            Ndat = int(G.shape[0]/2)
         Ginv = np.dot(np.linalg.inv(np.dot(G.T,G)+ damping*np.eye(Npar)),G.T)
         Rd = np.dot(G, Ginv)
         self.Rd = np.diag(Rd).copy()
 
-        # If we are dealing with cosicorr data, the diagonal is twice as long as the number of blocks
+        # If we are dealing with opticorr data, the diagonal is twice as long as the number of blocks
         if self.datatype is 'opticorr':
             self.Rd = np.sqrt( self.Rd[:Ndat]**2 + self.Rd[-Ndat:]**2 )
 
@@ -1249,7 +1249,7 @@ class imagedownsampling(object):
                           'gauss' --> C = mu**2 exp(-d**2/2lam**2)
         '''
 
-        assert self.image.dtype=='insar', 'Not implemented for cosicorrates, too lazy.... Sorry.... Later....'
+        assert self.image.dtype=='insar', 'Not implemented for opticorr, too lazy.... Sorry.... Later....'
 
         # How many samples
         nSamples = self.newimage.lon.shape[0]

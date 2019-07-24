@@ -1245,11 +1245,11 @@ class geodeticplot(object):
         # All done
         return
 
-    def cosicorr(self, corr, norm=None, colorbar=True, data='dataEast',
+    def opticorr(self, corr, norm=None, colorbar=True, data='dataEast',
                 plotType='decimate', decim=1, zorder=3):
         '''
         Args:
-            * corr      : instance of the class cosicorr
+            * corr      : instance of the class opticorr
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
             * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast',
