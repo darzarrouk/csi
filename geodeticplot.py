@@ -1313,7 +1313,7 @@ class geodeticplot(object):
                 y.append(corner[3])
                 verts = []
                 for xi,yi in zip(x,y):
-                    if xi<0.: xi += 360.
+                    #if xi<0.: xi += 360.
                     verts.append((xi,yi))
                 rect = colls.PolyCollection([verts])
                 rect.set_color(scalarMap.to_rgba(disp))
