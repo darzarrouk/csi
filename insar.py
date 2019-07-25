@@ -2543,6 +2543,7 @@ class insar(SourceInv):
 
         # All done
         return
+
     def _getazimuth(self, x, y, i, pad=2):
         '''
         Get the azimuth of a line.

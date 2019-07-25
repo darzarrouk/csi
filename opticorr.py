@@ -1100,6 +1100,57 @@ class opticorr(SourceInv):
         # All done
         return
 
+    def writeDecim2file(self, filename, data='dataNorth', outDir='./'):
+        '''
+        Writes the decimation scheme to a file plottable by GMT psxy command.
+
+        Args:
+            * filename  : Name of the output file (ascii file)
+            * data      : Add the value with a -Z option for each rectangle
+                          Can be 'dataNorth', 'dataEast', synthNorth, synthEast,
+                          data or synth
+        '''
+
+        # Open the file
+        fout = open(os.path.join(outDir, filename), 'w')
+
+        # Which data do we add as colors
+        if data in ('data', 'd', 'dat', 'Data'):
+            values = np.sqrt(self.east**2 + self.north**2)
+        elif data in ('synth', 's', 'synt', 'Synth'):
+            values = np.sqrt(self.east_synth**2, self.north_synth**2)
+        elif data in ('res', 'resid', 'residuals', 'r'):
+            values = np.sqrt(self.east**2 + self.north**2) - np.sqrt(self.east_synth**2, self.north_synth**2)
+        elif data in ('dataNorth', 'datanorth', 'north'):
+            values = self.north
+        elif data in ('dataEast', 'dataeast', 'east'):
+            values = self.east
+        elif data in ('synthNorth', 'synthnorth'):
+            value = self.east_synth
+        elif data in ('synthEast', 'syntheast'):
+            value = self.east_north
+
+        # Iterate over the data and corner
+        for corner, d in zip(self.corner, values):
+
+            # Make a line
+            string = '> -Z{} \n'.format(d)
+            fout.write(string)
+
+            # Write the corners
+            xmin, ymin, xmax, ymax = corner
+            fout.write('{} {} \n'.format(xmin, ymin))
+            fout.write('{} {} \n'.format(xmin, ymax))
+            fout.write('{} {} \n'.format(xmax, ymax))
+            fout.write('{} {} \n'.format(xmax, ymin))
+            fout.write('{} {} \n'.format(xmin, ymin))
+
+        # Close the file
+        fout.close()
+
+        # All done
+        return
+
     def writeEDKSdata(self):
         '''
         This routine prepares the data file as input for EDKS.
