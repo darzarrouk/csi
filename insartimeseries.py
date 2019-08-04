@@ -345,7 +345,7 @@ class insartimeseries(insar):
         return
 
     def readFromGIAnT(self, h5file, setmaster2zero=None,
-                            zfile=None, lonfile=None, latfile=None, filetype='d',
+                            zfile=None, lonfile=None, latfile=None, filetype='f',
                             incidence=None, heading=None, inctype='onefloat', 
                             field='recons', keepnan=False, mask=None, readModel=False):
         '''
@@ -461,7 +461,10 @@ class insartimeseries(insar):
             sar.factor = 1.0
 
             # Take care of the LOS
-            sar.inchd2los(incidence, heading, origin=inctype)
+            if incidence is not None and heading is not None:
+                sar.inchd2los(incidence, heading, origin=inctype)
+            else:
+                sar.los = np.zeros((sar.vel.shape[0], 3))
 
             # Store the object in the list
             self.timeseries.append(sar)

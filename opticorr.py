@@ -7,6 +7,7 @@ Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
 # Externals
 import numpy as np
 import pyproj as pp
+import os
 import matplotlib.pyplot as plt
 from scipy.linalg import block_diag
 import scipy.spatial.distance as scidis
