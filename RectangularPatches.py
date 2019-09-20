@@ -1107,7 +1107,10 @@ class RectangularPatches(Fault):
                 parameter = '# {} {} {} '.format(i,j,k)
 
             # Put the slip value
-            slipstring = ' # {} {} {} '.format(self.slip[p,0], self.slip[p,1], self.slip[p,2])
+            if add_slip is not None:
+                slipstring = ' # {} {} {} '.format(self.slip[p,0], self.slip[p,1], self.slip[p,2])
+            else:
+                slipstring = ' '
 
             # Write the string to file
             fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
