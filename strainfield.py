@@ -14,13 +14,24 @@ except:
     print('No hdf5 capabilities detected')
 
 class strainfield(object):
+    '''
+    Class that handles a strain field. Has not been used in a long time... Might be incorrect and untested.
+
+    Args:
+        * name          : Name of the StrainField dataset.
+
+    Kwargs:
+        * utmzone       : UTM zone. Default is 10 (Western US).
+        * lon0          : Longitude of the custom utmzone
+        * lat0          : Latitude of the custom utmzone
+        * ellps         : Ellipsoid
+        * verbose       : Talk to me
+
+    Returns:
+        * None
+    '''
 
     def __init__(self, name, utmzone=None, lon0=None, lat0=None, ellps='WGS84', verbose=True):
-        '''
-        Args:
-            * name          : Name of the StrainField dataset.
-            * utmzone       : UTM zone. Default is 10 (Western US).
-        '''
 
         # Base class init
         super(strainfield, self).__init__(name,
@@ -55,9 +66,13 @@ class strainfield(object):
     def lonlat2xy(self, lon, lat):
         '''
         Uses the transformation in self to convert  lon/lat vector to x/y utm.
+
         Args:
             * lon           : Longitude array.
             * lat           : Latitude array.
+
+        Returns:
+            * None
         '''
 
         x, y = self.putm(lon,lat)
@@ -69,9 +84,13 @@ class strainfield(object):
     def xy2lonlat(self, x, y):
         '''
         Uses the transformation in self to convert x.y vectors to lon/lat.
+
         Args:
             * x             : Xarray
             * y             : Yarray
+
+        Returns:    
+            * None
         '''
 
         lon, lat = self.putm(x*1000., y*1000., inverse=True)
@@ -80,8 +99,12 @@ class strainfield(object):
     def read_from_h5(self, filename):
         '''
         Read the Continuous strain field from a hdf5 file.
+
         Args:
             * filename      : Name of the input file.
+
+        Returns:
+            * None
         '''
 
         # Open the file
@@ -141,10 +164,7 @@ class strainfield(object):
     def computeStrainRateTensor(self):
         '''
         Computes the strain rate tensor on each point of the grid and stores that in
-        self.D. The strain rate tensor is the symmetric part of the velocity gradient.
-        It writes
-                self.D = 1/2 (L + L').
-        (Tape et al 2009, GJI)
+        self.D. The strain rate tensor is the symmetric part of the velocity gradient. It writes self.D = 1/2 (L + L').
         '''
         
         # Print stuff
@@ -172,10 +192,7 @@ class strainfield(object):
         '''
         Computes the rotation rate tensor on each point of the grid and stores that in
         self.W. The rotation rate tensor is the anti-symmetric part of the velocity 
-        gradient.   
-        It writes
-                self.W = 1/2 (L - L').                                                     
-        (Tape et al 2009, GJI)                                                           
+        gradient. It writes self.W = 1/2 (L - L').                                                     
         '''                                                                              
      
         # Print stuff
@@ -231,6 +248,10 @@ class strainfield(object):
         '''
         Projects the velocity field along a certain angle.
         The output is stored in the self.velproj dictionary and has a name
+
+        Args:
+            * name      : Name of the projected velocity field
+            * angle     : azimuth of the projection 
         '''
 
         print('Project Velocities onto the direction {} degrees from North'.format(angle))
@@ -313,17 +334,22 @@ class strainfield(object):
             
     def getprofile(self, name, loncenter, latcenter, length, azimuth, width, data='dilatation', comp=None):
         '''
-        Project the wanted quantity onto a profile. 
-        Works on the lat/lon coordinates system.
+        Project the wanted quantity onto a profile. Works on the lat/lon coordinates system.
+
         Args:
             * name              : Name of the profile.
             * loncenter         : Profile origin along longitude.
             * latcenter         : Profile origin along latitude.
             * length            : Length of profile.
             * azimuth           : Azimuth in degrees.
-            * width             : Width of the profile.
+            * width             : Width of the profile
+            
+        Kwargs:
             * data              : name of the data to use ('dilatation', 'veast', 'vnorth', 'projection')
             * comp              : if data is 'projection', comp is the name of the desired projection.
+
+        Returns:
+            * None
         '''
 
         print('Get the profile called {}'.format(name))
@@ -457,6 +483,16 @@ class strainfield(object):
     def writeProfile2File(self, name, filename, fault=None):
         '''
         Writes the profile named 'name' to the ascii file filename.
+
+        Args:
+            * name      : name of the profile to use
+            * filename  : output file name
+
+        Kwargs:
+            * fault     : add a fault
+
+        Returns:    
+            * None
         '''
 
         # open a file
@@ -505,8 +541,17 @@ class strainfield(object):
     def plotprofile(self, name, data='veast', fault=None, comp=None):
         '''
         Plot profile.
+
         Args:
             * name      : Name of the profile.
+
+        Kwargs:
+            * data      : Which data to se
+            * fault     : add a fault instance
+            * comp      : ??
+
+        Returns:
+            * None
         '''
 
         # open a figure
@@ -598,10 +643,18 @@ class strainfield(object):
     def plot(self, data='veast', faults=None, gps=None, figure=123, ref='utm', legend=False, comp=None):
         '''
         Plot one component of the strain field.
+
         Args:
             * data      : Type of data to plot. Can be 'dilatation', 'veast', 'vnorth'
             * faults    : list of faults to plot.
             * gps       : list of gps networks to plot.
+            * figure    : figure number
+            * ref       : utm or lonlat
+            * legend    : add a legend
+            * comp      : ??
+
+        Returns:
+            * None
         '''
 
         # Get the data we want to plot
@@ -697,9 +750,13 @@ class strainfield(object):
     def intersectProfileFault(self, name, fault):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
+
         Args:
             * name      : name of the profile.
-            * fault     : fault object from verticalfault.
+            * fault     : fault instance
+
+        Returns:
+            * None
         '''
 
         # Import shapely
@@ -750,14 +807,14 @@ class strainfield(object):
     def output2GRD(self, outfile, data='dilatation', comp=None):
         '''
         Output the desired field to a grd file.
+
         Args:
             * outfile       : Name of the outputgrd file.
-            * data          : Type of data to output. Can be 'veast', 'vnorth', 
-                                                             'dilatation', 
-                                                             'projection',
-                                                             'strainrateprojection'
-            * comp          : if data is projection or 'strainrateprojection', give the name of the
-                              projection you want.
+            * data          : Type of data to output. Can be 'veast', 'vnorth', 'dilatation', 'projection', 'strainrateprojection'
+            * comp          : if data is projection or 'strainrateprojection', give the name of the projection you want.
+
+        Returns:
+            * None
         '''
 
         # Get the data we want to plot

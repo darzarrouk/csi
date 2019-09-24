@@ -18,10 +18,10 @@ class creepmeters(SourceInv):
     '''
     A class that handles creepmeter data
 
-    :Args:
+    Args:
        * name      : Name of the dataset.
 
-    :Kwargs:
+    Kwargs:
        * utmzone   : UTM zone  (optional, default=None)
        * lon0      : Longitude of the center of the UTM zone
        * lat0      : Latitude of the center of the UTM zone
@@ -63,10 +63,10 @@ class creepmeters(SourceInv):
         | Station Name | Lon | Lat |
         +--------------+-----+-----+
 
-        :Args:
+        Args:
             * filename        : Input file.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -103,10 +103,10 @@ class creepmeters(SourceInv):
         ''' 
         Returns lon,lat of a station.
 
-        :Args:
+        Args:
             * station   : Name of a station.
 
-        :Returns:
+        Returns:
             * lon, lat 
         '''
         
@@ -121,12 +121,12 @@ class creepmeters(SourceInv):
         '''
         Computes the distance between a station and a point.
 
-        :Args:
+        Args:
             * station   : Name of a station.
             * point     : [Lon, Lat].
             * direction : Direction of the positive sign.
 
-        :Returns:
+        Returns:
             * None. Distance is stored in the {data} attribute under the station name.
 
         '''
@@ -160,10 +160,10 @@ class creepmeters(SourceInv):
         '''
         Removes a station.
 
-        :Args:
+        Args:
             * station   : Name of the station to remove
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -182,10 +182,10 @@ class creepmeters(SourceInv):
         '''
         Reads all the station files.
 
-        :Kwargs:
+        Kwargs:
             * directory : directory where to find the station files
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -207,13 +207,13 @@ class creepmeters(SourceInv):
         '''
         From the name of a station, reads what is in station.day.
 
-        :Args:
+        Args:
             * station   : name of the station
 
-        :Kwargs:
+        Kwargs:
             * directory : directory where to find the station.day file.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -265,13 +265,13 @@ class creepmeters(SourceInv):
         ''' 
         Select the earthquakes in a box defined by min and max, lat and lon.
         
-        :Args:
+        Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -299,7 +299,7 @@ class creepmeters(SourceInv):
         '''
         Converts the lat lon positions into utm coordinates.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -312,13 +312,13 @@ class creepmeters(SourceInv):
         '''
         Fits a linear trend to all the available stations. Can specify a period=[startdate, enddate]
 
-        :Args:
+        Args:
             * period    : list of 2 tuples (yyyy, mm, dd)
 
-        :Kwargs:
+        Kwargs:
             * directory : If station files have not been read before, this is the directory where to find the station files
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -334,14 +334,14 @@ class creepmeters(SourceInv):
         '''
         Fits a linear trend onto the offsets for the station 'station'.
 
-        :Args:
+        Args:
             * station   : station name
 
-        :Kwargs:
+        Kwargs:
             * period    : list of 2 tuples (yyyy, mm, dd)
             * directory : If station files have not been read before, this is the directory where to find the station files
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -404,14 +404,14 @@ class creepmeters(SourceInv):
         '''
         Plots one station evolution through time.
 
-        :Args:
+        Args:
             * station   : name of the station
 
-        :Kwargs:
+        Kwargs:
             * figure    : figure numner
             * save      : name of the file if you want to save
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -459,10 +459,10 @@ class creepmeters(SourceInv):
         Pass from a datetime to a real number.
         Weird method... Who implemented that?
 
-        :Args:
+        Args:
             * date  : datetime instance
 
-        :Returns:
+        Returns:
             * float
         '''
 

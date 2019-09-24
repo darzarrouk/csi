@@ -19,13 +19,22 @@ from . import okadafull as okada
 from . import csiutils as utils
 
 class stressfield(SourceInv):
+    '''
+    A class that handles a stress field. Not used in a long time, untested, could be incorrect.
+
+    Args:
+        * name          : Name of the StressField dataset.
+
+    Kwargs:
+        * utmzone       : UTM zone. Default is 10 (Western US).
+        * lon0          : Longitude of the custom utmzone
+        * lat0          : Latitude of the custom utmzone
+        * ellps         : ellipsoid
+        * verbose       : talk to me
+
+    '''
 
     def __init__(self, name, utmzone=None, lon0=None, lat0=None, ellps='WGS84', verbose=True):
-        '''
-        Args:
-            * name          : Name of the StressField dataset.
-            * utmzone       : UTM zone. Default is 10 (Western US).
-        '''
 
         # Base class init
         super(stressfield, self).__init__(name,
@@ -58,6 +67,14 @@ class stressfield(SourceInv):
     def setXYZ(self, x, y, z):
         '''
         Sets the values of x, y and z.
+
+        Args:
+            * x     : array of floats (km)
+            * y     : array of floats (km)
+            * z     : array of floats (km)
+
+        Returns:
+            * None
         '''
 
         # Set
@@ -76,6 +93,14 @@ class stressfield(SourceInv):
     def setLonLatZ(self, lon, lat , z):
         '''
         Sets longitude, latitude and depth.
+
+        Args:
+            * lon     : array of floats (km)
+            * lat     : array of floats (km)
+            * z       : array of floats (km)
+
+        Returns:
+            * None
         '''
 
         # Set 
@@ -94,14 +119,21 @@ class stressfield(SourceInv):
     def Fault2Stress(self, fault, factor=0.001, mu=30e9, nu=0.25, slipdirection='sd', force_dip=None, stressonpatches=False, verbose=False):
         '''
         Takes a fault, or a list of faults, and computes the stress change associated with the slip on the fault.
+
         Args:   
             * fault             : Fault object (RectangularFault).
-            * factor            : Conversion factor between the slip units and distance units. Usually, distances are in Km.
-                                  Therefore, if slip is in mm, then factor=1e-6.
+
+        Kwargs:
+            * factor            : Conversion factor between the slip units and distance units. Usually, distances are in Km. Therefore, if slip is in mm, then factor=1e-6.
             * slipdirection     : any combination of s, d, and t.
             * mu                : Shear Modulus (default is 30GPa).
             * nu                : Poisson's ratio (default is 0.25).
             * stressonpatches   : Re-sets the station locations to be where the center of the patches are.
+            * force_dip         : Specify the dip angle of the patches
+            * verbos            : talk to me
+
+        Returns:
+            * None
         '''
 
         # Verbose?
@@ -222,14 +254,14 @@ class stressfield(SourceInv):
     def computeTractions(self, strike, dip):
         '''
         Computes the tractions given a plane with a given strike and dip.
+
         Args:
             * strike            : Strike (radians). 
             * dip               : Dip (radians).
-        If these are floats, all the tensors will be projected on that plane.
-        Otherwise, they need to be the size ofthe number of tensors.
 
-        Positive Normal Traction means extension.
-        Positive Shear Traction means left-lateral.
+        If these are floats, all the tensors will be projected on that plane. Otherwise, they need to be the size ofthe number of tensors.
+
+        Positive Normal Traction means extension. Positive Shear Traction means left-lateral.
         '''
 
         # Get number of data points
@@ -256,6 +288,15 @@ class stressfield(SourceInv):
     def getTractions(self, strike, dip):
         '''
         Just a wrapper around computeTractions to store the result, if necessary.
+
+        Args:
+            * strike            : Strike (radians). 
+            * dip               : Dip (radians).
+
+        If these are floats, all the tensors will be projected on that plane. Otherwise, they need to be the size ofthe number of tensors.
+
+        Positive Normal Traction means extension. Positive Shear Traction means left-lateral.
+
         '''
 
         # Compute tractions
@@ -275,8 +316,14 @@ class stressfield(SourceInv):
 
     def strikedip2normal(self, strike, dip):
         '''
-        Returns a vector normal to a plane with a given strike and dip.
-        strike and dip in radians...
+        Returns a vector normal to a plane with a given strike and dip (radians).
+
+        Args:
+            * strike    : strike angle in radians
+            * dip       : dip angle in radians
+
+        Returns:
+            * tuple of unit vectors
         '''
         
         # Compute normal
@@ -296,8 +343,8 @@ class stressfield(SourceInv):
 
     def getprofile(self, name, loncenter, latcenter, length, azimuth, width, data='trace'):
         '''
-        Project the wanted quantity onto a profile. 
-        Works on the lat/lon coordinates system.
+        Project the wanted quantity onto a profile. Works on the lat/lon coordinates system.
+
         Args:
             * name              : Name of the profile.
             * loncenter         : Profile origin along longitude.
@@ -305,7 +352,12 @@ class stressfield(SourceInv):
             * length            : Length of profile.
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
+
+        Kwargs:
             * data              : name of the data to use ('trace')
+
+        Returns:
+            * None
         '''
 
         print('Get the profile called {}'.format(name))
@@ -352,6 +404,16 @@ class stressfield(SourceInv):
     def writeProfile2File(self, name, filename, fault=None):
         '''
         Writes the profile named 'name' to the ascii file filename.
+
+        Args:
+            * name      : name of the profile to work with
+            * filename  : output file name
+
+        Kwargs:
+            * fault     : fualt object
+
+        Returns:
+            * None
         '''
 
         # open a file
@@ -400,8 +462,17 @@ class stressfield(SourceInv):
     def plotprofile(self, name, data='veast', fault=None, comp=None):
         '''
         Plot profile.
+
         Args:
             * name      : Name of the profile.
+
+        Kwargs:
+            * data      : which data to plot
+            * fault     : fault object
+            * comp      : ??
+
+        Returns:
+            * None
         '''
 
         # open a figure
@@ -483,10 +554,18 @@ class stressfield(SourceInv):
     def plot(self, data='trace', faults=None, gps=None, figure=123, ref='utm', legend=False, comp=None):
         '''
         Plot one component of the strain field.
-        Args:
+
+        Kwargs:
             * data      : Type of data to plot. Can be 'trace'
             * faults    : list of faults to plot.
             * gps       : list of gps networks to plot.
+            * figure    : figure number
+            * ref       : utm or lonlat
+            * legend    : add a legend
+            * comp      : ??
+
+        Returns:
+            * None
         '''
 
         # Get the data we want to plot
@@ -578,9 +657,13 @@ class stressfield(SourceInv):
     def intersectProfileFault(self, name, fault):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
+
         Args:
             * name      : name of the profile.
-            * fault     : fault object from verticalfault.
+            * fault     : fault object.
+
+        Returns:
+            * None
         '''
 
         # Import shapely
@@ -631,14 +714,16 @@ class stressfield(SourceInv):
     def output2GRD(self, outfile, data='dilatation', comp=None):
         '''
         Output the desired field to a grd file.
+
         Args:
             * outfile       : Name of the outputgrd file.
-            * data          : Type of data to output. Can be 'veast', 'vnorth', 
-                                                             'dilatation', 
-                                                             'projection',
-                                                             'strainrateprojection'
-            * comp          : if data is projection or 'strainrateprojection', give the name of the
-                              projection you want.
+
+        Kwargs:
+            * data          : Type of data to output. Can be 'veast', 'vnorth', 'dilatation', 'projection', 'strainrateprojection'
+            * comp          : if data is projection or 'strainrateprojection', give the name of the projection you want.
+
+        Returns:
+            * None
         '''
 
         # Get the data we want to plot

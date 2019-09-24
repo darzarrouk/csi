@@ -20,10 +20,10 @@ class seismiclocations(SourceInv):
     '''
     A class that handles a simple earthquake catalog
 
-    :Args:
+    Args:
        * name      : Name of the dataset.
 
-    :Kwargs:
+    Kwargs:
        * utmzone   : UTM zone  (optional, default=None)
        * lon0      : Longitude of the center of the UTM zone
        * lat0      : Latitude of the center of the UTM zone
@@ -69,13 +69,13 @@ class seismiclocations(SourceInv):
         | int  | int   | int | int  | int    | float   |float|float| float | float     |
         +------+-------+-----+------+--------+---------+-----+-----+-------+-----------+
 
-        :Args:
+        Args:
             * filename      : Name of the input file.
 
-        :Kwargs:
+        Kwargs:
             * header        : Size of the header.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -152,13 +152,13 @@ class seismiclocations(SourceInv):
         |     | int  |  int  | int | int  |  int   |  float  |   float   |   float    |    float   |    float   | float |   float   |
         +-----+------+-------+-----+------+--------+---------+-----------+------------+------------+------------+-------+-----------+
 
-        :Args:
+        Args:
             * filename      : Name of the input file. 
 
-        :Kwargs:
+        Kwargs:
             * header        : Size of the header.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -235,13 +235,13 @@ class seismiclocations(SourceInv):
         | int  |  int  | int | int  |  int   |float|float| float |   float   |
         +------+-------+-----+------+--------+-----+-----+-------+-----------+
 
-        :Args:
+        Args:
             * filename      : Name of the input file.
 
-        :Kwargs:
+        Kwargs:
             * header        : Size of the header.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -322,13 +322,13 @@ class seismiclocations(SourceInv):
         | int  |  int  | int | int  |  int   |float|float| float |
         +------+-------+-----+------+--------+-----+-----+-------+
 
-        :Args:
+        Args:
             * filename      : Name of the input file.
 
-        :Kwargs:
+        Kwargs:
             * header        : Size of the header.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -404,13 +404,13 @@ class seismiclocations(SourceInv):
         |float|float| float |   float   | yyy-mm-ddThh:mm:ss.ss      |
         +-----+-----+-------+-----------+----------------------------+
 
-        :Args:
+        Args:
             * infile    : input file
             
-        :Kwargs:
+        Kwargs:
             * header    : length of the header
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -473,13 +473,13 @@ class seismiclocations(SourceInv):
         | yyy-mm-ddThh:mm:ss.ss      |float|float| float |   float   |
         +----------------------------+-----+-----+-------+-----------+
 
-        :Args:
+        Args:
             * infile    : input file
             
-        :Kwargs:
+        Kwargs:
             * header    : length of the header
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -535,10 +535,10 @@ class seismiclocations(SourceInv):
         '''
         Reads data and moment tensors from an ascii file listing CMT solutions format. Go check the GCMT webpage for format description
 
-        :Args:
+        Args:
             * infile: Input file.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -636,17 +636,17 @@ class seismiclocations(SourceInv):
         '''
         Select the earthquakes in a box defined by min and max, lat and lon.
 
-        :Args:
+        Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
 
-        :Kwargs:
+        Kwargs:
             * depth         : Maximum depth
             * mindepth      : Minimum depth
 
-        :Returns:
+        Returns:
             * None. Direclty kicks out earthquakes that are not in the box
         '''
 
@@ -670,11 +670,11 @@ class seismiclocations(SourceInv):
         '''
         Selects the earthquake in between two dates. Dates can be datetime.datetime or lists.
 
-        :Args:
+        Args:
             * start     : Beginning of the period [yyyy, mm, dd]
             * end       : End of the period [yyyy, mm, dd]
 
-        :Returns:
+        Returns:
             * None. Direclty kicks out earthquakes that are not within start-end period
         '''
 
@@ -729,13 +729,13 @@ class seismiclocations(SourceInv):
         '''
         Selects the earthquakes between two magnitudes.
 
-        :Args:
+        Args:
             * minimum   : Minimum earthquake magnitude wanted.
 
-        :Kwargs:    
+        Kwargs:    
             * maximum   : Maximum earthquake magnitude wanted.
 
-        :Returns:
+        Returns:
             * None. Directly kicks out earthquakes that are not within the wanted magnitude range
         '''
 
@@ -756,11 +756,11 @@ class seismiclocations(SourceInv):
         '''
         Plots the Gutemberg-Richter distribution.
 
-        :Kwargs:
+        Kwargs:
             * plot      : make a figure
             * bins      : how many bins to use
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -801,13 +801,13 @@ class seismiclocations(SourceInv):
         '''
         Selects the earthquakes that are located less than distance away from the fault plane.
 
-        :Args:
+        Args:
             * faults    : List of faults
 
-        :Kwargs:
+        Kwargs:
             * distance  : Threshold
 
-        :Returns:   
+        Returns:   
             * None. Selected events are kept. Others are deleted.
         '''
 
@@ -835,13 +835,13 @@ class seismiclocations(SourceInv):
         '''
         Selects the earthquakes that are located less than 'distance' km away from a given surface fault trace.
 
-        :Args:
+        Args:
             * faults    : list of instances of faults. These need to have {xf} and {yf} attributes
 
-        :Kwargs:
+        Kwargs:
             * distance  : threshold distance.
 
-        :Returns:
+        Returns:
             * None. Selected earthquakes are kept. Others are deleted.
         '''
 
@@ -885,13 +885,13 @@ class seismiclocations(SourceInv):
         '''
         Deletes the earthquakes that are too close from the fault trace.
 
-        :Args:
+        Args:
             * faults    : list of instances of faults. These need to have {xf} and {yf} attributes
 
-        :Kwargs:
+        Kwargs:
             * distance  : threshold distance.
 
-        :Returns:
+        Returns:
             * None. Direclty modifies the list of earthquakes
             
         '''
@@ -932,14 +932,14 @@ class seismiclocations(SourceInv):
         '''
         Projects the location of the earthquake along the fault trace. This routine is not a 3D one, it just deals with the surface trace of the fault.
 
-        :Args:
+        Args:
             * fault:       Fault object that has a surface trace ({xf} and {yf} attributes)
 
-        :Kwargs:
+        Kwargs:
             * discretized: If True, then it uses the discretized fault, not the trace. Never tested with False.
             * filename: Store in a text file
         
-        :Returns:
+        Returns:
             * None. Everything is stored in the dictionary {Projected}
         '''
 
@@ -1051,12 +1051,12 @@ class seismiclocations(SourceInv):
         '''
         Builds a 2D histogram of the earthquakes locations.
 
-        :Kwargs:
+        Kwargs:
             * binwidth  : width of the bins used for histogram.
             * plot      : True/False
             * normed    : Normed the histgram
 
-        :Returns:
+        Returns:
             * None. Histogram is stored in the {histogram} attribute
         '''
 
@@ -1101,11 +1101,11 @@ class seismiclocations(SourceInv):
         '''
         Builds a histogram of the earthquake distribution along the fault trace.
 
-        :Args:
+        Args:
             * fault : instance of fault with {xf} and {yf} attributes
             * filename: Name of output file
 
-        :Kwargs:
+        Kwargs:
             * normed: Norm the histogram
             * width: Width of the averaging cell (distance along strike)
             * bins  : number of bins
@@ -1114,7 +1114,7 @@ class seismiclocations(SourceInv):
             * Range : Range for histogram computation
             * reference: Tuple of float to set the reference of the domain
 
-        :Returns:
+        Returns:
             * None. Everything is stored in output files
         '''
 
@@ -1320,13 +1320,13 @@ class seismiclocations(SourceInv):
         '''
         Project each earthquake on a fault patch. Should work with any fault patch type.
 
-        :Args:
+        Args:
             * fault : instance of a fault class
 
-        :Kwargs:
+        Kwargs:
             * epsilon   : float comparison tolerance number
 
-        :Returns:
+        Returns:
             * InPatch, a list of events in each patch
         '''
 
@@ -1381,10 +1381,10 @@ class seismiclocations(SourceInv):
         '''
         Returns a list of index for all the earthquakes containing the index of the closest fault patch.
 
-        :Args:
+        Args:
             * fault : an instance of a fault class
 
-        :Returns:
+        Returns:
             * ipatch, a list of the index of the closest patch for each event
         '''
 
@@ -1416,7 +1416,7 @@ class seismiclocations(SourceInv):
         '''
         Computes the moment from the magnitude. Result in N.m
 
-        :Returns:
+        Returns:
             * None. Result is in the {Mo} attribute
 
         '''
@@ -1431,7 +1431,7 @@ class seismiclocations(SourceInv):
         '''
         Compute the magnitude from the moment.
 
-        :Returns:
+        Returns:
             * None. Result is in the {mag} attribute
         '''
 
@@ -1444,11 +1444,11 @@ class seismiclocations(SourceInv):
         '''
         Computes the evolution of the moment with time.
 
-        :Kwargs:
+        Kwargs:
             * plot  : True/False
             * outfile: output file
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1503,7 +1503,7 @@ class seismiclocations(SourceInv):
         '''
         Sorts the earthquakes in Time
 
-        :Returns:
+        Returns:
             * None. Directly modifies the object
         '''
 
@@ -1520,13 +1520,13 @@ class seismiclocations(SourceInv):
         '''
         Write the earthquakes to a file.
 
-        :Args:
+        Args:
             * filename      : Name of the output file.
 
-        :Kwargs:
+        Kwargs:
             * add_column    : array or list of length equal to the number of events
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1554,14 +1554,14 @@ class seismiclocations(SourceInv):
         '''
         Write to a file the earthquakes with a magnitude larger than minMag and smaller than maxMag.
 
-        :Args:
+        Args:
             * filename  : Name of the output file
 
-        :Kwargs:
+        Kwargs:
             * minMag    : minimum Magnitude.
             * maxMag    : maximum Magnitude.
 
-        :Returns:   
+        Returns:   
             * None
         '''
 
@@ -1585,14 +1585,14 @@ class seismiclocations(SourceInv):
         '''
         Builds a list of single square patch faults from the cmt solutions. If no condition is given, it returns the first value.
 
-        :Kwargs:
+        Kwargs:
             * size          : Size of one side of the fault patch (km).
             * mu            : Shear modulus (Pa).
             * choseplane    : Choice of the focal plane to use (can be 'smallestdip', 'highestdip', 'nochoice')
             * moment_from_tensor: Computes the scalar moment from the cmt.
             * verbose       : talk to me
 
-        :Returns:
+        Returns:
             * None. Attribute {faults} is a list of faults with a single patch corresponding to the chosen fault plane
         '''
 
@@ -1690,10 +1690,10 @@ class seismiclocations(SourceInv):
         '''
         Merges another catalog into this one.
 
-        :Args:
+        Args:
             * catalog:    Seismic location object.
         
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1714,7 +1714,7 @@ class seismiclocations(SourceInv):
         '''
         Pass the position into the utm coordinate system.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1729,7 +1729,7 @@ class seismiclocations(SourceInv):
         '''
         Pass the position from utm to lonlat.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1744,7 +1744,7 @@ class seismiclocations(SourceInv):
         '''
         Project the seismic locations onto a profile. Works on the lat/lon coordinates system.
 
-        :Args:
+        Args:
             * name              : Name of the profile.
             * loncenter         : Profile origin along longitude.
             * latcenter         : Profile origin along latitude.
@@ -1752,7 +1752,7 @@ class seismiclocations(SourceInv):
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
 
-        :Returns:
+        Returns:
             * None. Profiles are stored in the attribute {profiles}
         '''
 
@@ -1794,14 +1794,14 @@ class seismiclocations(SourceInv):
         '''
         Routine returning the profile
 
-        :Args:
+        Args:
             * xc                : X pos of center
             * yc                : Y pos of center
             * length            : length of the profile.
             * azimuth           : azimuth of the profile.
             * width             : width of the profile.
 
-        :Returns:
+        Returns:
             * dis                 : Distance from the center
             * mag                 : Magnitude
             * depth               : Depth
@@ -1926,14 +1926,14 @@ class seismiclocations(SourceInv):
         '''
         Writes the profile named 'name' to the ascii file filename.
 
-        :Args:
+        Args:
             * name      : name of the profile you want to write
             * filename  : Name of the output file
 
-        :Kwargs:
+        Kwargs:
             * fault     : Add fault for intersection
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1987,11 +1987,11 @@ class seismiclocations(SourceInv):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
 
-        :Args:
+        Args:
             * name      : name of the profile.
             * fault     : fault object from verticalfault.
 
-        :Returns:
+        Returns:
             * None
         '''
 

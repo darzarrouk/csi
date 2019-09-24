@@ -21,10 +21,10 @@ class timeseries(SourceInv):
     '''
     A class that handles generic time series
 
-    :Args:
+    Args:
        * name      : Name of the dataset.
 
-    :Kwargs:
+    Kwargs:
        * utmzone   : UTM zone  (optional, default=None)
        * lon0      : Longitude of the center of the UTM zone
        * lat0      : Latitude of the center of the UTM zone
@@ -59,13 +59,13 @@ class timeseries(SourceInv):
         '''
         Initialize the time series.
 
-        :Kwargs:
+        Kwargs:
             * time          : list of datetime instances
             * start         : datetime instance of the first period
             * end           : datetime instance of the ending period
             * increment     : increment of time between periods
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -131,7 +131,7 @@ class timeseries(SourceInv):
         '''
         Pass the position into the utm coordinate system.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -146,7 +146,7 @@ class timeseries(SourceInv):
         '''
         Pass the position from utm to lonlat.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -165,13 +165,13 @@ class timeseries(SourceInv):
         | year | month | day | hour | min | second | value | err (optional) |
         +------+-------+-----+------+-----+--------+-------+----------------+
 
-        :Args:
+        Args:
             * infile    : Input file (ascii)
         
-        :Kwargs:
+        Kwargs:
             * header    : length of the file header
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -216,7 +216,7 @@ class timeseries(SourceInv):
         '''
         Returns the index of NaNs
 
-        :Returns:
+        Returns:
             * numpy array of integers
         '''
 
@@ -227,10 +227,10 @@ class timeseries(SourceInv):
         '''
         Removes the points from the time series
 
-        :Args:
+        Args:
             * indexes:  Indexes of the poitns to remove
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -245,7 +245,7 @@ class timeseries(SourceInv):
         '''
         Sort ascending in time.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -264,13 +264,13 @@ class timeseries(SourceInv):
         '''
         Keeps the data between start and end. start and end are 2 datetime.datetime objects.
 
-        :Args:
+        Args:
             * start     : datetime.datetime object
 
-        :Kwargs:
+        Kwargs:
             * end       : datetime.datetime object
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -293,14 +293,14 @@ class timeseries(SourceInv):
         '''
         Augments the time series
 
-        :Args:
+        Args:
             * time      : list of datetime objects
 
-        :Kwargs:
+        Kwargs:
             * values    : list array or None
             * std       : list array or None
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -334,10 +334,10 @@ class timeseries(SourceInv):
         '''
         Augments the time series by one point.
 
-        :Args:
+        Args:
             * time      : datetime.datetime object
 
-        :Kwargs:
+        Kwargs:
             * value     : Value of the time series at time {time}
             * std       : Uncertainty at time {time}
         '''
@@ -361,7 +361,7 @@ class timeseries(SourceInv):
         '''
         Compute the derivative of the TS with a central difference scheme.
 
-        :Returns:
+        Returns:
             * None. Results is stored in self.derivative
         '''
 
@@ -387,13 +387,13 @@ class timeseries(SourceInv):
         '''
         Removes the glitches and replace them by a value interpolated on interpNum points.
 
-        :Kwargs:
+        Kwargs:
             * biggerThan    : Values higher than biggerThan are glitches.
             * smallerThan   : Values smaller than smallerThan are glitches.
             * interpNum     : Number of points to take before and after the glicth to predict its values.
             * interpolation : Interpolation method.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -452,11 +452,11 @@ class timeseries(SourceInv):
         '''
         Removes the mean between start and end.
 
-        :Kwargs:
+        Kwargs:
             * start : datetime.datetime object. If None, takes the first point of the time series
             * end   : datetime.datetime object. If None, takes the last point of the time series
 
-        :Returns:
+        Returns:
             * None. Attribute {value} is directly modified.
         '''
 
@@ -484,16 +484,16 @@ class timeseries(SourceInv):
         '''
         Fits a function to the timeseries
 
-        :Args:
+        Args:
             * function  : Prediction function, 
             * m0        : Initial model
 
-        :Kwargs:
+        Kwargs:
             * solver    : Solver type (see list of solver in scipy.optimize.minimize)
             * iteration : Number of iteration for the solver
             * tol       : Tolerance
 
-        :Returns:
+        Returns:
             * None. Model vector is stored in the {m} attribute
         '''
 
@@ -514,7 +514,7 @@ class timeseries(SourceInv):
         '''
         Fits tidal constituents on the time series.
 
-        :Kwargs:
+        Kwargs:
             * steps     : list of datetime instances to add step functions in the estimation process.
             * linear    : estimate a linear trend.
             * tZero     : origin time (datetime instance).
@@ -522,7 +522,7 @@ class timeseries(SourceInv):
             * cossin    : Add a cosine+sine term in the procedure.
             * constituents  : list of tidal constituents to include (default is all). For a list, go check tidalfit class
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -546,15 +546,15 @@ class timeseries(SourceInv):
         '''
         Get the offset between date1 and date2. 
 
-        :Args:
+        Args:
             * date1       : datetime object
             * date2       : datetime object
 
-        :Kwargs:
+        Kwargs:
             * nodate      : Value to be returned in case no value is available
             * data        : can be 'data' or 'std'
 
-        :Returns:
+        Returns:
             * float
         '''
 
@@ -581,13 +581,13 @@ class timeseries(SourceInv):
         '''
         Writes the time series to a file.
 
-        :Args:   
+        Args:   
             * outfile   : output file.
 
-        :Kwargs:
+        Kwargs:
             * steplike  : doubles the output each time so that the plot looks like steps.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -621,10 +621,10 @@ class timeseries(SourceInv):
         '''
         Returns all the points just before the function crosses 0.
 
-        :Kwargs:
+        Kwargs:
             * data      : Can be 'data', 'synth' or 'derivative'.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -651,14 +651,14 @@ class timeseries(SourceInv):
         '''
         Plots the time series.
 
-        :Args:
+        Args:
             * figure  :   Figure id number (default=1)
             * styles  :   List of styles (default=['.r'])
             * show    :   Show to me (default=True)
             * data    :   can be 'data', 'derivative', 'synth' or a list of those
             * subplot :   axes instance to be used for plotting. If None, creates a new one
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -710,10 +710,10 @@ class timeseries(SourceInv):
         '''
         Removes to another gps timeseries the difference between self and timeseries
 
-        :Args:
+        Args:
             * timeseries        : Another timeseries
 
-        :Returns:
+        Returns:
             * float
         '''
         
