@@ -22,10 +22,10 @@ class opticorr(SourceInv):
     '''
     A class that handles optical correlation results
 
-    :Args:
+    Args:
        * name      : Name of the dataset.
 
-    :Kwargs:
+    Kwargs:
        * utmzone   : UTM zone  (optional, default=None)
        * lon0      : Longitude of the center of the UTM zone
        * lat0      : Latitude of the center of the UTM zone
@@ -73,16 +73,16 @@ class opticorr(SourceInv):
         '''
         Read the Optical Corr east-north offsets from the VarRes output. This is what comes from the decimation process in imagedownsampling
 
-        :Args:
+        Args:
             * filename      : Name of the input file. Two files are opened filename.txt and filename.rsp.
 
-        :Kwargs:
+        Kwargs:
             * factor        : Factor to multiply the east-north offsets.
             * step          : Add a value to the velocity.
             * header        : Size of the header.
             * cov           : Read an additional covariance file (binary float32, Nd*Nd elements).
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -169,17 +169,19 @@ class opticorr(SourceInv):
 
         +---+---+----+-----+--------+---------+
         |lon|lat|east|north|east_err|north_err|
+        +===+===+====+=====+========+=========+
+        |   |   |    |     |        |         |
         +---+---+----+-----+--------+---------+
 
-        :Args:
+        Args:
             * filename  : name of the input file.
 
-        :Kwargs:
+        Kwargs:
             * factor    : scale by a factor.
             * step      : add a value.
             * header    : length of the file header
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -236,13 +238,13 @@ class opticorr(SourceInv):
         '''
         Read from a set of binary files or from a set of arrays.
 
-        :Args:
+        Args:
             * east      : array or filename of the east displacement 
             * north     : array or filename of the north displacement
             * lon       : array or filename of the longitude
             * lat       : array or filename of the latitude
 
-        :Kwargs:
+        Kwargs:
             * err_east  : uncertainties on the east displacement (file or array)
             * err_north : uncertainties on the north displacememt (file or array)
             * factor    : multiplication factor
@@ -250,7 +252,7 @@ class opticorr(SourceInv):
             * dtype     : type of binary file
             * remove_nan: Remove nans or not
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -323,14 +325,14 @@ class opticorr(SourceInv):
         '''
         Reads displacement map from an ENVI file.
 
-        :Args:
+        Args:
             * filename  : Name of the input file
 
-        :Kwargs:
+        Kwargs:
             * component : 'EW' or 'NS'
             * remove_nan: Remove Nans or not
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -402,13 +404,13 @@ class opticorr(SourceInv):
         '''
         Uses the paths defined in a Shapefile to select and return particular domains of self.
 
-        :Args:   
+        Args:   
             * shapefile : Input file (shapefile format).
 
-        :Kwargs:
+        Kwargs:
             * remove_nan: Remove nans
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -469,17 +471,17 @@ class opticorr(SourceInv):
         '''
         Reads velocity map from a grd file.
 
-        :Args:
+        Args:
             * filename  : Name of the input file. As we are reading two files, the files are filename_east.grd and filename_north.grd
 
-        :Kwargs:
-            * factor    : scale by a factor
-            * step      : add a value.
-            * flip      : Flip image upside down (some netcdf files require this)
-            * keepnans  : Keeps NaNs or not
+        Kwargs:
+            * factor        : scale by a factor
+            * step          : add a value.
+            * flip          : Flip image upside down (some netcdf files require this)
+            * keepnans      : Keeps NaNs or not
             * variableName  : Name of the variable in the netcdf file
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -569,10 +571,10 @@ class opticorr(SourceInv):
         '''
         Read data from a .txt file using a user provided reading function. Assume the user knows what they are doing and are returning the correct values.
 
-        :Args:
+        Args:
             * readerFunc    : A method that knows how to read a file and returns lon, lat, east, north, east_err and north_err (1d arrays)
 
-        :Kwargs:
+        Kwargs:
             * filePrefix    : filename before .txt
             * factor        : scaling factor
             * cov           : read a covariance from a binary file
@@ -610,13 +612,13 @@ class opticorr(SourceInv):
         ''' 
         Select the pixels in a box defined by min and max, lat and lon.
         
-        :Args:
+        Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -660,14 +662,14 @@ class opticorr(SourceInv):
         From a dictionary of Green's functions, sets these correctly into the fault 
         object fault for future computation.
 
-        :Args:
+        Args:
             * fault     : Instance of Fault
             * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'
 
-        :Kwargs:
+        Kwargs:
             * vertical  : Do we use vertical predictions? Default is True
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -699,13 +701,13 @@ class opticorr(SourceInv):
         '''
         Set orbit normalizing factors in insar object. 
 
-        :Args:
+        Args:
             * x0    : Normalization reference x-axis
             * y0    : Normalization reference y-axis
             * normX : Normalizing length along x-axis
             * normY : Normalizing length along y-axis
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -722,7 +724,7 @@ class opticorr(SourceInv):
         '''
         Compute orbit normalizing factors and store them in insar object. 
 
-        :Returns:   
+        Returns:   
             * None
         '''
 
@@ -745,17 +747,16 @@ class opticorr(SourceInv):
 
         Args:
             * trans     : Transformation type
-                trans can be an integer
-                    if trans==1:
-                        constant offset to the data
-                    if trans==3:
-                        constant and linear function of x and y
-                    if trans==4:
-                        constant, linear term and cross term.
-                trans can be 'strain'
+                - 1: constant offset to the data
+                - 3: constant and linear function of x and y
+                - 4: constant, linear term and cross term.
+                - 'strain': estimates an aerial strain tensor
 
         Kwargs:
             * computeNormFact   : Recompute the normalization factor
+
+        Returns:
+            * None
         '''
 
         # Several cases
@@ -771,7 +772,7 @@ class opticorr(SourceInv):
         '''
         Returns the Estimator for the polynomial form to estimate in the optical correlation data.
 
-        :Args:
+        Args:
             * ptype : Style of polynomial
 
             +-------+------------------------------------------------------------+
@@ -786,10 +787,10 @@ class opticorr(SourceInv):
 
         Watch out: If vertical is True, you should only estimate polynomials for the horizontals.
 
-        :Kwargs:
+        Kwargs:
             * computeNormFact : bool. If False, uses parameters in self.TransformNormalizingFactor 
 
-        :Returns:
+        Returns:
             * 2d array
 
         '''
@@ -842,11 +843,14 @@ class opticorr(SourceInv):
         '''
         Computes the orbital bias estimated in fault
 
-        :Args:
+        Args:
             * fault : Fault object that has a polysol structure.
 
-        :Kwargs:
+        Kwargs:
             * computeNormFact: if True, recompute the normalization.
+
+        Returns:
+            * None
         '''
 
         # Get the polynomial type
@@ -873,10 +877,10 @@ class opticorr(SourceInv):
         '''
         Computes the displacements associated with the custom green's functions.
 
-        :Args:
+        Args:
             * fault : Fault object with custom green's functions
 
-        :Returns:
+        Returns:
             * None. Stores the prediction in self.custompred
         '''
 
@@ -899,15 +903,15 @@ class opticorr(SourceInv):
         '''
         Removes a polynomial from the parameters that are in a fault.
 
-        :Args:
+        Args:
             * fault     : instance of fault that has a polysol structure
 
-        :Kwargs:
-            * verbose   : Talk to me
-            * custom    : Is there custom GFs?
-            * computeNormFact: If True, recomputes Normalization factor
+        Kwargs:
+            * verbose           : Talk to me
+            * custom            : Is there custom GFs?
+            * computeNormFact   : If True, recomputes Normalization factor
 
-        :Returns:
+        Returns:
             * None. Directly corrects the data
         '''
 
@@ -934,16 +938,16 @@ class opticorr(SourceInv):
 
     def removeRamp(self, order=3, maskPoly=None):
         '''
-        :Note: No Idea who started implementing this, but it is clearly not finished...
+        Note: No Idea who started implementing this, but it is clearly not finished...
 
         Pre-remove a ramp from the data that fall outside of mask. If no mask is provided,
         we use all the points to fit a mask.
 
-        :Kwargs:
+        Kwargs:
             * order : Polynomial order
             * maskPoly  : path to make a mask
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -997,10 +1001,10 @@ class opticorr(SourceInv):
         '''
         Removes the synthetics using the faults and the slip distributions that are in there.
 
-        :Args:
+        Args:
             * faults        : List of faults.
 
-        :Kwargs:
+        Kwargs:
             * direction     : Direction of slip to use.
             * vertical      : use verticals
             * include_poly  : if a polynomial function has been estimated, include it.
@@ -1022,17 +1026,17 @@ class opticorr(SourceInv):
         '''
         Computes the synthetic data using the faults and the associated slip distributions.
 
-        :Args:
+        Args:
             * faults        : List of faults.
 
-        :Kwargs:
+        Kwargs:
             * direction     : Direction of slip to use.
             * vertical      : use verticals
             * include_poly  : if a polynomial function has been estimated, include it.
             * custom        : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
             * computeNormFact : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1107,9 +1111,13 @@ class opticorr(SourceInv):
 
         Args:
             * filename  : Name of the output file (ascii file)
-            * data      : Add the value with a -Z option for each rectangle
-                          Can be 'dataNorth', 'dataEast', synthNorth, synthEast,
-                          data or synth
+
+        Kwargs:
+            * data      : Add the value with a -Z option for each rectangle. Can be 'dataNorth', 'dataEast', synthNorth, synthEast, data or synth
+            * outDir    : Output directory
+
+        Returns:
+            * None
         '''
 
         # Open the file
@@ -1154,7 +1162,7 @@ class opticorr(SourceInv):
 
     def writeEDKSdata(self):
         '''
-        This routine prepares the data file as input for EDKS.
+        *** Obsolete ***
         '''
 
         # Get the x and y positions
@@ -1184,8 +1192,11 @@ class opticorr(SourceInv):
         '''
         Reject pixels.
 
-        :Args:
+        Args:
             * u         : Index of the pixel to reject.
+
+        Returns:
+            * None
         '''
 
         self.lon = np.delete(self.lon, u)
@@ -1224,11 +1235,11 @@ class opticorr(SourceInv):
         ''' 
         Rejects the pixels that are dis km close to the fault.
 
-        :Args:
+        Args:
             * dis       : Threshold distance. If the distance is negative, rejects the pixels that are more than -1.0*distance away from the fault.
             * faults    : list of fault objects.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1272,7 +1283,7 @@ class opticorr(SourceInv):
         Project the GPS velocities onto a profile. 
         Works on the lat/lon coordinates system.
 
-        :Args:
+        Args:
             * name              : Name of the profile.
             * loncenter         : Profile origin along longitude.
             * latcenter         : Profile origin along latitude.
@@ -1280,7 +1291,7 @@ class opticorr(SourceInv):
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
 
-        :Returns:
+        Returns:
             * None. Stores profile in self.profiles
         '''
 
@@ -1360,14 +1371,14 @@ class opticorr(SourceInv):
         '''
         Writes the profile named 'name' to the ascii file filename.
 
-        :Args:
+        Args:
             * name      : name of the profile
             * filename  : output file name
 
-        :Kwargs:
+        Kwargs:
             * fault     : instance of a fault class
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1421,14 +1432,14 @@ class opticorr(SourceInv):
         '''
         Plot profile.
 
-        :Args:
+        Args:
             * name      : Name of the profile.
 
-        :Kwargs:
+        Kwargs:
             * legendscale: Length of the legend arrow.
             * fault     : instance of a fault class
         
-        :Returns:   
+        Returns:   
             * None
         '''
 
@@ -1497,11 +1508,11 @@ class opticorr(SourceInv):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
 
-        :Args:
+        Args:
             * name      : name of the profile.
             * fault     : fault object from verticalfault.
 
-        :Returns:
+        Returns:
             * Float
         '''
 
@@ -1573,7 +1584,7 @@ class opticorr(SourceInv):
         '''                                                                                                      
         Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
 
-        :Returns:
+        Returns:
             * 2 floats
         '''
 
@@ -1602,6 +1613,9 @@ class opticorr(SourceInv):
     def getMisfit(self):
         '''                                                                                                      
         Computes the Sum of the data and if synthetics are computed, the RMS of the residuals                    
+
+        Returns:
+            * 2 floats
         '''
 
         raise NotImplementedError('do it later')
@@ -1624,7 +1638,7 @@ class opticorr(SourceInv):
         '''
         Plot the data set, together with a fault, if asked.
 
-        :Kwargs:
+        Kwargs:
             * faults    : list of fault object.
             * figure    : number of the figure.
             * gps       : superpose a GPS dataset.
@@ -1635,7 +1649,7 @@ class opticorr(SourceInv):
             * drawCoastlines : True or False
             * expand    : How to expand the map around the data in degrees.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1700,13 +1714,13 @@ class opticorr(SourceInv):
             * {prefix}_lon.dat      : Longitude
             * {prefix}_lat.dat      : Latitude
 
-        :Args:
+        Args:
             * prefix    : prefix of the output file
             
-        :Kwargs:
+        Kwargs:
             * dtype     : data type in the binary file
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -1742,17 +1756,17 @@ class opticorr(SourceInv):
         '''
         Uses surface to write the output to a grd file.
 
-        :Args:
+        Args:
             * fname     : Filename
 
-        :Kwargs:
+        Kwargs:
             * oversample: Oversampling factor.
             * data      : can be 'data', 'synth' or 'res'.
             * interp    : Number of points along lon and lat (can be a list).
             * cmd       : command used for the conversion( i.e., surface or xyz2gmt)
             * useGMT    : use GMT or scipy
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1838,18 +1852,18 @@ class opticorr(SourceInv):
         '''
         Downsampling algorythm based on Lohman & Simons, 2005, G3. 
 
-        :Args:
+        Args:
             * faults          : List of faults, these need to have a buildGFs routine (ex: for RectangularPatches, it will be Okada).
             * threshold       : Resolution threshold, if above threshold, keep dividing.
             * damping         : Damping parameter. Damping is enforced through the addition of a identity matrix.
 
-        :Kwargs:
+        Kwargs:
             * startingsize    : Starting size of the downsampling boxes.
             * minimumsize     : Minimum size for the downsampling blocks
             * tolerance       : tolerance in the block size in km
             * plot            : show me
 
-        :Returns:
+        Returns:
             * None
         '''
         
