@@ -15,11 +15,16 @@ class SourceInv(object):
 
     '''
     Class implementing the geographical transform. This class will
-    be parent to almost all the classes in csi.
+    be parent to almost all the classes in csi. 
+
+    You can specify either an official utm zone number or provide
+    longitude and latitude for a custom zone.
 
     :Args:
         * name      : Instance Name 
         * utmzone   : UTM zone  (optional, default=None)
+        * lon0      : Longitude defining the center of the custom utm zone
+        * lat0      : Latitude defining the center of the custom utm zone
         * ellps     : ellipsoid (optional, default='WGS84')
 
     '''

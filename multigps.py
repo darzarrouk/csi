@@ -185,7 +185,7 @@ class multigps(gps):
 
         # Assert
         assert type(mainTrans) in (str, type(None)), 'First Item of transformation list needs to be string'
-        assert type (subTrans) is list, 'Second Item of transformation list needs to be a list'
+        assert type (subTrans) is list, 'Second Item of transformation list needs to be a list: {}'.format(subTrans)
 
         # Need the number of columns and lines
         nc = self.getNumberOfTransformParameters(transformation)
@@ -256,7 +256,7 @@ class multigps(gps):
         subTrans = transformation[1]
 
         # Get the solution
-        Tvec = fault.polysol[self.name]
+        Tvec = fault.polysol[self.name]['{}'.format(transformation)]
 
         # Assert
         assert type(mainTrans) in (str, type(None)), 'First Item of transformation list needs to be string'

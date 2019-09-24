@@ -593,7 +593,7 @@ class multifaultsolve(object):
         # All done
         return
 
-    def GeneralizedLeastSquareSoln(self, mprior=None, rcond=None):
+    def GeneralizedLeastSquareSoln(self, mprior=None, rcond=None, useCm=True):
         '''
         Solves the generalized least-square problem using the following formula (Tarantolla, 2005,         Inverse Problem Theory, SIAM):
 
@@ -644,13 +644,16 @@ class multifaultsolve(object):
         Nm = Cm.shape[0]
 
         # Check If Cm is symmetric and positive definite
-        if (Cm.transpose() != Cm).all():
+        if useCm and (Cm.transpose() != Cm).all():
             print("Cm is not symmetric, Return...")
             return
 
         # Get the inverse of Cm
-        print ("Computing the inverse of the model covariance")
-        iCm = scilin.inv(Cm)
+        if useCm:
+            print ("Computing the inverse of the model covariance")
+            iCm = scilin.inv(Cm)
+        else:
+            iCm = np.zeros(Cm.shape)
 
         # Check If Cm is symmetric and positive definite
         if (Cd.transpose() != Cd).all():
@@ -684,7 +687,8 @@ class multifaultsolve(object):
         if self.type is "Fault":
             computeMwDiff(self.mpost, Mw_thresh, self.patchAreas*1.e6, mu)
 
-
+        # Compute Cmpost
+        self.Cmpost = np.linalg.inv(G.T.dot(iCd).dot(G) + iCm) 
 
         # All done
         return

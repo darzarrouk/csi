@@ -102,6 +102,10 @@ class transformation(SourceInv):
 
         '''
 
+        # Check something
+        if type(datas) is not list:
+            datas = [datas]
+
         # Pre compute Normalizing factors
         if computeNormFact:
             self.computeNormFactors(datas)
@@ -120,26 +124,17 @@ class transformation(SourceInv):
             # Check the GFs
             if data.name not in self.G.keys(): self.G[data.name] = {}
 
-            # Check something
-            if type(transformation) is not list:
-                transformation = [transformation]
-
             # Save
             self.transformations[data.name] = transformation
 
-            # Iterate over the transformations
-            for trans in transformation:
-                
-                # A case that will need to change in the future
-                if data.dtype in ('gps', 'multigps') and trans=='strain':
-                    T = data.getTransformEstimator('strainonly', computeNormFact=False)
-                else:
-                    T = data.getTransformEstimator(trans, computeNormFact=False)
-
-                # One case is tricky so we build strings
-                if type(trans) is list:
-                    trans = ''.join(itertools.chain.from_iterable(trans))
-                self.G[data.name][trans] = T
+            # A case that will need to change in the future
+            if data.dtype in ('gps') and transformation=='strain':
+                T = data.getTransformEstimator('strainonly', computeNormFact=False)
+            else:
+                T = data.getTransformEstimator(transformation, computeNormFact=False)
+            # One case is tricky so we build strings
+            trans = '{}'.format(transformation)
+            self.G[data.name][trans] = T
 
             # Set data in the GFs
             if data.dtype == 'insar':
@@ -231,6 +226,11 @@ class transformation(SourceInv):
         data.TransformNormalizingFactor['y'] = normY
         data.TransformNormalizingFactor['ref'] = [x0, y0]
         data.TransformNormalizingFactor['base'] = base_max
+
+        # Special case of a multigps dataset
+        if data.dtype is 'multigps':
+            for d in data.gpsobjects:
+                self.computeTransformNormFactor(d)
 
         # All done
         return
@@ -539,6 +539,10 @@ class transformation(SourceInv):
         Kwargs:
             * verbose       : Talk to me
         '''
+
+        # Check something
+        if type(datas) is not list:
+            datas = [datas]
 
         # Predict
         self.buildPredictions(datas, verbose=verbose)

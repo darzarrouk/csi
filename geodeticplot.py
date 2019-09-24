@@ -5,6 +5,8 @@ Written by R. Jolivet and Z. Duputel, April 2013.
 
 Edited by T. Shreve, May 2019. Commented out lines 386, 391, 460, 485, 1121, 1131 because plotting fault patches was incorrect...
 Added plotting option for pressure sources
+
+July 2019: R Jolivet replaced basemap by cartopy.
 '''
 
 # Numerics
@@ -113,9 +115,6 @@ class geodeticplot(object):
             * triDaxis  : Specify the axis type for the 3D projection (see mpl_toolkits)
             * showFig   : List of plots to show on screen ('fault' and/or 'map')
             * fitOnBox  : If True, fits the horizontal axis to the one asked at initialization
-                          even if data fall outside the box.
-            * azimuth   : Azimuth of viewing angle for 3D plot
-            * elevation : Elevation of viewing angle for 3D plot
         '''
 
         # Change axis of the map
@@ -128,6 +127,10 @@ class geodeticplot(object):
 
         # Fits the horizontal axis to the asked values
         if fitOnBox:
+            if self.lonmin>180.:
+                self.lonmin -= 360.
+            if self.lonmax>180.:
+                self.lonmax -= 360.
             self.carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax])
             self.faille.set_xlim(self.carte.get_xlim())
             self.faille.set_ylim(self.carte.get_ylim())
@@ -303,7 +306,7 @@ class geodeticplot(object):
 
         # Draw countries
         if drawCountries:
-            self.countries = cfeature.NaturalEarthFeature(scale='110m', category='cultural', name='admin_0_countries', 
+            self.countries = cfeature.NaturalEarthFeature(scale=resolution, category='cultural', name='admin_0_countries', 
                                                           linewidth=linewidth/2., edgecolor='k', facecolor='lightgray', 
                                                           alpha=0.6, zorder=zorder)
             self.carte.add_feature(self.countries)
@@ -410,14 +413,14 @@ class geodeticplot(object):
         # All done
         return
 
-    def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True,
+    def faultpatches(self, fault, slip='strikeslip', norm=None, colorbar=True,
                      plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
                      transparency=0.0, factor=1.0, zorder=3):
         '''
         Args:
             * fault         : Fault class from verticalfault.
             * slip          : Can be 'strikeslip', 'dipslip', 'tensile', 'total' or 'coupling'
-            * Norm          : Limits for the colorbar.
+            * norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
             * plot_on_2d    : if True, adds the patches on the map.
             * factor        : scale factor for fault slip values
@@ -440,15 +443,18 @@ class geodeticplot(object):
         slip *= factor
 
         # norm
-        if Norm is None:
+        if norm is None:
             vmin=slip.min()
             vmax=slip.max()
         else:
-            vmin=Norm[0]
-            vmax=Norm[1]
+            vmin=norm[0]
+            vmax=norm[1]
 
         # set z axis
-        self.setzaxis(fault.depth+5., zticklabels=fault.z_patches)
+        try:
+            self.setzaxis(fault.depth+5., zticklabels=fault.z_patches)
+        except:
+            print('Warning: Depth cannot be determined automatically. Please set z-axis limit manually')
 
         # set color business
         if revmap:
@@ -513,13 +519,13 @@ class geodeticplot(object):
         # All done
         return
 
-    def pressuresource(self, fault, delta='pressure', Norm=None, colorbar=True, revmap=False, linewidth=1.0, cmap='jet',
+    def pressuresource(self, fault, delta='pressure', norm=None, colorbar=True, revmap=False, linewidth=1.0, cmap='jet',
                      transparency=0.0, factor=1.0, zorder=3, plot_on_2d=False):
         '''
         Args:
             * fault         : Fault class from verticalfault.
             * slip          : Can be 'pressure' or 'volume'
-            * Norm          : Limits for the colorbar.
+            * norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
             * plot_on_2d    : if True, adds the patches on the map.
             * factor        : scale factor for fault slip values
@@ -536,12 +542,12 @@ class geodeticplot(object):
         delta *= factor
 
         # norm
-        if Norm is None:
+        if norm is None:
             vmin=0
             vmax=delta
         else:
-            vmin=Norm[0]
-            vmax=Norm[1]
+            vmin=norm[0]
+            vmax=norm[1]
 
         # set z axis
         self.setzaxis(fault.ellipshape['z0']+5., zticklabels=None)
@@ -607,7 +613,7 @@ class geodeticplot(object):
         return
 
     def faultTents(self, fault,
-                   slip='strikeslip', Norm=None, colorbar=True,
+                   slip='strikeslip', norm=None, colorbar=True,
                    method='surface', cmap='jet', plot_on_2d=False,
                    revmap=False, factor=1.0, npoints=10,
                    xystrides=[100, 100], zorder=0,
@@ -616,7 +622,7 @@ class geodeticplot(object):
         Args:
             * fault         : Fault class from verticalfault.
             * slip          : Can be 'strikeslip', 'dipslip', 'tensile', 'total' or 'coupling'
-            * Norm          : Limits for the colorbar.
+            * norm          : Limits for the colorbar.
             * method        : Can be 'scatter' --> Plots all the sub points as a colored dot.
                                      'surface' --> Interpolates a 3D surface (can be ugly)
             * colorbar      : if True, plots a colorbar.
@@ -650,12 +656,12 @@ class geodeticplot(object):
         slip *= factor
 
         # norm
-        if Norm is None:
+        if norm is None:
             vmin=slip.min()
             vmax=slip.max()
         else:
-            vmin=Norm[0]
-            vmax=Norm[1]
+            vmin=norm[0]
+            vmax=norm[1]
 
         # set z axis
         self.setzaxis(fault.depth+5., zticklabels=fault.z_patches)
@@ -805,7 +811,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def surfacestress(self, stress, component='normal', linewidth=0.0, Norm=None, colorbar=True):
+    def surfacestress(self, stress, component='normal', linewidth=0.0, norm=None, colorbar=True):
         '''
         Plots the stress on the map.
         Args:
@@ -813,7 +819,7 @@ class geodeticplot(object):
             * component     : If string, can be normal, shearstrike, sheardip
                               If tuple or list, can be anything specifying the indexes of the Stress tensor.
             * linewidth     : option of scatter.
-            * Norm          : Scales the color bar.
+            * norm          : Scales the color bar.
             * colorbar      : if true, plots a colorbar
         '''
 
@@ -834,10 +840,10 @@ class geodeticplot(object):
         # Prepare the colormap
         cmap = plt.get_cmap('jet')
 
-        # Norm
-        if Norm is not None:
-            vmin = Norm[0]
-            vmax = Norm[1]
+        # norm
+        if norm is not None:
+            vmin = norm[0]
+            vmax = norm[1]
         else:
             vmin = val.min()
             vmax = val.max()
@@ -937,9 +943,11 @@ class geodeticplot(object):
             font = {'family' : 'serif',
                     'color'  : 'k',
                     'weight' : 'normal',
-                    'size'   : 15}
+                    'size'   : 10}
             for lo, la, sta in zip(lon.tolist(), lat.tolist(), gps.station):
-                self.carte.text(lo, la, sta, fontdict=font)
+                # Do it twice, I don't know why text is screwed up...
+                self.carte.text(lo, la, sta, zorder=20, fontdict=font)
+                self.carte.text(lo-360., la, sta, zorder=20, fontdict=font)
 
         # All done
         return
@@ -996,7 +1004,7 @@ class geodeticplot(object):
         # Get a colormap
         cmap = plt.get_cmap(cmap)
 
-        # Norm
+        # norm
         if norm is not None:
             vmin = norm[0]
             vmax = norm[1]
