@@ -226,14 +226,22 @@ class mpdownsampler(mp.Process):
         return
 
 class imagedownsampling(object):
+    '''
+    A class to downsample images
+
+    Args:
+        * name      : Name of the downsampler.
+        * image     : InSAR or opticorr data set to be downsampled.
+
+    Kwargs:
+        * faults    : List of faults.
+        * verbose   : Talk to me
+
+    Returns:
+        * None
+    '''
 
     def __init__(self, name, image, faults=None, verbose=True):
-        '''
-        Args:
-            * name      : Name of the downsampler.
-            * image     : InSAR or opticorr data set to be downsampled.
-            * faults    : List of faults.
-        '''
 
         if verbose:
             print ("---------------------------------")
@@ -315,12 +323,18 @@ class imagedownsampling(object):
     def initialstate(self, startingsize, minimumsize, tolerance=0.5, plot=False, decimorig=10):
         '''
         Does the first cut onto the data.
+
         Args:
             * startingsize  : Size of the first regular downsampling (it'll be the effective maximum size of windows)
             * minimumsize   : Minimum Size of the blocks.
-            * tolerance     : Between 0 and 1. If 1, all the pixels must have a value so that the box is kept,
-                                               If 0, no pixels are needed... Default is 0.5
+
+        Kwargs:
+            * tolerance     : Between 0 and 1. If 1, all the pixels must have a value so that the box is kept. If 0, no pixels are needed... Default is 0.5
             * decimorig     : Decimation ofr plotting purposes only.
+            * plot          : True/False
+
+        Returns:
+            * None
         '''
 
         # Set the tolerance
@@ -352,8 +366,12 @@ class imagedownsampling(object):
     def setBlocks(self, blocks):
         '''
         Takes a list of blocks and set it in self.
+
         Args:
             * blocks    : List of blocks (xy coordinates)
+
+        Returns:
+            * None
         '''
 
         # Save the blocks
@@ -376,6 +394,14 @@ class imagedownsampling(object):
     def downsample(self, plot=False, decimorig=10,Norm=None):
         '''
         From the saved list of blocks, computes the downsampled data set and the informations that come along.
+
+        Kwargs:
+            * plot      : True/False
+            * decimorig : decimate a bit for plotting
+            * Norm      : colorlimits for plotting
+
+        Returns:
+            * None
         '''
 
         # Create the new image object
@@ -486,10 +512,16 @@ class imagedownsampling(object):
     def downsampleFromSampler(self, sampler, plot=False, decimorig=10):
         '''
         From the downsampling scheme in a previous sampler, downsamples the image.
+
         Args:
             * sampler       : Sampler which has a blocks instance.
+
+        Kwargs:
             * plot          : Plot the downsampled data (True/False)
             * decimorig     : Stupid decimation factor for lighter plotting.
+
+        Returns:
+            * None
         '''
 
         # set the downsampling scheme
@@ -503,14 +535,18 @@ class imagedownsampling(object):
 
     def downsampleFromRspFile(self, prefix, tolerance=0.5, plot=False, decimorig=10):
         '''
-        From the downsampling scheme saved in a .rsp file, downsamples
-        the image.
+        From the downsampling scheme saved in a .rsp file, downsamples the image.
+
         Args:
             * prefix        : Prefix of the rsp file.
+
+        Kwargs:
             * tolerance     : Minimum surface covered in a patch to be kept.
             * plot          : Plot the downsampled data (True/False)
-            * decimorig     : Simple decimation factor of the data for
-                              lighter plotting.
+            * decimorig     : Simple decimation factor of the data for lighter plotting.
+
+        Returns:    
+            * None
         '''
 
         # Set tolerance
@@ -528,8 +564,12 @@ class imagedownsampling(object):
     def getblockcenter(self, block):
         '''
         Returns the center of a block.
+
         Args:
             * block         : Block as defined in initialstate.
+
+        Returns:
+            * None
         '''
 
         # Get the four corners
@@ -547,8 +587,12 @@ class imagedownsampling(object):
     def cutblockinfour(self, block):
         '''
         From a block, returns 4 equal blocks.
+
         Args:
             * block         : block as defined in initialstate.
+
+        Returns:
+            * 4 lists of block corners
         '''
 
         # Get the four corners
@@ -586,8 +630,12 @@ class imagedownsampling(object):
         '''
         Used to create a smoother downsampled grid. From a single block, returns three blocks. Not used for now.
         T.L. Shreve, January 2018
+
         Args:
             * block         : block as defined in initialstate.
+
+        Returns:
+            * 3 lists of block corners
         '''
 
         # Get the four corners
@@ -667,13 +715,17 @@ class imagedownsampling(object):
 
     def distanceBased(self, chardist=15, expodist=1, plot=False, decimorig=10,Norm=None):
         '''
-        Downsamples the dataset depending on the distance from the fault
-        R.Grandin, April 2015
-        Args:
+        Downsamples the dataset depending on the distance from the fault R.Grandin, April 2015
+
+        Kwargs:
             * chardist      : Characteristic distance of downsampling.
             * expodist      : Exponent of the distance-based downsampling criterion.
-            * damping       : Damping coefficient (damping is made through an identity matrix).
-            * slipdirection : Which direction to accout for to build the slip Green's functions.
+            * plot          : True/False
+            * decimorig     : decimate for plotting
+            * Norm          : colorlimits for plotting
+
+        Returns:
+            * None
         '''
 
         if self.verbose:
@@ -730,10 +782,12 @@ class imagedownsampling(object):
     def computeGradientCurvature(self, smooth=None):
         '''
         Computes the gradient for all the blocks.
-        Args:
-            * smooth        : Smoothes the Gradient and the Curvature using a Gaussian filter.
-                              smooth is the kernel (in km) of the filter.
-                              Default is None
+
+        Kwargs:
+            * smooth        : Smoothes the Gradient and the Curvature using a Gaussian filter. {smooth} is the kernel size (in km) of the filter.
+
+        Returns:
+            * None
         '''
 
         # Get the XY situation
@@ -784,8 +838,20 @@ class imagedownsampling(object):
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
         Threshold is based on the gradient or curvature of the phase field inside the block.
         The algorithm is based on the varres downsampler. Please check at http://earthdef.caltech.edu
+
         Args:
             * threshold     : Gradient threshold
+
+        Kwargs:
+            * plot          : True/False
+            * verboseLevel  : Talk to me
+            * decimorig     : decimate before plotting
+            * quantity      : curvature or gradient
+            * smooth        : Smooth the {quantity} spatial with a filter of kernel size of {smooth} km
+            * itmax         : Maximum number of iterations
+
+        Returns:
+            * None
         '''
 
         if self.verbose:
@@ -869,10 +935,20 @@ class imagedownsampling(object):
     def resolutionBased(self, threshold, damping, slipdirection='s', plot=False, verboseLevel='minimum', decimorig=10, vertical=False):
         '''
         Iteratively downsamples the dataset until value compute inside each block is lower than the threshold.
+
         Args:
             * threshold     : Threshold.
             * damping       : Damping coefficient (damping is made through an identity matrix).
-            * slipdirection : Which direction to accout for to build the slip Green's functions.
+
+        Kwargs:
+            * slipdirection : Which direction to accout for to build the slip Green's functions (s, d or t)
+            * plot          : False/True
+            * verboseLevel  : talk to me
+            * decimorig     : decimate a bit before plotting
+            * vertical      : Use vertical green's functions.
+
+        Returns:
+            * None
         '''
 
         if self.verbose:
@@ -959,9 +1035,16 @@ class imagedownsampling(object):
     def computeResolution(self, slipdirection, damping, vertical=False):
         '''
         Computes the resolution matrix in the data space.
+
         Args:
-            * slipdirection: Directions to include when computing the resolution operator.
+            * slipdirection : Directions to include when computing the resolution operator.
             * damping       : Damping coefficient (damping is made through an identity matrix).
+
+        Kwargs:
+            * vertical      : Use vertical GFs?
+
+        Returns:
+            * None
         '''
 
         # Check if vertical is set properly
@@ -1005,8 +1088,12 @@ class imagedownsampling(object):
     def getblockarea(self, block):
         '''
         Returns the total area of a block.
+
         Args:
             * block : Block as defined in initialstate.
+
+        Returns:
+            * float
         '''
 
         # All done in one line
@@ -1015,6 +1102,12 @@ class imagedownsampling(object):
     def trashblock(self, j):
         '''
         Deletes one block.
+
+        Args:
+            * j     : index of a block
+
+        Returns:
+            * None
         '''
 
         del self.blocks[j]
@@ -1026,6 +1119,12 @@ class imagedownsampling(object):
     def trashblocks(self, jj):
         '''
         Deletes the blocks corresponding to indexes in the list jj.
+
+        Args:
+            * jj    : index of a block
+
+        Returns:
+            * None
         '''
 
         while len(jj)>0:
@@ -1047,11 +1146,18 @@ class imagedownsampling(object):
     def plotDownsampled(self, figure=145, ref='utm', Norm=None, data2plot='north', decimorig=1, savefig=None, show=True):
         '''
         Plots the downsampling as it is at this step.
-        Args:
+
+        Kwargs:
             * figure    : Figure ID.
+            * ref       : utm or lonlat
             * Norm      : [colormin, colormax]
-            * ref       : Can be 'utm' or 'lonlat'.
             * data2plot : used if datatype is opticorr: can be north or east.
+            * decimorig : decimate a bit beofre plotting
+            * savefig   : True/False
+            * show      : display True/False
+
+        Returns:
+            * None
         '''
 
         # Create the figure
@@ -1218,9 +1324,13 @@ class imagedownsampling(object):
     def reject_pixels_fault(self, distance, fault):
         '''
         Removes pixels that are too close to the fault in the downsampled image.
+
         Args:
             * distance      : Distance between pixels and fault (scalar)
             * fault         : fault object
+
+        Returns:
+            * None
         '''
 
         # Get image
@@ -1242,11 +1352,16 @@ class imagedownsampling(object):
     def buildDownsampledCd(self, mu, lam, function='exp'):
         '''
         Builds the covariance matrix by weihgting following the downsampling scheme
+
         Args:
             * mu        : Autocovariance
             * lam       : Characteristic distance
-            * function  : 'exp'   --> C = mu**2 exp(-d/lam)
-                          'gauss' --> C = mu**2 exp(-d**2/2lam**2)
+
+        Kwargs:
+            * function  : 'exp' (:math:`C = \mu^2 e^{\\frac{-d}{\lambda}}`) or 'gauss' (:math:`C = \mu^2 e^{\\frac{-d^2}{2\lambda^2}}`)
+
+        Returns:
+            * None
         '''
 
         assert self.image.dtype=='insar', 'Not implemented for opticorr, too lazy.... Sorry.... Later....'
@@ -1306,6 +1421,12 @@ class imagedownsampling(object):
     def setDownsamplingScheme(self, sampler):
         '''
         From an imagedownsampling object, sets the downsampling scheme.
+
+        Args:
+            * sampler      : imagedownsampling instance
+
+        Returns:
+            * None
         '''
 
         # Check if it has bocks
@@ -1320,11 +1441,13 @@ class imagedownsampling(object):
 
     def readDownsamplingScheme(self, prefix):
         '''
-        Reads a downsampling scheme from a rsp file.
-        and set it as self.blocks
+        Reads a downsampling scheme from a rsp file and set it as self.blocks
+
         Args:
-            * prefix          : Prefix of a .rsp file written by
-                                writeDownsampled2File.
+            * prefix          : Prefix of a .rsp file written by writeDownsampled2File.
+
+        Returns:
+            * None
         '''
 
         # Replace spaces
@@ -1359,11 +1482,16 @@ class imagedownsampling(object):
 
     def writeDownsampled2File(self, prefix, rsp=False):
         '''
-        Writes the downsampled image data to a file.
-        The file will be called prefix.txt.
-        If rsp is True, then it writes a file called prefix.rsp
-        containing the boxes of the downsampling.
-        If prefix has white spaces, those are replaced by "_".
+        Writes the downsampled image data to a file. The file will be called prefix.txt. If rsp is True, then it writes a file called prefix.rsp containing the boxes of the downsampling. If prefix has white spaces, those are replaced by "_".
+
+        Args:
+            * prefix        : Prefix of the output file
+
+        Kwargs:
+            * rsp           : Write the rsp file?
+
+        Returns:
+            * None
         '''
 
         # Replace spaces
@@ -1434,9 +1562,7 @@ class imagedownsampling(object):
 
     def _is_minimum_size(self, blocks):
         '''
-        Returns a Boolean array.
-        True if block is minimum size,
-        False either.
+        Returns a Boolean array. True if block is minimum size, False either.
         '''
 
         # Initialize
@@ -1455,12 +1581,13 @@ class imagedownsampling(object):
 
     def distToFault(self,block):
         '''
-        Returns distance from block to fault.
-        The distance is here defined as the minimum distance
-        from any of the four block corners to the fault.
-        R.Grandin, April 2015
+        Returns distance from block to fault. The distance is here defined as the minimum distance from any of the four block corners to the fault. (R.Grandin, April 2015)
+
         Args:
             * block     : Block instance of the imagedownsampling class.
+
+        Returns:
+            * None
         '''
 
         # Get the four corners
@@ -1488,10 +1615,13 @@ class imagedownsampling(object):
 
     def blockSize(self,block):
         '''
-        Returns block size.
-        R.Grandin, April 2015
+        Returns block size. R.Grandin, April 2015
+
         Args:
             * block     : Block instance of the imagedownsampling class.
+
+        Returns:
+            * None
         '''
 
         # compute the size

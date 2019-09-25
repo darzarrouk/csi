@@ -30,21 +30,25 @@ from .planarfault import planarfault
 # Class explorefault
 class explorefault(SourceInv):
 
+    '''
+    Creates an object that will solve for the best fault details. The fault has only one patch and is embedded in an elastic medium.
+
+    Args:
+        * name          : Name of the object
+
+    Kwargs:
+        * utmzone       : UTM zone number
+        * ellps         : Ellipsoid
+        * lon0/lat0     : Refernece of the zone
+        * verbose       : Talk to me
+
+    Returns:
+        * None
+    '''
+
     def __init__(self, name, utmzone=None, 
                  ellps='WGS84', lon0=None, lat0=None, 
                  verbose=True):
-
-        '''
-        Creates an object that will solve for the best fault details.
-
-        Args:
-            * name          : Name of the object
-
-        KwArgs:
-            * utmzone       : UTM zone number
-            * ellps         : Ellipsoid
-            * lon0/lat0     : Refernece of the zone
-        '''
 
         # Initialize the fault
         if verbose:
@@ -78,28 +82,27 @@ class explorefault(SourceInv):
         Initializes the prior likelihood functions.
 
         Args:
-            * bounds        : Bounds is a dictionary that holds the following keys
-                    'lon'        -- Longitude (tuple or float)
-                    'lat'        -- Latitude (tuple or float)
-                    'depth'      -- Depth in km of the top of the fault (tuple or float)
-                    'dip'        -- Dip in degree (tuple or float)
-                    'width'      -- Along-dip size in km (tuple or float)
-                    'length'     -- Along-strike length in km (tuple or float)
-                    'strike'     -- Azimuth of the strike (tuple or float)
-                    'strikeslip' -- Strike Slip (tuple or float)
-                    'dipslip'    -- Dip slip (tuple or float)
+            * bounds        : Bounds is a dictionary that holds the following keys. 
+                   - 'lon'        : Longitude (tuple or float)
+                   - 'lat'        : Latitude (tuple or float)
+                   - 'depth'      : Depth in km of the top of the fault (tuple or float)
+                   - 'dip'        : Dip in degree (tuple or float)
+                   - 'width'      : Along-dip size in km (tuple or float)
+                   - 'length'     : Along-strike length in km (tuple or float)
+                   - 'strike'     : Azimuth of the strike (tuple or float)
+                   - 'strikeslip' : Strike Slip (tuple or float)
+                   - 'dipslip'    : Dip slip (tuple or float)
 
-            One bound should be a list with the name of a pymc distribution as first 
-            element. The following elements will be passed on to the function.
-                example:  bounds[0] = ('Normal', 0., 2.) will give a Normal distribution
-                            centered on 0. with a 2. standard deviation.
+                              One bound should be a list with the name of a pymc distribution as first element. The following elements will be passed on to the function.
+                              example:  bounds[0] = ('Normal', 0., 2.) will give a Normal distribution centered on 0. with a 2. standard deviation.
 
-            * datas         : Data sets that will be used. This is in case bounds has
-                              tuples or floats for reference of an InSAR data set
+        Kwargs:
+            * datas         : Data sets that will be used. This is in case bounds has tuples or floats for reference of an InSAR data set
 
-            * initialSample : An array the size of the list of bounds
-                              default is None and will be randomly set from the 
-                              prior PDFs
+            * initialSample : An array the size of the list of bounds default is None and will be randomly set from the prior PDFs
+
+        Returns:
+            * None
         '''
 
         # Make a list of priors
@@ -195,12 +198,13 @@ class explorefault(SourceInv):
         Builds the data likelihood object from the list of geodetic data in datas.
 
         Args:   
-            * datas         : csi geodetic data object (gps or insar) or 
-                              list of csi geodetic objects. 
-                              TODO: Add other types of data (opticorr)
+            * datas         : csi geodetic data object (gps or insar) or list of csi geodetic objects. TODO: Add other types of data (opticorr)
 
-        KwArgs:
+        Kwargs:
             * vertical      : Use the verticals for GPS?
+
+        Returns:
+            * None
         '''
 
         # Build the prediction method
@@ -240,7 +244,16 @@ class explorefault(SourceInv):
     def Predict(self, theta, data, vertical=True):
         '''
         Calculates a prediction of the measurement from the theta vector
-        theta = [lon, lat, depth, dip, width, length, strike, strikeslip, dipslip]
+
+        Args:
+            * theta     : model parameters [lon, lat, depth, dip, width, length, strike, strikeslip, dipslip]
+            * data      : Data to test upon
+
+        Kwargs:
+            * vertical  : True/False
+
+        Returns:
+            * None
         '''
 
         # Take the values in theta and distribute
@@ -291,9 +304,13 @@ class explorefault(SourceInv):
         '''
         March the MCMC.
 
-        Args:
+        Kwargs:
             * niter             : Number of steps to walk
             * nburn             : Numbero of steps to burn
+            * method            : One of the stepmethods of PyMC2
+
+        Returns:
+            * None
         '''
 
         # Define the stochastic function
@@ -348,9 +365,10 @@ class explorefault(SourceInv):
         Returns a fault corresponding to the desired model.
 
         Kwargs:
-            * model             : Can be 'mean', 'median', 
-                                  'rand', an integer or a dictionary
-                                  with the appropriate keys
+            * model             : Can be 'mean', 'median',  'rand', an integer or a dictionary with the appropriate keys
+
+        Returns:
+            * fault instance
         '''
 
         # Create a dictionary
@@ -409,6 +427,13 @@ class explorefault(SourceInv):
     def plot(self, model='mean', show=True):
         '''
         Plots the PDFs and the desired model predictions and residuals.
+
+        Kwargs:
+            * model     : 'mean', 'median' or 'rand'
+            * show      : True/False
+
+        Returns:
+            * None
         '''
 
         # Plot the pymc stuff
@@ -459,6 +484,9 @@ class explorefault(SourceInv):
 
         Args:
             * filename          : Name of the input file
+
+        Returns:
+            * None
         '''
 
         # Open an h5file
