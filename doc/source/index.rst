@@ -28,7 +28,7 @@ CSI stands for Classic Slip Inversion. In brief, it allows to quickly build scri
 Overview 
 ===============================
 
-This library has been designed to handle what is simple in fault slip inversions and especiall what should not be re-written everytime a new students comes to work. No one should have to decide how to implement a fault or insar data in python before trying to run an inverse problem because it is not interesting (the inverse problem is interesting and should be dealt with great care). Therefore, we have put together this set of python classes that can interact together and allow anyone to set up his own problem.
+This library has been designed to handle what is simple in fault slip inversions and especially what should not be re-written everytime a new students comes to work. No one should have to decide how to implement a fault or insar data in python before trying to run an inverse problem because it is not interesting (the inverse problem is interesting and should be dealt with great care). Therefore, we have put together this set of python classes that can interact together and allow anyone to set up his own problem.
 
 Because we do not aim at solving everyone's problems, this code is open and can be augmented if you feel like it. Do not hesitate to contact us and share potentially new capabilities.
 
@@ -60,7 +60,7 @@ Contacts
 To contact us, please visit our websites:
 
 - Romain Jolivet @Ecole Normale Superieure: http://www.geologie.ens.fr/~jolivet
-- Zacharie Duputel @Universite de Strasbourg: http://wphase.unistra.fr/zacharie
+- Zacharie Duputel @Universite de Strasbourg: https://zduputel.github.io
 - Mark Simons @CalTech: http://www.gps.caltech.edu/~simons
 
 * :ref:`genindex`
