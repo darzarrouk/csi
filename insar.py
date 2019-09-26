@@ -1406,6 +1406,8 @@ class insar(SourceInv):
 
         # Get the parameters
         params = fault.polysol[self.name]
+        if type(params) is dict:
+            params = params[ptype]
 
         # Get the estimator
         Horb = self.getPolyEstimator(ptype, computeNormFact=computeNormFact)
