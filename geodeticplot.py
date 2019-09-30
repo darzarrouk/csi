@@ -363,7 +363,7 @@ class geodeticplot(object):
         self.carte.add_feature(self.coastlines)
         if drawOnFault:
             segments = []
-            for geom in self.coastlines.geometries():
+            for geom in [self.coastlines.geometries()]:
                 for poly in geom:
                     x = np.array(poly.exterior.xy[0])
                     y = np.array(poly.exterior.xy[1])
@@ -383,7 +383,7 @@ class geodeticplot(object):
             self.carte.add_feature(self.countries)
             if drawOnFault:
                 segments = []
-                for geom in self.countries.geometries():
+                for geom in [self.countries.geometries()]:
                     for poly in geom:
                         x = np.array(poly.exterior.xy[0])
                         y = np.array(poly.exterior.xy[1])
@@ -717,7 +717,7 @@ class geodeticplot(object):
 
     def faultTents(self, fault,
                    slip='strikeslip', norm=None, colorbar=True,
-                   method='surface', cmap='jet', plot_on_2d=False,
+                   method='scatter', cmap='jet', plot_on_2d=False,
                    revmap=False, factor=1.0, npoints=10,
                    xystrides=[100, 100], zorder=0,
                    vertIndex=False):
