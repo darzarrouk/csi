@@ -6,13 +6,6 @@ Written by T. Shreve, June 2019
 
 # Import Externals stuff
 import numpy as np
-import pyproj as pp
-import matplotlib.pyplot as plt
-import scipy.interpolate as sciint
-from . import triangularDisp as tdisp
-from scipy.linalg import block_diag
-import scipy.spatial.distance as scidis
-import copy
 import sys
 import os
 from argparse import Namespace
@@ -29,19 +22,72 @@ class Mogi(Pressure):
 
     # ----------------------------------------------------------------------
     # Initialize class
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
+    def __init__(self, name, x0=None, y0=None, z0=None, ax=None, ay=None, az=None, dip=None, strike=None, plunge=None, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
         '''
-        Parent class implementing what is common in all pressure objects.
+        Sub-class implementing Mogi pressure objects.
 
         Args:
             * name          : Name of the pressure source.
             * utmzone       : UTM zone  (optional, default=None)
             * ellps         : ellipsoid (optional, default='WGS84')
+
+        Kwargs:
+            * x0, y0       : Center of pressure source in lat/lon or utm
+            * z0           : Depth
+            * ax, ay, az   : semi-axes of the Mogi source, should be equal.
+            * dip          : 0 for mogi
+            * strike       : 0 for mogi
+            * plunge       : 0 for mogi
+            * ellps        : ellipsoid (optional, default='WGS84')
         '''
 
         # Base class init
-        super(Mogi,self).__init__(name, utmzone=utmzone, ellps=ellps, lon0=lon0, lat0=lat0)
+        super(Mogi,self).__init__(name, x0=x0, y0=y0, z0=z0, ax=ax, ay=ay, az=az, dip=dip, strike=strike, plunge=plunge, utmzone=utmzone, ellps=ellps, lon0=lon0, lat0=lat0, verbose=verbose)
+        self.source = "Mogi"
+        self.deltapressure  = None  # Dimensionless pressure
+        self.deltavolume = None
+        if None not in {x0, y0, z0, ax}:
+            self.createShape(x0, y0, z0, ax)
+            print("Defining source parameters")
 
+        return
+
+
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # Set volume and pressure changes
+    def setVolume(self, deltaVolume):
+        '''
+        Set deltapressure given deltavolume.
+
+        Returns:
+            * deltavolume             : Volume change
+        '''
+
+        self.deltavolume = deltaVolume
+        self.volume2pressure()
+
+        # All done
+        return
+
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # Set volume and pressure changes
+    def setPressure(self, deltaPressure):
+        '''
+        Set deltavolume given deltapressure.
+
+        Returns:
+            * deltapressure             : Pressure change
+        '''
+        #Check if deltavolume already defined
+        self.deltapressure = deltaPressure
+        self.pressure2volume()
+
+
+        # All done
         return
     # ----------------------------------------------------------------------
 
@@ -67,10 +113,12 @@ class Mogi(Pressure):
         Returns:
             * deltavolume             : Volume change
         '''
-        #Check if deltavolume already defined
-        if self.deltavolume is None:
-            self.volume = self.computeVolume()
-            self.deltavolume = (3./4.)*self.volume*self.deltapressure/self.mu
+        #Check if deltapressure already defined
+        if self.deltapressure is None:
+                raise ValueError("Need to set self.deltapressure with self.setPressure.")
+        self.volume = self.computeVolume()
+        self.deltavolume = (3./4.)*self.volume*self.deltapressure/self.mu
+
 
         # All done
         return self.deltavolume
@@ -92,10 +140,12 @@ class Mogi(Pressure):
         Returns:
             * deltapressure             : Pressure change
         '''
-        #Check if deltapressure already defined
-        if self.deltapressure is None:
-            self.volume = self.computeVolume()
-            self.deltapressure = (4./3.)*self.mu*self.deltavolume/self.volume
+        #Check if deltavolume already defined
+        if self.deltavolume is None:
+                raise ValueError("Need to set self.deltavolume with self.setVolume.")
+
+        self.volume = self.computeVolume()
+        self.deltapressure = (4./3.)*self.mu*self.deltavolume/self.volume
 
         # All done
         return self.deltapressure
@@ -105,14 +155,13 @@ class Mogi(Pressure):
     # Find volume of ellipsoidal cavity
     def computeVolume(self):
         '''
-        Computes volume (m3) of ellipsoidal cavity, given the semimajor axis.
+        Computes volume (m3) of spheroidal cavity, given the semimajor axis.
 
         Returns:
-            None
+            * volume             : Volume of cavity
         '''
-        if self.volume is None:
-            a = self.ellipshape['a']
-            self.volume = (4./3.)*np.pi*a**3             #Volume of sphere = 4/3*pi*a^3
+        a = self.ellipshape['ax']
+        self.volume = (4./3.)*np.pi*a**3             #Volume of sphere = 4/3*pi*a^3
 
         # All done
         return self.volume
@@ -128,30 +177,37 @@ class Mogi(Pressure):
 
     # ----------------------------------------------------------------------
 
-    def pressure2dis(self, data, delta="pressure"):
+    def pressure2dis(self, data, delta="pressure", volume=None):
         '''
-        Computes the surface displacement at the data location using mogi. ~~~ This is where the good stuff happens ~~
+        Computes the surface displacement at the data location using mogi formulations. ~~~ This is where the good stuff happens ~~
 
         Args:
-            * data          : data object from gps or insar.
-            * delta      : if pressure, unit pressure is assumed. If volume, ... is this necessary?
+            * data          : Data object from gps or insar.
+            * delta         : Unit pressure is assumed.
+
+        Returns:
+            * u             : x, y, and z displacements
         '''
+
+        # Set the volume change
+        if volume is None:
+            self.volume2pressure()
+            DP = self.deltapressure
+        else:
+            # Set the pressure value
+            if delta is "pressure":
+                DP = self.mu                             #Dimensionless unit pressure
+            elif delta is "volume":
+                print("Converting to pressure for Mogi Green's function calculations")
+                DP = self.mu
+
         # Set the shear modulus and poisson's ratio
         if self.mu is None:
             self.mu        = 30e9
         if self.nu is None:
             self.nu        = 0.25
 
-        # Set the pressure value
-        if delta is "pressure":
-            print("testing")
-            self.deltapressure = self.mu #so that DP/self.mu = 1.0
-            DP = self.deltapressure                              #Dimensionless unit pressure
-        elif delta is "volume":
-            self.deltapressure = self.volume2pressure()
-            DP = self.deltapressure                                       ##correct ???
-
-        # Get parameters ???
+        # Get parameters
         if self.ellipshape is None:
             raise Exception("Need to define shape of spheroid (run self.createShape)")
         #define dictionary entries as variables
@@ -160,188 +216,48 @@ class Mogi(Pressure):
         # Get data position -- in m
         x = data.x*1000
         y = data.y*1000
-        z = np.zeros(x.shape)   # Data are the surface
-        # Run it for yang pressure source
-        # ??? Do we really need to divide by shear modulus to get dimensionless pressure...
+        z = np.zeros(x.shape)   # Data are at the surface
+
         if (DP!=0.0):
-            ####x0, y0 need to be in utm and meters
-            Ux,Uy,Uz = mogifull.displacement(x, y, z, ellipse.x0m*1000, ellipse.y0m*1000, ellipse.z0, ellipse.a, DP/self.mu, self.nu)
+            # x0, y0 need to be in utm and meters
+            Ux,Uy,Uz = mogifull.displacement(x, y, z, ellipse.x0m*1000, ellipse.y0m*1000, ellipse.z0, ellipse.ax, DP/self.mu, self.nu)
         else:
             dp_dis = np.zeros((len(x), 3))
         # All done
         # concatenate into one array
         u = np.vstack([Ux, Uy, Uz]).T
 
-        return u #, x, y
+        return u
 
     # ----------------------------------------------------------------------
-    # How to define the shape of the ellipse??? This is a placeholder until non-linear inversion implemented.
+    # Define the shape of the spheroid
     #
     # ----------------------------------------------------------------------
 
-    def createShape(self, x0, y0, z0, a,latlon=True):
-        #Should this be done in pressure class?
-        if self.mu is None:
-            self.mu        = 30e9
-        if self.nu is None:
-            self.nu        = 0.25
-        if self.ellipshape is None:
-            if latlon is True:
-                self.lon, self.lat = x0, y0
-                self.pressure2xy()
-                xf, yf = self.xf, self.yf
-            else:
-                self.xf, self.yf = x0, y0
-        self.ellipshape = {'x0': x0,'y0': y0,'z0': z0,'a': a,'A': 1.0,'strike': 0.0,'dip': 0.0}                   #Or as array?
+    def createShape(self, x, y, z0, a,latlon=True):
+        '''
+        Defines the shape of the mogi pressure source.
+
+        Args:
+            * x, y         : Center of pressure source in lat/lon or utm
+            * z0           : Depth
+            * a            : Radius (m)
+
+        Returns:
+            None
+        '''
+        if latlon is True:
+            self.lon, self.lat = x, y
+            lon1, lat1 = x, y
+            self.pressure2xy()
+            x1, y1 = self.xf, self.yf
+        else:
+            self.xf, self.yf = x, y
+            x1, y1 = x, y
+            self.pressure2ll()
+            lon1, lat1 = self.lon, self.lat
+        self.ellipshape = {'x0': lon1,'x0m': x1,'y0': lat1, 'y0m': y1, 'z0': z0,'ax': a, 'ay': a, 'az': a, 'strike': 0.0, 'dip': 0.0, 'plunge': 0.0}
         #if radius is not much smaller than depth, mogi equations don't hold
         if float(a)/float(z0)> 0.1 :
             warnings.warn('Results may be inaccurate if depth is not much greater than radius',Warning)
-        return x0, y0, z0, a
-
-    # ----------------------------------------------------------------------
-
-    # ----------------------------------------------------------------------
-
-    def writePressure2File(self, filename, add_pressure=None, scale=1.0,
-                              stdh5=None, decim=1):
-            '''
-            Writes the pressure parameters in a file. Trying to make this as generic as possible.
-            Args:
-                * filename      : Name of the file.
-                * add_pressure  : Put the pressure as a value for the color. Can be None, pressure or volume.
-                * scale         : Multiply the pressure change by a factor.
-            '''
-            # Write something
-            if self.verbose:
-                print('Writing pressure source to file {}'.format(filename))
-
-            # Open the file
-            fout = open(filename, 'w')
-
-            # If an h5 file is specified, open it
-            if stdh5 is not None:
-                import h5py
-                h5fid = h5py.File(stdh5, 'r')
-                samples = h5fid['samples'].value[::decim,:]
-
-            # Select the string for the color
-            string = '  '
-            if add_pressure is not None:
-                if stdh5 is not None:
-                    slp = np.std(samples[:])
-                elif add_pressure is "pressure":
-                    slp = self.deltapressure*scale
-                elif add_pressure is "volume":
-                    slp = self.deltavolume*scale
-                # Make string
-                string = '-Z{}'.format(slp)
-
-                # Put the parameter number in the file as well if it exists --what is this???
-            parameter = ' '
-            if hasattr(self,'index_parameter'):
-                i = np.int(self.index_parameter[0])
-                j = np.int(self.index_parameter[1])
-                k = np.int(self.index_parameter[2])
-                parameter = '# {} {} {} '.format(i,j,k)
-
-            # Put the slip value
-            slipstring = ' # {} '.format(slp)
-
-            # Write the string to file
-            fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
-
-            # Set parameters that were created --  including strike and dip just for plotting?
-            fout.write(' # x0 y0 -z0 \n {} {} {} \n # a b c \n {} {} {} \n # strike dip \n -999999 -999999 -999999 \n'.format(self.ellipshape['x0'], self.ellipshape['y0'],float(self.ellipshape['z0']),float(self.ellipshape['a']),float(self.ellipshape['a']),float(self.ellipshape['a'])))
-
-            # Close th file
-            fout.close()
-
-            # Close h5 file if it is open
-            if stdh5 is not None:
-                h5fid.close()
-
-            # All done
-            return
-    # ----------------------------------------------------------------------
-
-    # ----------------------------------------------------------------------
-
-    def readPressureFromFile(self, filename, Cm=None, inputCoordinates='lonlat', donotreadslip=False):
-        '''
-        Read the pressure source parameters from a GMT formatted file.
-        Args:
-            * filename  : Name of the file.
-
-        '''
-
-        # create the lists
-        self.ellipshape = []
-        self.Cm   = []
-        if not donotreadslip:
-            Slip = []
-
-        # open the files
-        fin = open(filename, 'r')
-
-        # Assign posterior covariances
-        if Cm!=None: # Slip
-            self.Cm = np.array(Cm)
-
-        # read all the lines
-        A = fin.readlines()
-
-        # depth
-        D = 0.0
-
-        # Loop over the file
-        i = 0
-        # Assert it works
-        assert A[0].split()[0] is '>', 'Reformat your file...'
-        # Get the slip value
-        if not donotreadslip:
-            if len(A[0].split())>3:
-                slip = np.array([np.float(A[0].split()[3])])
-                print("read from file, pressure is ", slip)
-            else:
-                slip = np.array([0.0])
-            Slip.append(slip)
-        # get the values
-        if inputCoordinates in ('lonlat'):
-            lon1, lat1, z1 = A[2].split()
-            a, b, c = A[4].split()
-            tmp1, tmp2, tmp3 = A[6].split()
-            # Pass as floating point
-            lon1 = float(lon1); lat1 = float(lat1); z1 = float(z1); a = float(a)
-            # translate to utm
-            x1, y1 = self.ll2xy(lon1, lat1)
-        elif inputCoordinates in ('xyz'):
-            x1, y1, z1 = A[2].split()
-            a, b, c = A[4].split()
-            tmp1, tmp2, tmp3 = A[6].split()
-            # Pass as floating point
-            x1 = float(x1); y1 = float(y1); z1 = float(z1); a = float(a)
-            # translate to lat and lon
-            lon1, lat1 = self.xy2ll(x1, y1)
-        del tmp1, tmp2, tmp3
-        # Should not necessary, but including just in case someone wants to manually change the parameter file
-        if not float(a) == float(b) == float(c):
-            raise Exception('radii are not equal, therefore not spherical point source')
-        #if radius is not much smaller than depth, mogi equations don't hold
-        if float(a)/float(z1)> 0.1 :
-            warnings.warn('Results may be inaccurate if depth is not much greater than radius',Warning)
-        # Set parameters --  including strike and dip just for plotting?
-        self.ellipshape = {'x0': lon1, 'x0m': x1, 'y0': lat1,'y0m': y1,'z0': z1,'a': a,'A': 1.0,'strike': 0.0,'dip': 0.0}
-        #Or as array?
-        #Save coordinates in object
-        self.lon = lon1
-        self.lat = lat1
-        self.xf = x1
-        self.yf = y1
-        # Close the file
-        fin.close()
-
-        # depth
-        self.depth = float(z1)
-
-        # All done
         return

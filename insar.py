@@ -2,8 +2,7 @@
 A class that deals with InSAR data, after decimation using VarRes.
 
 Written by R. Jolivet, B. Riel and Z. Duputel, April 2013.
-Edited by T. Shreve, May 2019. Commented out line 319 due to issues coordinates and plotting in the SW hemisphere.
-Edited buildsynth to include pressure sources.
+Edited by T. Shreve, June 2019. Edited buildsynth to include pressure sources.
 '''
 
 # Externals
@@ -595,7 +594,7 @@ class insar(SourceInv):
             * azimuth   : Azimuth angle of the LOS
 
         Kwargs:
-            * origin    : What are these numbers 
+            * origin    : What are these numbers
                 - onefloat      : One number
                 - grd           : grd files
                 - binary        : Binary files
@@ -941,7 +940,7 @@ class insar(SourceInv):
             * diagonalVar       : Substitute the diagonal by the standard deviation of the measurement squared
             * normalizebystd    : Weird option to normalize the covariance matrix by the std deviation
 
-        Returns:    
+        Returns:
             * None
         '''
 
@@ -1208,7 +1207,20 @@ class insar(SourceInv):
                 GpLOS = G['pressure']
             except:
                 GpLOS = None
-            fault.setGFs(self, deltapressure=[GpLOS], vertical=True)
+            try:
+                GdvxLOS = G['pressureDVx']
+            except:
+                GdvxLOS = None
+            try:
+                GdvyLOS = G['pressureDVy']
+            except:
+                GdvyLOS = None
+            try:
+                GdvzLOS = G['pressureDVz']
+            except:
+                GdvzLOS = None
+
+            fault.setGFs(self, deltapressure=[GpLOS], GDVx=[GdvxLOS] , GDVy=[GdvyLOS], GDVz =[GdvzLOS], vertical=True)
 
         # All done
         return
@@ -1533,7 +1545,7 @@ class insar(SourceInv):
             * custom            : if True, uses the fault.custom and fault.G[data.name]['custom'] to correct
             * computeNormFact   : if False, uses TransformNormalizingFactor set with self.setTransformNormalizingFactor
 
-        Returns:    
+        Returns:
             * None
         '''
 
@@ -1587,14 +1599,41 @@ class insar(SourceInv):
                         self.removePoly(fault, computeNormFact=computeNormFact)
                     else:
                         self.synth += self.orbit
+
             #Loop on each pressure source
-            elif fault.type is "Pressure":          ##Check this is correct before implementing for GPS, opti, etc.
+            elif fault.type is "Pressure":
+
                 # Get the good part of G
                 G = fault.G[self.name]
-                Gp = G['pressure']
-                Sp = fault.deltapressure[0]         ##Is this correct???
-                losdp_synth = np.dot(Gp,Sp)
-                self.synth += losdp_synth
+                if fault.source in {"Mogi", "Yang"}:
+                    Gp = G['pressure']
+                    Sp = fault.deltapressure/fault.mu
+                    print("Scaling by pressure", fault.deltapressure )
+                    losdp_synth = Gp*Sp
+                    self.synth += losdp_synth
+
+                elif fault.source is ("pCDM"):
+                    Gdx = G['pressureDVx']
+                    Sxp = fault.DVx/fault.scale
+                    lossx_synth = np.dot(Gdx,Sxp)
+                    self.synth += lossx_synth
+                    Gdy = G['pressureDVy']
+                    Syp = fault.DVy/fault.scale
+                    lossy_synth = np.dot(Gdy, Syp)
+                    self.synth += lossy_synth
+                    Gdz = G['pressureDVz']
+                    Szp = fault.DVz/fault.scale
+                    lossz_synth = np.dot(Gdz, Szp)
+                    self.synth += lossz_synth
+
+                elif fault.source is ("CDM"):
+                    Gp = G['pressure']
+                    Sp = fault.deltaopening
+                    print("Scaling by opening")
+                    losdp_synth = Gp*Sp
+                    self.synth += losdp_synth
+
+
                 if custom:
                     Gc = G['custom']
                     Sc = fault.custom[self.name]
@@ -2032,7 +2071,7 @@ class insar(SourceInv):
     def curve2prof(self, xl, yl, width, widthDir):
         '''
         Routine returning the profile along a curve. !!!! Not tested in a long time !!!!
-        
+
         Args:
             * xl                : List of the x coordinates of the line.
             * yl                : List of the y coordinates of the line.

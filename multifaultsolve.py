@@ -6,7 +6,7 @@ This class allows then to:
 
 Written by R. Jolivet, April 2013.
 
-Updated by T. Shreve, May 2019, to include a pressure source.
+Updated by T. Shreve, May 2019, to include pressure sources in describeParams and distributem.
 
 '''
 
@@ -92,7 +92,6 @@ class multifaultsolve(object):
                 self.type = "Pressure"
             elif fault.type in ('notafault', 'transformation'):
                 print('Not a fault detected')
-        #Store an array of volume of pressure source?
 
         # All done
         return
@@ -142,7 +141,7 @@ class multifaultsolve(object):
         self.Nd = Nd
         self.Np = Np
 
-        # CHeck 
+        # CHeck
         if self.verbose:
             print('Number of data: {}'.format(self.Nd))
             print('Number of parameters: {}'.format(self.Np))
@@ -284,10 +283,14 @@ class multifaultsolve(object):
                     print('{:30s}||{:12s}||{:12s}'.format('Fault Name', 'Pressure', 'Extra Parms'))
                 # Initialize the values
                 dp = 'None'
-
-                ne += 1
-                dp = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
-                ns += 1 #fault.slip.shape[0]
+                if fault.source is "pCDM":
+                    ne += 3
+                    dp = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
+                    ns += 3 #fault.slip.shape[0]
+                else:
+                    ne += 1
+                    dp = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
+                    ns += 1 #fault.slip.shape[0]
 
 
                 # How many slip parameters
@@ -415,11 +418,13 @@ class multifaultsolve(object):
             se = self.fault_indexes[fault.name][1]
             fault.mpost = self.mpost[st:se]
 
-            # Types of faults
-            if fault.patchType=='transformation':
-                fault.distributem()
+
 
             if fault.type is "Fault":
+
+                # Types of faults
+                if fault.patchType=='transformation':
+                    fault.distributem()
 
                 # Affect the indexes
                 self.affectIndexParameters(fault)
@@ -456,11 +461,34 @@ class multifaultsolve(object):
 
             elif fault.type is "Pressure":
                 st = 0
-                se = st + 1
-                fault.deltapressure = fault.mpost[st:se]
+
+                if fault.source in {"Mogi", "Yang"}:
+                    se = st + 1
+                    print(np.asscalar(fault.mpost[st:se]*fault.mu))
+                    fault.deltapressure = np.asscalar(fault.mpost[st:se]*fault.mu)
+                    st += 1
+                elif fault.source is "pCDM":
+                    se = st + 1
+                    fault.DVx = np.asscalar(fault.mpost[st:se]*fault.scale)
+                    st += 1
+                    se = st + 1
+                    fault.DVy = np.asscalar(fault.mpost[st:se]*fault.scale)
+                    st += 1
+                    se = st + 1
+                    fault.DVz = np.asscalar(fault.mpost[st:se]*fault.scale)
+                    st += 1
+                    print("Total potency scaled by", fault.scale)
+
+                    if fault.DVtot is None:
+                        fault.computeTotalpotency()
+                elif fault.source is "CDM":
+                    se = st + 1
+                    print(np.asscalar(fault.mpost[st:se]*fault.mu))
+                    fault.deltaopening = np.asscalar(fault.mpost[st:se])
+                    st += 1
 
             # Get the polynomial/orbital/helmert values if they exist
-            if fault.patchType in ('Fault', 'Pressure'):
+            if fault.type in ('Fault', 'Pressure'):
                 fault.polysol = {}
                 fault.polysolindex = {}
                 for dset in fault.datanames:
@@ -734,7 +762,7 @@ class multifaultsolve(object):
             computeMwDiff(self.mpost, Mw_thresh, self.patchAreas*1.e6, mu)
 
         # Compute Cmpost
-        self.Cmpost = np.linalg.inv(G.T.dot(iCd).dot(G) + iCm) 
+        self.Cmpost = np.linalg.inv(G.T.dot(iCd).dot(G) + iCm)
 
         # All done
         return
@@ -758,7 +786,7 @@ class multifaultsolve(object):
             * tolerance       : Solver's tolerance
             * maxfun          : maximum number of funcrtion evaluation
             * checkIter       : Show Stuff
-            * checkNorm       : prints the norm 
+            * checkNorm       : prints the norm
 
         Returns:
             * None
@@ -1054,7 +1082,7 @@ class multifaultsolve(object):
         Simple Conditioning of Cd.
 
         Args:
-            * singularValue     : minimum of the kept singular Values 
+            * singularValue     : minimum of the kept singular Values
 
         Returns:
             * None
