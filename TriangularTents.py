@@ -1339,7 +1339,7 @@ class TriangularTents(TriangularPatches):
 
     # ----------------------------------------------------------------------
     def plot(self, figure=134, slip='total', equiv=False, 
-             show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
+             show=True, axesscaling=True, norm=None, linewidth=1.0, plot_on_2d=True, 
              method='scatter', npoints=10, colorbar=True, cmap='jet',
              drawCoastlines=True, expand=0.2, vertIndex=False):
         '''
@@ -1351,7 +1351,7 @@ class TriangularTents(TriangularPatches):
             * equiv         : For consistentcy issues
             * show          : show me
             * axesscaling   : Scale the axes
-            * Norm          : colorbar limits
+            * norm          : colorbar limits
             * linewidth     : Line width in points
             * plot_on_2d    : Plot on a map as well?
             * method        : 'scatter' or 'surface' (scatter is better)
@@ -1382,7 +1382,7 @@ class TriangularTents(TriangularPatches):
             fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
 
         # Draw the fault
-        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=colorbar, 
+        x, y, z, slip = fig.faultTents(self, slip=slip, norm=norm, colorbar=colorbar, 
                 plot_on_2d=plot_on_2d, npoints=npoints, cmap=cmap,
                 method=method, vertIndex=vertIndex)
 

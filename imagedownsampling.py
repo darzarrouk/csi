@@ -391,7 +391,7 @@ class imagedownsampling(object):
         # All done
         return
 
-    def downsample(self, plot=False, decimorig=10,Norm=None):
+    def downsample(self, plot=False, decimorig=10,norm=None):
         '''
         From the saved list of blocks, computes the downsampled data set and the informations that come along.
 
@@ -504,7 +504,7 @@ class imagedownsampling(object):
 
         # plot y/n
         if plot:
-            self.plotDownsampled(decimorig=decimorig,Norm=Norm)
+            self.plotDownsampled(decimorig=decimorig,norm=norm)
 
         # All done
         return
@@ -713,7 +713,7 @@ class imagedownsampling(object):
 
 
 
-    def distanceBased(self, chardist=15, expodist=1, plot=False, decimorig=10,Norm=None):
+    def distanceBased(self, chardist=15, expodist=1, plot=False, decimorig=10,norm=None):
         '''
         Downsamples the dataset depending on the distance from the fault R.Grandin, April 2015
 
@@ -774,7 +774,7 @@ class imagedownsampling(object):
             # Set the blocks
             self.setBlocks(newblocks)
             # Do the downsampling
-            self.downsample(plot=plot, decimorig=decimorig,Norm=Norm)
+            self.downsample(plot=plot, decimorig=decimorig,norm=norm)
 
         # All done
         return
@@ -1143,7 +1143,7 @@ class imagedownsampling(object):
         # all done
         return
 
-    def plotDownsampled(self, figure=145, ref='utm', Norm=None, data2plot='north', decimorig=1, savefig=None, show=True):
+    def plotDownsampled(self, figure=145, ref='utm', norm=None, data2plot='north', decimorig=1, savefig=None, show=True):
         '''
         Plots the downsampling as it is at this step.
 
