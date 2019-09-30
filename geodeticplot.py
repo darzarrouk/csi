@@ -717,7 +717,7 @@ class geodeticplot(object):
 
     def faultTents(self, fault,
                    slip='strikeslip', norm=None, colorbar=True,
-                   method='surface', cmap='jet', plot_on_2d=False,
+                   method='scatter', cmap='jet', plot_on_2d=False,
                    revmap=False, factor=1.0, npoints=10,
                    xystrides=[100, 100], zorder=0,
                    vertIndex=False):
