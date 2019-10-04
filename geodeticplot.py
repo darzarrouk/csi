@@ -363,7 +363,7 @@ class geodeticplot(object):
         self.carte.add_feature(self.coastlines)
         if drawOnFault:
             segments = []
-            for geom in [self.coastlines.geometries()]:
+            for geom in self.coastlines.geometries():
                 for poly in geom:
                     x = np.array(poly.exterior.xy[0])
                     y = np.array(poly.exterior.xy[1])
@@ -383,7 +383,11 @@ class geodeticplot(object):
             self.carte.add_feature(self.countries)
             if drawOnFault:
                 segments = []
-                for geom in [self.countries.geometries()]:
+                if type(self.countries.geometries()) is not list:
+                    geoms = [self.countries.geometries()]
+                else:
+                    geoms = self.countries.geometries()
+                for geom in geoms:
                     for poly in geom:
                         x = np.array(poly.exterior.xy[0])
                         y = np.array(poly.exterior.xy[1])

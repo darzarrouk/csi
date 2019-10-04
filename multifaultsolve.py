@@ -418,13 +418,14 @@ class multifaultsolve(object):
             se = self.fault_indexes[fault.name][1]
             fault.mpost = self.mpost[st:se]
 
+            # Transformation object
+            if fault.type=='transformation':
+                
+                # Distribute simply
+                fault.distributem()
 
-
+            # Fault object
             if fault.type is "Fault":
-
-                # Types of faults
-                if fault.patchType=='transformation':
-                    fault.distributem()
 
                 # Affect the indexes
                 self.affectIndexParameters(fault)
@@ -459,9 +460,10 @@ class multifaultsolve(object):
                             fault.custom[dset] = fault.mpost[st:se]
                             st += nc
 
+            # Pressure object
             elif fault.type is "Pressure":
-                st = 0
 
+                st = 0
                 if fault.source in {"Mogi", "Yang"}:
                     se = st + 1
                     print(np.asscalar(fault.mpost[st:se]*fault.mu))
