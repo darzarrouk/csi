@@ -478,55 +478,6 @@ class transformation(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    # Build synthetics from self.m
-    def buildPredictions(self, datas, verbose=True):
-        '''
-        Given a list of data, predicts the surface displacements from what
-        is stored in the self.m dictionary
-
-        Args:
-            * datas         : list of data instances
-
-        Kwargs:
-            * verbose       : Talk to me
-        '''
-
-        # Check 
-        if type(datas) is not list:
-            datas = [datas]
-        
-        # Iterate over the data
-        for data in datas:
-            
-            # Get the design matrix and model
-            T = []; m = []
-            for trans in self.G[data.name]:
-                if trans is not None:
-                    T.append(self.G[data.name][trans])
-                    m.append(self.m[data.name][trans])
-        
-            # Predict
-            T = np.hstack(T)
-            m = np.hstack(m)
-            prediction = np.dot(T,m)
-
-            # Store
-            if data.dtype in ('insar', 'tsunami'):
-                data.transformation = prediction
-            elif data.dtype in ('gps', 'multigps'):
-                data.transformation = np.zeros((data.vel_enu.shape[0], 3))
-                data.transformation[:,0] = prediction[:data.vel_enu.shape[0]]
-                data.transformation[:,1] = \
-                        prediction[data.vel_enu.shape[0]:data.vel_enu.shape[0]*2]
-                if len(prediction)==3*data.vel_enu.shape[0]:
-                    data.transformation[:,2] = \
-                            prediction[data.vel_enu.shape[0]*2:data.vel_enu.shape[0]*3]
-
-        # All done
-        return
-    # ----------------------------------------------------------------------
-
-    # ----------------------------------------------------------------------
     # Remove synthetics
     def removePredictions(self, datas, verbose=True):
         '''
@@ -544,17 +495,9 @@ class transformation(SourceInv):
         if type(datas) is not list:
             datas = [datas]
 
-        # Predict
-        self.buildPredictions(datas, verbose=verbose)
-
         # remove
         for data in datas:
-            if data.dtype=='insar':
-                data.vel -= data.transformation
-            elif data.dtype=='gps':
-                data.vel_enu -= data.transformation
-            elif data.dtype=='tsunami':
-                data.d -= data.transformation
+            data.removeTransformation(trans)
             
         # All done
         return

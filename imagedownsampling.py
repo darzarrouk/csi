@@ -1192,7 +1192,7 @@ class imagedownsampling(object):
                 data = original.east
 
         # Vmin, Vmax
-        if Norm is not None:
+        if norm is not None:
             vmin, vmax = Norm
         else:
             vmin = data.min()
