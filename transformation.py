@@ -497,7 +497,7 @@ class transformation(SourceInv):
 
         # remove
         for data in datas:
-            data.removeTransformation(trans)
+            data.removeTransformation(self)
             
         # All done
         return
