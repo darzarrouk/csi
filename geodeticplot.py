@@ -351,8 +351,18 @@ class geodeticplot(object):
         landcolor = None
         if drawLand: landcolor = 'lightgrey'
 
+        # Resolution 
+        if resolution == 'auto' or resolution == 'intermediate':
+            resolution = '50m'
+        elif resolution == 'coarse' or resolution == 'low':
+            resolution = '110m'
+        elif resolution == 'fine':            
+            resolution = '10m'
+        else:
+            assert False, 'Unknown resolution : {}'.format(resolution)
+
         # coastlines in cartopy are multipolygon objects. Polygon has exterior, which has xy
-        self.coastlines = cfeature.GSHHSFeature(scale=resolution, edgecolor=color, facecolor=landcolor, 
+        self.coastlines = cfeature.GSHHSFeature(scale='auto', edgecolor=color, facecolor=landcolor, 
                                                 linewidth=linewidth, linestyle=linestyle, zorder=zorder, alpha=0.6)
 
         ## MapScale
@@ -361,6 +371,7 @@ class geodeticplot(object):
 
         # Draw and get the line object
         self.carte.add_feature(self.coastlines)
+
         ##### NOT WORKING YET ####
         #if drawOnFault:
         #    segments = []
@@ -384,9 +395,10 @@ class geodeticplot(object):
         # Draw countries
         if drawCountries:
             self.countries = cfeature.NaturalEarthFeature(scale=resolution, category='cultural', name='admin_0_countries', 
-                                                          linewidth=linewidth/2., edgecolor='k', facecolor='lightgray', 
-                                                          alpha=0.6, zorder=zorder)
+                                                   linewidth=linewidth/2., edgecolor='k', facecolor='lightgray', 
+                                                   alpha=0.6, zorder=zorder)
             self.carte.add_feature(self.countries)
+
             ##### NOT WORKING YET ####
             #if drawOnFault:
             #    segments = []
