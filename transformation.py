@@ -127,14 +127,19 @@ class transformation(SourceInv):
             # Save
             self.transformations[data.name] = transformation
 
-            # A case that will need to change in the future
-            if data.dtype in ('gps') and transformation=='strain':
-                T = data.getTransformEstimator('strainonly', computeNormFact=False)
-            else:
-                T = data.getTransformEstimator(transformation, computeNormFact=False)
-            # One case is tricky so we build strings
-            trans = '{}'.format(transformation)
-            self.G[data.name][trans] = T
+            # Check iterations
+            if type(transformation) is not list:
+                transformation = [transformation]
+
+            for trans in transformation:
+                if data.dtype in ('gps','multigps') and trans=='strain':
+                    T = data.getTransformEstimator('strainonly', computeNormFact=False)
+                else:
+                    T = data.getTransformEstimator(trans, computeNormFact=False)
+                # One case is tricky so we build strings
+                if type(trans) is list:
+                    trans = ''.join(itertools.chain.from_iterable(trans))
+                self.G[data.name][trans] = T
 
             # Set data in the GFs
             if data.dtype == 'insar':
