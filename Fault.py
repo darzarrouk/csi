@@ -1314,6 +1314,28 @@ class Fault(SourceInv):
             * None
         '''
 
+        # Check name conventions
+        if strikeslip is None:
+            if os.path.isfile('{}_{}_SS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_'))):
+                strikeslip = '{}_{}_SS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_'))
+        if dipslip is None:
+            if os.path.isfile('{}_{}_DS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_'))):
+                dipslip = '{}_{}_DS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_'))
+        if tensile is None:
+            if os.path.isfile('{}_{}_TS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_'))):
+                tensile = '{}_{}_TS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_'))
+        if coupling is None:
+            if os.path.isfile('{}_{}_Coupling.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_'))):
+                coupling = '{}_{}_Coupling.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_'))
+
         if self.verbose:
             print('---------------------------------')
             print('---------------------------------')

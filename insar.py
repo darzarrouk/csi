@@ -2752,6 +2752,8 @@ class insar(SourceInv):
             z = self.orbit
         elif data == 'res':
             z = self.vel - self.synth
+        elif data == 'err':
+            z = self.err
 
         if not useGMT:
 
