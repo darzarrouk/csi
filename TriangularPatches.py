@@ -759,9 +759,15 @@ class TriangularPatches(Fault):
 
             # Write the 3 patch corners (the order is to be GMT friendly)
             p = self.patchll[pIndex]
-            pp = p[0]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-            pp = p[1]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
-            pp = p[2]; fout.write('{} {} {} \n'.format(pp[0], pp[1], pp[2]))
+            pp = p[0]; fout.write('{} {} {} \n'.format(np.round(pp[0], decimals=4), 
+                                                       np.round(pp[1], decimals=4), 
+                                                       np.round(pp[2], decimals=4)))
+            pp = p[1]; fout.write('{} {} {} \n'.format(np.round(pp[0], decimals=4), 
+                                                       np.round(pp[1], decimals=4), 
+                                                       np.round(pp[2], decimals=4)))
+            pp = p[2]; fout.write('{} {} {} \n'.format(np.round(pp[0], decimals=4), 
+                                                       np.round(pp[1], decimals=4), 
+                                                       np.round(pp[2], decimals=4)))
 
         # Close the file
         fout.close()
