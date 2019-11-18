@@ -980,7 +980,7 @@ class geodeticplot(object):
         # Plot
         lon = stress.lon
         lat = stress.lat
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         sc = self.carte.scatter(xloc, yloc, s=20, c=val, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
 
         # colorbar
@@ -1023,7 +1023,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = gps.lon
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Make the dictionary of the things to plot
@@ -1118,7 +1118,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = gps.lon
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Initiate
@@ -1191,7 +1191,7 @@ class geodeticplot(object):
         # Get the data
         d = gps.vel_los
         lon = gps.lon;
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Prepare the color limits
@@ -1255,7 +1255,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = earthquakes.lon
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = earthquakes.lat
 
         # plot the earthquakes on the map if ask
@@ -1318,7 +1318,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = fault.sim.lon
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = fault.sim.lat
 
         # Plot the insar
@@ -1519,7 +1519,7 @@ class geodeticplot(object):
 
         elif plotType is 'scatter':
             lon = corr.lon
-            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+            #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             lat = corr.lat
             self.carte.scatter(lon[::decim], lat[::decim], s=10., c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=zorder)
 
