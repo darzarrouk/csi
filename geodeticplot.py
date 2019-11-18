@@ -867,13 +867,13 @@ class geodeticplot(object):
                     cols[i,j] = scalarMap.to_rgba(slip[i,j])
 
             lon, lat = fault.xy2ll(x, y)
-            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+            #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             self.faille.plot_surface(lon, lat, -1.0*z, facecolors=cols, rstride=1, cstride=1, antialiased=True, linewidth=0)
 
             # On 2D?
             if plot_on_2d:
                 lon, lat = fault.xy2ll(X, Y)
-                lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+                #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
                 self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder)
 
             # Color Bar
@@ -884,7 +884,7 @@ class geodeticplot(object):
         elif method is 'scatter':
             # Do the scatter ploto
             lon, lat = fault.xy2ll(X, Y)
-            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+            #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             cb = self.faille.scatter3D(lon, lat, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax)
 
             # On 2D?
