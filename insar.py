@@ -2593,13 +2593,15 @@ class insar(SourceInv):
         dataRMS = np.sqrt( 1./N * sum(self.vel**2) )
 
         # Synthetics
+        values = copy.deepcopy(self.vel)
         if self.synth is not None:
-            synthRMS = np.sqrt( 1./N *sum( (self.vel - self.synth)**2 ) )
-            return dataRMS, synthRMS
-        else:
-            return dataRMS, 0.
+            values -= self.synth
+        if self.orbit is not None:
+            values -= self.orbit
+        synthRMS = np.sqrt( 1./N *sum( (values)**2 ) )
 
         # All done
+        return dataRMS, synthRMS
 
     def getVariance(self):
         '''
@@ -2617,14 +2619,15 @@ class insar(SourceInv):
         dataVariance = ( 1./N * sum((self.vel-dmean)**2) )
 
         # Synthetics
+        values = copy.deepcopy(self.vel)
         if self.synth is not None:
-            rmean = (self.vel - self.synth).mean()
-            synthVariance = ( 1./N *sum( (self.vel - self.synth - rmean)**2 ) )
-            return dataVariance, synthVariance
-        else:
-            return dataVariance, 0.
+            values -= self.synth
+        if self.orbit is not None:
+            values -= self.orbit
+        synthVariance = ( 1./N *sum( (values - values.mean())**2 ) )
 
         # All done
+        return dataVariance, synthVariance
 
     def getMisfit(self):
         '''

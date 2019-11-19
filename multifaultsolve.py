@@ -914,8 +914,9 @@ class multifaultsolve(object):
                            constraints=constraints, method=method, bounds=bounds,
                            options=options, tol=tolerance)
             m = res.x
-        #final data + prior misfits is
-        self.cost = res.fun
+            #final data + prior misfits is
+            self.cost = res.fun
+
         # Store result
         self.mpost = m
 
