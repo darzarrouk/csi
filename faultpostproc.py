@@ -174,6 +174,7 @@ class faultpostproc(SourceInv):
         '''
 
         if self.fault.patchType == 'triangle':
+
             normal = self.fault.getpatchgeometry(p, retNormal=True)[-1]
             return normal
 

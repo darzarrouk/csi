@@ -763,6 +763,20 @@ class multifaultsolve(object):
         if self.type is "Fault":
             computeMwDiff(self.mpost, Mw_thresh, self.patchAreas*1.e6, mu)
 
+        # All done
+        return
+
+    def computeCmPostGeneral(self):
+        """
+        Computes the general posterior covariance matrix. See Tarantola 2005.
+        Result is stored in self.Cmpost
+        """
+
+        # Get things
+        G = self.G
+        iCm = np.linalg.inv(self.Cm)
+        iCd = np.linalg.inv(self.Cd)
+
         # Compute Cmpost
         self.Cmpost = np.linalg.inv(G.T.dot(iCd).dot(G) + iCm)
 

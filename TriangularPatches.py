@@ -1496,6 +1496,7 @@ class TriangularPatches(Fault):
         # Get the patch normal
         normal = np.cross(p2 - p1, p3 - p1)
         normal /= np.linalg.norm(normal)
+
         # Enforce clockwise circulation
         if np.round(normal[2],decimals=1) < 0:
             normal *= -1.0
@@ -1504,6 +1505,7 @@ class TriangularPatches(Fault):
         # If fault is vertical, force normal to be horizontal
         if np.round(normal[2],decimals=1) == 0.: 
             normal[2] = 0.
+
         # Force strike between 0 and 90 or between 270 and 360
             if normal[1] > 0:
                 normal *= -1
