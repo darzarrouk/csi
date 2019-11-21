@@ -13,6 +13,9 @@ July 2019: R Jolivet replaced basemap by cartopy.
 import numpy as np
 import scipy.interpolate as sciint
 
+# Geography
+import pyproj as pp
+
 # Os
 import os, copy, sys
 
@@ -58,7 +61,7 @@ class geodeticplot(object):
 
     def __init__(self,lonmin, latmin, lonmax, latmax,
                  figure=None, pbaspect=None,resolution='auto',
-                 figsize=[None,None]):
+                 scalebar=None, figsize=[None,None]):
         #projection='cyl',
 
         # Save
@@ -86,6 +89,28 @@ class geodeticplot(object):
         fig2  = plt.figure(nextFig, figsize=figsize[1])
         carte = fig2.add_subplot(111, projection=self.projection)
         carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax], crs=self.projection)
+
+        # scale bar
+        if scalebar is not None:
+            # Check
+            assert type(scalebar) is float, 'scalebar should be float: {}'.format(type(scalebar))
+            # Chose where to put the bar
+            lonc = self.lonmin + (self.lonmax-self.lonmin)/10.
+            latc = self.latmin + (self.latmax-self.latmin)/10.
+            # Convert to xy and build the end points
+            string = '+proj=utm +lat_0={} +lon_0={} +ellps=WGS84'.format(latc, lonc) 
+            putm = pp.Proj(string)
+            xc,yc = putm(lonc,latc,inverse=False)
+            # End points
+            x1 = xc-scalebar*1000./2.
+            x2 = xc+scalebar*1000./2.
+            # Convert
+            lon1,lat1 = putm(x1,yc,inverse=True)
+            lon2,lat2 = putm(x2,yc,inverse=True)
+            lonc,latc = putm(xc,yc+0.5*1000.,inverse=True)
+            # Plot
+            carte.plot([lon1, lon2], [lat1,lat2], '-k', linewidth=2,zorder=4)
+            carte.text(lonc,latc,'{} km'.format(scalebar), horizontalalignment='center',zorder=4)
 
         # Set the axes
         faille.set_xlabel('Longitude')
