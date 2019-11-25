@@ -858,6 +858,8 @@ class opticorr(SourceInv):
 
         # Get the parameters
         params = fault.polysol[self.name]
+        if type(params) is dict:
+            params = params[ptype]
 
         # Get the estimator
         Horb = self.getPolyEstimator(ptype, computeNormFact=computeNormFact)
@@ -895,6 +897,26 @@ class opticorr(SourceInv):
         nd = self.east.shape[0]
         self.east_custompred = custompred[:nd]
         self.north_custompred = custompred[nd:2*nd]
+
+        # All done
+        return
+
+    def removeTransformation(self, fault, verbose=False, custom=False):
+        '''
+        Wrapper of removePoly to ensure consistency between data sets.
+
+        Args:
+            * fault     : a fault instance
+
+        Kwargs:
+            * verbose   : talk to us
+            * custom    : Remove custom GFs
+
+        Returns:
+            * None
+        '''
+
+        self.removePoly(fault, verbose=verbose, custom=custom)
 
         # All done
         return
