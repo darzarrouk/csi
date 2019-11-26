@@ -89,6 +89,7 @@ class geodeticplot(object):
         fig2  = plt.figure(nextFig, figsize=figsize[1])
         carte = fig2.add_subplot(111, projection=self.projection)
         carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax], crs=self.projection)
+        carte.gridlines(crs=self.projection, draw_labels=True)
 
         # scale bar
         if scalebar is not None:

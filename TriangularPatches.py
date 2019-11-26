@@ -2417,7 +2417,7 @@ class TriangularPatches(Fault):
             fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
 
         # Draw the fault
-        fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, plot_on_2d=plot_on_2d)
+        fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, plot_on_2d=plot_on_2d, linewidth=linewidth)
 
         # Savefigs?
         if savefig:
