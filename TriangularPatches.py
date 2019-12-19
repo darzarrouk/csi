@@ -365,6 +365,56 @@ class TriangularPatches(Fault):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
+    def setMu(self,model_file):
+        '''
+        Set shear modulus values for seismic moment calculation
+        from an edks model_file
+
+        Args:
+            * model_file: EDKS .model file
+
+        Returns:
+            * None
+        '''
+
+        # Read model file
+        mu = []
+        depth  = 0.
+        depths = []
+        with open(model_file) as f:
+            l1 = f.readline()
+            items = l1.strip().split()
+            assert len(items)==2, 'Incorrect first line format in %s'%(model_file)
+            nd = int(items[0])
+            fc = float(items[1])
+            for l in f:
+                items = l.strip().split()
+                assert len(items)==4, 'Incorrect line format in %s'%(model_file)
+                RHO = float(items[0])*fc
+                VP  = float(items[1])*fc
+                VS  = float(items[2])*fc
+                H   = float(items[3])
+                mu.append(VS*VS*RHO)
+                if H==0.:
+                    H = np.inf
+                depths.append([depth,depth+H])
+                depth += H
+        Nd = len(depths)
+        assert Nd==nd, 'Incorrect number of layes in %s (%d vs %d)'%(model_file,Nd,nd)
+        Np = len(self.patch)        
+        # Set Mu for each patch
+        self.mu = np.zeros((Np,))
+        for p in range(Np):
+            p_x, p_y, p_z, width, length, strike_rad, dip_rad = self.getpatchgeometry(p,center=True)
+            for d in range(Nd):
+                if p_z>=depths[d][0] and p_z<depths[d][1]:
+                    self.mu[p] = mu[d]
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
     def readPatchesFromFile(self, filename, readpatchindex=True, 
                             donotreadslip=False, gmtslip=True,
                             inputCoordinates='lonlat'):

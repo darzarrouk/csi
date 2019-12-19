@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib.path as path
 import scipy.interpolate as sciint
 from scipy.linalg import block_diag
+from copy import deepcopy
 import copy
 import sys
 import os
@@ -28,6 +29,15 @@ from . import okadafull
 from .geodeticplot import geodeticplot as geoplot
 from .gps import gps as gpsclass
 from .csiutils import colocated
+
+def getDist(ij):
+    f,i,lim = ij
+    p1 = f.patch[i]
+    dist = []
+    for j in range(i):
+        p2 = f.patch[j]
+        dist.append(f.distancePatchToPatch(p1, p2, distance='center', lim=lim))
+    return i,dist
 
 class RectangularPatches(Fault):
     '''
@@ -1826,7 +1836,7 @@ class RectangularPatches(Fault):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def distanceMatrix(self, distance='center', lim=None):
+    def distanceMatrix(self, distance='center', lim=None, nproc=1, verbose=False):
         '''
         Returns a matrix of the distances between patches.
 
@@ -1839,16 +1849,35 @@ class RectangularPatches(Fault):
         if self.N_slip==None:
             self.N_slip = self.slip.shape[0]
 
+        # Multiprocessing
+        if nproc>1:
+            import multiprocessing
+            print('Computing distances using %d cpus'%(nproc))
+            ijs = []
+            for i in range(self.N_slip):
+                f = deepcopy(self)
+                ijs.append([f,i,lim])
+            pool = multiprocessing.Pool(nproc)
+            results = pool.map(getDist,ijs)
+            Distances = np.zeros((self.N_slip, self.N_slip))
+            for result in results:
+                i,d=result
+                for j in range(i):
+                    Distances[i,j] = d[j]
+                    Distances[j,i] = d[j]
+            return Distances
+
         # Loop
         Distances = np.zeros((self.N_slip, self.N_slip))
         for i in range(self.N_slip):
+            if verbose:
+                sys.stdout.write('Distances from patch %d/%d\r'%(i,self.N_slip))
             p1 = self.patch[i]
-            for j in range(self.N_slip):
-                if j == i:
-                    continue
+            for j in range(i):
                 p2 = self.patch[j]
                 Distances[i,j] = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
-
+                Distances[j,i] = Distances[i,j]
+        print('')
         # All done
         return Distances
     # ----------------------------------------------------------------------
