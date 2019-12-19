@@ -500,7 +500,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def faulttrace(self, fault, color='r', add=False, discretized=False, zorder=4):
+    def faulttrace(self, fault, color='r', add=False, discretized=False, zorder=0):
         '''
         Plots a fault trace.
 

@@ -344,6 +344,156 @@ class insartimeseries(insar):
         # All done
         return
 
+    def readFromKFts(self, h5file, setmaster2zero=None,
+                           zfile=None, lonfile=None, latfile=None, filetype='f',
+                           incidence=None, heading=None, inctype='onefloat', 
+                           field='rawts', error='rawts_std', keepnan=False, mask=None, readModel=False):
+        '''
+        Read the output from a typical GIAnT h5 output file.
+
+        Args:
+            * h5file        : Input h5file (phase file)
+
+        Kwargs:
+            * setmaster2zero: If index is provided, master will be replaced by zeros (no substraction)
+            * zfile         : File with elevation 
+            * lonfile       : File with longitudes 
+            * latfile       : File with latitudes 
+            * filetype      : type of data in lon, lat and elevation file (default: 'f')
+            * incidence     : Incidence angle (degree)
+            * heading       : Heading angle (degree)
+            * inctype       : Type of the incidence and heading values (see insar.py for details). Can be 'onefloat', 'grd', 'binary', 'binaryfloat'
+            * field         : Name of the field in the h5 file.
+            * error         : Name of the phase std deviation field.
+            * mask          : Adds a common mask to the data. mask is an array the same size as the data with nans and 1. It can also be a tuple with a key word in the h5file, a value and 'above' or 'under'
+
+        Returns:
+            * None
+        '''
+
+        # open the h5file
+        h5in = h5py.File(h5file, 'r')
+        self.h5in = h5in
+
+        # Get the data
+        data = h5in[field]
+
+        # Get some sizes
+        nDates = data.shape[2]
+        nLines = data.shape[0]
+        nCols  = data.shape[1]
+
+        # Deal with the mask instructions
+        if mask is not None:
+            if type(mask) is tuple:
+                key = mask[0]
+                value = mask[1]
+                instruction = mask[2]
+                mask = np.ones((nLines, nCols))
+                if instruction in ('above'):
+                    mask[np.where(h5in[key][:]>value)] = np.nan
+                elif instruction in ('under'):
+                    mask[np.where(h5in[key][:]<value)] = np.nan
+                else:
+                    print('Unknow instruction type for Masking...')
+                    sys.exit(1)
+
+        # Read Lon Lat
+        if lonfile is not None:
+            self.lon = np.fromfile(lonfile, dtype=filetype)
+        if latfile is not None:
+            self.lat = np.fromfile(latfile, dtype=filetype)
+
+        # Compute utm
+        self.x, self.y = self.ll2xy(self.lon, self.lat) 
+
+        # Elevation
+        if zfile is not None:
+            self.elevation = insar('Elevation', utmzone=self.utmzone, 
+                                   verbose=False, lon0=self.lon0, lat0=self.lat0,
+                                   ellps=self.ellps)
+            self.elevation.read_from_binary(zfile, lonfile, latfile, 
+                                            incidence=None, heading=None, 
+                                            remove_nan=False, remove_zeros=False, 
+                                            dtype=filetype)
+            self.z = self.elevation.vel
+
+        # Get the time
+        dates = h5in['dates']
+        self.time = []
+        for i in range(nDates):
+            self.time.append(dt.datetime.fromordinal(int(dates[i])))
+
+        # Create a list to hold the dates
+        self.timeseries = []
+
+        # Iterate over the dates
+        for i in range(nDates):
+            
+            # Get things
+            date = self.time[i]
+            dat = data[:,:,i]
+
+            # Mask?
+            if mask is not None:
+                dat *= mask
+
+            # check master date
+            if i is setmaster2zero:
+                dat[:,:] = 0.
+
+            # Create an insar object
+            sar = insar('{} {}'.format(self.name,date.isoformat()), utmzone=self.utmzone, 
+                        verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+
+            # Put thing in the insarrate object
+            sar.vel = dat.flatten()
+            sar.lon = self.lon
+            sar.lat = self.lat
+            sar.x = self.x
+            sar.y = self.y
+
+            # Things should remain None
+            sar.corner = None
+            sar.err = None
+
+            # Set factor
+            sar.factor = 1.0
+
+            # Take care of the LOS
+            if incidence is not None and heading is not None:
+                sar.inchd2los(incidence, heading, origin=inctype)
+            else:
+                sar.los = np.zeros((sar.vel.shape[0], 3))
+
+            # Store the object in the list
+            self.timeseries.append(sar)
+
+        # Keep incidence and heading
+        self.incidence = incidence
+        self.heading = heading
+        self.inctype = inctype
+
+        # Make a common mask if asked
+        if not keepnan:
+            # Create an array
+            checkNaNs = np.zeros(self.lon.shape)
+            checkNaNs[:] = False
+            # Trash the pixels where there is only NaNs
+            for sar in self.timeseries:
+                checkNaNs += np.isfinite(sar.vel)
+            uu = np.flatnonzero(checkNaNs==0)
+            # Keep 'em
+            for sar in self.timeseries:
+                sar.reject_pixel(uu)
+            if zfile is not None:
+                elevation.reject_pixel(uu)
+            self.reject_pixel(uu)
+        h5in.close()
+
+        # all done
+        return
+
     def readFromGIAnT(self, h5file, setmaster2zero=None,
                             zfile=None, lonfile=None, latfile=None, filetype='f',
                             incidence=None, heading=None, inctype='onefloat', 
