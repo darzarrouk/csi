@@ -377,6 +377,7 @@ class insartimeseries(insar):
 
         # Get the data
         data = h5in[field]
+        err = h5in[field+'_std']
 
         # Get some sizes
         nDates = data.shape[2]
@@ -433,10 +434,12 @@ class insartimeseries(insar):
             # Get things
             date = self.time[i]
             dat = data[:,:,i]
+            std = err[:,:,i]
 
             # Mask?
             if mask is not None:
                 dat *= mask
+                err *= mask
 
             # check master date
             if i is setmaster2zero:
@@ -448,6 +451,7 @@ class insartimeseries(insar):
 
             # Put thing in the insarrate object
             sar.vel = dat.flatten()
+            sar.err = std.flatten()
             sar.lon = self.lon
             sar.lat = self.lat
             sar.x = self.x
@@ -455,7 +459,6 @@ class insartimeseries(insar):
 
             # Things should remain None
             sar.corner = None
-            sar.err = None
 
             # Set factor
             sar.factor = 1.0
