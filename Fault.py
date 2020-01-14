@@ -877,8 +877,11 @@ class Fault(SourceInv):
         # Compute the Green's functions
         if method in ('okada', 'Okada', 'OKADA', 'ok92', 'meade', 'Meade', 'MEADE'):
             G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
-        elif method in ('edks', 'EDKS'):
-            G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
+        elif method in ('edks', 'EDKS', 'pyedks', 'pythonedks'):
+            if 'py' not in method:
+                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='fortran')
+            else:
+                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='python')
 
         # Separate the Green's functions for each type of data set
         data.setGFsInFault(self, G, vertical=vertical)
@@ -1085,7 +1088,7 @@ class Fault(SourceInv):
 
     # ----------------------------------------------------------------------
     def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True,
-                      convergence=None):
+                      convergence=None, method='fortran'):
         '''
         Builds the Green's functions based on the solution by Zhao & Rivera 2002.
         The corresponding functions are in the EDKS code that needs to be installed and
@@ -1226,15 +1229,27 @@ class Fault(SourceInv):
         if verbose:
             print('{} sources for {} patches and {} data points'.format(len(Ids), len(self.patch), len(xr)))
 
+        # Create interpolation class if python method is selected
+        if method in ('python'):
+            inter = interpolateEDKS(stratKernels, verbose=verbose)
+            inter.readHeader()
+            inter.readKernel()
+
         # Run EDKS Strike slip
         if 's' in slipdir:
             if verbose:
                 print('Running Strike Slip component for data set {}'.format(data.name))
-            iGss = np.array(sum_layered(xs, ys, zs,
-                                        strike, dip, np.zeros(dip.shape), slip,
-                                        np.sqrt(Areas), np.sqrt(Areas), 1, 1,
-                                        xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                        cleanUp=self.cleanUp, verbose=verbose))
+            if method in ('fortran'):
+                iGss = np.array(sum_layered(xs, ys, zs, 
+                                            strike, dip, np.zeros(dip.shape), slip, 
+                                            np.sqrt(Areas), np.sqrt(Areas), 1, 1,
+                                            xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
+                                            cleanUp=self.cleanUp, verbose=verbose))
+            elif method in ('python'):
+                iGss = np.array(inter.interpolate(xs, ys, zs, strike*np.pi/180., 
+                                                  dip*np.pi/180., np.zeros(dip.shape),
+                                                  Areas, slip, 
+                                                  xr, yr, method='linear'))
             if verbose:
                 print('Summing sub-sources...')
             Gss = np.zeros((3, iGss.shape[1],np.unique(Ids).shape[0]))
@@ -1248,11 +1263,18 @@ class Fault(SourceInv):
         if 'd' in slipdir:
             if verbose:
                 print('Running Dip Slip component for data set {}'.format(data.name))
-            iGds = np.array(sum_layered(xs, ys, zs,
-                                        strike, dip, np.ones(dip.shape)*90.0, slip,
+            if method in ('fortran'):
+                iGds = np.array(sum_layered(xs, ys, zs, 
+                                        strike, dip, np.ones(dip.shape)*90.0, slip, 
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1,
                                         xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
                                         cleanUp=self.cleanUp, verbose=verbose))
+            elif method in ('python'):
+                iGds = np.array(inter.interpolate(xs, ys, zs, strike*np.pi/180., 
+                                                  dip*np.pi/180., 
+                                                  np.ones(dip.shape)*np.pi/2.,
+                                                  Areas, slip, 
+                                                  xr, yr, method='linear'))
             if verbose:
                 print('Summing sub-sources...')
             Gds = np.zeros((3, iGds.shape[1], np.unique(Ids).shape[0]))
@@ -1267,6 +1289,8 @@ class Fault(SourceInv):
             assert False, 'Sorry, this is not working so far... Bryan should get it done soon...'
             if verbose:
                 print('Running tensile component for data set {}'.format(data.name))
+            if method not in ('fortran'): 
+                raise NotImplementedError('Tensile case not implemented in python yet')
             iGts = np.array(sum_layered(xs, ys, zs,
                                         strike, dip, np.zeros(dip.shape), slip,
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1,
@@ -2761,6 +2785,118 @@ class Fault(SourceInv):
                     self.mu[p] = mu[d]
 
         # All done
+        return          
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def calcGFsCp(self, datasets, edks=False, **edks_params):
+        '''
+        Calculate Green's Functions using Okada or EDKS 
+        Used in class uncertainties
+        
+        :Args:
+            * datasets : List of data objects
+                ex: dataset=[gps]+[insar1,insar2]
+        
+        :Kwargs:
+            * edks : If True, GFs calculated using a layered Earth model calculated with EDKS.
+                     If False, GFs with Okada
+                     
+        If edks is True, please specify in **edks_params: 
+            ex: Cp_dip(fault,datasets,[40,50],multi_segments=2,edks=True,edksdir='PATH',modelname='CIA',sourceSpacing=0.5)
+            * modelname : xxx.edks = Filename of the EDKS kernels
+            * sourceSpacing      : source spacing to calculate the Green's Functions
+                OR sourceNumber   : Number of sources per patches.
+                OR sourceArea     : Maximum Area of the sources.
+                
+        :Returns:
+            * Gassembled
+        '''
+        if edks is False:
+            for data in datasets:
+                self.buildGFs(data, slipdir='sd')
+            self.assembleGFs(datasets, slipdir='sd', polys=None)
+        else:
+            self.kernelsEDKS = edks_params['modelname']+'.edks'
+            if 'Spacing' in str(edks_params.items()[1][0]):
+                self.sourceSpacing = edks_params['sourceSpacing']
+            elif 'Number' in str(edks_params.items()[1][0]):
+                self.sourceNumber = edks_params['sourceNumber']
+            else:
+                self.sourceArea = edks_params['sourceArea']
+        
+            for data in datasets:
+                self.buildGFs(data, slipdir='sd', method= 'edks')
+            self.assembleGFs(datasets, slipdir='sd', polys=None)
+           
+        return self.Gassembled
+    # ----------------------------------------------------------------------
+        
+    # ----------------------------------------------------------------------
+    # Interpolate slip/coupling on the fault
+    def interpolateSlip(self, lon, lat, slip='strikeslip', rebuild=False, coord='LL'):
+        '''
+        Creates an interpolator and interpolates the slip values to the 
+        position given in {lon} and {lat}.
+
+        :Args:
+            * lon           : Longitude
+            * lat           : Latitude
+        
+        :Kwargs:
+            * slip          : Which slip value to take
+            * rebuild       : Rebuild the interpolator
+            * coord         : LL or utm (in km)
+        '''
+
+        # String 
+        strVal = slip+'Int'
+
+        # Check if an interpolator exists
+        if not hasattr(self, strVal) or rebuild:
+            if slip == 'strikeslip':
+                value = self.slip[:,0]
+            elif slip == 'dipslip':
+                value = self.slip[:,1]
+            elif slip == 'tensile':
+                value = self.slip[:,2]
+            elif slip == 'coupling':
+                value = self.coupling
+            x = [c[0] for c in self.getcenters()]
+            y = [c[1] for c in self.getcenters()]
+            interp = sciint.LinearNDInterpolator(np.vstack((x,y)).T, value)
+            setattr(self, strVal, interp)
+
+        # Coordinates
+        if coord == 'LL':
+            x,y = self.ll2xy(lon, lat)
+        else:
+            x,y = lon,lat
+
+        # All done
+        return getattr(self, strVal)(x,y)
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # pickle myself
+    def pickle(self, filename):
+        '''
+        Pickle myself.
+
+        :Args:
+            * filename      : Name of the pickle fault.
+        '''
+
+        # Open the file
+        fout = open(filename, 'wb')
+
+        # Pickle
+        pickle.dump(self, fout)
+
+        # Close 
+        fout.close()
+
+        # All done
         return
     # ----------------------------------------------------------------------
 
@@ -2897,39 +3033,41 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def _rotatedisp(self, Gss, Gds, azimuth):
+    def _rotatedisp(self, Gss, Gds, azim):
         '''
         A rotation function for Green function.
 
-        Args:
+        :Args:   
             * Gss           : Strike slip GFs
             * Gds           : Dip slip GFs
-            * azimtuh       : Direction to rotate (degrees)
+            * azim          : Direction to rotate (degrees)
 
         Return:
             * rotatedGar    : Displacements along azimuth
             * rotatedGrp    : Displacements perp. to azimuth direction
         '''
+        
+        # Save
+        azimuth = copy.deepcopy(azim)
+
+        # Check nature of azimuth (float or array)
+        if type(azimuth) in [float,int,np.float64]:
+            azimuth = azimuth*np.ones((self.N_slip,))
 
         # Make azimuth positive
-        if azimuth < 0.:
-            azimuth += 360.
-
+        azimuth[azimuth< 0.] += 360.
+        
         # Get strikes and dips
-        #if self.patchType is 'triangletent':
-        #    strike = super(self.__class__, self).getStrikes()
-        #    dip = super(self.__class__, self).getDips()
-        #else:
         strike, dip = self.getStrikes(), self.getDips()
 
         # Convert angle in radians
         azimuth *= ((np.pi) / 180.)
-        rotation = np.arctan2(np.tan(strike) - np.tan(azimuth),
+        rotation = np.arctan2(np.tan(strike) - np.tan(azimuth), 
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
 
-        # If azimuth within ]90, 270], change rotation
-        if azimuth*(180./np.pi) > 90. and azimuth*(180./np.pi)<=270.:
-            rotation += np.pi
+        # If strike within ]90, 270], change rotation
+        rotation[np.logical_and(azimuth*(180./np.pi)>90.,azimuth*(180./np.pi)<=270.)] += np.pi
+        rotation[np.logical_and(strike*(180/np.pi)>90.,strike*(180./np.pi)<=270)] -= np.pi
 
         # Store rotation angles
         self.rotation = rotation.copy()
@@ -2949,18 +3087,23 @@ class Fault(SourceInv):
         Gss and Gds are of a shape (3xnumber of sites, number of fault patches)
         The 3 is for East, North and Up displacements
 
-        Args:
+        :Args:   
             * Gss           : Strike slip GFs
             * Gds           : Dip slip GFs
             * convergence   : [azimuth in degrees, rate]
-
-        Returns:
+    
+        :Returns:
             * Gar           : Along coupling Greens functions
 
         '''
 
         # For now, convergence is constant alnog strike
         azimuth, rate = convergence
+
+        # Check 
+        if type(azimuth) in (float, int):
+            azimuth = np.ones((self.slip.shape[0], ))*azimuth
+            rate = np.ones((self.slip.shape[0], ))*rate
 
         # Create the holders
         Gar = np.zeros(Gss.shape)
@@ -2972,8 +3115,8 @@ class Fault(SourceInv):
         Gar[2,:,:], Grp[2,:,:] = self._rotatedisp(Gss[2,:,:], Gds[2,:,:], azimuth)
 
         # Multiply and sum
-        Gar *= rate
-
+        Gar *= rate 
+        
         # All done (we only retun Gar as Grp should be 0)
         return Gar
     # ----------------------------------------------------------------------
