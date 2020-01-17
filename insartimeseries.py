@@ -1208,7 +1208,7 @@ class insartimeseries(insar):
         # All done
         return
 
-    def plotProfiles(self, prefix, figure=124, show=True, norm=None, xlim=None, zlim=None, marker='.', color='k'):
+    def plotProfiles(self, prefix, figure=124, show=True, norm=None, xlim=None, zlim=None, marker='.', color='k', figsize=None):
         '''
         Plots the profiles in 3D plot.
 
@@ -1230,7 +1230,7 @@ class insartimeseries(insar):
 
         # Create the figure
         fig = plt.figure(figure)
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection='3d', figsize=figsize)
 
         # loop over the profiles to plot these
         for date, sar in zip(self.time, self.timeseries):
