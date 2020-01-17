@@ -102,6 +102,10 @@ class transformation(SourceInv):
 
         '''
 
+        # Check something
+        if type(datas) is not list:
+            datas = [datas]
+
         # Pre compute Normalizing factors
         if computeNormFact:
             self.computeNormFactors(datas)
@@ -120,22 +124,18 @@ class transformation(SourceInv):
             # Check the GFs
             if data.name not in self.G.keys(): self.G[data.name] = {}
 
-            # Check something
-            if type(transformation) is not list:
-                transformation = [transformation]
-
             # Save
             self.transformations[data.name] = transformation
 
-            # Iterate over the transformations
+            # Check iterations
+            if type(transformation) is not list:
+                transformation = [transformation]
+
             for trans in transformation:
-                
-                # A case that will need to change in the future
-                if data.dtype in ('gps', 'multigps') and trans=='strain':
+                if data.dtype in ('gps','multigps') and trans=='strain':
                     T = data.getTransformEstimator('strainonly', computeNormFact=False)
                 else:
                     T = data.getTransformEstimator(trans, computeNormFact=False)
-
                 # One case is tricky so we build strings
                 if type(trans) is list:
                     trans = ''.join(itertools.chain.from_iterable(trans))
@@ -231,6 +231,11 @@ class transformation(SourceInv):
         data.TransformNormalizingFactor['y'] = normY
         data.TransformNormalizingFactor['ref'] = [x0, y0]
         data.TransformNormalizingFactor['base'] = base_max
+
+        # Special case of a multigps dataset
+        if data.dtype is 'multigps':
+            for d in data.gpsobjects:
+                self.computeTransformNormFactor(d)
 
         # All done
         return
@@ -478,55 +483,6 @@ class transformation(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    # Build synthetics from self.m
-    def buildPredictions(self, datas, verbose=True):
-        '''
-        Given a list of data, predicts the surface displacements from what
-        is stored in the self.m dictionary
-
-        Args:
-            * datas         : list of data instances
-
-        Kwargs:
-            * verbose       : Talk to me
-        '''
-
-        # Check 
-        if type(datas) is not list:
-            datas = [datas]
-        
-        # Iterate over the data
-        for data in datas:
-            
-            # Get the design matrix and model
-            T = []; m = []
-            for trans in self.G[data.name]:
-                if trans is not None:
-                    T.append(self.G[data.name][trans])
-                    m.append(self.m[data.name][trans])
-        
-            # Predict
-            T = np.hstack(T)
-            m = np.hstack(m)
-            prediction = np.dot(T,m)
-
-            # Store
-            if data.dtype in ('insar', 'tsunami'):
-                data.transformation = prediction
-            elif data.dtype in ('gps', 'multigps'):
-                data.transformation = np.zeros((data.vel_enu.shape[0], 3))
-                data.transformation[:,0] = prediction[:data.vel_enu.shape[0]]
-                data.transformation[:,1] = \
-                        prediction[data.vel_enu.shape[0]:data.vel_enu.shape[0]*2]
-                if len(prediction)==3*data.vel_enu.shape[0]:
-                    data.transformation[:,2] = \
-                            prediction[data.vel_enu.shape[0]*2:data.vel_enu.shape[0]*3]
-
-        # All done
-        return
-    # ----------------------------------------------------------------------
-
-    # ----------------------------------------------------------------------
     # Remove synthetics
     def removePredictions(self, datas, verbose=True):
         '''
@@ -540,17 +496,13 @@ class transformation(SourceInv):
             * verbose       : Talk to me
         '''
 
-        # Predict
-        self.buildPredictions(datas, verbose=verbose)
+        # Check something
+        if type(datas) is not list:
+            datas = [datas]
 
         # remove
         for data in datas:
-            if data.dtype=='insar':
-                data.vel -= data.transformation
-            elif data.dtype=='gps':
-                data.vel_enu -= data.transformation
-            elif data.dtype=='tsunami':
-                data.d -= data.transformation
+            data.removeTransformation(self)
             
         # All done
         return

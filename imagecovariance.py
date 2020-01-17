@@ -40,14 +40,21 @@ def ramp_fn(t,a,b,c):
 
 # Main class
 class imagecovariance(object):
+    '''
+    A class that allows image covariance determination.
+
+    Args:
+        * name      : Name of the object.
+        * image     : InSAR or Opticorr data set
+
+    Kwargs:
+        * verbose   : Talk to me
+
+    Returns:
+        * None
+    '''
 
     def __init__(self, name, image, verbose=True):
-        '''
-        Args:
-            * name      : Name of the downsampler.
-            * image     : InSAR or Opticorr data set to be downsampled.
-            * faults    : List of faults.
-        '''
 
         if verbose:
             print ("---------------------------------")
@@ -102,10 +109,12 @@ class imagecovariance(object):
     def maskOut(self, box):
         '''
         Picks out some points in order to mask them before computing the covariance.
+
         Args:
-            * box   : List of min and max lon and lat coordinates.
-                      Can be a list of lists to specify multiple regions.
-                      ex: [[ -120, -119, 34, 35], [-122, -121.7, 34.2, 34.3]]
+            * box   : List of min and max lon and lat coordinates. Can be a list of lists to specify multiple regions. example: [[ -120, -119, 34, 35], [-122, -121.7, 34.2, 34.3]]
+
+        Returns:
+            * None
         '''
 
         # Check how many zones do we have to remove
@@ -145,10 +154,12 @@ class imagecovariance(object):
     def maskIn(self, box):
         '''
         Select Boxes on which to compute the covariance.
+
         Args:
-        * box: List of min and max lon and lat coordinates.
-               Can be a list of lists to specify multiple regions.
-               ex: [[ -120, -119, 34, 35], [-122, -121.7, 34.2, 34.3]]
+            * box: List of min and max lon and lat coordinates. Can be a list of lists to specify multiple regions. ex: [[ -120, -119, 34, 35], [-122, -121.7, 34.2, 34.3]]
+
+        Returns:
+            * None
         '''
 
         # Check how many zones do we have to keep
@@ -205,12 +216,15 @@ class imagecovariance(object):
     def empiricalSemivariograms(self, frac=0.4, every=1., distmax=50., rampEst=True):
         '''
         Computes the empirical Semivariogram as a function of distance.
-        Args:
-            * frac      : Size of the fraction of the dataset to take (0 to 1)
-                          frac can be an integer, then it is going to be the number of 
-                          pixels used to compute the covariance
+
+        Kwargs:
+            * frac      : Size of the fraction of the dataset to take (0 to 1) frac can be an integer, then it is going to be the number of pixels used to compute the covariance
             * distmax   : Truncate the covariance function.
             * every     : Binning of the covariance function.
+            * rampEst   : Estimates a ramp before computing the semivariograms
+
+        Returns:
+            * None
         '''
 
         # Iterate over the datasets
@@ -312,12 +326,17 @@ class imagecovariance(object):
     def empiricalCovariograms(self, frac=0.4, every=1., distmax=50., rampEst=True):
         '''
         Computes the empirical Covariogram as a function of distance.
-        Args:
+
+        Kwargs:
             * frac      : Size of the fraction of the dataset to take (0 to 1)
                           frac can be an integer, then it is going to be the number of 
                           pixels used to compute the covariance
             * distmax   : Truncate the covariance function.
             * every     : Binning of the covariance function.
+            * rampEst   : Estimates a ramp before computing the covariaogram
+
+        Returns:
+            * None
         '''
 
         # Iterate over the datasets
@@ -417,14 +436,19 @@ class imagecovariance(object):
     def computeCovariance(self, function='exp', ComputeCovar=True, frac=0.4, every=1., distmax=50., rampEst=True, prior=None, tol=1e-10):
         '''
         Computes the covariance functions.
-        Args:
-            * function  : Type of function to fit. Can be 'exp'or 'gauss'.
-            * frac      : Size of the fraction of the dataset to take.
-            * distmax   : Truncate the covariance function.
-            * every     : Binning of the covariance function.
-            * rampEst   : estimate a ramp (default True).
-            * prior     : First guess for the covariance estimation [Sill, Sigma, Lambda]
-            * tol       : Tolerance for the fit
+
+        Kwargs:
+            * function      : Type of function to fit. Can be 'exp'or 'gauss'.
+            * computeCovar  : Recompute the covariogram
+            * frac          : Size of the fraction of the dataset to take.
+            * distmax       : Truncate the covariance function.
+            * every         : Binning of the covariance function.
+            * rampEst       : estimate a ramp (default True).
+            * prior         : First guess for the covariance estimation [Sill, Sigma, Lambda]
+            * tol           : Tolerance for the fit
+
+        Returns:
+            * None
         '''
 
         # Compute the Covariogram
@@ -512,11 +536,16 @@ class imagecovariance(object):
         '''
         Uses the fitted covariance parameters to build a covariance matrix for the dataset
         image of type insar or opticorr.
+
         Args:
             * image     : dataset of type opticorr or insar.
-            * dname     : Name of the covariance estimator.
-                          if image is opticorr, the datasets used are "dname East" and "dname North".
+            * dname     : Name of the covariance estimator. If image is opticorr, the datasets used are "dname East" and "dname North".
+
+        Kwargs:
             * write2file: Write to a binary file (np.float32).
+
+        Returns:
+            * None
         '''
 
         # Get the data position
@@ -634,15 +663,23 @@ class imagecovariance(object):
     def plot(self, data='covariance', plotData=False, figure=1, savefig=False, show=True, savedir='./'):
         '''
         Plots the covariance function.
-        Args:
-            * data    : Can be covariance or semivariogram or all.
-            * plotData: Also plots the image
+
+        Kwargs:
+            * data      : Can be covariance or semivariogram or all.
+            * plotData  : Also plots the image
+            * figure    : Figure number
+            * savefig   : True/False
+            * show      : True/False
+            * savedir   : output directory
+
+        Returns:
+            * None
         '''
 
         # Plot the data?
         if plotData:
             plt.figure(figure+1)
-            self.image.plot(figure=figure+1, show=False)
+            self.image.plot(figure=figure+1, show=False, drawCoastlines=False)
             #if hasattr(self, 'selectedZones'):
             #    for zone in self.selectedZones:
             #        x = [zone[0], zone[0], zone[1], zone[1], zone[0]]
@@ -724,10 +761,13 @@ class imagecovariance(object):
     def read_from_covfile(self,dname,filename):
         '''
         Read a file that was written by write2file()
-        Args :
-        * dname          : Name of the covariance estimator.
-        * filename       : file written with self.write2file()
 
+        Args:
+            * dname          : Name of the covariance estimator.
+            * filename       : file written with self.write2file()
+
+        Returns:
+            * None
         '''
 
         import linecache
@@ -752,13 +792,17 @@ class imagecovariance(object):
 
     def _buildcov(self, sigma, lamb, func, x, y):
         '''
-        Returns a matrix of the covariance.
+        Returns a covariance matrix 
+
         Args:
             * sigma : Arg #1 of function func
             * lamb  : Arg #2 of function func
             * func  : Function of distance ('exp' or 'gauss')
             * x     : position of data along x-axis
             * y     : position of data along y-axis
+
+        Returns:
+            * array
         '''
 
         # Make a distance map matrix
@@ -778,9 +822,13 @@ class imagecovariance(object):
         '''
         From a value of sill, estimates the intersect between the slope on the first
         points and the 0 level.
+
         Args:
             * dname : Name of the dataset
             * s0    : Estimate of sill
+
+        Returns:
+            * float
         '''
 
         x = self.datasets[dname]['Distance'][:4]
@@ -791,10 +839,14 @@ class imagecovariance(object):
     def _getm0(self, dname, s0, l0):
         '''
         Given a sill value and a characteristic distance, returns a rough estimate of sigma.
+
         Args:
             * dname : Name of the dataset
             * s0    : Estimate of sill
             * l0    : Characteristic distance
+
+        Returns:
+            * float
         '''
 
         x = self.datasets[dname]['Distance']

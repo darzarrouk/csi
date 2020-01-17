@@ -20,7 +20,7 @@ class seismicplot(geodeticplot):
     '''
     A class to plot kinematic faults
 
-    :Kwargs:
+    Kwargs:
         * figure        : Number of the figure.
         * ref           : 'utm' or 'lonlat'.
         * pbaspect      : XXXXX?????
@@ -33,15 +33,15 @@ class seismicplot(geodeticplot):
         projection = 'cyl'      
         super(seismicplot,self).__init__(figure,pbaspect,projection)
         
-    def faultPatchesGrid(self, fault, slip='strikeslip', Norm=None, colorbar=True, 
+    def faultPatchesGrid(self, fault, slip='strikeslip', norm=None, colorbar=True, 
                          plot_on_2d=False, revmap=False, data=None, plotgrid=True):
         '''
         Plots a grid of fault patches
 
-        :Args:
+        Args:
             * fault         : Fault class from verticalfault.
 
-        :Kwargs:
+        Kwargs:
             * slip          : Can be 'strikeslip', 'dipslip' or 'opening'
             * Norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
@@ -50,11 +50,11 @@ class seismicplot(geodeticplot):
             * data          : add points in the x and y attributes of data
             * plotgrid      : Show grid points
 
-        :Returns:
+        Returns:
             * None
         '''
 
-        Xs,Ys = self.faultpatches(fault, slip=slip, Norm=Norm, colorbar=colorbar, 
+        Xs,Ys = self.faultpatches(fault, slip=slip, norm=norm, colorbar=colorbar, 
                                   plot_on_2d=plot_on_2d, revmap=revmap, linewidth=1.0)
 
         # Plot Hypo
@@ -84,15 +84,15 @@ class seismicplot(geodeticplot):
         '''
         Plot the fault trace
 
-        :Args:
+        Args:
             * fault         : Fault class from verticalfault.
 
-        :Kwargs:
+        Kwargs:
             * color         : Color of the fault.
             * add           : plot the faults in fault.addfaults    
             * data          : Add locations of the x and y attribute of data
 
-        :Returns:
+        Returns:
             * None
         '''
 

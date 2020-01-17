@@ -6,7 +6,7 @@ This class allows then to:
 
 Written by R. Jolivet, April 2013.
 
-Updated by T. Shreve, May 2019, to include a pressure source.
+Updated by T. Shreve, May 2019, to include pressure sources in describeParams and distributem.
 
 '''
 
@@ -16,15 +16,16 @@ import pyproj as pp
 import matplotlib.pyplot as plt
 
 class multifaultsolve(object):
+    '''
+    A class that assembles the linear inverse problem for multiple faults and multiple datasets. This class can also solve the problem using simple linear least squares (bounded or unbounded).
+
+    Args:
+        * name          : Name of the project.
+        * faults        : List of faults from verticalfault or pressure .
+
+    '''
 
     def __init__(self, name, faults, verbose=True):
-        '''
-        Class initialization routine.
-
-        Args:
-            * name          : Name of the project.
-            * faults        : List of faults from verticalfault or pressure .
-        '''
 
         self.verbose = verbose
         if self.verbose:
@@ -91,7 +92,6 @@ class multifaultsolve(object):
                 self.type = "Pressure"
             elif fault.type in ('notafault', 'transformation'):
                 print('Not a fault detected')
-        #Store an array of volume of pressure source?
 
         # All done
         return
@@ -99,6 +99,9 @@ class multifaultsolve(object):
     def assembleGFs(self):
         '''
         Assembles the Green's functions matrix G for the concerned faults or pressure sources.
+
+        Returns:
+            * None
         '''
 
         # Get the faults
@@ -138,7 +141,7 @@ class multifaultsolve(object):
         self.Nd = Nd
         self.Np = Np
 
-        # CHeck 
+        # CHeck
         if self.verbose:
             print('Number of data: {}'.format(self.Nd))
             print('Number of parameters: {}'.format(self.Np))
@@ -152,8 +155,10 @@ class multifaultsolve(object):
     def OrganizeGBySlipmode(self):
 
         '''
-        Organize G by slip mode instead of fault segment
-        Return the new G matrix.
+        Organize G by slip mode instead of fault segment Return the new G matrix.
+
+        Returns:
+            * array
 
         '''
 
@@ -178,7 +183,10 @@ class multifaultsolve(object):
 
     def sensitivity(self):
         '''
-        Calculates diag(G^t Cd^-1 G)
+        Calculates the sensitivity matrix of the problem, :math:`S = \\text{diag}( G^t C_d^{-1} G )`
+
+        Returns:
+            * array
         '''
         # Import things
         import scipy.linalg as scilin
@@ -192,6 +200,12 @@ class multifaultsolve(object):
     def describeParams(self, faults):
         '''
         Prints to screen  which parameters are what...
+
+        Args:
+            * faults: list of faults
+
+        Returns:
+            * None
         '''
 
         # initialize the counters
@@ -269,10 +283,14 @@ class multifaultsolve(object):
                     print('{:30s}||{:12s}||{:12s}'.format('Fault Name', 'Pressure', 'Extra Parms'))
                 # Initialize the values
                 dp = 'None'
-
-                ne += 1
-                dp = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
-                ns += 1 #fault.slip.shape[0]
+                if fault.source is "pCDM":
+                    ne += 3
+                    dp = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
+                    ns += 3 #fault.slip.shape[0]
+                else:
+                    ne += 1
+                    dp = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
+                    ns += 1 #fault.slip.shape[0]
 
 
                 # How many slip parameters
@@ -308,6 +326,9 @@ class multifaultsolve(object):
     def assembleCm(self):
         '''
         Assembles the Model Covariance Matrix for the concerned faults.
+
+        Returns:
+            * None
         '''
 
         # Get the faults
@@ -343,6 +364,12 @@ class multifaultsolve(object):
     def affectIndexParameters(self, fault):
         '''
         Build the index parameter for a fault.
+
+        Args:
+            * fault : instance of a fault
+
+        Returns:
+            * None
         '''
 
         # Get indexes
@@ -367,6 +394,12 @@ class multifaultsolve(object):
     def distributem(self, verbose=False):
         '''
         After computing the m_post model, this routine distributes the m parameters to the faults.
+
+        Kwargs:
+            * verbose   : talk to me
+
+        Returns:
+            * None
         '''
 
         # Get the faults
@@ -385,10 +418,13 @@ class multifaultsolve(object):
             se = self.fault_indexes[fault.name][1]
             fault.mpost = self.mpost[st:se]
 
-            # Types of faults
-            if fault.patchType=='transformation':
+            # Transformation object
+            if fault.type=='transformation':
+                
+                # Distribute simply
                 fault.distributem()
 
+            # Fault object
             if fault.type is "Fault":
 
                 # Affect the indexes
@@ -424,13 +460,37 @@ class multifaultsolve(object):
                             fault.custom[dset] = fault.mpost[st:se]
                             st += nc
 
+            # Pressure object
             elif fault.type is "Pressure":
+
                 st = 0
-                se = st + 1
-                fault.deltapressure = fault.mpost[st:se]
+                if fault.source in {"Mogi", "Yang"}:
+                    se = st + 1
+                    print(np.asscalar(fault.mpost[st:se]*fault.mu))
+                    fault.deltapressure = np.asscalar(fault.mpost[st:se]*fault.mu)
+                    st += 1
+                elif fault.source is "pCDM":
+                    se = st + 1
+                    fault.DVx = np.asscalar(fault.mpost[st:se]*fault.scale)
+                    st += 1
+                    se = st + 1
+                    fault.DVy = np.asscalar(fault.mpost[st:se]*fault.scale)
+                    st += 1
+                    se = st + 1
+                    fault.DVz = np.asscalar(fault.mpost[st:se]*fault.scale)
+                    st += 1
+                    print("Total potency scaled by", fault.scale)
+
+                    if fault.DVtot is None:
+                        fault.computeTotalpotency()
+                elif fault.source is "CDM":
+                    se = st + 1
+                    print(np.asscalar(fault.mpost[st:se]*fault.mu))
+                    fault.deltaopening = np.asscalar(fault.mpost[st:se])
+                    st += 1
 
             # Get the polynomial/orbital/helmert values if they exist
-            if fault.patchType in ('Fault', 'Pressure'):
+            if fault.type in ('Fault', 'Pressure'):
                 fault.polysol = {}
                 fault.polysolindex = {}
                 for dset in fault.datanames:
@@ -471,6 +531,12 @@ class multifaultsolve(object):
     def SetSolutionFromExternal(self, soln):
         '''
         Takes a vector where the solution of the problem is and affects it to mpost.
+
+        Args:
+            * soln      : array
+
+        Returns:
+            * None
         '''
 
         # Check if array
@@ -487,6 +553,9 @@ class multifaultsolve(object):
         '''
         Solves the least square problem argmin_x || Ax - b ||_2 for x>=0.
         No Covariance can be used here, maybe in the future.
+
+        Returns:
+            * None
         '''
 
         # Import what is needed
@@ -508,10 +577,12 @@ class multifaultsolve(object):
 
     def SimpleLeastSquareSoln(self):
         '''
-        Solves the simple least square problem:
+        Solves the simple least square problem.
 
-            m_post = (G.T * G)-1 * G.T * d
+            :math:`\\textbf{m}_{post} = (\\textbf{G}^t \\textbf{G})^{-1} \\textbf{G}^t \\textbf{d}`
 
+        Returns:
+            * None
         '''
 
         # Import things
@@ -539,11 +610,13 @@ class multifaultsolve(object):
         '''
         Solves the unregularized generalized least-square problem using the following formula (Tarantolla, 2005, "Inverse Problem Theory", SIAM):
 
-            m_post = m_prior + (G.T * Cd-1 * G)-1 * G.T * Cd-1 * (d - G*m_prior)
+            :math:`\\textbf{m}_{post} = \\textbf{m}_{prior} + (\\textbf{G}^t \\textbf{C}_d^{-1} \\textbf{G})^{-1} \\textbf{G}^t \\textbf{C}_d^{-1} (\\textbf{d} - \\textbf{Gm}_{prior})`
 
-        Args:
-
+        Kwargs:
             * mprior        : A Priori model. If None, then mprior = np.zeros((Nm,)).
+
+        Returns:
+            * None
 
         '''
 
@@ -593,14 +666,17 @@ class multifaultsolve(object):
         # All done
         return
 
-    def GeneralizedLeastSquareSoln(self, mprior=None, rcond=None):
+    def GeneralizedLeastSquareSoln(self, mprior=None, rcond=None, useCm=True):
         '''
         Solves the generalized least-square problem using the following formula (Tarantolla, 2005,         Inverse Problem Theory, SIAM):
 
-            m_post = m_prior + (G.T * Cd-1 * G + Cm-1)-1 * G.T * Cd-1 * (d - G*m_prior)
+            :math:`\\textbf{m}_{post} = \\textbf{m}_{prior} + (\\textbf{G}^t \\textbf{C}_d^{-1} \\textbf{G} + \\textbf{C}_m^{-1})^{-1} \\textbf{G}^t \\textbf{C}_d^{-1} (\\textbf{d} - \\textbf{Gm}_{prior})`
 
         Args:
             * mprior        : A Priori model. If None, then mprior = np.zeros((Nm,)).
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -644,13 +720,16 @@ class multifaultsolve(object):
         Nm = Cm.shape[0]
 
         # Check If Cm is symmetric and positive definite
-        if (Cm.transpose() != Cm).all():
+        if useCm and (Cm.transpose() != Cm).all():
             print("Cm is not symmetric, Return...")
             return
 
         # Get the inverse of Cm
-        print ("Computing the inverse of the model covariance")
-        iCm = scilin.inv(Cm)
+        if useCm:
+            print ("Computing the inverse of the model covariance")
+            iCm = scilin.inv(Cm)
+        else:
+            iCm = np.zeros(Cm.shape)
 
         # Check If Cm is symmetric and positive definite
         if (Cd.transpose() != Cd).all():
@@ -684,7 +763,22 @@ class multifaultsolve(object):
         if self.type is "Fault":
             computeMwDiff(self.mpost, Mw_thresh, self.patchAreas*1.e6, mu)
 
+        # All done
+        return
 
+    def computeCmPostGeneral(self):
+        """
+        Computes the general posterior covariance matrix. See Tarantola 2005.
+        Result is stored in self.Cmpost
+        """
+
+        # Get things
+        G = self.G
+        iCm = np.linalg.inv(self.Cm)
+        iCd = np.linalg.inv(self.Cd)
+
+        # Compute Cmpost
+        self.Cmpost = np.linalg.inv(G.T.dot(iCd).dot(G) + iCm)
 
         # All done
         return
@@ -696,19 +790,22 @@ class multifaultsolve(object):
         """
         Solves the least squares problem:
 
-            min (d - G*m).T * Cd-1 * (d - G*m) + m.T * Cm-1 * m
-            subject to:
-                Mw <= Mw_bound
+            :math:`\\text{min} [ (\\textbf{d} - \\textbf{Gm})^t \\textbf{C}_d^{-1} (\\textbf{d} - \\textbf{Gm}) + \\textbf{m}^t \\textbf{C}_m^{-1} \\textbf{m}]`
 
         Args:
-            mprior          : a priori model; if None, mprior = np.zeros((Nm,))
-            Mw_thresh       : upper bound on moment magnitude
-            bounds          : list of tuple bounds for every parameter
-            method          : solver for constrained minimization: SLSQP, COBYLA, or nnls
-                              For general constraints, SLSQP is recommended. For non-negativity,
-                              use nnls (non-negative least squares).
-            iterations      : Modifies the maximum number of iterations for the solver (default=100).
-            tolerance       : Solver's tolerance
+            * mprior          : a priori model; if None, mprior = np.zeros((Nm,))
+            * Mw_thresh       : upper bound on moment magnitude
+            * bounds          : list of tuple bounds for every parameter
+            * method          : solver for constrained minimization: SLSQP, COBYLA, or nnls
+            * rcond           : Add some conditionning for all inverse matrix to compute
+            * iterations      : Modifies the maximum number of iterations for the solver (default=100).
+            * tolerance       : Solver's tolerance
+            * maxfun          : maximum number of funcrtion evaluation
+            * checkIter       : Show Stuff
+            * checkNorm       : prints the norm
+
+        Returns:
+            * None
         """
         assert self.ready, 'You need to assemble the GFs'
 
@@ -831,8 +928,9 @@ class multifaultsolve(object):
                            constraints=constraints, method=method, bounds=bounds,
                            options=options, tol=tolerance)
             m = res.x
-        #final data + prior misfits is
-        self.cost = res.fun
+            #final data + prior misfits is
+            self.cost = res.fun
+
         # Store result
         self.mpost = m
 
@@ -849,20 +947,21 @@ class multifaultsolve(object):
 
         Args:
             * priors        : List of priors. Each prior is specified by a list.
-                     Example: priors = [ ['Name of parameter', 'Uniform', min, max]
-                                         ['Name of parameter', 'Gaussian', center, sigma] ]
+                    - Example: priors = [ ['Name of parameter', 'Uniform', min, max], ['Name of parameter', 'Gaussian', center, sigma] ]
             * initialSample : List of initialSample.
             * nSample       : Length of the Metropolis chain.
             * nBurn         : Number of samples burned.
+
+        Kwargs:
             * plotSampler   : Plot some usefull stuffs from the sampler (default: False).
             * writeSamples  : Write the samples to a binary file.
-            * dryRun        : If True, builds the sampler, saves it, but does not run.
-                              This can be used for debugging.
-            * adaptiveDelay : Recompute the covariance of the proposal every adaptiveDelay
-                              steps
+            * dryRun        : If True, builds the sampler, saves it, but does not run. This can be used for debugging.
+            * adaptiveDelay : Recompute the covariance of the proposal every adaptiveDelay steps
 
-        The result is stored in self.samples
-        The variable mpost is the mean of the final sample set.
+        The result is stored in self.samples. The variable mpost is the mean of the final sample set.
+
+        Returns:
+            * None
         '''
 
         if self.verbose:
@@ -998,6 +1097,12 @@ class multifaultsolve(object):
     def conditionCd(self, singularValue):
         '''
         Simple Conditioning of Cd.
+
+        Args:
+            * singularValue     : minimum of the kept singular Values
+
+        Returns:
+            * None
         '''
 
         # SVD
@@ -1015,6 +1120,9 @@ class multifaultsolve(object):
     def writeSamples2hdf5(self):
         '''
         Writes the result of sampling to and HDF5 file.
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -1036,6 +1144,12 @@ class multifaultsolve(object):
     def writeMpost2File(self, outfile):
         '''
         Writes the solution to a file.
+
+        Args:
+            * outfile   : Output file name
+
+        Returns:
+            * None
         '''
 
         # Check
@@ -1060,6 +1174,15 @@ class multifaultsolve(object):
     def writeMpost2BinaryFile(self, outfile, dtype='d'):
         '''
         Writes the solution to a binary file.
+
+        Args:
+            * outfile       : Output file name
+
+        Kwargs:
+            * dtype         : 'd' for double and 'f' for single
+
+        Returns:
+            * None
         '''
 
         self.mpost.astype(dtype).tofile(outfile)
@@ -1070,9 +1193,13 @@ class multifaultsolve(object):
     def writeGFs2BinaryFile(self, outfile='GF.dat', dtype='f'):
         '''
         Writes the assembled GFs to the file outfile.
-        Args:
+
+        Kwargs:
             * outfile       : Name of the output file.
             * dtype         : Type of data to write. Can be 'f', 'float', 'd' or 'double'.
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -1103,9 +1230,13 @@ class multifaultsolve(object):
     def writeData2BinaryFile(self, outfile='d.dat', dtype='f'):
         '''
         Writes the assembled data vector to an output file.
+
         Args:
             * outfile       : Name of the output file.
             * dtype         : Type of data to write. Can be 'f', 'float', 'd' or 'double'.
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -1135,10 +1266,14 @@ class multifaultsolve(object):
     def writeCd2BinaryFile(self, outfile='Cd.dat', dtype='f', scale=1.):
         '''
         Writes the assembled Data Covariance matrix to a binary file.
+
         Args:
             * outfile       : Name of the output file.
             * scale         : Multiply the data covariance.
             * dtype         : Type of data to write. Can be 'f', 'float', 'd' or 'double'.
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -1168,11 +1303,15 @@ class multifaultsolve(object):
     def RunAltar(self, tasks=2, chains=1024, steps=100, support=(-10, 10)):
         '''
         Runs Altar on the d = Gm problem with a Cd covariance matrix.
-        Args:
+
+        Kwargs:
             * tasks         : Number of mpi tasks.
             * chains        : Number of chains.
             * steps         : Number of metropolis steps.
             * support       : Upper and Lower bounds of the parameter exploration.
+
+        Returns:
+            * None
         '''
 
         # Create the cfg and py file
@@ -1189,13 +1328,17 @@ class multifaultsolve(object):
     def writeAltarCfgFile(self, prefix='linearfullcov', tasks=2, chains=1024, steps=100, support=(-10, 10), minimumratio=0.000001):
         '''
         Writes a cfg and a py file to be used by altar.
-        Args:
+
+        Kwargs:
             * outfile       : Prefix of problem
             * tasks         : Number of mpi tasks.
             * chains        : Number of chains.
             * steps         : Number of metropolis steps.
             * support       : Upper and Lower bounds of the parameter exploration.
             * minimumratio  : Minimum Eignevalue to cut in the metropolis covariance matrix.
+
+        Returns:
+            * None
         '''
 
         # Open the file and print the opening credits
@@ -1309,19 +1452,23 @@ class multifaultsolve(object):
 
         '''
         Writes the cfg file containing the priors to be used by altar.
+        ONLY works with gaussian and uniform prior. And as if it was not bad enough, initial and run priors are the same.
+
         Args:
-            * priors	    : type of prior and corresponding parameters for each slip mode
-			      ex: prior['Strike Slip']='gaussian' & prior['Dip Slip']='uniform'
-	        * params	    : Parameters associated with each type of prior
-			        - params['gaussian']=[[center,sigma]]
-			        - params['uniform']=[[low,high]]
+            * priors	    : type of prior and corresponding parameters for each slip mode. ex: prior['Strike Slip']='gaussian' & prior['Dip Slip']='uniform'
+	    * params	    : Parameters associated with each type of prior
+		 - params['gaussian']=[[center,sigma]]
+		 - params['uniform']=[[low,high]]
             * modelName     : Name of the model
+
+        Kwargs:
             * files         : Names of problem files
             * prefix        : Prefix of problem
             * chains        : Number of chains.
 
-        ONLY works with gaussian and uniform prior
-        And as if it was not bad enough, initial and run priors are the same.
+        Returns:
+            * None
+
         '''
 
         parDescr = self.paramDescription
@@ -1446,11 +1593,14 @@ class multifaultsolve(object):
         """
         Write a binary file for the patch areas to be read into altar.
 
-        Args:
+        Kwargs:
             * outfile               : output file name
             * dtype                 : output data type
             * npadStart             : number of starting zeros to pad output
             * npadEnd               : number of ending zeros to pad output
+
+        Returns:
+            * None
         """
         # Construct output vector of patch areas
         vout = self.patchAreas.astype(dtype)

@@ -26,10 +26,10 @@ class TriangularTents(TriangularPatches):
     '''
     Classes implementing a fault made of triangular tents. Inherits from Fault
 
-    :Args:
+    Args:
         * name      : Name of the fault.
 
-    :Kwargs:
+    Kwargs:
         * utmzone   : UTM zone  (optional, default=None)
         * lon0      : Longitude of the center of the UTM zone
         * lat0      : Latitude of the center of the UTM zone
@@ -61,13 +61,13 @@ class TriangularTents(TriangularPatches):
         Initializes the tent fault object from a triangularPatches or a 
         triangularTents instance.
 
-        :Args:
+        Args:
             * fault     : Instance of triangular fault.
 
-        :Kwargs:
+        Kwargs:
             * adjMap    : Build the adjacency map (True/False).
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -136,10 +136,10 @@ class TriangularTents(TriangularPatches):
         '''
         Returns the geometry info related to vertex-based tent parameterization
 
-        :Args:
+        Args:
             * tent         : index of the wanted tent or tent;
 
-        :Returns:
+        Returns:
             * x, y, z, strike, dip  : Tent Informations
         '''
 
@@ -175,10 +175,10 @@ class TriangularTents(TriangularPatches):
         '''
         Deletes a tent.
 
-        :Args:
+        Args:
             * tent     : index of the tent to remove.
 
-        :Returns:    
+        Returns:    
             * None
         '''
 
@@ -206,10 +206,10 @@ class TriangularTents(TriangularPatches):
         '''
         Deletes a list of tent (indices)
 
-        :Args:
+        Args:
             * tents     : list of indices
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -235,14 +235,14 @@ class TriangularTents(TriangularPatches):
         '''
         Find the nodes with lon and lat (np.array or list)
 
-        :Args:
+        Args:
             * lon   : array or float of longitude
             * lat   : array or float of latitude
 
-        :Kwargs:
+        Kwargs:
             * round : Round to how many decimals
 
-        :Returns:
+        Returns:
             * Indices of the nodes : list
         '''
 
@@ -271,10 +271,10 @@ class TriangularTents(TriangularPatches):
         '''
         Choose a subset of tents (indices)
 
-        :Args:
+        Args:
             * tents     : List of indices
 
-        :Returns:
+        Returns:
             * None
         '''
         tent_new = []
@@ -313,13 +313,13 @@ class TriangularTents(TriangularPatches):
         '''
         Append a tent to the current list.
 
-        :Args:
+        Args:
             * tent      : tent to add
 
-        :Kwargs:
+        Kwargs:
             * slip      : List of the strike, dip and tensile slip.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -352,13 +352,13 @@ class TriangularTents(TriangularPatches):
         '''
         Adds a list of tents
 
-        :Args:
+        Args:
             * tents      : tent to add
 
-        :Kwargs:
+        Kwargs:
             * slip      : List of the strike, dip and tensile slip.
 
-        :Returns:
+        Returns:
             * None
         '''
         if (slip is None) or (slip == [0, 0, 0]):
@@ -377,16 +377,16 @@ class TriangularTents(TriangularPatches):
         '''
         Reads patches from a GMT formatted file.
         
-        :Args:
+        Args:
             * filename          : Name of the file
 
-        :Kwargs:
+        Kwargs:
             * inputCoordinates  : Default is 'lonlat'. Can be 'utm'
             * readpatchindex    : Default True.
             * donotreadslip     : Default is False. If True, does not read the slip
             * inputCoordinates  : Default is 'lonlat', can be 'xyz'
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -407,17 +407,17 @@ class TriangularTents(TriangularPatches):
         '''
         Writes the patch corners in a file that can be used in psxyz.
 
-        :Args:
+        Args:
             * filename      : Name of the file.
 
-        :Kwargs:
+        Kwargs:
             * add_slip      : Will be set to None
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
             * stdh5         : Get std dev from an h5 file
             * decim         : decimate the h5 file
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -444,10 +444,10 @@ class TriangularTents(TriangularPatches):
             - z_{filename}
             - {slip}_{filename}
 
-        :Args:
+        Args:
             * filename      : Name of the grdfile (should end by grd or nc)
 
-        :Kwargs:
+        Kwargs:
             * slip          : Slip value to store.
             * mask          : If true,builds a mask based on the outer boundary of the fault.
             * nSamples      : How many samples on each axis
@@ -455,7 +455,7 @@ class TriangularTents(TriangularPatches):
             * outDir        : Output directory
             * noValues      : What to write when there is no value
 
-        :Returns:
+        Returns:
             * None
         '''
     
@@ -492,16 +492,16 @@ class TriangularTents(TriangularPatches):
         '''
         Writes the tent node in a file that can be used in psxyz.
 
-        :Args:
+        Args:
             * filename      : Name of the file.
 
-        :Kwargs:
+        Kwargs:
             * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total.
             * scale         : Multiply the slip value by a factor.
             * stdh5         : Get standrad dev from a h5file
             * decim         : Decimate the h5 file
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -564,11 +564,11 @@ class TriangularTents(TriangularPatches):
         Re-initializes the fault slip array to zero values.
         This function over-writes the function in the parent class Fault.
 
-        :Kwargs:
+        Kwargs:
             * n     : Number of slip values. If None, it'll take the number of patches.
             * values: Can be depth, strike, dip, length, area or a numpy array
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -613,7 +613,7 @@ class TriangularTents(TriangularPatches):
         '''
         Returns a matrix of the distances between Nodes.
 
-        :Kwargs:
+        Kwargs:
             * distance  : distance estimation mode
 
                  - center : distance between the centers of the patches.
@@ -621,7 +621,7 @@ class TriangularTents(TriangularPatches):
 
             * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
 
-        :Returns:
+        Returns:
             * distance  : 2d array
         '''
 
@@ -651,10 +651,10 @@ class TriangularTents(TriangularPatches):
         '''
         Returns the index of a tent.
 
-        :Args:
+        Args:
             * tent  : element of self.tents
 
-        :Returns:
+        Returns:
             * iout  : integer
 
         '''
@@ -676,11 +676,11 @@ class TriangularTents(TriangularPatches):
         '''
         Integrates slip on the patch. Stores integration in self.volume
 
-        :Args:
+        Args:
             * slip   : slip vector. Can be strikeslip, dipslip, tensile, coupling or a list/array of floats.
             * factor : multiply slip vector 
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -714,7 +714,7 @@ class TriangularTents(TriangularPatches):
         '''
         Computes the area for each node. Stores it in self.area_tent
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -744,13 +744,13 @@ class TriangularTents(TriangularPatches):
         Takes a fault with rectangular patches and splits them into triangles to 
         initialize self.
 
-        :Args:
+        Args:
             * fault             : instance of rectangular patches.
 
-        :Kwargs:
+        Kwargs:
             * numberOfTriangles : Split each patch in 2 or 4 (default) triangle
 
-        :Returns:    
+        Returns:    
             * None
         '''
 
@@ -771,10 +771,10 @@ class TriangularTents(TriangularPatches):
         """
         Load a triangulated Gocad surface file. Vertices must be in geographical coordinates.
 
-        :Args:
+        Args:
             * filename:  tsurf file to read
 
-        :Kwargs:
+        Kwargs:
             * neg_depth: if true, use negative depth
             * utm: if true, input file is given as utm coordinates (if false -> lon/lat)
             * factor_xy: if utm==True, multiplication factor for x and y
@@ -797,7 +797,7 @@ class TriangularTents(TriangularPatches):
         '''
         Takes the list of vertices and builds the tents.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -835,12 +835,12 @@ class TriangularTents(TriangularPatches):
         '''
         Transfers the edksSources list into the node based setup.
 
-        :Kwargs:
+        Kwargs:
             * honogeneousStrike     : In a tent, the strike varies among the faces. This variation can be a problem if the variation in strikes is too large, with slip that can partially cancel each other. If True, the strike of each of the point is equal to the strike of the main node of the tent.
             * homogeneousDip        : Same thing for the dip angle.
             * keepFacetsSeparated   : If True, each facet of each node will have a different identifier (int). This is needed when computing the Green's function for the Node based case. 
 
-        :Returns:    
+        Returns:    
             * None
         '''
     
@@ -932,10 +932,10 @@ class TriangularTents(TriangularPatches):
         For each triangle vertex, find the indices of the adjacent triangles.
         This function overwrites that from the parent class TriangularPatches.
 
-        :Kwargs:
+        Kwargs:
             * verbose       : Speak to me
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -977,10 +977,10 @@ class TriangularTents(TriangularPatches):
         For each triangle vertex, finds the indices of the surrounding vertices.
         This function runs typically after buildAdjacencyMap.
 
-        :Kwargs:
+        Kwargs:
             * verbose       : Speak to me
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1026,7 +1026,7 @@ class TriangularTents(TriangularPatches):
         '''
         Build a discrete Laplacian smoothing matrix.
 
-        :Args:
+        Args:
             * verbose       : if True, displays stuff.
             * method        : Method to estimate the Laplacian operator
 
@@ -1035,7 +1035,7 @@ class TriangularTents(TriangularPatches):
 
             * irregular     : Not used, here for consistency purposes
 
-        :Returns:
+        Returns:
             * Laplacian     : 2D array
         '''
  
@@ -1085,13 +1085,13 @@ class TriangularTents(TriangularPatches):
         '''
         Compute the ellipse error given Cm for a given tent
 
-        :Kwargs:
+        Kwargs:
             * center  : center of the ellipse
             * Npoints : number of points on the ellipse
             * factor  : scaling factor
             * nsigma  : will design a nsigma*sigma error ellipse
 
-        :Returns:    
+        Returns:    
             * Ellipse   : 3D array with the ellipse
         '''
 
@@ -1144,10 +1144,10 @@ class TriangularTents(TriangularPatches):
         Write a psxyz compatible file to draw lines starting from the center of each patch,
         indicating the direction of slip.
 
-        :Args:
+        Args:
             * filename  : Name of the output file
 
-        :Kwargs:
+        Kwargs:
             * scale     : scale of the arrows (can a real number of a string within 'total', 'strikeslip', 'dipslip' or 'tensile'
             * factor    : scaling factor for the vectors
             * neg_depth : If True, depth will be a negative number
@@ -1222,13 +1222,13 @@ class TriangularTents(TriangularPatches):
         '''
         Computes the segment indicating the slip direction.
 
-        :Kwargs:
+        Kwargs:
             * scale : can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
             * factor: multiplcative factor
             * ellipse: compute the error ellipse as well
             * nsigma: Int number of sigma for the ellipse calculation
 
-        :Returns:
+        Returns:
             * None. Slip direction is stored in self.slipdirection
         '''
 
@@ -1313,7 +1313,7 @@ class TriangularTents(TriangularPatches):
         Computes the distance between the first point of the fault and every other
         point, when you walk along the fault.
 
-        :Kwargs:
+        Kwargs:
             * discretized           : if True, use the discretized fault trace
         '''
 
@@ -1339,19 +1339,19 @@ class TriangularTents(TriangularPatches):
 
     # ----------------------------------------------------------------------
     def plot(self, figure=134, slip='total', equiv=False, 
-             show=True, axesscaling=True, Norm=None, linewidth=1.0, plot_on_2d=True, 
+             show=True, axesscaling=True, norm=None, linewidth=1.0, plot_on_2d=True, 
              method='scatter', npoints=10, colorbar=True, cmap='jet',
-             drawCoastlines=True, expand=0.2, vertIndex=False):
+             drawCoastlines=True, expand=0.2, vertIndex=False, savefig=False):
         '''
         Plot the available elements of the fault.
         
-        :Kwargs:
+        Kwargs:
             * figure        : Number of the figure.
             * slip          : What slip to plot
             * equiv         : For consistentcy issues
             * show          : show me
             * axesscaling   : Scale the axes
-            * Norm          : colorbar limits
+            * norm          : colorbar limits
             * linewidth     : Line width in points
             * plot_on_2d    : Plot on a map as well?
             * method        : 'scatter' or 'surface' (scatter is better)
@@ -1382,9 +1382,14 @@ class TriangularTents(TriangularPatches):
             fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
 
         # Draw the fault
-        x, y, z, slip = fig.faultTents(self, slip=slip, Norm=Norm, colorbar=colorbar, 
+        x, y, z, slip = fig.faultTents(self, slip=slip, norm=norm, colorbar=colorbar, 
                 plot_on_2d=plot_on_2d, npoints=npoints, cmap=cmap,
                 method=method, vertIndex=vertIndex)
+
+        # Savefigs?
+        if savefig:
+            prefix = self.name.replace(' ','_')
+            fig.savefig(prefix+'_{}'.format(slip), ftype='eps')
 
         # show
         if show:
@@ -1403,7 +1408,7 @@ class TriangularTents(TriangularPatches):
         For a triangle given by the coordinates of its summits, compute the weight of
         the points given by x, y, and z positions (these guys need to be inside the triangle).
 
-        :Args:
+        Args:
             * mainNode  : [x,y,z] of the main Node
             * nodeOne   : [x,y,z] of the first Node
             * nodeTwo   : [x,y,z] of the second Node
@@ -1432,7 +1437,7 @@ class TriangularTents(TriangularPatches):
         '''
         From a slip distribution in slip at each Node, interpolate onto the sources defined by Ids, X, Y and Z.
 
-        :Args:
+        Args:
             * Ids       : Index of the subsources
             * X         : X position of the subsources
             * Y         : Y position of the subsources
@@ -1489,12 +1494,12 @@ class TriangularTents(TriangularPatches):
         '''
         Returns the outer-edge of the fault.
 
-        :Kwargs:
+        Kwargs:
             * takeAngle : 'max' or 'min'
             * check     : plot stuff for you to check what is being done
             * write2file: Write the outer edge of the fault into a file
 
-        :Returns:
+        Returns:
             * contour: List of the lon, lat and depth of the outter edge of the fault
 
         '''
@@ -1601,7 +1606,7 @@ class TriangularTents(TriangularPatches):
     #    the convergence vector.
     #        These Greens' functions are stored in self.G or returned, given arguments.
 
-    #    :Args:
+    #    Args:
     #        * G             : Dictionarry of strike and dip slip green's functions
     #        * convergence   : Convergence vector, or list/array of convergence vector with
     #                            shape = (Number of fault patches, 2). 
@@ -1664,7 +1669,7 @@ class TriangularTents(TriangularPatches):
     #        When inverting for coupling, we suggest building these functions and 
     #        assembling with slipdir='c'.
     #    
-    #        :Args:
+    #        Args:
     #            * data                  : Name of the data set.
     #            * convergence           : Convergence vector, or list/array of convergence vector with
     #                                        shape = (Number of fault patches, 2). 

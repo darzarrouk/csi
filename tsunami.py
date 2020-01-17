@@ -23,10 +23,10 @@ class tsunami(SourceInv):
     '''
     A class that handles tsunami data.
 
-    :Args:
+    Args:
        * name      : Name of the dataset.
 
-    :Kwargs:
+    Kwargs:
        * dtype     : data type 
        * utmzone   : UTM zone  (optional, default=None)
        * lon0      : Longitude of the center of the UTM zone
@@ -58,14 +58,14 @@ class tsunami(SourceInv):
         '''
         Read d, Cd from files filename.data filename.Cd
 
-        :Args:  
+        Args:  
             * filename  : prefix of the filenames filename.d and filename.Cd
 
-        :Kwargs:
+        Kwargs:
             * factor    : scaling factor
             * fileinfo  : Information about the data (lon, lat and origintime)
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -91,18 +91,18 @@ class tsunami(SourceInv):
         '''
         Read GF from file filename.gf
 
-        :Args:
+        Args:
             * filename  : prefix of the file filename.gf
 
-        :Kwargs:
+        Kwargs:
             * factor:   scaling factor
         
-        :Returns:
+        Returns:
             * 2d arrays: returns GF_SS and GF_DS
         '''
 
         GF = np.loadtxt(filename+'.gf')*factor
-        n  = GF.shape[1]/2
+        n  = int(GF.shape[1]/2)
         assert n == len(fault.slip), 'Incompatible tsunami GF size'
         GF_SS = GF[:,:n]
         GF_DS = GF[:,n:]
@@ -115,14 +115,14 @@ class tsunami(SourceInv):
         From a dictionary of Green's functions, sets these correctly into the fault 
         object fault for future computation.
 
-        :Args:
+        Args:
             * fault     : Instance of Fault
             * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'. These can be a matrix or None.
 
-        :Kwargs:
+        Kwargs:
             * vertical  : Set here for consistency with other data objects, but will always be set to False, whatever you do.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -156,14 +156,14 @@ class tsunami(SourceInv):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
 
-        :Args:
+        Args:
             * faults        : list of faults to include.
 
-        :Kwargs:
+        Kwargs:
             * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
             * poly          : if True, add an offseta in the data
 
-        :Returns:   
+        Returns:   
             * None. Synthetics are stored in the synth attribute
         '''
 
@@ -208,7 +208,7 @@ class tsunami(SourceInv):
         fig = plt.figure(figsize=figsize)
         fig.subplots_adjust(bottom=bottom,top=top,left=left,right=right,wspace=wspace,hspace=hspace)
         nsamp = nobs_per_trace
-        nstat = len(self.d)/nobs_per_trace
+        nstat = int(len(self.d)/nobs_per_trace)
 
 
         for i in range(nstat): 
@@ -254,13 +254,13 @@ class tsunami(SourceInv):
         '''
         Write to a text file
 
-        :Args:
+        Args:
             * namefile  : Name of the output file
 
-        :Kwargs:
+        Kwargs:
             * data      : can be data or synth
 
-        :Returns:       
+        Returns:       
             * None
         '''
         if data == 'synth':
@@ -276,10 +276,10 @@ class tsunami(SourceInv):
         '''
         Returns the Estimator of a constant offset in the data
 
-        :Args:
+        Args:
             * order : 1, estimate just a vertical shift in the data and ,2, estimate a ramp in the data. Order given as argument is in reality order*number_of_station
 
-        :Returns:
+        Returns:
             * a 2d array
         '''
 

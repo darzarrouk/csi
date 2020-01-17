@@ -21,10 +21,10 @@ class multigps(gps):
     '''
     A class that handles several networks of gps stations
 
-    :Args:
+    Args:
        * name      : Name of the dataset.
 
-    :Kwargs:
+    Kwargs:
        * gpsobjects: list of instances of the gps class
        * obs_per_station: how many data points per site
        * utmzone   : UTM zone  (optional, default=None)
@@ -70,10 +70,10 @@ class multigps(gps):
         '''
         Takes list of gps and set it 
 
-        :Args:
+        Args:
             * gpsobjects    : List of gps objects.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -136,10 +136,10 @@ class multigps(gps):
         '''
         Returns the number of transform parameters for the given transformation.
 
-        :Args:
+        Args:
             * transformation: List [main_transformation, [transfo_subnet1, transfo_subnet2, ....] ]. Each can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
         
-        :Returns:
+        Returns:
             * int
         '''
 
@@ -169,13 +169,13 @@ class multigps(gps):
         '''
         Returns the estimator for the transform.
 
-        :Args:
+        Args:
             * transformation : List [main_transformation, [transfo_subnet1, transfo_subnet2, ....] ]. Each item can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
 
-        :Kwargs:
+        Kwargs:
             * computeNormFact: compute and store the normalizing factor
 
-        :Returns:
+        Returns:
             * 2D array
         '''
 
@@ -185,7 +185,7 @@ class multigps(gps):
 
         # Assert
         assert type(mainTrans) in (str, type(None)), 'First Item of transformation list needs to be string'
-        assert type (subTrans) is list, 'Second Item of transformation list needs to be a list'
+        assert type (subTrans) is list, 'Second Item of transformation list needs to be a list: {}'.format(subTrans)
 
         # Need the number of columns and lines
         nc = self.getNumberOfTransformParameters(transformation)
@@ -237,13 +237,13 @@ class multigps(gps):
         '''
         Computes the transformation that is stored with a particular fault.
 
-        :Args:
+        Args:
             * fault: instance of a fault class that has a {polysol} attribute
 
-        :Kwargs:
+        Kwargs:
             * custom: True/False. Do we have to account for custom GFs?
 
-        :Returns:
+        Returns:
             * None. Transformation is stroed in attribute {transformation}
         
         '''
@@ -257,6 +257,8 @@ class multigps(gps):
 
         # Get the solution
         Tvec = fault.polysol[self.name]
+        if type(Tvec) is not np.ndarray:
+            Tvec = Tvec['{}'.format(transformation)]
 
         # Assert
         assert type(mainTrans) in (str, type(None)), 'First Item of transformation list needs to be string'

@@ -3,7 +3,13 @@ Citations and CSI Publications
 
 To cite CSI, please use the doi of the github code and/or cite one of the papers below.
 
-Gombert, B., Z. Duputel, R. Jolivet C. Doubre, L. Rivera & M. Simons, Revisiting the 1992 Landers earthquake: a Bayesian exploration of co-seismic slip and off-fault damage, Accepted at Geophysical Journal International
+Gombert, B., Z. Duputel, E. Shabani, L. Rivera, R. Jolivet & J. Hollingsworth, 2019. Impulsive source of the 2017, Mw=7.3, Ezgeleh, Iran, earthquake, Geophysical Research Letters, doi: 10.1029/2018GL081794
+
+Gombert, B., Z. Duputel, R. Jolivet, M. Simons, J. Jiang, C. Liang, E. Fielding & L. Rivera, 2018. Strain budget of the Ecuador-Colombia subduction zone: a stochastic view, Earth and Planetary Science Letters, doi: 10.1016/j.epsl.2018.06.046, Vol. 498, pp. 288-299
+
+Gardonio, B., R. Jolivet, E. Calais & H. Leclère, 2018. The April 2017 Mw6.5 Botswana Earthquake: An Intraplate Event Triggered by Deep Fluids, Geophysical Research Letters, doi: 10.1029/2018GL078297
+
+Gombert, B., Z. Duputel, R. Jolivet C. Doubre, L. Rivera & M. Simons, 2018. Revisiting the 1992 Landers earthquake: a Bayesian exploration of co-seismic slip and off-fault damage, Geophysical Journal International, Vol. 212(2), pp.839-852, doi: 10.1093/gji/ggx455.
 
 Rousset, B., R. Jolivet, M. Simons, C. Lasserre, B. Riel, P. Milillo, Z. Çakir & F. Renard, 2016. An aseismic slip transient on the North Anatolian faut, Geophysical Research Letters, Vol. 43 (7), pp. 3254-3263, doi: 10.1002/2016GL068250
 

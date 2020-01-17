@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib.path as path
 import scipy.interpolate as sciint
 from scipy.linalg import block_diag
+from copy import deepcopy
 import copy
 import sys
 import os
@@ -29,14 +30,23 @@ from .geodeticplot import geodeticplot as geoplot
 from .gps import gps as gpsclass
 from .csiutils import colocated
 
+def getDist(ij):
+    f,i,lim = ij
+    p1 = f.patch[i]
+    dist = []
+    for j in range(i):
+        p2 = f.patch[j]
+        dist.append(f.distancePatchToPatch(p1, p2, distance='center', lim=lim))
+    return i,dist
+
 class RectangularPatches(Fault):
     '''
     Classes implementing a fault made of rectangular patches. Inherits from Fault
 
-    :Args:
+    Args:
         * name      : Name of the fault.
 
-    :Kwargs:
+    Kwargs:
         * utmzone   : UTM zone  (optional, default=None)
         * lon0      : Longitude of the center of the UTM zone
         * lat0      : Latitude of the center of the UTM zone
@@ -72,7 +82,7 @@ class RectangularPatches(Fault):
         '''
         Set depth patch attributes
 
-        :Args:
+        Args:
             * nump          : Number of fault patches at depth.
             * top           : Depth of the top row
             * width         : Width of the patches
@@ -105,7 +115,7 @@ class RectangularPatches(Fault):
         Extrapolates the surface trace. This is usefull when building deep patches 
         for interseismic loading.
 
-        :Args:
+        Args:
             * length_added  : Length to add when extrapolating.
             * tol           : Tolerance to find the good length.
             * fracstep      : control each jump size.
@@ -198,7 +208,7 @@ class RectangularPatches(Fault):
         '''
         Returns an array of strike angle for each patch (radians).
 
-        :Returns: 
+        Returns: 
             * strike    : Array of angles in radians
         '''
 
@@ -212,7 +222,7 @@ class RectangularPatches(Fault):
         '''
         Returns an array of dip angles for each patch (radians)
 
-        :Returns:
+        Returns:
             * dip       : Array of angles in radians
         '''
 
@@ -227,10 +237,10 @@ class RectangularPatches(Fault):
         Splits all the patches in nPatches Horizontally. Directly modifies the
         patch attribute.
 
-        :Args:
+        Args:
             * nPatches      : Number of new patches per patch.
 
-        :Kwargs:
+        Kwargs:
             * equiv         : Do it on the equivalentPatches (default False)
             * indices       : Specify which patches to split (list of int)
 
@@ -325,10 +335,10 @@ class RectangularPatches(Fault):
         '''
         Splits a patch in 4 patches and returns 4 new patches.
 
-        :Args:
+        Args:
             * patch         : item of the list of patch
 
-        :Returns:
+        Returns:
             * p1, p2, p3, p4: Four patches
         '''
 
@@ -374,11 +384,11 @@ class RectangularPatches(Fault):
         '''
         Merges 2 patches that have common corners. This modifies directly the attribute patch
 
-        :Args:
+        Args:
             * p1        : index of the patch #1.
             * p2        : index of the patch #2.
 
-        :Kwargs:
+        Kwargs:
             * eps       : tolerance value for the patch corners (in km)
             * verbose   : Speak to me (default is True)
         '''
@@ -405,10 +415,10 @@ class RectangularPatches(Fault):
         '''
         Linear extrapolation routine. Found on StackOverflow by sastanin.
 
-        :Args:
+        Args:
             * interpolator      : An instance of scipy.interpolation.interp1d
 
-        :Returns:
+        Returns:
             * ufunc             : An extrapolating method
 
         '''
@@ -437,7 +447,7 @@ class RectangularPatches(Fault):
         Takes the shallowest patches of the fault and use them to build a 
         fault trace. Direclty modifies attributes xf, yf, lonf and latf
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -475,7 +485,7 @@ class RectangularPatches(Fault):
         '''
         Computes the area of all patches. Stores that in {self.area}
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -496,10 +506,10 @@ class RectangularPatches(Fault):
         ''' 
         Computes the area of one patch.
 
-        :Args:
+        Args:
             * p         : One item of self.patch
 
-        :Returns:
+        Returns:
             * area      : The area of the patch
         '''
 
@@ -523,7 +533,7 @@ class RectangularPatches(Fault):
         '''
         Perform the utm to lonlat conversion for all patches.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -566,7 +576,7 @@ class RectangularPatches(Fault):
         computes the best rectangle that fits within patches. Stores all the
         equivalent rectangles in equivpatch and equivpatchll.
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -643,7 +653,7 @@ class RectangularPatches(Fault):
         depths {depth}, strike angles {strike}, dip angles {dip}, 
         patch length {length} and patch width {width}
 
-        :Args:
+        Args:
             * lon       : Longitude of the center of the patch
             * lat       : Latitude of the center of the patch
             * depth     : Depth of the center of the patch (km)
@@ -652,7 +662,7 @@ class RectangularPatches(Fault):
             * length    : Length of the patch (km)
             * width     : Width of the patch (km)
 
-        :Returns:
+        Returns:
             * patch     : a list for patch corners
             * patchll   : a list patch corners in lonlat
         '''
@@ -721,7 +731,7 @@ class RectangularPatches(Fault):
         Builds the list of patches from lists of lon, lat, depth, strike, dip, 
         length and width
 
-        :Args:
+        Args:
             * Lon           : List of longitudes
             * Lat           : List of Latitudes
             * Depth         : List of depths (km)
@@ -730,7 +740,7 @@ class RectangularPatches(Fault):
             * Length        : List of length (km)
             * Width         : List of width (km)
 
-        :Kwargs:
+        Kwargs:
             * initializeSlip : Set slip values to zero
         '''
 
@@ -766,13 +776,13 @@ class RectangularPatches(Fault):
         Builds a patch geometry and the corresponding files from a relax 
         co-seismic file type.
 
-        :Args:
+        Args:
             * filename      : Input from Relax (See Barbot and Cie on the CIG website).
 
-        :Kwargs:
+        Kwargs:
             * origin        : Origin of the reference frame used by relax. [lon, lat]
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -894,10 +904,10 @@ class RectangularPatches(Fault):
         Read patches from a GMT formatted file. This means the file is a 
         list of patches separated by '>'. 
 
-        :Args:   
+        Args:   
             * filename      : Name of the file.
 
-        :Kwargs:
+        Kwargs:
             * Cm                : Posterior covariances (array nslip x nslip)
             * readpatchindex    : Read the index of the patch and organize them
             * inputCoordinates  : lonlat or utm
@@ -1037,10 +1047,10 @@ class RectangularPatches(Fault):
         '''
         Writes the patch corners in a file that can be used in psxyz.
 
-        :Args:
+        Args:
             * filename      : Name of the file.
 
-        :Kwargs:
+        Kwargs:
             * add_slip      : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total, coupling.
             * scale         : Multiply the slip value by a factor.
             * patch         : Can be 'normal' or 'equiv'
@@ -1107,7 +1117,10 @@ class RectangularPatches(Fault):
                 parameter = '# {} {} {} '.format(i,j,k)
 
             # Put the slip value
-            slipstring = ' # {} {} {} '.format(self.slip[p,0], self.slip[p,1], self.slip[p,2])
+            if add_slip is not None:
+                slipstring = ' # {} {} {} '.format(self.slip[p,0], self.slip[p,1], self.slip[p,2])
+            else:
+                slipstring = ' '
 
             # Write the string to file
             fout.write('> {} {} {}  \n'.format(string,parameter,slipstring))
@@ -1143,10 +1156,10 @@ class RectangularPatches(Fault):
         Write a psxyz compatible file to draw lines starting from the center of each patch, 
         indicating the direction of slip. Tensile slip is not used...
         
-        :Args:
+        Args:
             * filename      : Name of the output file
 
-        :Kwargs:
+        Kwargs:
             * scale: a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
             * factor: scaling factor
             * neg_depth: use True if depth is negative
@@ -1154,7 +1167,7 @@ class RectangularPatches(Fault):
             * flipstrike: if True, flip strike
             * nsigma: if ellipse==True, design nsigma*sigma error ellipses
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1227,16 +1240,16 @@ class RectangularPatches(Fault):
         '''
         Compute the ellipse error given Cm for a given patch
 
-        :Args:
+        Args:
             * patch     : Patch
 
-        :Kwargs:
+        Kwargs:
             * center    : center of the ellipse
             * Npoints   : number of points on the ellipse
             * factor    : scaling factor
             * nsigma    : will design a nsigma*sigma error ellipse
 
-        :Returns:
+        Returns:
             * RE        : Ellipse
         '''
 
@@ -1288,7 +1301,7 @@ class RectangularPatches(Fault):
         '''
         Computes the segment indicating the slip direction. Direclty stores it in self.slipdirection
 
-        :Kwargs:
+        Kwargs:
             * scale can be a real number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
             * factor is a scaling factor
             * ellipse: if True: design an ellipse for each slip vector
@@ -1368,10 +1381,10 @@ class RectangularPatches(Fault):
         '''
         Deletes a patch.
 
-        :Args:   
+        Args:   
             * patch     : index of the patch to remove.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1394,10 +1407,10 @@ class RectangularPatches(Fault):
         '''
         Deletes a list of patches.
 
-        :Args:
+        Args:
             * titi      : List of indexes
 
-        :Returns:
+        Returns:
             * None
                 
         '''
@@ -1427,13 +1440,13 @@ class RectangularPatches(Fault):
         '''
         Adds a patch to the list.
 
-        :Args:
+        Args:
             * patch     : Geometry of the patch to add
 
-        :Kwargs:
+        Kwargs:
             * slip      : List of the strike, dip and tensile slip.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1475,19 +1488,19 @@ class RectangularPatches(Fault):
     # Rotate a point around specified axis
     def pointRotation3D(self, iPatch, iPoint, theta, p_axis1, p_axis2):
         '''
-        Rotate a point with an arbitrary axis (fault tip)
-        Used in rotatePatch
+        Rotate a point with an arbitrary axis (fault tip). Used in rotatePatch.
         
-        :Args:
+        Args:
             * iPatch: index of the patch to be rotated
             * iPoint: index of the patch corner (point) to be rotated
             * theta : angle of rotation in degrees
             * p_axis1 : first point of axis (ex: one side of a fault)
             * p_axis2 : second point to define the axis (ex: the other side of a fault)
             
-        :Returns:
+        Returns:
             * rotated point
-        Reference: 'Rotate A Point About An Arbitrary Axis (3D)' - Paul Bourke 
+
+        Reference: 'Rotate A Point About An Arbitrary Axis (3D)' (Paul Bourke) 
         '''
         def to_radians(angle):
             return np.divide(np.dot(angle, np.pi), 180.0)
@@ -1544,13 +1557,13 @@ class RectangularPatches(Fault):
         Rotate a patch with an arbitrary axis (fault tip)
         Used by class uncertainties
         
-        :Args:
+        Args:
             * iPatch: index of the patch to be rotated
             * theta : angle of rotation in degrees
             * p_axis1 : first point of axis (ex: one side of a fault)
             * p_axis2 : second point to define the axis (ex: the other side of a fault)
             
-        :Returns:
+        Returns:
             * None
         '''        
         # Calculate rotated patch
@@ -1598,11 +1611,11 @@ class RectangularPatches(Fault):
         Translate a patch
         Used by class uncertainties
         
-        :Args:
+        Args:
             * iPatch: index of the patch to be rotated
             * tr_vector: array, translation vector in 3D
             
-        :Returns:
+        Returns:
             * None
         '''        
         # Calculate rotated patch
@@ -1650,11 +1663,11 @@ class RectangularPatches(Fault):
         '''
         Replaces one patch by the given geometry.
 
-        :Args:
+        Args:
             * patch     : Patch geometry.
             * iPatch    : index of the patch to replace.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1690,13 +1703,13 @@ class RectangularPatches(Fault):
         '''
         The name of this method is pretty self-explanatory.
 
-        :Args:
+        Args:
             * fault     : Another fault instance with rectangular patches.
 
-        :Kwargs:
+        Kwargs:
             * indexes   : List of indices to consider
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1722,12 +1735,12 @@ class RectangularPatches(Fault):
         '''
         Returns a coordinate system change. 
 
-        :Args:
+        Args:
             * p : Translation vector
             * p_ref : Translation reference
             * angle_rad : rotation angle
 
-        :Returns:
+        Returns:
             * r_p: Rotation matrix in the form of list
 
         :Note:
@@ -1752,14 +1765,14 @@ class RectangularPatches(Fault):
         '''
         Returns the patch geometry as needed for okada92.
 
-        :Args:
+        Args:
             * patch         : index of the wanted patch or patch;
 
-        :Kwargs:
+        Kwargs:
             * center        : if true, returns the coordinates of the center of the patch. if False, returns the UL corner.
             * checkindex    : Checks the index of the patch
 
-        :Returns:
+        Returns:
             * x, y, depth, width, length, strike, dip
 
         When we build the fault, the patches are not exactly rectangular. Therefore, 
@@ -1823,11 +1836,11 @@ class RectangularPatches(Fault):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def distanceMatrix(self, distance='center', lim=None):
+    def distanceMatrix(self, distance='center', lim=None, nproc=1, verbose=False):
         '''
         Returns a matrix of the distances between patches.
 
-        :Kwargs:
+        Kwargs:
             * distance  : has to be 'center' for now. No other method is implemented for now.
             * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
         '''
@@ -1836,16 +1849,35 @@ class RectangularPatches(Fault):
         if self.N_slip==None:
             self.N_slip = self.slip.shape[0]
 
+        # Multiprocessing
+        if nproc>1:
+            import multiprocessing
+            print('Computing distances using %d cpus'%(nproc))
+            ijs = []
+            for i in range(self.N_slip):
+                f = deepcopy(self)
+                ijs.append([f,i,lim])
+            pool = multiprocessing.Pool(nproc)
+            results = pool.map(getDist,ijs)
+            Distances = np.zeros((self.N_slip, self.N_slip))
+            for result in results:
+                i,d=result
+                for j in range(i):
+                    Distances[i,j] = d[j]
+                    Distances[j,i] = d[j]
+            return Distances
+
         # Loop
         Distances = np.zeros((self.N_slip, self.N_slip))
         for i in range(self.N_slip):
+            if verbose:
+                sys.stdout.write('Distances from patch %d/%d\r'%(i,self.N_slip))
             p1 = self.patch[i]
-            for j in range(self.N_slip):
-                if j == i:
-                    continue
+            for j in range(i):
                 p2 = self.patch[j]
                 Distances[i,j] = self.distancePatchToPatch(p1, p2, distance='center', lim=lim)
-
+                Distances[j,i] = Distances[i,j]
+        print('')
         # All done
         return Distances
     # ----------------------------------------------------------------------
@@ -1855,11 +1887,11 @@ class RectangularPatches(Fault):
         '''
         Measures the distance between two patches.
         
-        :Args:
+        Args:
             * patch1    : geometry of the first patch.
             * patch2    : geometry of the second patch.
 
-        :Kwargs:
+        Kwargs:
             * distance  : has to be 'center' for now. Distance between the centers of the patches.
             * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
         '''
@@ -1887,11 +1919,11 @@ class RectangularPatches(Fault):
         '''
         Computes the surface displacement at the data location using okada.
 
-        :Args:
+        Args:
             * data          : data object from gps or insar.
             * patch         : number of the patch that slips
 
-        :Kwargs:
+        Kwargs:
             * slip          : if a number is given, that is the amount of slip along strike. If three numbers are given, that is the amount of slip along strike, along dip and opening. If None, values from slip are taken.
         '''
 
@@ -1948,10 +1980,10 @@ class RectangularPatches(Fault):
         |   |   |     |     |       |      |   |      |    |   |
         +---+---+-----+-----+-------+------+---+------+----+---+
 
-        :Args:
+        Args:
             * filename            : Name of the text file
 
-        :Kwargs:
+        Kwargs:
             * aggregatePatchNodes : Aggregates patche nodes that are closer than a distance (float)
             * square              : If square == True, length = width and format becomes
 
@@ -2069,10 +2101,10 @@ class RectangularPatches(Fault):
         ''' 
         Get the center of one rectangular patch.
 
-        :Args:
+        Args:
             * p     : Patch geometry.
 
-        :Returns:
+        Returns:
             * x,y,z  : Coordinates of the center
         '''
     
@@ -2093,7 +2125,7 @@ class RectangularPatches(Fault):
         '''
         Computes the total slip. Stores is in self.totalslip
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2109,7 +2141,7 @@ class RectangularPatches(Fault):
         '''
         Get the center of the patches.
 
-        :Returns:
+        Returns:
             * centers       : list of centers [x,y,z]
         '''
 
@@ -2137,7 +2169,7 @@ class RectangularPatches(Fault):
         Has not been tested in a long time...
 
 
-        :Kwargs:
+        Kwargs:
             * box       : Can be a list of [minlon, maxlon, minlat, maxlat, n].
             * disk      : list of [xcenter, ycenter, radius, n]
             * err       : Errors are set randomly using a uniform distribution multiplied by {err}
@@ -2350,10 +2382,10 @@ class RectangularPatches(Fault):
         '''
         Takes an existing patch and shrinks its size in the horizontal direction.
 
-        :Args:
+        Args:
             * ipatch        : Index of the patch of concern.
 
-        :Kwargs:
+        Kwargs:
             * fixedside     : One side has to be fixed, takes the southernmost if 'south', takes the northernmost if 'north'
             * finallength   : Length of the final patch.
         '''
@@ -2431,13 +2463,13 @@ class RectangularPatches(Fault):
         '''
         Extracts the Along Strike variations of the slip at a given depth, resampled along the discretized fault trace.
 
-        :Kwargs:
+        Kwargs:
             * depth       : Depth at which we extract the along strike variations of slip.
             * discret     : Discretization length
             * filename    : Saves to a file.
             * interpolation : Interpolation method
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2528,13 +2560,13 @@ class RectangularPatches(Fault):
         '''
         Extract the Along Strike Variations of slip at a given depth
 
-        :Args:
+        Args:
             * depth         : Depth at which we extract the along strike variations of slip.
             * origin        : Computes a distance from origin. Give [lon, lat].
             * filename      : Saves to a file.
             * orientation   : defines the direction of positive distances.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2615,11 +2647,11 @@ class RectangularPatches(Fault):
         '''
         Extracts the Along Strike Variations of the creep at all depths for the discretized version.
 
-        :Kwargs:
+        Kwargs:
             * filename      : save in this file
             * discret       : Discretize the fault
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2673,14 +2705,14 @@ class RectangularPatches(Fault):
         Returns the vector tangential to the fault at the i-th point of the fault (discretized if True).
         if normal is True, returns a normal vector (+90 counter-clockwise wrt. tangente)
 
-        :Args:
+        Args:
             * i : index of the point og the fault trace
 
-        :Kwargs:
+        Kwargs:
             * discretized: Use the discretized fault trace
             * normal: Returns a fault normal vector (default is False)
 
-        :Returns:
+        Returns:
             * vector: 3D vector
         '''
 
@@ -2723,10 +2755,10 @@ class RectangularPatches(Fault):
         '''
         Returns the position of a patch along strike (distance to the first point of the fault).
 
-        :Args:
+        Args:
             * p: patch index or the patch.
 
-        :Returns:
+        Returns:
             * position: Float 
 
         '''
@@ -2779,7 +2811,7 @@ class RectangularPatches(Fault):
         '''
         Uses okada92 to compute the traction change on each patch.
 
-        :Kwargs:
+        Kwargs:
             * factor        : Conversion fator between slip units and distance units. In a regular case, distance units are km. If the slip is in mm, then factor is 10e-6.
             * mu            : Shear Modulus (default is 30e9 Pa).
             * nu            : Poisson's ratio (default is 0.25).
@@ -2834,7 +2866,7 @@ class RectangularPatches(Fault):
         Computes the Coulomb failure stress change on patches.
         Normal stress is positive away from the center of the patch.
 
-        :Kwargs:
+        Kwargs:
             * friction: Standard coefficient of friction
             * 'strike' or 'dip'
 
@@ -2865,7 +2897,7 @@ class RectangularPatches(Fault):
         
         :Note: Has not been tested in a loooong time...
 
-        :Kwargs:
+        Kwargs:
             * factor        : Conversion fator between slip units and distance units. In a regular case, distance units are km. If the slip is in mm, then factor is 10e-6.
             * mu            : Shear Modulus (default is 30e9 Pa).
             * nu            : Poisson's ratio (default is 0.25).
@@ -2930,12 +2962,12 @@ class RectangularPatches(Fault):
     # ----------------------------------------------------------------------
     def plot(self, figure=134, slip='total', 
              equiv=False, show=True, axesscaling=True, 
-             Norm=None, linewidth=1.0, plot_on_2d=True, 
+             norm=None, linewidth=1.0, plot_on_2d=True, 
              drawCoastlines=True, expand=0.2):
         '''
         Plot the available elements of the fault.
         
-        :Args:
+        Args:
             * figure        : Number of the figure.
             * slip          : which slip to plot
             * equiv         : plot the equivalent patches
@@ -2968,7 +3000,7 @@ class RectangularPatches(Fault):
             fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
 
         # Draw the fault
-        fig.faultpatches(self, slip=slip, Norm=Norm, colorbar=True, plot_on_2d=plot_on_2d)
+        fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, plot_on_2d=plot_on_2d)
 
         # Plot the trace of there is one
         if self.lon is not None:
@@ -2990,11 +3022,11 @@ class RectangularPatches(Fault):
         '''
         For a list of positions, returns the patches that are directly underneath. Only works if you have a vertical fault.
 
-        :Args:
+        Args:
             * xf  : fault trace x coordinate
             * yf  : fault trace y coordinates
 
-        :Kwargs:
+        Kwargs:
             * ref: 'utm' or 'lonlat'
             * tolerance: Tolerance for finding the patches (in km)
 
@@ -3084,11 +3116,11 @@ class RectangularPatches(Fault):
         '''
         User provides a Mapping function np.array((len(self.patch), len(fault.patch))) and a fault and the slip from the argument fault is mapped into self.slip.
 
-        :Args:
+        Args:
             * Map   : 2D array for mapping function
             * fault : fault object
 
-        :Returns:
+        Returns:
             * None
 
         '''
@@ -3117,10 +3149,10 @@ class RectangularPatches(Fault):
         These two faults must have the same surface trace. If the deep fault has more than one raw of patches, 
         it might go wrong and give some unexpected results.
 
-        :Args:
+        Args:
             * deepfault     : Deep section of the fault.
 
-        :Returns:
+        Returns:
             * None
 
         '''
@@ -3242,16 +3274,16 @@ class RectangularPatches(Fault):
         projecting the center of patches on that plane and doing a simple resampling.
         The closer the two faults, the better...
 
-        :Args:
+        Args:
             * fault         : Fault that has a slip distribution
 
-        :Kwargs:
+        Kwargs:
             * interpolation : Type of interpolation method. Can be 'linear', 'cubic' or 'quintic'
             * verbose       : if True, the routine says a few things.
             * addlimits     : Adds the upper and lower bounds of the fault in the interpolation scheme.
             * smooth        : Some interpolation smoothing factor
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -3382,11 +3414,11 @@ class RectangularPatches(Fault):
         '''
         Returns a vector normal to a plane with a given strike and dip.
         
-        :Args:
+        Args:
             * strike    : Strike angle in radians
             * dip       : Dip angle in radians
 
-        :Returns:
+        Returns:
             * list a 3 components
         '''
         
@@ -3412,7 +3444,7 @@ class RectangularPatches(Fault):
         Computes the adjacency matrix for the fault geometry provided by ndip x nstrike. Values of 0
         indicate no adjacency while values of 1 indicate patches share an edge.
      
-        :Kwargs:
+        Kwargs:
             * verbose   : Speak to me 
             * patchinc  : For a patch N, if patch N+1 is located along-strike, patchinc should be set to 'alongstrike' (default). If patch N+1 is located along-dip, patchinc should be set to 'alongdip'.
 
@@ -3478,7 +3510,7 @@ class RectangularPatches(Fault):
         This routine is not designed for unevenly paved faults.
         It does not account for the variations in size of the patches.
 
-        :Kwargs:
+        Kwargs:
             * verbose       : speak to me
             * method        : Useless argument only here for compatibility reason
             * irregular     : Can be used if the parametrisation is not regular along dip (N patches above or below one patch). If True, the Laplacian takes into account that there is not only one patch above (or below)
@@ -3522,7 +3554,7 @@ class RectangularPatches(Fault):
         '''
         Replaces the patch nodes that are close to each other by the barycenter.
 
-        :Args:
+        Args:
             * distance      : Distance between the patches to aggregate.
         '''
 
@@ -3562,11 +3594,11 @@ class RectangularPatches(Fault):
         '''
         Return 1 patch consisting of 2 neighbor patches that have common corners.
 
-        :Args:
+        Args:
             * p1  : index of the patch #1.
             * p2  : index of the patch #2.
 
-        :Kwargs:
+        Kwargs:
             * eps : tolerance value for the patch corners (in km)
         '''
 
@@ -3617,13 +3649,13 @@ class RectangularPatches(Fault):
 #       Francisco's program cuts the patches into small patches, interpolates the kernels to get the GFs at each point source, 
 #       then averages the GFs on the pacth. To decide the size of the minimum patch, it uses St Vernant's principle.
 #       If amax is specified, the minimum size is fixed.
-#       :Args:
+#       Args:
 #           * data          : Data object from gps or insar.
 #           * edksfilename  : Name of the file containing the kernels.
 #           * amax          : Specifies the minimum size of the divided patch. If None, uses St Vernant's principle.
 #           * plot          : Activates plotting.
 #           * w_file        : if False, will not write the subParam fil (default=True)
-#       :Returns:
+#       Returns:
 #           * filename         : Name of the subParams file created (only if w_file==True)
 #           * RectanglePropFile: Name of the rectangles properties file
 #           * ReceiverFile     : Name of the receiver file
@@ -3710,7 +3742,7 @@ class RectangularPatches(Fault):
 #
 #       These files are to be used with /home/geomod/dev/edks/MPI_EDKS/calcGreenFunctions_EDKS_subRectangles.py
 #
-#       :Args:
+#       Args:
 #           * ref           : Lon and Lat of the reference point. If None, the patches positions is in the UTM coordinates.
 #       '''
 #

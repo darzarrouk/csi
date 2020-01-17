@@ -23,10 +23,10 @@ class gps(SourceInv):
     '''
     A class that handles a network of gps displacements
 
-    :Args:
+    Args:
         * name      : Name of the dataset.
 
-    :Kwargs:
+    Kwargs:
         * utmzone   : UTM zone  (optional, default=None)
         * lon0      : Longitude of the center of the UTM zone
         * lat0      : Latitude of the center of the UTM zone
@@ -72,16 +72,16 @@ class gps(SourceInv):
 
         Set station names and locations attributes
 
-        :Args:
+        Args:
             * sta_name: station names
             * x: x coordinate (longitude or UTM) 
             * y: y coordinate (latitude or UTM)
 
-        :Kwargs:
+        Kwargs:
             * loc_format: location format ('LL' for lon/lat or 'XY' for UTM)
             * initVel: initialize a vel_enu attribute with zeros
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -132,14 +132,14 @@ class gps(SourceInv):
             |    POUT      |14.5 | 23.2|
             +--------------+-----+-----+
 
-        :Args:
+        Args:
             * filename  : name of the station list 
             
-        :Kwargs:
+        Kwargs:
             * initVel   : Intialize a vel_enu vector or not
             * header    : Length of the file header
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -180,13 +180,13 @@ class gps(SourceInv):
             - if iftwo == gpsdata.name: Keep the incomcing measure
             - if iftwo == self.name: Keep the current one
 
-        :Args:
+        Args:
             * gpsdata           : A gps instance
 
-        :Kwargs:
+        Kwargs:
             * iftwo             : same station policy
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -223,13 +223,13 @@ class gps(SourceInv):
         '''
         Combine networks into a new network.
 
-        :Args:
+        Args:
             * gpsdata           : List of gps instances.
 
-        :Kwargs:
+        Kwargs:
             * newNetworkName    : Name of the returned network
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -269,21 +269,26 @@ class gps(SourceInv):
         
         +--------+---------+---------+
         | STNAME | X_COORD | Y_COORD |
+        +========+=========+=========+
+        |        |         |         |
         +--------+---------+---------+
+
 
         If loc_format='LL', then the file should be as
 
         +--------+-----+-----+
         | STNAME | LON | LAT |
+        +========+=====+=====+
+        |        |     |     |
         +--------+-----+-----+
 
-        :Args:
+        Args:
             * station_file: station filename including station coordinates
 
-        :Kwargs:
+        Kwargs:
             * loc_format:  station file format (default= 'LL')
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -319,10 +324,10 @@ class gps(SourceInv):
         '''
         Gets informations for a station.
 
-        :Args:
+        Args:
             * station   : name of the station
 
-        :Returns:
+        Returns:
             * lon, lat, vel, err, synth, los
 
         '''
@@ -361,13 +366,13 @@ class gps(SourceInv):
         '''
         Gets the velocities enu for the station.
 
-        :Args:
+        Args:
             * station   : name of the station.
 
-        :Kwargs:
+        Kwargs:
             * data      : which velocity do you want ('data' or 'synth')
 
-        :Returns:
+        Returns:
             * vel       : 3D vector
         '''
 
@@ -388,10 +393,10 @@ class gps(SourceInv):
         '''
         Gets the errors enu for the station.
 
-        :Args:
+        Args:
             * station   : name of the station.
 
-        :Returns:
+        Returns:
             * vector    : 3D vector of uncertainties
         '''
 
@@ -405,10 +410,10 @@ class gps(SourceInv):
         '''
         Scales the errors (in-place multiplication)
 
-        :Args:
+        Args:
             * scale : float
 
-        :Returns:
+        Returns:
             * None
 
         '''
@@ -423,11 +428,11 @@ class gps(SourceInv):
         '''
         Given a list of station names, returns the corresponding gps object.
 
-        :Args:
+        Args:
             * name      : Name of the returned gps object
             * stations  : List of station names.
 
-        :Returns:
+        Returns:
             * gps       : Instance of the gps class
         '''
         
@@ -469,10 +474,10 @@ class gps(SourceInv):
         '''
         Builds a diagonal data covariance matrix using the formal uncertainties in the GPS data.
 
-        :Kwargs:
+        Kwargs:
             * direction : Direction to take into account. Can be any combination of e, n and u.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -507,10 +512,10 @@ class gps(SourceInv):
         '''
         Scales the gps velocities by a factor.
 
-        :Args:
+        Args:
             * factor    : multiplication factor (float)
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -529,7 +534,7 @@ class gps(SourceInv):
         Project the GPS velocities onto a profile. 
         Works on the lat/lon coordinates system.
 
-        :Args:
+        Args:
             * name              : Name of the profile.
             * loncenter         : Profile origin along longitude.
             * latcenter         : Profile origin along latitude.
@@ -537,10 +542,10 @@ class gps(SourceInv):
             * azimuth           : Azimuth in degrees.
             * width             : Width of the profile.
 
-        :Kwargs:
+        Kwargs:
             * data              : Do the profile through the 'data' or the 'synth'etics.
 
-        :Returns:
+        Returns:
             * None: Profiles are stored in self.profiles
         '''
 
@@ -619,10 +624,10 @@ class gps(SourceInv):
         dic['Length'] = length
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
-        dic['Parallel Velocity'] = np.array(Vacros)
-        dic['Parallel Error'] = np.array(Eacros)
-        dic['Normal Velocity'] = np.array(Valong)
-        dic['Normal Error'] = np.array(Ealong)
+        dic['Normal Velocity'] = np.array(Vacros)
+        dic['Normal Error'] = np.array(Eacros)
+        dic['Parallel Velocity'] = np.array(Valong)
+        dic['Parallel Error'] = np.array(Ealong)
         dic['Vertical Velocity'] = np.array(Vup)
         dic['Vertical Error'] = np.array(Eup)
         dic['Distance'] = np.array(Dalong)
@@ -644,14 +649,14 @@ class gps(SourceInv):
         '''
         Writes the profile named 'name' to the ascii file filename.
 
-        :Args:
+        Args:
             * name      : Name of the profile to write out
             * filename  : Name of the output file
 
-        :Kwargs:
+        Kwargs:
             * fault     : Add the location of a fault (uses the fault trace)
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -706,16 +711,16 @@ class gps(SourceInv):
         '''
         Plot profile.
 
-        :Args:
+        Args:
             * name      : Name of the profile.
 
-        :Kwargs:
+        Kwargs:
             * legendscale   : Length of the legend arrow.
             * fault         : Add a fault on the plot
             * data          : list of type of data to use
             * show          : Show me
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -740,8 +745,8 @@ class gps(SourceInv):
             bb[i,1] = y
         bb[4,0] = bb[0,0]
         bb[4,1] = bb[0,1]
-        self.fig.carte.plot(bb[:,0], bb[:,1], '.k', zorder=40)
-        self.fig.carte.plot(bb[:,0], bb[:,1], '-k', zorder=40)
+        self.fig.carte.plot(bb[:,0], bb[:,1], '.k', zorder=0)
+        self.fig.carte.plot(bb[:,0], bb[:,1], '-k', zorder=0)
 
         # open a figure
         fig = plt.figure()
@@ -794,11 +799,11 @@ class gps(SourceInv):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
 
-        :Args:
+        Args:
             * name      : name of the profile.
             * fault     : fault object from verticalfault.
 
-        :Returns:
+        Returns:
             * distance  : float
         '''
 
@@ -855,15 +860,15 @@ class gps(SourceInv):
         |             |     |     |       |       |       |       |
         +-------------+-----+-----+-------+-------+-------+-------+ 
 
-        :Args:
+        Args:
             * velfile   : File containing the velocities.
 
-        :Kwargs:
+        Kwargs:
             * factor    : multiplication factor for velocities
             * minerr    : if err=0, then err=minerr.
             * header    : length of the file header
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -938,16 +943,16 @@ class gps(SourceInv):
         |             |     |     |       |       |       |       |       |       |
         +-------------+-----+-----+-------+-------+-------+-------+-------+-------+
 
-        :Args:
+        Args:
             * velfile   : Input file
 
-        :Kwargs:
+        Kwargs:
             * factor    : multiplication factor for velocities
             * minerr    : if err=0, then err=minerr.
             * header    : length of the header
             * checkNaNs : If True, kicks out stations with NaNs
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1016,14 +1021,14 @@ class gps(SourceInv):
         '''
         Reading velocities from an ICM (F. Ortega's format) file. Maybe obsolete now.
 
-        :Args:
+        Args:
             * velfile   : Input file
 
-        :Kwargs:
+        Kwargs:
             * factor    : multiplication factor for velocities
             * header    : length of the file header
 
-        :Returns:
+        Returns:
             * None
         '''
         if self.verbose:
@@ -1111,15 +1116,15 @@ class gps(SourceInv):
         '''
         Reading velocities from a unavco file. This follows the unavco format as it was in 2013.
 
-        :Args:
+        Args:
             * velfile   : Input file
 
-        :Kwargs:
+        Kwargs:
             * factor    : multiplication factor for velocities
             * header    : length of the file header
             * minerr    : If the error is lower than minerr, set it to minerr
 
-        :Returns:
+        Returns:
             * None
         
         '''
@@ -1189,15 +1194,15 @@ class gps(SourceInv):
         '''
         Reading velocities from Sopac file and converting to mm/yr. Format is as sopac was providing it in 2013.
         
-        :Args:
+        Args:
             * velfile   : File containing the velocities.
             * coordfile : File containing the coordinates.
 
-        :Kwargs:
+        Kwargs:
             * factor    : Scaling factor
             * minerr    : If err is lower than minerr, err is set to minerr
 
-        :Returns:
+        Returns:
             * None
         '''
         if self.verbose:
@@ -1300,13 +1305,13 @@ class gps(SourceInv):
         ''' 
         Select the stations in a box defined by min and max, lat and lon.
         
-        :Args:
+        Args:
             * minlon        : Minimum longitude.
             * maxlon        : Maximum longitude.
             * minlat        : Minimum latitude.
             * maxlat        : Maximum latitude.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1338,12 +1343,12 @@ class gps(SourceInv):
         '''
         Projects the GPS data into the InSAR Line-Of-Sight provided.
 
-        :Args:
+        Args:
             * los       : list of three components of the line-of-sight vector.
             * incidence : incidence angle (single float)
             * heading   : heading (single float)
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1386,10 +1391,10 @@ class gps(SourceInv):
         '''
         Keeps only the stations on the arg list.
 
-        :Args:
+        Args:
             * stations  : list of stations to keep.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1414,18 +1419,18 @@ class gps(SourceInv):
         '''
         Add a station to a network.
 
-        :Args:
+        Args:
             * station   : name of the station
             * lon       : Longitude
             * lat       : Latitude
             * vel       : velocity (3 numbers)
             * err       : uncertainty (3 numbers)
 
-        :Kwargs:
+        Kwargs:
             * synth     : Synthetics (3 numbers)
             * los       : Line-of-sight projection (1 number)
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1469,11 +1474,11 @@ class gps(SourceInv):
         ''' 
         Rejects the pixels that are {dis} km away from the faults
 
-        :Args:
+        Args:
             * dis       : Threshold distance.
             * faults    : list of fault objects.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1513,11 +1518,11 @@ class gps(SourceInv):
         ''' 
         Rejects the pixels that are dis km close to the fault.
 
-        :Args:
+        Args:
             * dis       : Threshold distance.
             * faults    : list of fault objects.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1557,10 +1562,10 @@ class gps(SourceInv):
         '''
         Reject the stations named in stations.
 
-        :Args:
+        Args:
             * station   : name or list of names of station.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1581,10 +1586,10 @@ class gps(SourceInv):
         '''
         Removes a station from the network
 
-        :Args:
+        Args:
             * station       : Name of the station
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -1616,11 +1621,11 @@ class gps(SourceInv):
         Removes a Helmert transform that best references the velocity
         field from self to that of network.
 
-        :Args:
+        Args:
             * network   : gps instance 
             * components: Number of components to use
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1653,11 +1658,11 @@ class gps(SourceInv):
         '''
         References the velocities to a single station.
 
-        :Args:
+        Args:
             * station   : name of the station or list of station names.
             * refSynth  : Apply referencing to synthetics as well (default=False)
 
-        :Returns:
+        Returns:
             * None
         '''
     
@@ -1707,14 +1712,14 @@ class gps(SourceInv):
         From a dictionary of Green's functions, sets these correctly into the fault 
         object fault for future computation.
 
-        :Args:
+        Args:
             * fault     : Instance of Fault
             * G         : Dictionary with 3 entries 'strikeslip', 'dipslip' and 'tensile'. These can be a matrix or None.
 
-        :Kwargs:
+        Kwargs:
             * vertical  : Do we set the vertical GFs? default is True
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1806,10 +1811,10 @@ class gps(SourceInv):
         Strain is only computed as an aerial strain (2D). If verticals are included, it just estimates 
         a vertical translation for the network.
 
-        :Args:
+        Args:
             * transformation : String. Can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly'
 
-        :Returns:
+        Returns:
             * Integer
         '''
 
@@ -1856,13 +1861,13 @@ class gps(SourceInv):
         '''
         Returns the estimator for the transform.
 
-        :Args:
+        Args:
             * transformation : String. Can be 'strain', 'full', 'strainnorotation', 'strainnotranslation', 'strainonly', 'translation' or 'translationrotation'
 
-        :Kwargs:
+        Kwargs:
             * computeNormFact: compute and store the normalizing factor
 
-        :Returns:
+        Returns:
             * 2d array
         '''
         
@@ -1900,14 +1905,14 @@ class gps(SourceInv):
         Computes the transformation that is stored with a particular fault.
         Stores it in transformation.
 
-        :Args:
+        Args:
             * fault : An instance of a fault class
 
-        :Kwargs:    
+        Kwargs:    
             * verbose   : talk to me
             * custom    : Do we have custom green's functions
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -1929,7 +1934,7 @@ class gps(SourceInv):
             return
 
         # Get the corresponding values
-        vec = fault.polysol[self.name]
+        vec = fault.polysol[self.name][transformation]
 
         # Compute the synthetics
         tmpsynth = np.dot(orb, vec)
@@ -1961,6 +1966,9 @@ class gps(SourceInv):
     def computeCustom(self, fault):
         '''
         Computes the displacements associated with the custom green's functions.
+
+        Args:
+            * fault : A fault instance.
         '''
 
         # Get GFs and parameters
@@ -2003,13 +2011,13 @@ class gps(SourceInv):
             - Fifth column is the Epsilon_yy component
             - Sixth column is the Rotation term
 
-        :Kwargs:
+        Kwargs:
             * strain: True/False
             * rotation: True/False
             * translation: True/False
             * computeNorFact: Recompute normalizatin factor.
 
-        :Returns:
+        Returns:
             * 2D array
         '''
 
@@ -2110,12 +2118,12 @@ class gps(SourceInv):
         '''
         Returns a Helmert matrix for a gps data set.
 
-        :Kwargs:
+        Kwargs:
             * components: How many components (can be 2 or 3)
             * meanbase: float for baseline length normalization
             * center: tuple of float for the center o the network
 
-        :Returns:
+        Returns:
             * 2d array
 
         '''
@@ -2196,14 +2204,14 @@ class gps(SourceInv):
         '''
         Computes the 2D strain tensor stored in the fault given as an argument.
 
-        :Args:
+        Args:
             * fault : Instance of a fault class
 
-        :Kwargs:
+        Kwargs:
             * write2file    : Write to a file
             * verbose       : talk to me
 
-        :Returns:
+        Returns:
             * None
 
         '''
@@ -2310,10 +2318,10 @@ class gps(SourceInv):
         '''
         Computess the 2D strain and removes it.
 
-        :Args:
+        Args:
             * fault : Instance of a fault class
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2330,13 +2338,13 @@ class gps(SourceInv):
         '''
         Removes the Helmert Transform stored in the fault given as argument.
 
-        :Args:
+        Args:
             * fault : Instance of a fault class
 
-        :Kwargs:
+        Kwargs:
             * verbose: talk to me
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2361,10 +2369,10 @@ class gps(SourceInv):
         '''
         Computes the Helmert and removes it.
 
-        :Args:
+        Args:
             * fault : Instance of a fault class
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2381,12 +2389,12 @@ class gps(SourceInv):
         '''
         Removes the best fit Euler rotation from the network.
 
-        :Kwargs:
+        Kwargs:
             * eradius   : Radius of the earth (should not change that much :-)).
             * stations  : List of stations on which rotation is estimated. If None, uses all the stations.
             * verbose   : talk to me
 
-        :Returns:
+        Returns:
             * None
         '''
         if verbose:
@@ -2426,6 +2434,9 @@ class gps(SourceInv):
         # Remove the rotation
         self.compute_rotation(self.elon*np.pi/180., self.elat*np.pi/180., self.omega*np.pi/180.)
 
+        # Correct station velocity
+        self.vel_enu -= self.rot_enu
+
         # All done
         return
 
@@ -2433,12 +2444,12 @@ class gps(SourceInv):
         '''
         Removes a rotation from the lon, lat and velocity of a rotation pole.
 
-        :Args:
+        Args:
             * elon   : Longitude of the rotation pole 
             * elat   : Latitude of the rotation pole 
             * omega  : Amplitude of the rotation (in rad/yr).
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2461,11 +2472,11 @@ class gps(SourceInv):
         '''
         Fits a full Helmert transform to the network 
 
-        :Kwargs:
+        Kwargs:
             * components    : Take the 2 horizontal (default) or 3 enu
             * data          : Can be 'data', 'synth', 'res', or 'transofmration'
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2493,11 +2504,11 @@ class gps(SourceInv):
         '''
         Fits a Helmert transform to the network and removes it.
 
-        :Kwargs:
+        Kwargs:
             * components    : Take the 2 horizontal (default) or 3 enu
             * data          : Can be 'data', 'synth', 'res', or 'transofmration'
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2527,10 +2538,10 @@ class gps(SourceInv):
         '''
         Builds a Delaunay triangulation of the GPS network.
 
-        :Kwargs:   
+        Kwargs:   
             * plot          : True/False(default).
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2562,15 +2573,15 @@ class gps(SourceInv):
         '''
         Removes the synthetics from a slip model.
 
-        :Args:
+        Args:
             * faults        : list of faults to include.
 
-        :Kwargs:
+        Kwargs:
             * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
             * poly          : if a polynomial function has been estimated, include it.
             * custom        : if some custom green's function was used, include it.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2587,16 +2598,16 @@ class gps(SourceInv):
         '''
         Takes the slip model in each of the faults and builds the synthetic displacement using the Green's functions.
 
-        :Args:
+        Args:
             * faults        : list of faults to include.
 
-        :Kwargs:
+        Kwargs:
             * direction     : list of directions to use. Can be any combination of 's', 'd' and 't'.
             * vertical      : True/False
             * include_poly  : if a polynomial function has been estimated, include it.
             * custom        : if some custom green's function was used, include it.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2751,12 +2762,12 @@ class gps(SourceInv):
         '''
         Write the data to a file. If namefile is None, then the output file will be in the form outDir/self.name.dat
 
-        :Kwargs:
+        Kwargs:
             * namefile  : Name of the output file.
             * data      : data, synth, strain, transformation.
             * outDir    : Output directory
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2812,7 +2823,7 @@ class gps(SourceInv):
         '''
         Computes the RMS of the data and if synthetics are computed, the RMS of the residuals
         
-        :Returns:
+        Returns:
             * dataRMS, synthRMS: 2 floats
         '''
 
@@ -2836,7 +2847,7 @@ class gps(SourceInv):
         '''                                                                                                      
         Computes the Variance of the data and if synthetics are computed, the RMS of the residuals                    
 
-        :Returns:
+        Returns:
             * dataVariance, synthVariance: 2 floats
         '''
         
@@ -2862,7 +2873,7 @@ class gps(SourceInv):
         '''                                                                                                      
         Computes the summed misfit of the residuals                    
 
-        :Returns:
+        Returns:
         '''
 
         # Synthetics
@@ -2882,7 +2893,7 @@ class gps(SourceInv):
         '''
         Initializes a time series for all the stations.
 
-        :Kwargs:
+        Kwargs:
             * start         : Starting date
             * end           : Ending date
             * interval      : in days (default=1).
@@ -2893,7 +2904,7 @@ class gps(SourceInv):
             * los           : Los vector
             * factor        : scaling factor
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2935,12 +2946,12 @@ class gps(SourceInv):
         Filenames are entirely determined from the name of the station
         example: STAT.dat, COPO.dat, ISME.dat ...
     
-        :Kwargs:
+        Kwargs:
             * verbose   : talk to me
             * outdir    : output directory
             * steplike  : write 2 dots per day 
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -2963,7 +2974,7 @@ class gps(SourceInv):
         '''
         Returns a GPS object which displacements are the values at the desired date.
 
-        :Args:
+        Args:
             * date      : datetime.datetime instance
 
         Return:
@@ -3027,16 +3038,16 @@ class gps(SourceInv):
         Takes a seismolocation object with CMT informations and computes the time 
         series from these.
 
-        :Args:
+        Args:
             * sismo     : seismiclocation object (needs to have CMTinfo object and the corresponding faults list of dislocations).
 
-        :Kwargs:
+        Kwargs:
             * scale             : Scales the results (default is 1.).
             * verbose           : talk to me
             * elasticstructure  : can be okada or edks
             * sourceSpacing     : spacing of sources in case edks is chosen
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -3125,11 +3136,11 @@ class gps(SourceInv):
         '''
         Puts the offset from the time series between date1 and date2 into an instance of self.
 
-        :Args:
+        Args:
             * date1         : datetime object.
             * date2         : datetime object.
 
-        :Kwargs:
+        Kwargs:
             * destination   : if 'data', results are in vel_enu, if 'synth', results are in synth
         '''
 
@@ -3166,11 +3177,11 @@ class gps(SourceInv):
         The moment will be perturbed by a fraction of the moment (Moperc).
         if relative_location_is_ok is True, then all the mechanisms are moved by a common translation.
 
-        :Args:
+        Args:
             * sismo     : seismiclocation object
             * N         : Number of perturbed models
 
-        :Kwargs:
+        Kwargs:
             * xstd      : std dev in longitude (km)
             * ystd      : std dev in latitude (km)
             * depthstd  : std dev in depth (km)
@@ -3181,7 +3192,7 @@ class gps(SourceInv):
             * elasticstructure  : okada or edks
             * relative_location_is_ok : a common perturbation for all mechanisms
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -3310,13 +3321,13 @@ class gps(SourceInv):
         return
 
     def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, 
-            plot_los=False, drawCoastlines=True, expand=0.2, show=True, 
-            vertical=False, verticalsize=[30],
+            plot_los=False, drawCoastlines=True, expand=0.2, show=True, drawCountries=False,
+            vertical=False, verticalsize=[30], extent=None,
             data=['data'], color=['k']):
         '''
         Plot the network
 
-        :Kwargs:
+        Kwargs:
             * faults        : list of instances of faults
             * data          : list of data to plot (can be 'data', 'synth', 'res' or 'transformation')
             * vertical      : plot verticals (True/False)
@@ -3333,15 +3344,19 @@ class gps(SourceInv):
             * faults        : List of fault objects to plot the surface trace of a fault object (see verticalfault.py).
             * plot_los      : Plot the los projected gps as scatter points
 
-        :Returns:
+        Returns:
             * None
         '''
 
         # Get lons lats
-        lonmin = self.lon.min()-expand
-        lonmax = self.lon.max()+expand
-        latmin = self.lat.min()-expand
-        latmax = self.lat.max()+expand
+        if extent is None:
+            lonmin = self.lon.min()-expand
+            lonmax = self.lon.max()+expand
+            latmin = self.lat.min()-expand
+            latmax = self.lat.max()+expand
+        else:
+            assert len(extent)==4, 'Extent format must be: [lonmin, lonmax, latmin, latmax]'
+            lonmin, lonmax, latmin, latmax = extent
 
         # Create a figure
         fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, 
@@ -3350,7 +3365,8 @@ class gps(SourceInv):
         # Draw the coastlines
         if drawCoastlines:
             fig.drawCoastlines(drawLand=True, parallels=5, 
-                               meridians=5, drawOnFault=True)
+                               meridians=5, drawOnFault=True, 
+                               drawCountries=drawCountries)
 
         # Plot the fault trace if asked
         if faults is not None:

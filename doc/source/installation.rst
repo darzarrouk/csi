@@ -1,55 +1,42 @@
 Installation
 ===============================
 
-Repositories
+Dependencies:
+-------------
 
-Installation requires you to get access to the bzr repositories.
-There is 2 repositories for CSI and associated libraries: one at Caltech, one at ENS Paris.
-To get access to the repository at CalTech, contact Mark and Scott Dungan.\\
-To get access to the repository at ENS, contact Romain.\\
-These repos should be identical.\\
+CSI relies on a lot of amazing librairies written by smart people. Please install:
 
-__**Current Install instructions**__:
+- python3
+- gcc
+- numpy
+- spicy
+- pyproj
+- matplotlib
+- cartopy
+- multiprocessing
+- h5py
+- okada4py
 
-1. Create a directory where you will drop all the codes and go in this directory. In the following, I will call this directory "modeling". WARNING: Don't call this directory csi!!!!!\\
-Prepend the directory "modeling" to your PYTHONPATH environment variable. If you are operating bash shell, you would add the following line to your .bashrc file:
-   >> export PYTHONPATH=/absolute/path/to/modeling:$PYTHONPATH
+Repositories:
+-------------
 
-2. To install CSI, in the "modeling" directory, do:
-  >> bzr init csi
-  >> cd csi
-- If you want to get codes from the ENS repository:
-  >> bzr pull --remember bzr+ssh://csi@bzr.geologie.ens.fr/~
-- If you want to get codes from the Caltech repository:
-  >> bzr pull --remember bzr+ssh://csi@bzr.gps.caltech.edu
+To clone csi:
 
-For those who know bzr, the ~ is important for the ENS repository (I don't know why, I probably have badly configured the repository).
+>> git clone git+ssh://csi@git.geologie.ens.fr/ csi
 
-3. To install EDKS, go in the modeling directory, then do:
-  >> bzr init edks
-  >> cd edks
-- If you want to get codes from the ENS repository:
-  >> bzr pull --remember bzr+ssh://edks@bzr.geologie.ens.fr/~
-- If you want to get codes from the Caltech repository:
-  >> bzr pull --remember bzr+ssh://edks@bzr.gps.caltech.edu
+Okada4py is also one thing you will need:
 
-Then add the following lines to your .bashrc file (if you operate in bash):
-  export EDKS_HOME='/path/to/modeling/directory/edks'
-  export PYTHONPATH=${EDKS_HOME}/MPI_EDKS:$PYTHONPATH
-  export PATH=${EDKS_HOME}/MPI_EDKS:$PATH
-  export EDKS_BIN=${EDKS_HOME}/bin 
-  export OMP_NUM_THREADS=4
+>> git clone git+ssh://okada4py@git.geologie.ens.fr/~ okada4py
 
-4. To install okada4py, go in the modeling directory and do:
-  >> bzr init okada
-  >> cd okada
-- If you want to get codes from the ENS repository:
-  >> bzr pull --remember bzr+ssh://okada4py@bzr.geologie.ens.fr/~ 
-- If you want to get codes from the Caltech repository:
-  >> bzr pull --remember bzr+ssh://okada4py@bzr.gps.caltech.edu
-Then, do:
-  >> cd okada
-  >> sudo python setup.py install
-  
+Install:
+--------
+
+There is nothing to compile for CSI. It is pure python and we haven't written a proper install script.
+Therefore, the easiest way to go is to add the directory where you have cloned CSI to your PYTHONPATH environment variable:
+
+For instance, in Bash, add to your .bashrc or .bash_profile:
+
+>> export PYTHONPATH=/where/I/did/drop/the/code:$PYTHONPATH
+
 This should do it!
 

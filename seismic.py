@@ -26,10 +26,10 @@ class seismic(SourceInv):
     '''
     A class that handles optical correlation results
 
-    :Args:
+    Args:
        * name      : Name of the dataset.
 
-    :Kwargs:
+    Kwargs:
        * dtype     : Specifies a data type
        * utmzone   : UTM zone  (optional, default=None)
        * lon0      : Longitude of the center of the UTM zone
@@ -68,15 +68,15 @@ class seismic(SourceInv):
         '''
         Set station names and locations attributes
 
-        :Args:
+        Args:
             * sta_name: station names
             * x: x coordinate (longitude or UTM) 
             * y: y coordinate (latitude or UTM)
 
-        :Kwargs:
+        Kwargs:
             * loc_format: location format ('LL' for lon/lat or 'XY' for UTM)
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -107,10 +107,10 @@ class seismic(SourceInv):
         '''
         Build a diagonal Cd from standard deviations
 
-        :Args:
+        Args:
             * std: array of standard deviations
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -135,11 +135,11 @@ class seismic(SourceInv):
         '''
         Build Cd from residuals
 
-        :Args:
+        Args:
             * fault: An instance of a fault class 
             * model: Can be a AlTar kinematic model file (posterior mean model in a txt file) or a bigM vector
 
-        :Kwargs:
+        Kwargs:
             * n_ramp_param: number of nuisance parameters (e.g., InSAR orbits, used with a model file)
             * eik_solver: eikonal solver (to be used with an AlTar kinematic model file)
             * npt**2: numper of point sources per patch (to be used with an AlTar kinematic model file)
@@ -149,7 +149,7 @@ class seismic(SourceInv):
             * exp_corr: Use an exponential correlation function
             * exp_corr_len: Correlation length
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -282,11 +282,11 @@ class seismic(SourceInv):
         '''
         Read kinematic Cd from a input file
 
-        :Kwargs:
+        Kwargs:
             * infile: Name of the input file
             * dtype: type of data to read
 
-        :Returns:   
+        Returns:   
             * None
         '''
         
@@ -305,7 +305,7 @@ class seismic(SourceInv):
             * outfile: Name of the output file
             * dtype:   Type of data to write. 
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -337,13 +337,13 @@ class seismic(SourceInv):
         | STNAME | LON | LAT |
         +--------+-----+-----+
 
-        :Args:
+        Args:
             * station_file: station filename including station coordinates
 
-        :Kwargs:
+        Kwargs:
             * loc_format:  station file format (default= 'LL')
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -375,10 +375,10 @@ class seismic(SourceInv):
         '''
         Read sac data files
 
-        :Args:
+        Args:
             * sacfiles  : A list of input file names
 
-        :Returns:
+        Returns:
             * None
         '''
         # Import personnal sac module
@@ -411,10 +411,10 @@ class seismic(SourceInv):
         '''
         Initialize Green's function database engine
 
-        :Args:
+        Args:
             * waveform_engine:  Green's function database engine
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -429,10 +429,10 @@ class seismic(SourceInv):
         '''
         Initialize Bob Hermann's wavenumber integration engine
 
-        :Args:
+        Args:
             * waveform_engine   : Bob Hermann's wavenumber intergration engine
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -449,10 +449,10 @@ class seismic(SourceInv):
         '''
         Initialize Kikuchi Kanamori waveform engine
 
-        :Args:
+        Args:
             * waveform_engine: Kikuchi-Kanamori waveform engine
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -479,7 +479,7 @@ class seismic(SourceInv):
         '''
         Build Green's functions for a particular source location
 
-        :Args:
+        Args:
             * dir_name:  Name of the directory where synthetics will be created
             * strike:    Fault strike (in deg)
             * dip:       Fault dip (in deg)
@@ -487,14 +487,14 @@ class seismic(SourceInv):
             * M0:        Seismic moment
             * rise_time: Rise time (in sec)
 
-        :Kwargs:
+        Kwargs:
             * stf_type: Type of source time function (default is 'triangle')
             * src_loc:  Point source coordinates (ndarray)
             * rfile_name: pulse file name if stf_type='rfile'
             * ofd:       stream for standard output (default=sys.stdout)
             * efd:       stream for standard error  (default=sys.stdout)        
 
-        :Returns:
+        Returns:
             * None
         '''
         
@@ -538,7 +538,7 @@ class seismic(SourceInv):
 
         :Note: Please complement explanations
 
-        :Kwargs:
+        Kwargs:
            * synth_vector:      concatenated synthetic waveforms
            * nc:                number of collumns per page
            * nl:                number of rows per page
@@ -555,7 +555,7 @@ class seismic(SourceInv):
            * alignENZ:          if True, 3 columns are plotted (ENU) and missing traces are left blank
            * stationYlims       if True, every channels of each stations will have the same ylim
 
-        :Returns:
+        Returns:
            * None
         '''
         

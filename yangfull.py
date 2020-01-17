@@ -24,9 +24,6 @@ Adapted from USGS's dMODELS MATLAB scripts.
 import numpy as np
 import sys
 
-# Personals
-#import okada4py as ok92
-
 
 #--------------------------------------------------
 # Check inputs
@@ -59,7 +56,7 @@ def ArraySizes(*args):
 # Displacements only
 def displacement(xs, ys, zs, xc, yc, zc, a, A, dip, strike, DP, nu=0.25):
     '''
-    Returns the displacements at the stations located on (xs, ys, zs) for spheroid pressure source
+    Returns the displacements at the stations located on (xs, ys, zs) for an prolate spheroid pressure source
         with center on (xc, yc, zc). All arguments can be float, list or array.
 
     Note :
@@ -77,17 +74,13 @@ def displacement(xs, ys, zs, xc, yc, zc, a, A, dip, strike, DP, nu=0.25):
             * nu                : poisson's ratio
 
     Returns:
-            * u       : Displacement array
+            * Ux, Uy, Uz        : horizontal and vertical displacements
     '''
 
 
     mu = 30e9
 
     # Nu does matter here, and it is by default 0.25
-
-    # Check
-    #xs, ys, zs = ArraySizes(xs, ys, zs)
-    #xc, yc, zc, a, A, dip, strike, DP = ArraySizes(xc, yc, zc, a, A, dip, strike, DP)
 
     #deal with singularities
     if dip >= 89.99:
@@ -106,15 +99,12 @@ def displacement(xs, ys, zs, xc, yc, zc, a, A, dip, strike, DP, nu=0.25):
     lambd = 2.*mu*nu/(1.-2.*nu)        #first Lame's elastic modulus
     P = DP*mu                       #Excess pressure
 
-    #!!!! Check if depth is too shallow compared to radius of curvature -- ??? depth from center or from top of spheroid?
-    # if
-    #     print(' Error: Radius of curvature is ')
-    #     print('Something went wrong in okada4py... You should check...Problem with displacements')
+    ### Double check this
+    if float(zc) < float(A*a)**2/float(a):
+        raise Exception('radius of curvature has to be less than the depth...')
+
     # Run yang
     Ux, Uy, Uz = runYang_disp(xs, ys, zs, xc, yc, zc, a, b, dip, strike, P, mu, nu, lambd)
-
-    # Reshape the displacement
-    ##u = u.reshape((len(xs), 3))
 
     # All Done
     return Ux, Uy, Uz
@@ -144,6 +134,7 @@ def runYang_disp(xs, ys, zs, xc, yc, zc, a, b, dip, strike, P, mu, nu, lambd):
     '''
 
     a1, b1, c, Pdila, Pstar = runYang_param(a, b, P, mu, nu, lambd)
+
     #Center coordinate system around (xc,0) and rotate (see Fig. 3 in Yang et al, 1988)
     xxn = xs - xc; yyn = ys - yc
     xxp = np.cos(strike)*xxn - np.sin(strike)*yyn
@@ -164,17 +155,17 @@ def runYang_disp(xs, ys, zs, xc, yc, zc, a, b, dip, strike, P, mu, nu, lambd):
     return Ux, Uy, Uz
 
 #--------------------------------------------------
-# Strain only
+# Strain only -- Needs to be implemented
 def runYang_strain(xs, ys, zs, xc, yc, zc, A, dip, strike, DP, mu, nu):
     '''
     Yang formulation adapted from dMODELS.
     Maurizio Battaglia, et al, dMODELS: A MATLAB software package for modeling crustal deformation near active faults and volcanic centers, JVGR, Volume 254, 2013.
     '''
-
-    return u, d, s
+    print("To be implemented")
+    return
 
 #--------------------------------------------------
-# Compute parameters for the spheroid model
+# Compute parameters for the prolate spheroid model
 def runYang_param(a, b, P, mu, nu, lambd):
     '''
     Computes correct parameters for displacement calculation
@@ -188,7 +179,7 @@ def runYang_param(a, b, P, mu, nu, lambd):
             * nu                : poisson's ratio
             * lambd             : lame's constant
     Returns:
-            * a1, b1, c, Pdila, Pstar
+            * a1, b1, c, Pdila, Pstar   : Parameters used to calculate surface displacements
     '''
     c = np.sqrt((a)**2-(b)**2)
 
@@ -304,103 +295,59 @@ def runYang_int(xs,ys,zs,z0,dip,a1,b1,a,b,csi,mu,nu,Pdila):
     return U1, U2, U3
 
 # #--------------------------------------------------
-# # Strain only
-# def strain(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, nu=0.25, full=False):
-#     '''
-#     Returns the strain at the stations located on (xs, ys, zs) for patches
-#         with centers on (xc, yc, zc). All arguments can be float, list or array.
-#     if Full is True, returns the full strain tensor,
-#             is False, returns and array [nstations, 9] = [Uxx, Uxy, Uxz, Uyx, Uyy, Uyz, Uzx, Uzy, Uzz]
-#     '''
-#
-#     # Here Mu can be anything. RJ tested it and the trainis not-sensitive to Mu as it should be.
-#     # Although, it does not work with Mu = 0.0 GPa... So we take a random value of 30GPa
-#     mu = 30e9
-#
-#     # Nu does matter here, and it is by default 0.25
-#
-#     # Check
-#     xs, ys, zs = ArraySizes(xs, ys, zs)
-#     xc, yc, zc, width, length, strike, dip, ss, ds, ts = ArraySizes(xc, yc, zc, width, length, strike, dip, ss, ds, ts)
-#
-#     # Normally, StaticInv does angles in Radians
-#     dip = dip*180./np.pi
-#     strike = strike*180./np.pi
-#
-#     # Run okada
-#     u, d, s, flag, flag2 = ok92.okada92(xs, ys, zs, xc, yc, zc, length, width, dip, strike, ss, ds, ts, mu, nu)
-#
-#     # Check if things went well
-#     if not (flag==0).all():
-#         if not np.where(flag!=0)==[]:
-#             print(' Error: {}'.format(tuple(np.where(flag!=0))))
-#             print('Something went wrong in okada4py... You should check...Problem with strain')
-#
-#     # Reshape the displacement
-#     d = d.reshape((len(xs), 9))
-#
-#     if not full:
-#         return d
-#     else:
-#         # Strain
-#         Strain = np.zeros((3,3,len(xs)))
-#         # Fill it
-#         Strain[0,0,:] = d[:,0]  # Uxx
-#         Strain[0,1,:] = d[:,1]  # Uxy
-#         Strain[0,2,:] = d[:,2]  # Uxz
-#         Strain[1,0,:] = d[:,3]  # Uyx
-#         Strain[1,1,:] = d[:,4]  # Uyy
-#         Strain[1,2,:] = d[:,5]  # Uyz
-#         Strain[2,0,:] = d[:,6]  # Uzx
-#         Strain[2,1,:] = d[:,7]  # Uzy
-#         Strain[2,2,:] = d[:,8]  # UUzz
-#         return Strain
-#
-# #--------------------------------------------------
-# # Stress only
-# def stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30e9, nu=0.25, full=False):
-#     '''
-#     Returns the stress at the stations located on (xs, ys, zs) for patches
-#         with centers on (xc, yc, zc). All arguments can be float, list or array.
-#     if Full is True, returns the full strain tensor,
-#             is False, returns and array [nstations, 6] = [Sxx, Sxy, Sxz, Syy, Syz, Szz]
-#     '''
-#
-#     # Mu and Nu do matter here, there is default values, but feel free to change...
-#
-#     # Check
-#     xs, ys, zs = ArraySizes(xs, ys, zs)
-#     xc, yc, zc, width, length, strike, dip, ss, ds, ts = ArraySizes(xc, yc, zc, width, length, strike, dip, ss, ds, ts)
-#
-#     # Normally, StaticInv does angles in Radians
-#     dip = dip*180./np.pi
-#     strike = strike*180./np.pi
-#
-#     # Run okada
-#     u, d, s, flag, flag2 = ok92.okada92(xs, ys, zs, xc, yc, zc, length, width, dip, strike, ss, ds, ts, mu, nu)
-#
-#     # Check if things went well
-#     if not (flag==0.).all():
-#         if not np.where(flag!=0)==[]:
-#             print('Something went wrong in okada4py... You should check...Problem with stress')
-#             print(' Error: {}'.format(tuple(np.where(flag!=0.))))
-#
-#     # Reshape the displacement
-#     s = s.reshape((len(xs), 6))
-#
-#     if not full:
-#         return s, flag, flag2
-#     else:
-#         Stress = np.zeros((3, 3, len(xs)))
-#         Stress[0,0,:] = s[:,0]  # Sxx
-#         Stress[1,1,:] = s[:,3]  # Syy
-#         Stress[2,2,:] = s[:,5]  # Szz
-#         Stress[0,1,:] = s[:,1]  # Sxy
-#         Stress[1,0,:] = s[:,1]  # Sxy
-#         Stress[0,2,:] = s[:,2]  # Sxz
-#         Stress[2,0,:] = s[:,2]  # Sxz
-#         Stress[1,2,:] = s[:,4]  # Syz
-#         Stress[2,1,:] = s[:,4]  # Syz
-#         return Stress, flag, flag2
+# # Stress only -- needs to be implemented
+def runYang_stress(xs, ys, zs, xc, yc, zc, width, length, strike, dip, ss, ds, ts, mu=30e9, nu=0.25, full=False):
+
+    print("To be implemented")
+    return
+
+
+def plotYang(xc, yc, zc, a, A, dip, strike, DP, nu=0.25, deform='z'):
+    """
+    A routine to plot and check the outputs of the yang equations.
+
+    Args:
+        * (xc, yc, zc)      : center of pressure source
+        * a                 : semi-major axis
+        * A                 : geometric aspect ratio (b/a)
+        * dip               : plunge angle (dip=90 is vertical source)
+        * strike            : azimuth (azimuth=0 is aligned North)
+        * DP                : dimensionless pressure
+        * nu                : poisson's ratio
+
+
+    Returns:
+        None
+    """
+
+    from matplotlib import pyplot as plt
+    import yangfull
+    
+    # create 30000 m x 30000 m grid
+    x=np.linspace(-15000,15000,301)
+    y=x
+    X,Y = np.meshgrid(x,y)
+    nx=301
+    ny=301
+
+    # displacements from yang's equations
+    Ux,Uy,Uz = yangfull.displacement(X.flatten(),Y.flatten(),Y.flatten()*0,xc, yc, zc, a, A, dip, strike, DP, nu)
+
+    # which displacement do you want to plot
+    if deform == "z":
+        Ufin = Uz.reshape([nx,ny])
+    elif deform == "y":
+        Ufin = Uy.reshape([nx,ny])
+    elif deform == "x":
+        Ufin = Ux.reshape([nx,ny])
+
+    # plot
+    plt.scatter(X,Y,c=Ufin)
+    plt.colorbar()
+    plt.show()
+
+
+
+    return
 #
 # #EOF

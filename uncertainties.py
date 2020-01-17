@@ -20,7 +20,7 @@ class uncertainties(object):
         '''
         Class calculating the covariance matrix of the predictions.
     
-        :Args:
+        Args:
             * name      : Name of the object
             * faults    : Prior fault geometry, can be a list of several faults
             * datasets  : List of data objects
@@ -98,7 +98,7 @@ class uncertainties(object):
         Calculate the uncertainties of the predictions deriving from uncertainties in the fault dip.
         From Ragon et al. (2018) GJI
         
-        :Args:
+        Args:
             * dip_range : array, dip values (in degrees) to test around the prior fault dip (of Fault)
                     ex: dip_range = [-1,2]
                     If there are several fault segments (e.g. several faults in fault), len(dip_range) must be equal to len(fault)
@@ -112,7 +112,7 @@ class uncertainties(object):
                     can be uniform and derived from Mo, ex: meanslip = -Mo*10**(-7)/(3*10**10*length*width)
                     OR derived from a first inversion without accounting for uncertainties
         
-        :Kwargs:
+        Kwargs:
             * edks : If True, GFs calculated using a layered Earth model calculated with EDKS.
                      If False, GFs with Okada
                      
@@ -124,7 +124,7 @@ class uncertainties(object):
                     OR sourceNumber   : Number of sources per patches.
                     OR sourceArea     : Maximum Area of the sources.
         
-        :Returns:
+        Returns:
             * CpDip
             
         /!\ To save you from having to recalculate a new fault geometry for each new dip parameter,
@@ -402,7 +402,7 @@ class uncertainties(object):
             - investigate the variation of strike for the whole fault (whole_fault is True by default)
         From Ragon et al. (2018) GJI
         
-        :Args:
+        Args:
             * strike_range : array, strike values (in degrees) to test around the prior fault strike (of Fault)
                     Positive angles are counter-clockwise looking toward the center of the Earth
                     ex: strike_range = [-1,2]
@@ -429,7 +429,7 @@ class uncertainties(object):
                     if False for a multi-segmented fault, the strike variation of each segment will be investigated independently
                             for either the center, first or last point of each fault segment
         
-        :Kwargs:
+        Kwargs:
             * edks : If True, GFs calculated using a layered Earth model calculated with EDKS.
                      If False, GFs with Okada
                          
@@ -441,7 +441,7 @@ class uncertainties(object):
                     OR sourceNumber   : Number of sources per patches.
                     OR sourceArea     : Maximum Area of the sources.
                 
-        :Returns:
+        Returns:
             * CpStrike
         '''
         # For a fault with one segment
@@ -916,7 +916,7 @@ class uncertainties(object):
                     the position will vary perpendicularly to the global strike of the fault
         From Ragon et al. (2018) GJI
         
-        :Args:
+        Args:
             * position_range : array, position values (in km) to test around the prior fault position (of Fault)
                     Positive values are +90 degrees from the prior strike
                     ex: position_range = [-1,2]
@@ -934,7 +934,7 @@ class uncertainties(object):
                     if True for a multi-segmented fault, the position of the whole fault will be investigated
                     if False for a multi-segmented fault, the position of each segment will be investigated independently
         
-        :Kwargs:
+        Kwargs:
             * edks : If True, GFs calculated using a layered Earth model calculated with EDKS.
                      If False, GFs with Okada
                      
@@ -946,7 +946,7 @@ class uncertainties(object):
                     OR sourceNumber  : Number of sources per patches.
                     OR sourceArea    : Maximum Area of the sources.
                     
-        :Returns:
+        Returns:
             * CpPosition
         '''
            
@@ -1411,7 +1411,7 @@ class uncertainties(object):
         For each layer independently, modify the elastic modulus by a coefficient "pert" in the velocity model,
         and subsequently modify velocities Vs and Vp. (you can use the function calcPerturbatedVelocity)
         
-        :Args:
+        Args:
             * pert : value of the perturbation applied to the elastic modulus of each layer to precompute the kernels
                      (difference between logarithms)
                      pert = log(mu) - log(mu0), with mu new value and mu0 initial value
@@ -1428,12 +1428,12 @@ class uncertainties(object):
             * pert_kernels_name : list, filenames of the perturbated kernels 
                                   1 filename has to be secified for each layer
             * do not forget the Kwargs!!
-        :Kwargs:
+        Kwargs:
                 * sourceSpacing    : source spacing to calculate the Green's Functions
                   OR sourceNumber  : Number of sources per patches.
                   OR sourceArea    : Maximum Area of the sources.
                     
-        :Returns:
+        Returns:
             * CpElastic
         '''
         
@@ -1645,12 +1645,12 @@ class uncertainties(object):
         '''
         Calculate perturbated velocity models
         
-        :Args:
+        Args:
             * pert : value of the perturbation applied to the elastic modulus of each layer
                      ex: pert = 0.1 or pert = 10
             * velocity_mod_name = path + name of the original velocity model (without ".model")
             
-        :Returns:
+        Returns:
         nothing
         
         '''

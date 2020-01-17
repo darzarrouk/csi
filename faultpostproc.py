@@ -19,11 +19,11 @@ class faultpostproc(SourceInv):
     '''
     A class that allows to compute various things from a fault object.
     
-    :Args:
+    Args:
         * name          : Name of the InSAR dataset.
         * fault         : Fault object
     
-    :Kwargs:
+    Kwargs:
         * Mu            : Shear modulus. Default is 24e9 GPa, because it is the PREM value for the upper 15km. Can be a scalar or a list/array of len=len(fault.patch)
         * samplesh5     : file name of h5 file containing samples
         * utmzone       : UTM zone  (optional, default=None)
@@ -80,12 +80,12 @@ class faultpostproc(SourceInv):
         self.samplesh5 and copy the slip values to self.fault.slip (hopefully without loading 
         into memory).
 
-        :Kwargs:
+        Kwargs:
             * decim :  decimation factor for skipping samples
             * indss :  tuples (size (2,)) containing desired indices of strike slip in h5File
             * indds :  tuples (size (2,)) containing desired indices of dip slip in h5File
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -121,7 +121,7 @@ class faultpostproc(SourceInv):
         '''
         Close the (potentially) open h5 file.
 
-        :Returns:
+        Returns:
             * None
         '''
         if hasattr(self, 'hfid'):
@@ -133,11 +133,11 @@ class faultpostproc(SourceInv):
         '''
         Uses the transformation in self to convert  lon/lat vector to x/y utm.
 
-        :Args:
+        Args:
             * lon           : Longitude array.
             * lat           : Latitude array.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -151,11 +151,11 @@ class faultpostproc(SourceInv):
         '''
         Uses the transformation in self to convert x.y vectors to lon/lat.
 
-        :Args:
+        Args:
             * x             : Xarray
             * y             : Yarray
 
-        :Returns:
+        Returns:
             * lon, lat      : 2 float arrays
         '''
 
@@ -166,14 +166,15 @@ class faultpostproc(SourceInv):
         '''
         Returns the Normal to a patch.
 
-        :Args:
+        Args:
             * p             : Index of the desired patch.
 
-        :Returns:
+        Returns:
             * unit normal vector
         '''
 
         if self.fault.patchType == 'triangle':
+
             normal = self.fault.getpatchgeometry(p, retNormal=True)[-1]
             return normal
 
@@ -199,7 +200,7 @@ class faultpostproc(SourceInv):
         '''
         Returns the slip vector in the cartesian space for the patch p. We do not deal with 
         the opening component. The fault slip may be a 3D array for multiple samples of slip.
-        :Args:
+        Args:
             * p             : Index of the desired patch.
         '''
 
@@ -231,7 +232,7 @@ class faultpostproc(SourceInv):
     def computePatchMoment(self, p) :
         '''
         Computes the Moment tensor for one patch.
-        :Args:
+        Args:
             * p             : patch index
         '''
 
@@ -717,7 +718,7 @@ class faultpostproc(SourceInv):
     def write2GCMT(self, form='full', filename=None):
         '''
         Writes in GCMT style
-        :Args:
+        Args:
             * form          : format is either 'full' to match with Zacharie binary
                                             or 'line' to match with the option -Sm in GMT
 
@@ -797,7 +798,7 @@ class faultpostproc(SourceInv):
     def stressdrop(self,shapefactor=2.44,threshold=0.2,threshold_rand=False,return_Area_Mo_Slip=False):
         '''
         Compute threshold-dependent moment-based average stress-dip (cf., Noda et al., GJI 2013)
-        :Args:
+        Args:
             * shapefactor: shape factor (e.g., 2.44 for a circular crack,)
             * threshold: Rupture Area = area for slip > threshold * slip_max
             * threashold_rand: if ='log-normal' randomly generate threshold with mean threshold[0] 

@@ -5,11 +5,16 @@ Written by R. Jolivet and Z. Duputel, April 2013.
 
 Edited by T. Shreve, May 2019. Commented out lines 386, 391, 460, 485, 1121, 1131 because plotting fault patches was incorrect...
 Added plotting option for pressure sources
+
+July 2019: R Jolivet replaced basemap by cartopy.
 '''
 
 # Numerics
 import numpy as np
 import scipy.interpolate as sciint
+
+# Geography
+import pyproj as pp
 
 # Os
 import os, copy, sys
@@ -34,16 +39,30 @@ from .SourceInv import SourceInv
 
 
 class geodeticplot(object):
+    '''
+    A class to create plots of geodetic data with faults. Geographic representation is based on cartopy.
+    Two figures are created. One with a map and the other with a 3D view of the fault.
+
+    Args:
+        * lonmin    : left-boundary of the map
+        * lonmax    : Right-boundary of the map
+        * latmin    : Bottom-boundary of the map
+        * latmax    : Top of the map
+
+    Kwargs:
+        * figure        : Figure number
+        * pbaspect      : ??
+        * resolution    : Resolution of the mapped coastlines, lakes, rivers, etc. See cartopy for details
+        * figsize       : tuple of the size of the 2 figures
+
+    Returns:
+        * None
+    '''
 
     def __init__(self,lonmin, latmin, lonmax, latmax,
                  figure=None, pbaspect=None,resolution='auto',
-                 figsize=[None,None]):
+                 scalebar=None, figsize=[None,None]):
         #projection='cyl',
-        '''
-        Args:
-            * figure        : Number of the figure.
-            * ref           : 'utm' or 'lonlat'.
-        '''
 
         # Save
         self.lonmin = lonmin
@@ -70,6 +89,29 @@ class geodeticplot(object):
         fig2  = plt.figure(nextFig, figsize=figsize[1])
         carte = fig2.add_subplot(111, projection=self.projection)
         carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax], crs=self.projection)
+        carte.gridlines(crs=self.projection, draw_labels=True)
+
+        # scale bar
+        if scalebar is not None:
+            # Check
+            assert type(scalebar) is float, 'scalebar should be float: {}'.format(type(scalebar))
+            # Chose where to put the bar
+            lonc = self.lonmin + (self.lonmax-self.lonmin)/10.
+            latc = self.latmin + (self.latmax-self.latmin)/10.
+            # Convert to xy and build the end points
+            string = '+proj=utm +lat_0={} +lon_0={} +ellps=WGS84'.format(latc, lonc) 
+            putm = pp.Proj(string)
+            xc,yc = putm(lonc,latc,inverse=False)
+            # End points
+            x1 = xc-scalebar*1000./2.
+            x2 = xc+scalebar*1000./2.
+            # Convert
+            lon1,lat1 = putm(x1,yc,inverse=True)
+            lon2,lat2 = putm(x2,yc,inverse=True)
+            lonc,latc = putm(xc,yc+0.5*1000.,inverse=True)
+            # Plot
+            carte.plot([lon1, lon2], [lat1,lat2], '-k', linewidth=2,zorder=4)
+            carte.text(lonc,latc,'{} km'.format(scalebar), horizontalalignment='center',zorder=4)
 
         # Set the axes
         faille.set_xlabel('Longitude')
@@ -90,6 +132,12 @@ class geodeticplot(object):
     def close(self, fig2close=['map', 'fault']):
         '''
         Closes all the figures
+
+        Kwargs:
+            * fig2close : a list of 'map' and 'fault'. By default, closes both figures
+
+        Returns:
+            * None
         '''
 
         # Check
@@ -108,14 +156,15 @@ class geodeticplot(object):
     def show(self, mapaxis=None, triDaxis=None, showFig=['fault', 'map'], fitOnBox=True):
         '''
         Show to screen
-        Args:
+
+        Kwargs:
             * mapaxis   : Specify the axis type for the map (see matplotlib)
             * triDaxis  : Specify the axis type for the 3D projection (see mpl_toolkits)
             * showFig   : List of plots to show on screen ('fault' and/or 'map')
             * fitOnBox  : If True, fits the horizontal axis to the one asked at initialization
-                          even if data fall outside the box.
-            * azimuth   : Azimuth of viewing angle for 3D plot
-            * elevation : Elevation of viewing angle for 3D plot
+
+        Returns:
+            * None
         '''
 
         # Change axis of the map
@@ -128,6 +177,10 @@ class geodeticplot(object):
 
         # Fits the horizontal axis to the asked values
         if fitOnBox:
+            if self.lonmin>180.:
+                self.lonmin -= 360.
+            if self.lonmax>180.:
+                self.lonmax -= 360.
             self.carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax])
             self.faille.set_xlim(self.carte.get_xlim())
             self.faille.set_ylim(self.carte.get_ylim())
@@ -148,7 +201,20 @@ class geodeticplot(object):
                       triDaxis='auto', saveFig=['fault', 'map']):
         '''
         Save to file.
-        ftype can be: 'eps', 'pdf', 'png'
+
+        Args:
+            * prefix    : Prefix used for filenames
+
+        Kwargs:
+            * mapaxis       : 'equal' or 'auto'
+            * ftype         : 'eps', 'pdf', 'png'
+            * dpi           : whatever dot-per-inche you'd like
+            * bbox_inches   : pdf details
+            * triDaxis      : 3D axis scaling
+            * saveFig       : Which figures to save
+
+        Returns:
+            * None
         '''
 
         # Change axis of the map
@@ -179,6 +245,9 @@ class geodeticplot(object):
     def clf(self):
         '''
         Clears the figures
+
+        Returns:
+            * None
         '''
         self.fig1.clf()
         self.fig2.clf()
@@ -187,6 +256,12 @@ class geodeticplot(object):
     def titlemap(self, titre):
         '''
         Sets the title of the map.
+
+        Args:
+            * titre : title of the map
+
+        Returns:
+            * None
         '''
 
         self.carte.set_title(titre, y=1.08)
@@ -197,6 +272,12 @@ class geodeticplot(object):
     def titlefault(self, titre):
         '''
         Sets the title of the fault model.
+
+        Args:
+            * titre : title of the fault
+
+        Returns:
+            * None
         '''
 
         self.faille.set_title(titre, title=1.08)
@@ -207,6 +288,13 @@ class geodeticplot(object):
     def set_view(self, elevation, azimuth):
         '''
         Sets azimuth and elevation angle for the 3D plot.
+
+        Args:
+            * elevation     : Point of view elevation angle
+            * azimuth       : Point of view azimuth angle
+
+        Returns:
+            * None
         '''
         # Set angles
         self.faille.view_init(elevation,azimuth)
@@ -217,6 +305,9 @@ class geodeticplot(object):
     def equalize3dAspect(self):
         """
         Make the 3D axes have equal aspect. Not working yet (maybe never).
+
+        Returns:
+            * None
         """
 
         xlim = self.faille.get_xlim3d()
@@ -244,6 +335,13 @@ class geodeticplot(object):
     def set_xymap(self, xlim, ylim):
         '''
         Sets the xlim and ylim on the map.
+
+        Args:
+            * xlim  : tuple of the ongitude limits
+            * ylim  : tuple of the latitude limits
+
+        Returns:
+            * None
         '''
 
         self.carte.set_extent([xlim[0], xlim[1], ylim[0], ylim[1]])
@@ -257,28 +355,40 @@ class geodeticplot(object):
             zorder=1):
         '''
         Draws the coast lines in the desired area.
-        Args:
+
+        Kwargs:
             * color         : Color of lines
             * linewidth     : Width of lines
             * linestyle     : Style of lines
-            * resolution    : Resolution of the coastline.
-                              Can be auto, intermediate, coarse, low, high
+            * resolution    : Resolution of the coastline. Can be auto, intermediate, coarse, low, high
             * drawLand      : Fill the continents (True/False)
             * drawMapScale  : Draw a map scale (None or length in km)
             * drawCountries : Draw County boundaries?
-            * parallels     : If int -> Number of parallels
-                              If float -> spacing in degrees between paralles
-                              If np.array -> array of parallels
+            * parallels     : If int, number of parallels. If float, spacing in degrees between parallels. If np.array, array of parallels
             * meridians     : Number of meridians to draw or array of meridians
             * drawOnFault   : Draw on 3D fault as well
+            * zorder        : matplotlib order of plotting
+
+        Returns:
+            * None
         '''
 
         # Draw continents?
         landcolor = None
         if drawLand: landcolor = 'lightgrey'
 
+        # Resolution 
+        if resolution == 'auto' or resolution == 'intermediate':
+            resolution = '50m'
+        elif resolution == 'coarse' or resolution == 'low':
+            resolution = '110m'
+        elif resolution == 'fine':            
+            resolution = '10m'
+        else:
+            assert False, 'Unknown resolution : {}'.format(resolution)
+
         # coastlines in cartopy are multipolygon objects. Polygon has exterior, which has xy
-        self.coastlines = cfeature.GSHHSFeature(scale=resolution, edgecolor=color, facecolor=landcolor, 
+        self.coastlines = cfeature.GSHHSFeature(scale='auto', edgecolor=color, facecolor=landcolor, 
                                                 linewidth=linewidth, linestyle=linestyle, zorder=zorder, alpha=0.6)
 
         ## MapScale
@@ -287,39 +397,53 @@ class geodeticplot(object):
 
         # Draw and get the line object
         self.carte.add_feature(self.coastlines)
-        if drawOnFault:
-            segments = []
-            for geom in self.coastlines.geometries():
-                for poly in geom:
-                    x = np.array(poly.exterior.xy[0])
-                    y = np.array(poly.exterior.xy[1])
-                    segments.append(np.vstack((x,y,np.zeros(x.shape))).T)
-            if len(segments)>0:
-                cote = art3d.Line3DCollection(segments)
-                cote.set_edgecolor(landcolor)
-                cote.set_linestyle(linestyle)
-                cote.set_linewidth(linewidth)
-                self.faille.add_collection3d(cote)
+
+        ##### NOT WORKING YET ####
+        #if drawOnFault:
+        #    segments = []
+        #    if type(self.coastlines.geometries()) is not list:
+        #        geoms = [self.coastlines.geometries()]
+        #    else:
+        #        geoms = self.coastlines.geometries()
+        #    for geom in geoms:
+        #        for poly in geom:
+        #            x = np.array(poly.exterior.xy[0])
+        #            y = np.array(poly.exterior.xy[1])
+        #            segments.append(np.vstack((x,y,np.zeros(x.shape))).T)
+        #    if len(segments)>0:
+        #        cote = art3d.Line3DCollection(segments)
+        #        cote.set_edgecolor(landcolor)
+        #        cote.set_linestyle(linestyle)
+        #        cote.set_linewidth(linewidth)
+        #        self.faille.add_collection3d(cote)
+        ##### NOT WORKING YET ####
 
         # Draw countries
         if drawCountries:
-            self.countries = cfeature.NaturalEarthFeature(scale='110m', category='cultural', name='admin_0_countries', 
-                                                          linewidth=linewidth/2., edgecolor='k', facecolor='lightgray', 
-                                                          alpha=0.6, zorder=zorder)
+            self.countries = cfeature.NaturalEarthFeature(scale=resolution, category='cultural', name='admin_0_countries', 
+                                                   linewidth=linewidth/2., edgecolor='k', facecolor='lightgray', 
+                                                   alpha=0.6, zorder=zorder)
             self.carte.add_feature(self.countries)
-            if drawOnFault:
-                segments = []
-                for geom in self.countries.geometries():
-                    for poly in geom:
-                        x = np.array(poly.exterior.xy[0])
-                        y = np.array(poly.exterior.xy[1])
-                        segments.append(np.vstack((x,y,np.zeros(x.shape))).T)
-                if len(segments)>0:
-                    border = art3d.Line3DCollection(segments)
-                    border.set_edgecolor(None)
-                    border.set_linestyle(linestyle)
-                    border.set_linewidth(linewidth/2.)
-                    self.faille.add_collection3d(border)
+
+            ##### NOT WORKING YET ####
+            #if drawOnFault:
+            #    segments = []
+            #    if type(self.countries.geometries()) is not list:
+            #        geoms = [self.countries.geometries()]
+            #    else:
+            #        geoms = self.countries.geometries()
+            #    for geom in geoms:
+            #        for poly in geom:
+            #            x = np.array(poly.exterior.xy[0])
+            #            y = np.array(poly.exterior.xy[1])
+            #            segments.append(np.vstack((x,y,np.zeros(x.shape))).T)
+            #    if len(segments)>0:
+            #        border = art3d.Line3DCollection(segments)
+            #        border.set_edgecolor(None)
+            #        border.set_linestyle(linestyle)
+            #        border.set_linewidth(linewidth/2.)
+            #        self.faille.add_collection3d(border)
+            ##### NOT WORKING YET ####
 
         # Parallels
         lmin,lmax = self.latmin, self.latmax
@@ -376,13 +500,21 @@ class geodeticplot(object):
         # All done
         return
 
-    def faulttrace(self, fault, color='r', add=False, discretized=False, zorder=4):
+    def faulttrace(self, fault, color='r', add=False, discretized=False, zorder=0):
         '''
+        Plots a fault trace.
+
         Args:
-            * fault         : Fault class from verticalfault.
+            * fault         : Fault instance
+
+        Kwargs:
             * color         : Color of the fault.
             * add           : plot the faults in fault.addfaults
             * discretized   : Plot the discretized fault
+            * zorder        : matplotlib order of plotting
+
+        Returns:
+            * None
         '''
 
         # discretized?
@@ -410,17 +542,29 @@ class geodeticplot(object):
         # All done
         return
 
-    def faultpatches(self, fault, slip='strikeslip', Norm=None, colorbar=True,
+    def faultpatches(self, fault, slip='strikeslip', norm=None, colorbar=True,
                      plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
                      transparency=0.0, factor=1.0, zorder=3):
         '''
+        Plot the fualt patches
+
         Args:
-            * fault         : Fault class from verticalfault.
+            * fault         : Fault instance
+
+        Kwargs:
             * slip          : Can be 'strikeslip', 'dipslip', 'tensile', 'total' or 'coupling'
-            * Norm          : Limits for the colorbar.
+            * norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
             * plot_on_2d    : if True, adds the patches on the map.
+            * revmap        : Revert the colormap
+            * linewidth     : Width of the edges of the patches
+            * cmap          : Colormap (any of the matplotlib ones)
+            * transparency  : 1 - alpha
             * factor        : scale factor for fault slip values
+            * zorder        : matplotlib order of plotting
+
+        Returns:
+            * None
         '''
 
         # Get slip
@@ -440,15 +584,18 @@ class geodeticplot(object):
         slip *= factor
 
         # norm
-        if Norm is None:
+        if norm is None:
             vmin=slip.min()
             vmax=slip.max()
         else:
-            vmin=Norm[0]
-            vmax=Norm[1]
+            vmin=norm[0]
+            vmax=norm[1]
 
         # set z axis
-        self.setzaxis(fault.depth+5., zticklabels=fault.z_patches)
+        try:
+            self.setzaxis(fault.depth+5., zticklabels=fault.z_patches)
+        except:
+            print('Warning: Depth cannot be determined automatically. Please set z-axis limit manually')
 
         # set color business
         if revmap:
@@ -513,16 +660,28 @@ class geodeticplot(object):
         # All done
         return
 
-    def pressuresource(self, fault, delta='pressure', Norm=None, colorbar=True, revmap=False, linewidth=1.0, cmap='jet',
+    def pressuresource(self, fault, delta='pressure', norm=None, colorbar=True, revmap=False, linewidth=1.0, cmap='jet',
                      transparency=0.0, factor=1.0, zorder=3, plot_on_2d=False):
         '''
+        Plots a pressure source.
+
         Args:
-            * fault         : Fault class from verticalfault.
-            * slip          : Can be 'pressure' or 'volume'
-            * Norm          : Limits for the colorbar.
+            * fault         : Pressure source instance
+
+        Kwargs:
+            * delta         : Can be 'pressure' or 'volume'
+            * norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
+            * revmap        : Reverts the colormap
+            * linewidth     : width of the edhe of the source
+            * cmap          : matplotlib colormap
+            * transparency  : 1 - alpha
             * plot_on_2d    : if True, adds the patches on the map.
-            * factor        : scale factor for fault slip values
+            * factor        : scale factor for pressure values
+            * zorder        : matplotlib plotting order
+
+        Returns:
+            * None
         '''
 
         # Get slip
@@ -536,12 +695,12 @@ class geodeticplot(object):
         delta *= factor
 
         # norm
-        if Norm is None:
+        if norm is None:
             vmin=0
             vmax=delta
         else:
-            vmin=Norm[0]
-            vmax=Norm[1]
+            vmin=norm[0]
+            vmax=norm[1]
 
         # set z axis
         self.setzaxis(fault.ellipshape['z0']+5., zticklabels=None)
@@ -607,30 +766,32 @@ class geodeticplot(object):
         return
 
     def faultTents(self, fault,
-                   slip='strikeslip', Norm=None, colorbar=True,
-                   method='surface', cmap='jet', plot_on_2d=False,
+                   slip='strikeslip', norm=None, colorbar=True,
+                   method='scatter', cmap='jet', plot_on_2d=False,
                    revmap=False, factor=1.0, npoints=10,
                    xystrides=[100, 100], zorder=0,
                    vertIndex=False):
         '''
+        Plot a fault with tents.
+
         Args:
-            * fault         : Fault class from verticalfault.
+            * fault         : TriangularTent fault instance
+
+        Kwargs:
             * slip          : Can be 'strikeslip', 'dipslip', 'tensile', 'total' or 'coupling'
-            * Norm          : Limits for the colorbar.
-            * method        : Can be 'scatter' --> Plots all the sub points as a colored dot.
-                                     'surface' --> Interpolates a 3D surface (can be ugly)
+            * norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
+            * method        : Can be 'scatter' (plots all the sub points as a colored dot) or 'surface' (interpolates a 3D surface which can be ugly...)
+            * cmap          : matplotlib colormap
             * plot_on_2d    : if True, adds the patches on the map.
             * revmap        : Reverse the default colormap
             * factor        : Scale factor for fault slip values
-            * npoints       : Number of subpoints per patch. This number is only indicative of the
-                              actual number of points that is picked out by the dropSourcesInPatch
-                              function of EDKS.py. It only matters to make the interpolation finer.
-                              Default value is generally alright.
-            * xystrides     : If method is 'surface', then xystrides is going to be the number of
-                              points along x and along y used to interpolate the surface in 3D and
-                              its color.
+            * npoints       : Number of subpoints per patch. This number is only indicative of the actual number of points that is picked out by the dropSourcesInPatch function of EDKS.py. It only matters to make the interpolation finer. Default value is generally alright.
+            * xystrides     : If method is 'surface', then xystrides is going to be the number of points along x and along y used to interpolate the surface in 3D and its color.
             * vertIndex     : Writes the index of the vertices
+
+        Returns:
+            * None
         '''
 
         # Get slip
@@ -650,12 +811,12 @@ class geodeticplot(object):
         slip *= factor
 
         # norm
-        if Norm is None:
+        if norm is None:
             vmin=slip.min()
             vmax=slip.max()
         else:
-            vmin=Norm[0]
-            vmax=Norm[1]
+            vmin=norm[0]
+            vmax=norm[1]
 
         # set z axis
         self.setzaxis(fault.depth+5., zticklabels=fault.z_patches)
@@ -689,14 +850,14 @@ class geodeticplot(object):
         # Plot the color for slip
         # 1. Get the subpoints for each triangle
         from .EDKSmp import dropSourcesInPatches as Patches2Sources
-        if hasattr(fault, 'edksSources') and not hasattr(fault, 'plotSources'):
-            fault.plotSources = copy.deepcopy(fault.edksSources)
-            fault.plotSources[1] /= 1e3
-            fault.plotSources[2] /= 1e3
-            fault.plotSources[3] /= 1e3
-            fault.plotSources[4] /= 180./np.pi
-            fault.plotSources[5] /= 180./np.pi
-            fault.plotSources[6] /= 1e6
+        #if hasattr(fault, 'edksSources') and not hasattr(fault, 'plotSources'):
+        #    fault.plotSources = copy.deepcopy(fault.edksSources)
+        #    fault.plotSources[1] /= 1e3
+        #    fault.plotSources[2] /= 1e3
+        #    fault.plotSources[3] /= 1e3
+        #    fault.plotSources[4] /= 180./np.pi
+        #    fault.plotSources[5] /= 180./np.pi
+        #    fault.plotSources[6] /= 1e6
         if hasattr(fault, 'plotSources'):
             print('Using precomputed sources for plotting')
         else:
@@ -732,13 +893,13 @@ class geodeticplot(object):
                     cols[i,j] = scalarMap.to_rgba(slip[i,j])
 
             lon, lat = fault.xy2ll(x, y)
-            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+            #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             self.faille.plot_surface(lon, lat, -1.0*z, facecolors=cols, rstride=1, cstride=1, antialiased=True, linewidth=0)
 
             # On 2D?
             if plot_on_2d:
                 lon, lat = fault.xy2ll(X, Y)
-                lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+                #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
                 self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder)
 
             # Color Bar
@@ -749,7 +910,7 @@ class geodeticplot(object):
         elif method is 'scatter':
             # Do the scatter ploto
             lon, lat = fault.xy2ll(X, Y)
-            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+            #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             cb = self.faille.scatter3D(lon, lat, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax)
 
             # On 2D?
@@ -772,9 +933,15 @@ class geodeticplot(object):
     def setzaxis(self, depth, zticklabels=None):
         '''
         Set the z-axis.
+
         Args:
             * depth     : Maximum depth.
-            * zticks    : ticks along z.
+
+        Kwargs:
+            * ztickslabel   : which labels to use
+
+        Returns:
+            * None
         '''
 
         self.faille.set_zlim3d([-1.0*(depth+5), 0])
@@ -794,27 +961,21 @@ class geodeticplot(object):
         # All done
         return
 
-    def setview(self, elev=30.0, azim=180.0):
-        '''
-        Set the 3D view direction
-        Args:
-            * elevation : in degree, angle from horizontal plane, positive looking downwards
-            * azimuth   : in degree, 0 for North-to-South direction
-        '''
-        self.faille.view_init(elev=elev, azim=azim)
-        # All done
-        return
-
-    def surfacestress(self, stress, component='normal', linewidth=0.0, Norm=None, colorbar=True):
+    def surfacestress(self, stress, component='normal', linewidth=0.0, norm=None, colorbar=True):
         '''
         Plots the stress on the map.
+
         Args:
             * stress        : Stressfield object.
-            * component     : If string, can be normal, shearstrike, sheardip
-                              If tuple or list, can be anything specifying the indexes of the Stress tensor.
+
+        Kwargs:
+            * component     : If string, can be normal, shearstrike, sheardip. If tuple or list, can be anything specifying the indexes of the Stress tensor.
             * linewidth     : option of scatter.
-            * Norm          : Scales the color bar.
+            * norm          : Scales the color bar.
             * colorbar      : if true, plots a colorbar
+
+        Returns:
+            * None
         '''
 
         # Get values
@@ -834,10 +995,10 @@ class geodeticplot(object):
         # Prepare the colormap
         cmap = plt.get_cmap('jet')
 
-        # Norm
-        if Norm is not None:
-            vmin = Norm[0]
-            vmax = Norm[1]
+        # norm
+        if norm is not None:
+            vmin = norm[0]
+            vmax = norm[1]
         else:
             vmin = val.min()
             vmax = val.max()
@@ -845,7 +1006,7 @@ class geodeticplot(object):
         # Plot
         lon = stress.lon
         lat = stress.lat
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         sc = self.carte.scatter(xloc, yloc, s=20, c=val, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth)
 
         # colorbar
@@ -859,15 +1020,19 @@ class geodeticplot(object):
         '''
         Args:
             * gps           : gps object from gps.
-            * data          : List of things to plot:
-                              Can be any list of 'data', 'synth', 'res', 'strain', 'transformation'
-            * color         : List of the colors of the gps velocity arrows.
-                              Must be the same size as data
+
+        Kwargs:
+            * data          : List of things to plot. Can be any list of 'data', 'synth', 'res', 'strain', 'transformation'
+            * color         : List of the colors of the gps velocity arrows. Must be the same size as data
             * scale         : Scales the arrows
             * scale_units   : 'width', 'height', 'dots' or 'inches'
             * legendscale   : Length of the scale.
             * linewidths    : Width of the arrows.
             * name          : Plot the name of the stations (True/False).
+            * zorder        : Order of the matplotlib rendering
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -884,7 +1049,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = gps.lon
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Make the dictionary of the things to plot
@@ -937,9 +1102,11 @@ class geodeticplot(object):
             font = {'family' : 'serif',
                     'color'  : 'k',
                     'weight' : 'normal',
-                    'size'   : 15}
+                    'size'   : 10}
             for lo, la, sta in zip(lon.tolist(), lat.tolist(), gps.station):
-                self.carte.text(lo, la, sta, fontdict=font)
+                # Do it twice, I don't know why text is screwed up...
+                self.carte.text(lo, la, sta, zorder=20, fontdict=font)
+                self.carte.text(lo-360., la, sta, zorder=20, fontdict=font)
 
         # All done
         return
@@ -949,6 +1116,22 @@ class geodeticplot(object):
                      zorder=4, cmap='jet', marker='o'):
         '''
         Scatter plot of the vertical displacement of the GPS.
+
+        Args:
+            * gps       : gps instance
+
+        Kwargs:
+            * norm          : limits of the colormap 
+            * colorbar      : True/False
+            * data          : list of 'data', 'synth', 'res'
+            * markersize    : Size of the markers. List of the same size as data
+            * linewidth     : width of the edge of the markers
+            * cmap          : Colormap from matplotlib
+            * marker        : type of marker
+            * zorder        : plotting order in matplotlib
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -961,7 +1144,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = gps.lon
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Initiate
@@ -996,7 +1179,7 @@ class geodeticplot(object):
         # Get a colormap
         cmap = plt.get_cmap(cmap)
 
-        # Norm
+        # norm
         if norm is not None:
             vmin = norm[0]
             vmax = norm[1]
@@ -1016,17 +1199,25 @@ class geodeticplot(object):
 
     def gpsprojected(self, gps, norm=None, colorbar=True, zorder=4, cmap='jet'):
         '''
+        Plot the gps data projected in the LOS
+
         Args:
-            * gps       : gpsrate object
+            * gps       : gps instance
+
+        Kwargs:
             * norm      : List of lower and upper bound of the colorbar.
             * colorbar  : activates the plotting of the colorbar.
             * cmap      : Colormap, by default 'jet'
+            * zorder    : order of the plot in matplotlib
+
+        Returns:
+            * None
         '''
 
         # Get the data
         d = gps.vel_los
         lon = gps.lon;
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = gps.lat
 
         # Prepare the color limits
@@ -1052,13 +1243,21 @@ class geodeticplot(object):
 
     def earthquakes(self, earthquakes, plot='2d3d', color='k', markersize=5, norm=None, colorbar=False, zorder=2):
         '''
+        Plot earthquake catalog
+
         Args:
             * earthquakes   : object from seismic locations.
+
+        Kwargs:
             * plot          : any combination of 2d and 3d.
             * color         : color of the earthquakes. Can be an array.
             * markersize    : size of each dots. Can be an array.
             * norm          : upper and lower bound for the color code.
             * colorbar      : Draw a colorbar.
+            * zorder    : order of the plot in matplotlib
+
+        Returns:
+            * None
         '''
 
         # set vmin and vmax
@@ -1082,7 +1281,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = earthquakes.lon
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = earthquakes.lat
 
         # plot the earthquakes on the map if ask
@@ -1102,11 +1301,18 @@ class geodeticplot(object):
 
     def faultsimulation(self, fault, norm=None, colorbar=True, direction='north'):
         '''
+        Plot a fault simulation, Not tested in a long time... Might be obsolete.
+
         Args:
-            * fault     : fault object from verticalfault.
+            * fault     : fault object 
+
+        Kwargs:
             * norm      : List of lower and upper bound of the colorbar.
             * colorbar  : activates the plotting of the colorbar.
             * direction : which direction do we plot ('east', 'north', 'up', 'total' or a given azimuth in degrees, or an array to project in the LOS).
+
+        Returns:
+            * None
         '''
 
         if direction is 'east':
@@ -1138,7 +1344,7 @@ class geodeticplot(object):
 
         # Get lon lat
         lon = fault.sim.lon
-        lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
         lat = fault.sim.lat
 
         # Plot the insar
@@ -1155,13 +1361,22 @@ class geodeticplot(object):
                        plotType='decimate',
                        decim=1, zorder=3, edgewidth=1):
         '''
+        Plot an insar object
+
         Args:
             * insar     : insar object from insar.
+
+        Kwargs:
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
             * data      : plot either 'data' or 'synth' or 'res'.
             * plotType  : Can be 'decimate' or 'scatter'
             * decim     : In case plotType='scatter', decimates the data by a factor decim.
+            * edgewidth : width of the patches in case plotTtype is decimate
+            * zorder    : order of the plot in matplotlib
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -1248,14 +1463,21 @@ class geodeticplot(object):
     def opticorr(self, corr, norm=None, colorbar=True, data='dataEast',
                 plotType='decimate', decim=1, zorder=3):
         '''
+        Plot opticorr instance
+
         Args:
             * corr      : instance of the class opticorr
+
+        Kwargs:
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
-            * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast',
-                          'resEast', 'resNorth', 'data', 'synth' or 'res'
+            * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast', 'resEast', 'resNorth', 'data', 'synth' or 'res'
             * plotType  : plot either rectangular patches (decimate) or scatter (scatter)
             * decim     : decimation factor if plotType='scatter'
+            * zorder    : order of the plot in matplotlib
+
+        Returns:
+            * None
         '''
 
         # Assert
@@ -1323,7 +1545,7 @@ class geodeticplot(object):
 
         elif plotType is 'scatter':
             lon = corr.lon
-            lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+            #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             lat = corr.lat
             self.carte.scatter(lon[::decim], lat[::decim], s=10., c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.0, zorder=zorder)
 
@@ -1340,7 +1562,18 @@ class geodeticplot(object):
 
     def slipdirection(self, fault, linewidth=1., color='k', scale=1.):
         '''
-        Plots the segment in slip direction of the fault.
+        Plots segments representing the direction of slip along the fault.
+
+        Args:
+            * fault : Instance of a fault
+
+        Kwargs:
+            * linewidth : Width of the line
+            * color     : Color of the line
+            * scale     : Multiply slip 
+
+        Returns:
+            * None
         '''
 
         # Check utmzone

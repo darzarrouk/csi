@@ -23,7 +23,7 @@ class interpolator(mp.Process):
     Multiprocessing class runing the edks interpolation.
     This class requires one to build the interpolator in advance.
 
-    :Args:
+    Args:
         * interpolators     : List of interpolators
         * queue             : Instance of mp.Queue
         * depths            : depths (first dimnesion of the interpolators) 
@@ -31,7 +31,7 @@ class interpolator(mp.Process):
         * istart            : starting point
         * iend              : ending point
 
-    :Returns:
+    Returns:
         * None
     '''
 
@@ -85,14 +85,14 @@ class pointdropper(mp.Process):
     Initialize the multiprocessing class to run the point dropper.
     This class drops point sources in the triangular or rectangular mesh.
 
-    :Args:
+    Args:
         * fault             : Instance of Fault.py
         * queue             : Instance of mp.Queue
         * charArea          : Characteristic area of the subfaults
         * istart            : Index of the first patch to deal with
         * iend              : Index of the last pacth to deal with
 
-    :Returns:
+    Returns:
         * None
     '''
 
@@ -478,7 +478,7 @@ class interpolateEDKS(object):
     EDKS. We use the case where slip perpendicular to the rake angle is 
     equal to zero.
 
-    :Args:
+    Args:
         * kernel    : EDKS Kernel file (mykernel.edks). One needs to 
                       provide the header file as well (hdr.mykernel.edks)
     '''
@@ -501,7 +501,7 @@ class interpolateEDKS(object):
         '''
         Read the EDKS Kernel header file and stores it in {self}
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -555,7 +555,7 @@ class interpolateEDKS(object):
         '''
         Read the EDKS Kernel and stores it in {self}
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -582,7 +582,7 @@ class interpolateEDKS(object):
         Interpolate the Green's functions for a given source in (xs, ys, zs) with
         a strike, dip and rake and slip parameters and a given receiver (xr, yr)
 
-        :Args:
+        Args:
             * xs, ys, zs    : Source location (floats or np.array)
             * strike        : strike angle (rad)
             * dip           : dip angle (rad)
@@ -591,10 +591,10 @@ class interpolateEDKS(object):
             * area          : Area of the point source
             * xr, yr        : Receiver location (floats or np.array)
 
-        :Kwargs:
+        Kwargs:
             * method        : Interpolation scheme. Can be linear, nearest or CloughTocher.
 
-        :Returns:
+        Returns:
             * G             : np.array
         '''
 
@@ -733,7 +733,7 @@ class interpolateEDKS(object):
         '''
         Create the interpolation method. This is based on scipy.interpolate.LinearNDInterpolator.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -759,14 +759,14 @@ class interpolateEDKS(object):
         '''
         Convert slip and point source geometry to moment.
 
-        :Args:
+        Args:
             * slip          : Slip value (m). 
             * area          : Area of the point source (m^2)
             * strike        : Strike angle (rad)
             * dip           : Dip angle (rad)
             * rake          : Rake angle (rad, 0 left-lateral strike slip, 2pi pure thrust)
 
-        :Returns:
+        Returns:
             * M             : Moment tensor
         '''
 
@@ -805,11 +805,11 @@ class interpolateEDKS(object):
         '''
         Returns some geometrical features
         
-        :Args:
+        Args:
             * xs, ys, zs    : Source location (floats or np.array)
             * xr, yr        : Receiver location (floats or np.array)
 
-        :Returns:
+        Returns:
             * distance, depth, caz, saz, c2az, s2az 
         '''
         

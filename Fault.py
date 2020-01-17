@@ -25,17 +25,23 @@ from .EDKSmp import dropSourcesInPatches as Patches2Sources
 #class Fault
 class Fault(SourceInv):
 
-    # ----------------------------------------------------------------------
-    # Initialize class
-    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
-        '''
+    '''
         Parent class implementing what is common in all fault objects.
+
+        You can specify either an official utm zone number or provide
+        longitude and latitude for a custom zone.
 
         Args:
             * name          : Name of the fault.
             * utmzone       : UTM zone  (optional, default=None)
+            * lon0          : Longitude defining the center of the custom utm zone
+            * lat0          : Latitude defining the center of the custom utm zone
             * ellps         : ellipsoid (optional, default='WGS84')
-        '''
+    '''
+
+    # ----------------------------------------------------------------------
+    # Initialize class
+    def __init__(self, name, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
 
         # Base class init
         super(Fault,self).__init__(name, utmzone=utmzone, ellps=ellps, lon0=lon0, lat0=lat0)
@@ -107,7 +113,8 @@ class Fault(SourceInv):
         '''
         Initializes what is required for a fualt with no patches
 
-        Returns: None
+        Returns: 
+            * None
         '''
 
         # Initialize
@@ -141,19 +148,16 @@ class Fault(SourceInv):
         Slip array will be the size of the number of patches/tents times the
         3 components of slip (strike-slip, dip slip and tensile).
 
-        1st Column is strike slip
-        2nd Column is dip slip
-        3rd Column is tensile
+        - 1st Column is strike slip
+        - 2nd Column is dip slip
+        - 3rd Column is tensile
 
         Kwargs:
-            * n             : Number of slip values.
-                              If None, it'll take the number of patches.
-            * values        : Can be 'depth', 'strike', 'dip', 'length',
-                              'width', 'area', 'index' or a numpy array
-                              The array can be of size (n,3) or (n,1)
+            * n             : Number of slip values. If None, it'll take the number of patches.
+            * values        : Can be 'depth', 'strike', 'dip', 'length', 'width', 'area', 'index' or a numpy array. The array can be of size (n,3) or (n,1)
 
         Returns:
-            None
+            * None
         '''
 
         # Shape
@@ -206,11 +210,7 @@ class Fault(SourceInv):
         Add some other faults to plot with the modeled one.
 
         Args:
-            * filename      : Name of the file
-                              File is ascii format.
-                              First column is longitude
-                              Second column is latitude
-                              Separator between faults is > as in GMT style
+            * filename  : Name of the file. File is ascii format. First column is longitude. Second column is latitude. Separator between faults is > as in GMT style
 
         Return:
             * None
@@ -394,8 +394,7 @@ class Fault(SourceInv):
             * Lat           : Array/List containing the Lat points.
 
         Kwargs:
-            * utm           : If False, considers x and y are lon/lat
-                              If True, considers x and y are utm in km
+            * utm           : If False, considers x and y are lon/lat. If True, considers x and y are utm in km
 
         Returns:
             * None
@@ -421,18 +420,15 @@ class Fault(SourceInv):
     def file2trace(self, filename, utm=False, header=0):
         '''
         Reads the fault trace from a text file (ascii 2 columns)
-        If utm is False, format is:
-        Lon Lat
-        If utm is True, format is :
-        X Y (in km)
+            - If utm is False, format is Lon Lat
+            - If utm is True, format is X Y (in km)
 
         Args:
             * filename      : Name of the fault file.
 
         Kwargs:
             * utm           : Specify nature of coordinates
-            * header        : Number of lines to skip
-                              at the beginning of the file
+            * header        : Number of lines to skip at the beginning of the file
 
         Returns:
             * None
@@ -470,12 +466,9 @@ class Fault(SourceInv):
         Kwargs:
             * every         : Spacing between each point (in km)
             * tol           : Tolerance in the spacing (in km)
-            * fracstep      : fractional step in the chosen direction
-                              for the discretization optimization
-            * xaxis         : Axis for the discretization
-                              'x'= use x as the axis, 'y'= use y as the axis
-            * cum_error     : if True, accounts for cumulated error to define
-                              the axis bound for the last patch
+            * fracstep      : fractional step in the chosen direction for the discretization optimization
+            * xaxis         : Axis for the discretization. 'x'= use x as the axis, 'y'= use y as the axis
+            * cum_error     : if True, accounts for cumulated error to define the axis bound for the last patch
 
         Returns:
             * None
@@ -569,8 +562,7 @@ class Fault(SourceInv):
         other point. The distance is cumulative along the fault.
 
         Args:
-            * discretized           : if True, use the discretized fault trace
-                                      (default False)
+            * discretized           : if True, use the discretized fault trace (default False)
 
         Returns:
             * dis                   : Cumulative distance array
@@ -609,14 +601,11 @@ class Fault(SourceInv):
 
         Kwargs:
             * discretized       : Uses the discretized trace.
-            * coord             : if 'll' or 'lonlat' --> input in degree
-                                  if 'xy' or 'utm'    --> input in km
+            * coord             : if 'll' or 'lonlat', input in degree. If 'xy' or 'utm', input in km
 
         Returns:
-            * dalong            : Distance to the first point of the fault
-                                  along the fault
-            * dacross           : Shortest distance between the point and the
-                                  fault
+            * dalong            : Distance to the first point of the fault along the fault
+            * dacross           : Shortest distance between the point and the fault
         '''
 
         # Get the cumulative distance along the fault
@@ -759,9 +748,7 @@ class Fault(SourceInv):
         Saves the Green's functions in different files.
 
         Kwargs:
-            * dtype       : Format of the binary data saved
-                                'd' for double
-                                'f' for float32
+            * dtype       : Format of the binary data saved. 'd' for double. 'f' for float32
             * outputDir   : Directory to save binary data.
             * suffix      : suffix for GFs name (dictionary)
 
@@ -799,9 +786,7 @@ class Fault(SourceInv):
         Saves the Data in binary files.
 
         Kwargs:
-            * dtype       : Format of the binary data saved
-                                'd' for double
-                                'f' for float32
+            * dtype       : Format of the binary data saved. 'd' for double. 'f' for float32
             * outputDir   : Directory to save binary data
 
         Returns:
@@ -841,21 +826,11 @@ class Fault(SourceInv):
             * data          : Data object (gps, insar, optical, ...)
 
         Kwargs:
-            * vertical      : If True, will produce green's functions for
-                              the vertical displacements in a gps object.
-            * slipdir       : Direction of slip along the patches.
-                              Can be any combination of s (strikeslip),
-                                                        d (dipslip),
-                                                        t (tensile) and
-                                                        c (coupling)
-            * method        : Can be okada (Okada, 1982) (rectangular patches only)
-                                     meade (Meade 2007) (triangular patches only)
-                                     edks (Zhao & Rivera, 2002)
-                                     homogeneous (Okada for rectangles,
-                                                  Meade for triangles)
+            * vertical      : If True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir       : Direction of slip along the patches. Can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
+            * method        : Can be 'okada' (Okada, 1982) (rectangular patches only), 'meade' (Meade 2007) (triangular patches only), 'edks' (Zhao & Rivera, 2002), 'homogeneous' (Okada for rectangles, Meade for triangles)
             * verbose       : Writes stuff to the screen (overwrites self.verbose)
-            * convergence   : If coupling case, needs convergence azimuth
-                              and rate [azimuth in deg, rate]
+            * convergence   : If coupling case, needs convergence azimuth and rate [azimuth in deg, rate]
 
         Returns:
             * None
@@ -902,8 +877,11 @@ class Fault(SourceInv):
         # Compute the Green's functions
         if method in ('okada', 'Okada', 'OKADA', 'ok92', 'meade', 'Meade', 'MEADE'):
             G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
-        elif method in ('edks', 'EDKS'):
-            G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
+        elif method in ('edks', 'EDKS', 'pyedks', 'pythonedks'):
+            if 'py' not in method:
+                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='fortran')
+            else:
+                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='python')
 
         # Separate the Green's functions for each type of data set
         data.setGFsInFault(self, G, vertical=vertical)
@@ -926,16 +904,10 @@ class Fault(SourceInv):
             * data          : Data object (gps, insar, optical, ...)
 
         Kwargs:
-            * vertical      : If True, will produce green's functions for
-                              the vertical displacements in a gps object.
-            * slipdir       : Direction of slip along the patches.
-                              Can be any combination of s (strikeslip),
-                                                        d (dipslip),
-                                                        t (tensile) and
-                                                        c (coupling)
+            * vertical      : If True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir       : Direction of slip along the patches. Can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
             * verbose       : Writes stuff to the screen (overwrites self.verbose)
-            * convergence   : If coupling case, needs convergence azimuth
-                              and rate [azimuth in deg, rate]
+            * convergence   : If coupling case, needs convergence azimuth and rate [azimuth in deg, rate]
 
         Returns:
             * G             : Dictionary of the built Green's functions
@@ -1116,7 +1088,7 @@ class Fault(SourceInv):
 
     # ----------------------------------------------------------------------
     def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True,
-                      convergence=None):
+                      convergence=None, method='fortran'):
         '''
         Builds the Green's functions based on the solution by Zhao & Rivera 2002.
         The corresponding functions are in the EDKS code that needs to be installed and
@@ -1126,27 +1098,21 @@ class Fault(SourceInv):
         A few variables need to be set in before running this method
 
             Required:
-                self.kernelsEDKS    : Filename of the EDKS kernels.
+                - self.kernelsEDKS    : Filename of the EDKS kernels.
 
             One of the Three:
-                self.sourceSpacing  : Spacing between the sources in each patch.
-                self.sourceNumber   : Number of sources per patches.
-                self.sourceArea     : Maximum Area of the sources.
+                - self.sourceSpacing  : Spacing between the sources in each patch.
+                - self.sourceNumber   : Number of sources per patches.
+                - self.sourceArea     : Maximum Area of the sources.
 
         Args:
             * data              : Data object
 
         Kwargs:
-            * vertical      : If True, will produce green's functions for
-                              the vertical displacements in a gps object.
-            * slipdir       : Direction of slip along the patches.
-                              Can be any combination of s (strikeslip),
-                                                        d (dipslip),
-                                                        t (tensile) and
-                                                        c (coupling)
+            * vertical      : If True, will produce green's functions for the vertical displacements in a gps object.
+            * slipdir       : Direction of slip along the patches. Can be any combination of s (strikeslip), d (dipslip), t (tensile) and c (coupling)
             * verbose       : Writes stuff to the screen (overwrites self.verbose)
-            * convergence   : If coupling case, needs convergence azimuth
-                              and rate [azimuth in deg, rate]
+            * convergence   : If coupling case, needs convergence azimuth and rate [azimuth in deg, rate]
 
         Returns:
             * G             : Dictionary of the built Green's functions
@@ -1157,7 +1123,7 @@ class Fault(SourceInv):
             print('---------------------------------')
             print('---------------------------------')
             print ("Building Green's functions for the data set")
-            print("{} of type {} using EDKS".format(data.name, data.dtype))
+            print("{} of type {} using EDKS on fault {}".format(data.name, data.dtype, self.name))
 
         # Check if we can find kernels
         if not hasattr(self, 'kernelsEDKS'):
@@ -1263,15 +1229,27 @@ class Fault(SourceInv):
         if verbose:
             print('{} sources for {} patches and {} data points'.format(len(Ids), len(self.patch), len(xr)))
 
+        # Create interpolation class if python method is selected
+        if method in ('python'):
+            inter = interpolateEDKS(stratKernels, verbose=verbose)
+            inter.readHeader()
+            inter.readKernel()
+
         # Run EDKS Strike slip
         if 's' in slipdir:
             if verbose:
                 print('Running Strike Slip component for data set {}'.format(data.name))
-            iGss = np.array(sum_layered(xs, ys, zs,
-                                        strike, dip, np.zeros(dip.shape), slip,
-                                        np.sqrt(Areas), np.sqrt(Areas), 1, 1,
-                                        xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
-                                        cleanUp=self.cleanUp, verbose=verbose))
+            if method in ('fortran'):
+                iGss = np.array(sum_layered(xs, ys, zs, 
+                                            strike, dip, np.zeros(dip.shape), slip, 
+                                            np.sqrt(Areas), np.sqrt(Areas), 1, 1,
+                                            xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
+                                            cleanUp=self.cleanUp, verbose=verbose))
+            elif method in ('python'):
+                iGss = np.array(inter.interpolate(xs, ys, zs, strike*np.pi/180., 
+                                                  dip*np.pi/180., np.zeros(dip.shape),
+                                                  Areas, slip, 
+                                                  xr, yr, method='linear'))
             if verbose:
                 print('Summing sub-sources...')
             Gss = np.zeros((3, iGss.shape[1],np.unique(Ids).shape[0]))
@@ -1285,11 +1263,18 @@ class Fault(SourceInv):
         if 'd' in slipdir:
             if verbose:
                 print('Running Dip Slip component for data set {}'.format(data.name))
-            iGds = np.array(sum_layered(xs, ys, zs,
-                                        strike, dip, np.ones(dip.shape)*90.0, slip,
+            if method in ('fortran'):
+                iGds = np.array(sum_layered(xs, ys, zs, 
+                                        strike, dip, np.ones(dip.shape)*90.0, slip, 
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1,
                                         xr, yr, stratKernels, prefix, BIN_EDKS='EDKS_BIN',
                                         cleanUp=self.cleanUp, verbose=verbose))
+            elif method in ('python'):
+                iGds = np.array(inter.interpolate(xs, ys, zs, strike*np.pi/180., 
+                                                  dip*np.pi/180., 
+                                                  np.ones(dip.shape)*np.pi/2.,
+                                                  Areas, slip, 
+                                                  xr, yr, method='linear'))
             if verbose:
                 print('Summing sub-sources...')
             Gds = np.zeros((3, iGds.shape[1], np.unique(Ids).shape[0]))
@@ -1304,6 +1289,8 @@ class Fault(SourceInv):
             assert False, 'Sorry, this is not working so far... Bryan should get it done soon...'
             if verbose:
                 print('Running tensile component for data set {}'.format(data.name))
+            if method not in ('fortran'): 
+                raise NotImplementedError('Tensile case not implemented in python yet')
             iGts = np.array(sum_layered(xs, ys, zs,
                                         strike, dip, np.zeros(dip.shape), slip,
                                         np.sqrt(Areas), np.sqrt(Areas), 1, 1,
@@ -1329,7 +1316,8 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
     def setGFsFromFile(self, data, strikeslip=None, dipslip=None,
                                    tensile=None, coupling=None,
-                                   custom=None, vertical=False, dtype='d'):
+                                   custom=None, vertical=False, dtype='d', 
+                                   inDir='.'):
         '''
         Sets the Green's functions reading binary files. Be carefull, these have to be in the
         good format (i.e. if it is GPS, then GF are E, then N, then U, optional, and
@@ -1340,23 +1328,38 @@ class Fault(SourceInv):
             * data          : Data object
 
         kwargs:
-            * strikeslip    : File containing the Green's functions for
-                              strikeslip related displacements.
-            * dipslip       : File containing the Green's functions for
-                              dipslip related displacements.
-            * tensile       : File containing the Green's functions for
-                              tensile related displacements.
-            * coupling      : File containing the Green's functions for
-                              coupling related displacements.
-            * vertical      : Deal with the UP component (gps: default is false,
-                              insar: it will be true anyway).
-            * dtype         : Type of binary data.
-                                    'd' for double/float64
-                                    'f' for float32
+            * strikeslip    : File containing the Green's functions for strikeslip related displacements.
+            * dipslip       : File containing the Green's functions for dipslip related displacements.
+            * tensile       : File containing the Green's functions for tensile related displacements.
+            * coupling      : File containing the Green's functions for coupling related displacements.
+            * vertical      : Deal with the UP component (gps: default is false, insar: it will be true anyway).
+            * dtype         : Type of binary data. 'd' for double/float64. 'f' for float32
 
         Returns:
             * None
         '''
+
+        # Check name conventions
+        if strikeslip is None:
+            if os.path.isfile(os.path.join(inDir,'{}_{}_SS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_')))):
+                strikeslip = os.path.join(inDir, '{}_{}_SS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_')))
+        if dipslip is None:
+            if os.path.isfile(os.path.join(inDir,'{}_{}_DS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_')))):
+                dipslip = os.path.join(inDir, '{}_{}_DS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_')))
+        if tensile is None:
+            if os.path.isfile(os.path.join(inDir,'{}_{}_TS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_')))):
+                tensile = os.path.join(inDir, '{}_{}_TS.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_')))
+        if coupling is None:
+            if os.path.isfile(os.path.join(inDir, '{}_{}_Coupling.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_')))):
+                coupling = os.path.join(inDir, '{}_{}_Coupling.gf'.format(self.name.replace(' ','_'), 
+                                                   data.name.replace(' ','_')))
 
         if self.verbose:
             print('---------------------------------')
@@ -1418,9 +1421,7 @@ class Fault(SourceInv):
         Stores the input Green's functions matrices into the fault structure.
 
         These GFs are organized in a dictionary structure in self.G
-        Entries of self.G are the data set names (data.name).
-            Entries of self.G[data.name] are 'strikeslip', 'dipslip', 'tensile'
-                                             and/or 'coupling'
+        Entries of self.G are the data set names (data.name). Entries of self.G[data.name] are 'strikeslip', 'dipslip', 'tensile' and/or 'coupling'
 
         If you provide GPS GFs, those are organised with E, N and U in lines
 
@@ -1433,14 +1434,10 @@ class Fault(SourceInv):
             * data          : Data structure
 
         Kwargs:
-            * strikeslip    : List of matrices of the Strikeslip
-                              Green's functions
-            * dipslip       : List of matrices of the dipslip
-                              Green's functions
-            * tensile       : List of matrices of the tensile Green's
-                              functions
-            * coupling      : List of matrices of the coupling Green's
-                              function
+            * strikeslip    : List of matrices of the Strikeslip Green's functions
+            * dipslip       : List of matrices of the dipslip Green's functions
+            * tensile       : List of matrices of the tensile Green's functions
+            * coupling      : List of matrices of the coupling Green's function
 
         Returns:
             * None
@@ -1618,9 +1615,9 @@ class Fault(SourceInv):
         to compute GFs using the EDKS software.
 
         The process is controlled by the attributes:
-            self.sourceSpacing      : Distance between sources
-            self.sourceArea         : Area of the sources
-            self.sourceNumber       : Number of sources per patch
+            - self.sourceSpacing      : Distance between sources
+            - self.sourceArea         : Area of the sources
+            - self.sourceNumber       : Number of sources per patch
         One needs to set at least one of those three attributes.
 
         Sources are saved in self.plotSources and self.edksSources
@@ -1654,8 +1651,7 @@ class Fault(SourceInv):
 
         Returns:
             * rotatedGar    : GFs along the azimuth direction
-            * rotatedGrp    : GFs in the direction perpendicular to the
-                              azimuth direction
+            * rotatedGrp    : GFs in the direction perpendicular to the azimuth direction
         '''
 
         # Check if strike and dip slip GFs have been computed
@@ -1745,48 +1741,32 @@ class Fault(SourceInv):
         Assembled Green's function matrix is stored in self.Gassembled
 
         Args:
-            * datas             : list of data sets. If only one data set is
-                                  used, can be a data instance only.
+            * datas : list of data sets. If only one data set is used, can be a data instance only.
 
         Kwargs:
-            * polys             : None -> nothing additional is estimated
+            * polys : None, nothing additional is estimated
 
-                 For InSAR, Optical, GPS:
-                       1 -> estimate a constant offset
-                       3 -> estimate z = ax + by + c
-                       4 -> estimate z = axy + bx + cy + d
+                 - For InSAR, Optical, GPS:
+                       - 1: estimate a constant offset
+                       - 3: estimate z = ax + by + c
+                       - 4: estimate z = axy + bx + cy + d
 
-                 For GPS only:
-                       'full'                -> Estimates a rotation,
-                                                translation and scaling
-                                                (Helmert transform).
-                       'strain'              -> Estimates the full strain
-                                                tensor (Rotation + Translation
-                                                + Internal strain)
-                       'strainnorotation'    -> Estimates the strain tensor and a
-                                                translation
-                       'strainonly'          -> Estimates the strain tensor
-                       'strainnotranslation' -> Estimates the strain tensor and a
-                                                rotation
-                       'translation'         -> Estimates the translation
-                       'translationrotation  -> Estimates the translation and a
-                                                rotation
+                 - For GPS only:
+                       - 'full'      : Estimates a rotation, translation and scaling (Helmert transform).
+                       - 'strain'    : Estimates the full strain tensor (Rotation + Translation + Internal strain)
+                       - 'strainnorotation'   : Estimates the strain tensor and a translation
+                       - 'strainonly'    : Estimates the strain tensor
+                       - 'strainnotranslation'   : Estimates the strain tensor and a rotation
+                       - 'translation'   : Estimates the translation
+                       - 'translationrotation    : Estimates the translation and a rotation
 
-            * slipdir           : Directions of slip to include.
-                                  Can be any combination of s, d, t, c or x
-                                    s: strike slip
-                                    d: dip slip
-                                    t: tensile
-                                    c: coupling
+            * slipdir   : Directions of slip to include. Can be any combination of s (strike slip), d (dip slip), t (tensile), c (coupling)
 
-            * custom            : If True, gets the additional Green's function
-                                  from the dictionary self.G[data.name]['custom']
+            * custom    : If True, gets the additional Green's function from the dictionary self.G[data.name]['custom']
 
-            * computeNormFact   : bool
-                if True, compute new OrbNormalizingFactor
-                if False, uses parameters in self.OrbNormalizingFactor
+            * computeNormFact   : bool. if True, compute new OrbNormalizingFactor. if False, uses parameters in self.OrbNormalizingFactor
 
-            * verbose           : Talk to me (overwrites self.verbose)
+            * verbose   : Talk to me (overwrites self.verbose)
 
         Returns:
             * None
@@ -1966,10 +1946,7 @@ class Fault(SourceInv):
             * datas         : List of data instances or one data instance
 
         Kwargs:
-            * add_prediction: Precentage of displacement to add to the Cd
-                              diagonal to simulate a Cp (dirty version of
-                              a prediction error covariance, see Duputel et
-                              al 2013, GJI).
+            * add_prediction: Precentage of displacement to add to the Cd diagonal to simulate a Cp (dirty version of a prediction error covariance, see Duputel et al 2013, GJI).
             * verbose       : Talk to me (overwrites self.verbose)
 
         Returns:
@@ -2020,8 +1997,8 @@ class Fault(SourceInv):
         Model covariance is hold in self.Cm
 
         Args:
-            * sigma         : List of numbers the size of the slip components
-                              requried for the modeling
+            * sigma         : List of numbers the size of the slip components requried for the modeling
+
         Kwargs:
             * extra_params   : a list of extra parameters.
 
@@ -2076,13 +2053,14 @@ class Fault(SourceInv):
         Model covariance is hold in self.Cm
 
         Args:
-            * lam               : Damping factor (list of size of slipdirections)
+            * lam                       : Damping factor (list of size of slipdirections)
 
         Kwargs:
-            * extra_params   : a list of extra parameters.
-            * sensitivity       : Weights the Laplacian by Sensitivity (default True)
-            * irregular         : Only used for rectangular patches. Allows to account
-                                  for irregular meshing along dip.
+            * extra_params              : a list of extra parameters.
+            * sensitivity               : Weights the Laplacian by Sensitivity (default True)
+            * sensitivityNormalizing    : Normalizing the Sensitivity?
+            * method                    : which method to use to build the Laplacian operator 
+            * irregular                 : Only used for rectangular patches. Allows to account for irregular meshing along dip.
 
         Returns:
             * None
@@ -2170,7 +2148,7 @@ class Fault(SourceInv):
         Builds a model covariance matrix using the equation described in
         Radiguet et al 2010. We use
 
-            C_m(i,j) = \frac{\sigma\lam_0}{\lam}^2 e^{-\frac{||i,j||_2}{\lam}}
+        :math:`C_m(i,j) = \\frac{\sigma \lambda_0}{ \lambda }^2 e^{-\\frac{||i,j||_2}{ \lambda }}`
 
         extra_params allows to add some diagonal terms and expand the size
         of the matrix, in case the fault object is also hosting the estimation
@@ -2183,9 +2161,8 @@ class Fault(SourceInv):
             * lam           : Characteristic length scale.
 
         Kwargs:
-            * lam0          : Normalizing distance
-                              if None, lam0=min(distance between patches)
-            * extra_params  : a list of extra parameters.
+            * lam0          : Normalizing distance. if None, lam0=min(distance between patches)
+            * extra_params  : A list of extra parameters.
             * lim           : Limit distance parameter (see self.distancePatchToPatch)
             * verbose       : Talk to me (overwrites self.verrbose)
 
@@ -2259,16 +2236,15 @@ class Fault(SourceInv):
         Radiguet et al 2010. Here, Sigma and Lambda are lists specifying
         values for the slip directions. We use
 
-            C_m(i,j) = \frac{\sigma\lam_0}{\lam}^2 e^{-\frac{||i,j||_2}{\lam}}
+        :math:`C_m(i,j) = \\frac{\sigma\lambda_0}{\lambda}^2 e^{-\\frac{||i,j||_2}{\lambda}}`
 
         Args:
             * sigma         : Amplitude of the correlation.
             * lam           : Characteristic length scale.
 
         Kwargs:
-            * lam0          : Normalizing distance
-                              if None, lam0=min(distance between patches)
-            * extra_params  : a list of extra parameters.
+            * lam0          : Normalizing distance. If None, lam0=min(distance between patches)
+            * extra_params  : A list of extra parameters.
             * lim           : Limit distance parameter (see self.distancePatchToPatch)
             * verbose       : Talk to me (overwrites self.verrbose)
 
@@ -2362,10 +2338,11 @@ class Fault(SourceInv):
         Builds a model covariance matrix using the equation described in Radiguet et al 2010.
         We use
 
-            C_m(i,j) = \frac{\sigma\lam_0}{\lam}^2 e^{-\frac{||i,j||_2}{\lam}}
+        :math:`C_m(i,j) = \\frac{\sigma\lambda_0}{\lambda}^2 e^{-\\frac{||i,j||_2}{\lambda}}`
 
-        Then correlation length is weighted by the sensitivity matrix described in Ortega's PhD thesis.
-                     ==>       S = diag(G'G)
+        Then correlation length is weighted by the sensitivity matrix described in Ortega's PhD thesis:
+        :math:`S = diag(G'G)`
+        
         Here, Sigma and Lambda are lists specifying values for the slip directions
 
         extra_params allows to add some diagonal terms and expand the size
@@ -2379,8 +2356,7 @@ class Fault(SourceInv):
             * lam           : Characteristic length scale.
 
         Kwargs:
-            * lam0          : Normalizing distance
-                              if None, lam0=min(distance between patches)
+            * lam0          : Normalizing distance. if None, lam0=min(distance between patches)
             * extra_params  : a list of extra parameters.
             * lim           : Limit distance parameter (see self.distancePatchToPatch)
             * verbose       : Talk to me (overwrites self.verrbose)
@@ -2496,8 +2472,7 @@ class Fault(SourceInv):
             * filename      : Name of the file.
 
         Kwargs:
-            * slip          : Put the slip as a value for the color.
-                              Can be None, strikeslip, dipslip, total, coupling
+            * slip          : Put the slip as a value for the color. Can be None, strikeslip, dipslip, total, coupling
             * scale         : Multiply the slip value by a factor.
 
         Retunrs:
@@ -2612,8 +2587,7 @@ class Fault(SourceInv):
         '''
         Counts the number of earthquakes per patches and divides by the area of the patches.
         Sets the results in
-            self.earthquakeInPatch  --> Number of earthquakes per patch
-            self.seismicityRate     --> Seismicity rate for this patch
+            self.earthquakeInPatch (Number of earthquakes per patch) and self.seismicityRate (Seismicity rate for this patch)
 
         Args:
             * earthquake    : seismiclocation object
@@ -2687,8 +2661,7 @@ class Fault(SourceInv):
         patch area. Sets the results in self.volume
 
         Kwargs:
-            * slip  : Can be strikeslip, dipslip, tensile, coupling or
-                      a list/array of floats.
+            * slip  : Can be strikeslip, dipslip, tensile, coupling or a list/array of floats.
 
         Returns:
             * None
@@ -2726,11 +2699,18 @@ class Fault(SourceInv):
         file from the EDKS software. Shear moduli are set in self.mu
 
         The model file format is as follows:
-        N F
-        RHO_1 VP_1 VS_1 TH_1
-        RHO_2 VP_2 VS_2 TH_2
-        ...
-        RHO_N VP_N VS_N TH_N
+
+        +-----+----+----+----+
+        |  N  | F  |    |    | 
+        +=====+====+====+====+
+        |RHO_1|VP_1|VS_1|TH_1|
+        +-----+----+----+----+
+        |RHO_2|VP_2|VS_2|TH_2|
+        +-----+----+----+----+
+        | ... | ...| ...| ...|
+        +-----+----+----+----+
+        |RHO_N|VP_N|VS_N|TH_N|
+        +-----+----+----+----+
 
         where N is the number of layers, F a conversion factor to SI units
         RHO_i is the density of the i-th layer
@@ -2805,6 +2785,118 @@ class Fault(SourceInv):
                     self.mu[p] = mu[d]
 
         # All done
+        return          
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def calcGFsCp(self, datasets, edks=False, **edks_params):
+        '''
+        Calculate Green's Functions using Okada or EDKS 
+        Used in class uncertainties
+        
+        :Args:
+            * datasets : List of data objects
+                ex: dataset=[gps]+[insar1,insar2]
+        
+        :Kwargs:
+            * edks : If True, GFs calculated using a layered Earth model calculated with EDKS.
+                     If False, GFs with Okada
+                     
+        If edks is True, please specify in **edks_params: 
+            ex: Cp_dip(fault,datasets,[40,50],multi_segments=2,edks=True,edksdir='PATH',modelname='CIA',sourceSpacing=0.5)
+            * modelname : xxx.edks = Filename of the EDKS kernels
+            * sourceSpacing      : source spacing to calculate the Green's Functions
+                OR sourceNumber   : Number of sources per patches.
+                OR sourceArea     : Maximum Area of the sources.
+                
+        :Returns:
+            * Gassembled
+        '''
+        if edks is False:
+            for data in datasets:
+                self.buildGFs(data, slipdir='sd')
+            self.assembleGFs(datasets, slipdir='sd', polys=None)
+        else:
+            self.kernelsEDKS = edks_params['modelname']+'.edks'
+            if 'Spacing' in str(edks_params.items()[1][0]):
+                self.sourceSpacing = edks_params['sourceSpacing']
+            elif 'Number' in str(edks_params.items()[1][0]):
+                self.sourceNumber = edks_params['sourceNumber']
+            else:
+                self.sourceArea = edks_params['sourceArea']
+        
+            for data in datasets:
+                self.buildGFs(data, slipdir='sd', method= 'edks')
+            self.assembleGFs(datasets, slipdir='sd', polys=None)
+           
+        return self.Gassembled
+    # ----------------------------------------------------------------------
+        
+    # ----------------------------------------------------------------------
+    # Interpolate slip/coupling on the fault
+    def interpolateSlip(self, lon, lat, slip='strikeslip', rebuild=False, coord='LL'):
+        '''
+        Creates an interpolator and interpolates the slip values to the 
+        position given in {lon} and {lat}.
+
+        :Args:
+            * lon           : Longitude
+            * lat           : Latitude
+        
+        :Kwargs:
+            * slip          : Which slip value to take
+            * rebuild       : Rebuild the interpolator
+            * coord         : LL or utm (in km)
+        '''
+
+        # String 
+        strVal = slip+'Int'
+
+        # Check if an interpolator exists
+        if not hasattr(self, strVal) or rebuild:
+            if slip == 'strikeslip':
+                value = self.slip[:,0]
+            elif slip == 'dipslip':
+                value = self.slip[:,1]
+            elif slip == 'tensile':
+                value = self.slip[:,2]
+            elif slip == 'coupling':
+                value = self.coupling
+            x = [c[0] for c in self.getcenters()]
+            y = [c[1] for c in self.getcenters()]
+            interp = sciint.LinearNDInterpolator(np.vstack((x,y)).T, value)
+            setattr(self, strVal, interp)
+
+        # Coordinates
+        if coord == 'LL':
+            x,y = self.ll2xy(lon, lat)
+        else:
+            x,y = lon,lat
+
+        # All done
+        return getattr(self, strVal)(x,y)
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # pickle myself
+    def pickle(self, filename):
+        '''
+        Pickle myself.
+
+        :Args:
+            * filename      : Name of the pickle fault.
+        '''
+
+        # Open the file
+        fout = open(filename, 'wb')
+
+        # Pickle
+        pickle.dump(self, fout)
+
+        # Close 
+        fout.close()
+
+        # All done
         return
     # ----------------------------------------------------------------------
 
@@ -2827,10 +2919,8 @@ class Fault(SourceInv):
             * Gts           : Tensile greens functions
 
         Kwargs:
-            * slipdir       : Direction of slip. Can be any combination of 's',
-                              'd', 't' or 'c'
-            *convergence    : Convergence vector for coupling GFs
-                              [azimuth in degree, rate]
+            * slipdir       : Direction of slip. Can be any combination of 's', 'd', 't' or 'c'
+            *convergence    : Convergence vector for coupling GFs [azimuth in degree, rate]
             *vertical       : If true, assumes verticals are used for the GPS case
 
         Returns:
@@ -2943,39 +3033,41 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def _rotatedisp(self, Gss, Gds, azimuth):
+    def _rotatedisp(self, Gss, Gds, azim):
         '''
         A rotation function for Green function.
 
-        Args:
+        :Args:   
             * Gss           : Strike slip GFs
             * Gds           : Dip slip GFs
-            * azimtuh       : Direction to rotate (degrees)
+            * azim          : Direction to rotate (degrees)
 
         Return:
             * rotatedGar    : Displacements along azimuth
             * rotatedGrp    : Displacements perp. to azimuth direction
         '''
+        
+        # Save
+        azimuth = copy.deepcopy(azim)
+
+        # Check nature of azimuth (float or array)
+        if type(azimuth) in [float,int,np.float64]:
+            azimuth = azimuth*np.ones((self.N_slip,))
 
         # Make azimuth positive
-        if azimuth < 0.:
-            azimuth += 360.
-
+        azimuth[azimuth< 0.] += 360.
+        
         # Get strikes and dips
-        #if self.patchType is 'triangletent':
-        #    strike = super(self.__class__, self).getStrikes()
-        #    dip = super(self.__class__, self).getDips()
-        #else:
         strike, dip = self.getStrikes(), self.getDips()
 
         # Convert angle in radians
         azimuth *= ((np.pi) / 180.)
-        rotation = np.arctan2(np.tan(strike) - np.tan(azimuth),
+        rotation = np.arctan2(np.tan(strike) - np.tan(azimuth), 
                             np.cos(dip)*(1.+np.tan(azimuth)*np.tan(strike)))
 
-        # If azimuth within ]90, 270], change rotation
-        if azimuth*(180./np.pi) > 90. and azimuth*(180./np.pi)<=270.:
-            rotation += np.pi
+        # If strike within ]90, 270], change rotation
+        rotation[np.logical_and(azimuth*(180./np.pi)>90.,azimuth*(180./np.pi)<=270.)] += np.pi
+        rotation[np.logical_and(strike*(180/np.pi)>90.,strike*(180./np.pi)<=270)] -= np.pi
 
         # Store rotation angles
         self.rotation = rotation.copy()
@@ -2995,18 +3087,23 @@ class Fault(SourceInv):
         Gss and Gds are of a shape (3xnumber of sites, number of fault patches)
         The 3 is for East, North and Up displacements
 
-        Args:
+        :Args:   
             * Gss           : Strike slip GFs
             * Gds           : Dip slip GFs
             * convergence   : [azimuth in degrees, rate]
-
-        Returns:
+    
+        :Returns:
             * Gar           : Along coupling Greens functions
 
         '''
 
         # For now, convergence is constant alnog strike
         azimuth, rate = convergence
+
+        # Check 
+        if type(azimuth) in (float, int):
+            azimuth = np.ones((self.slip.shape[0], ))*azimuth
+            rate = np.ones((self.slip.shape[0], ))*rate
 
         # Create the holders
         Gar = np.zeros(Gss.shape)
@@ -3018,8 +3115,8 @@ class Fault(SourceInv):
         Gar[2,:,:], Grp[2,:,:] = self._rotatedisp(Gss[2,:,:], Gds[2,:,:], azimuth)
 
         # Multiply and sum
-        Gar *= rate
-
+        Gar *= rate 
+        
         # All done (we only retun Gar as Grp should be 0)
         return Gar
     # ----------------------------------------------------------------------

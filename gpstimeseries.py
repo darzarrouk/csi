@@ -19,10 +19,10 @@ class gpstimeseries(SourceInv):
     '''
     A class that handles a time series of gps data
 
-    :Args:
+    Args:
        * name      : Name of the dataset.
 
-    :Kwargs:
+    Kwargs:
        * utmzone   : UTM zone  (optional, default=None)
        * lon0      : Longitude of the center of the UTM zone
        * lat0      : Latitude of the center of the UTM zone
@@ -58,7 +58,7 @@ class gpstimeseries(SourceInv):
         '''
         Pass the position into the utm coordinate system.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -73,7 +73,7 @@ class gpstimeseries(SourceInv):
         '''
         Pass the position from utm to lonlat.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -88,13 +88,13 @@ class gpstimeseries(SourceInv):
         '''
         Reads the time series from a file which has been written by write2file
 
-        :Args:
+        Args:
             * filename      : name of the file
 
-        :Kwargs:
+        Kwargs:
             * verbose       : talk to me
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -170,13 +170,13 @@ class gpstimeseries(SourceInv):
 
         This was true on 2015.
 
-        :Args:
+        Args:
             * filename      : name of file
 
-        :Kwargs:
+        Kwargs:
             * verbose       : talk to me
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -316,15 +316,15 @@ class gpstimeseries(SourceInv):
 
         This method requires pandas and sqlalchemy
 
-        :Args:
+        Args:
             * filename  : Name of the sql file
 
-        :Kwargs:
+        Kwargs:
             * tables    : Dictionary of the names of the table for the east, north and up displacement time series
             * sigma     : Dictionary of the names of the tables for the east, north and up uncertainties time series
             * factor    : scaling factor
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -384,10 +384,10 @@ class gpstimeseries(SourceInv):
         Reads the data from a time series file from CalTech (Avouac's group).
         Time is in decimal year...
 
-        :Args:
+        Args:
             * filename      : Input file
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -450,7 +450,7 @@ class gpstimeseries(SourceInv):
         '''
         Remove NaNs in the time series
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -475,7 +475,7 @@ class gpstimeseries(SourceInv):
         '''
         Initializes the time series by creating whatever is necessary.
 
-        :Kwargs:
+        Kwargs:
             * time              Time vector
             * starttime:        Begining of the time series.
             * endtime:          End of the time series.
@@ -534,13 +534,13 @@ class gpstimeseries(SourceInv):
         '''
         Keeps the epochs between start and end
 
-        :Args:
+        Args:
             * start: starting date (datetime instance)
         
-        :Kwargs:
+        Kwargs:
             * end: ending date (datetime instance)
 
-        :Returns:
+        Returns:
             * None
 
         '''
@@ -560,14 +560,14 @@ class gpstimeseries(SourceInv):
         '''
         Augments the time series by one point.
 
-        :Args:
+        Args:
             * time: datetime object.a
 
-        :Kwargs:
+        Kwargs:
             * east, north, up   : Time series values. Default is 0
             * std_east, std_north, std_up: Uncertainty values. Default is 0
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -586,10 +586,10 @@ class gpstimeseries(SourceInv):
         '''
         Remove points from the time series.
 
-        :Args:
+        Args:
             * u         : List or array of indexes to remove
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -608,16 +608,16 @@ class gpstimeseries(SourceInv):
         '''
         Fits a function to the timeseries
 
-        :Args:
+        Args:
             * function  : Prediction function, 
             * m0        : Initial model
 
-        :Kwargs:
+        Kwargs:
             * solver    : Solver type (see list of solver in scipy.optimize.minimize)
             * iteration : Number of iteration for the solver
             * tol       : Tolerance
 
-        :Returns:   
+        Returns:   
             * None. Parameters are stored in attribute {m} of each time series object
         '''
 
@@ -634,7 +634,7 @@ class gpstimeseries(SourceInv):
         '''
         Fits tidal constituents on the time series.
 
-        :Args:
+        Args:
             * steps     : list of datetime instances to add step functions in the estimation process.
             * linear    : estimate a linear trend.
             * tZero     : origin time (datetime instance).
@@ -642,7 +642,7 @@ class gpstimeseries(SourceInv):
             * cossin    : Add an  extra cosine+sine term (weird...)
             * constituents: list of constituents to fit (default is 'all')
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -662,15 +662,15 @@ class gpstimeseries(SourceInv):
         Get the offset between date1 and date2.
         If the 2 dates are not available, returns NaN.
 
-        :Args:
+        Args:
             * date1       : datetime object
             * date2       : datetime object
 
-        :Kwargs:
+        Kwargs:
             * data        : can be 'data' or 'std'
             * nodate      : If there is no date, return this value
 
-        :Returns:
+        Returns:
             * tuple of floats
         '''
 
@@ -686,13 +686,13 @@ class gpstimeseries(SourceInv):
         '''
         Writes the time series to a file.
 
-        :Args:   
+        Args:   
             * outfile   : output file.
 
-        :Kwargs:
+        Kwargs:
             * steplike  : doubles the output each time so that the plot looks like steps.
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -749,10 +749,10 @@ class gpstimeseries(SourceInv):
         Projects the time series of east, north and up displacements into the 
         line-of-sight given as argument
 
-        :Args:
+        Args:
             * los       : list of three component. L2-norm of los must be equal to 1
 
-        :Returns:
+        Returns:
             * None. Results are stored in attribute {losvector}
         '''
 
@@ -789,13 +789,13 @@ class gpstimeseries(SourceInv):
         '''
         Removes to another gps timeseries the difference between self and timeseries
 
-        :Args:
+        Args:
             * timeseries        : Another gpstimeseries
 
-        :Kwargs:
+        Kwargs:
             * verbose           : Talk to me
 
-        :Returns:
+        Returns:
             * None
         '''
 
@@ -826,13 +826,13 @@ class gpstimeseries(SourceInv):
         '''
         Plots the time series.
 
-        :Kwargs:
+        Kwargs:
             * figure  :   Figure id number (default=1)
             * styles  :   List of styles (default=['.r'])
             * show    :   Show to me (default=True)
             * data    :   What do you show (data, synth)
 
-        :Returns:
+        Returns:
             * None
         '''
 
