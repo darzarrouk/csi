@@ -398,6 +398,8 @@ class insartimeseries(insar):
                 else:
                     print('Unknow instruction type for Masking...')
                     sys.exit(1)
+        else:
+            mask = np.ones((nLines, nCols))
 
         # Read Lon Lat
         if lonfile is not None:
@@ -433,13 +435,8 @@ class insartimeseries(insar):
             
             # Get things
             date = self.time[i]
-            dat = data[:,:,i]
-            std = err[:,:,i]
-
-            # Mask?
-            if mask is not None:
-                dat *= mask
-                err *= mask
+            dat = data[:,:,i]*mask
+            std = err[:,:,i]*mask
 
             # check master date
             if i is setmaster2zero:
@@ -1361,7 +1358,8 @@ class insartimeseries(insar):
         # All done
         return
 
-    def plotProfiles(self, prefix, figure=124, show=True, norm=None, xlim=None, zlim=None, marker='.', color='k'):
+    def plotProfiles(self, prefix, figure=124, show=True, norm=None, xlim=None, zlim=None, marker='.', color='k', line=False, linewidth=2, figsize=(20, 20), 
+            view=None, markersize=0.1):
         '''
         Plots the profiles in 3D plot.
 
@@ -1376,14 +1374,28 @@ class insartimeseries(insar):
             * zlim          : tuple of upper and lower limit along the z-axis (removes the points before plotting)
             * marker        : matplotlib marker style
             * color         : matplotlib color style
+            * line          : If True, plots a line (default is False)
+            * linewidth     : controls the width of the line
+            * view          : list of elevation angle and azimuth (default is None)
 
         Returns:
             * None
         '''
 
+        # Imports
+        import matplotlib.colors as colors
+        import matplotlib.cm as cmx
+
         # Create the figure
-        fig = plt.figure(figure)
+        fig = plt.figure(figure, figsize=figsize)
         ax = fig.add_subplot(111, projection='3d')
+
+        # Try to get a color map out of color. 
+        #try:
+        cmap = plt.get_cmap(color)
+        cNorm = colors.Normalize(0 , (self.time[-1] - self.time[0]).days/365.24)
+        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
+        #except:
 
         # loop over the profiles to plot these
         for date, sar in zip(self.time, self.timeseries):
@@ -1419,12 +1431,21 @@ class insartimeseries(insar):
             nDate = [date.toordinal() for i in range(len(distance))]
                 
             # Plot that
-            ax.plot3D(nDate, distance, values, 
-                      marker=marker, color=color, linewidth=0.0 )
+            if not line:
+                ax.plot3D(nDate, distance, values, 
+                          marker=marker, color=scalarMap.to_rgba((date-self.time[0]).days/365.24), 
+                          linewidth=0.0, markersize=markersize)
+            else:
+                ax.plot3D(nDate, distance, values, '-', 
+                          color=color, linewidth=linewidth)
 
         # norm
         if norm is not None:
             ax.set_zlim(norm[0], norm[1])
+
+        # View
+        if view is not None:
+            ax.view_init(elev=view[0], azim=view[1])
 
         # If show
         if show:

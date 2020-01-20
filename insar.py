@@ -2649,7 +2649,7 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None]):
+    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None], plotType='scatter'):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2657,13 +2657,13 @@ class insar(SourceInv):
             * faults            : list of fault objects.
             * figure            : number of the figure.
             * gps               : list of gps objects.
-            * decim             : plot the insar following the decimation process of varres.
             * norm              : colorbar limits
             * data              : 'data', 'synth' or 'res'
             * show              : bool. Show on screen?
             * drawCoastlines    : bool. default is True
             * expand            : default expand around the limits covered by the data
             * edgewidth         : width of the edges of the decimation process patches
+            * plotType          : 'decim', 'scatter' or 'flat'
             * figsize           : tuple of figure sizes
 
         Returns:
@@ -2695,12 +2695,7 @@ class insar(SourceInv):
                 fig.gps(g)
 
         # Plot the decimation process, if asked
-        if decim:
-            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='decimate', edgewidth=edgewidth)
-
-        # Plot the insar
-        if not decim:
-            fig.insar(self, norm=norm, colorbar=True, data=data, plotType='scatter')
+        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, zorder=0)
 
         # Plot the fault trace if asked
         if faults is not None:
@@ -2708,7 +2703,7 @@ class insar(SourceInv):
                 faults = [faults]
             for fault in faults:
                 if fault.type is "Fault":
-                    fig.faulttrace(fault)
+                    fig.faulttrace(fault, zorder=1)
 
         # Show
         if show:

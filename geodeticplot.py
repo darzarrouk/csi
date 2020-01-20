@@ -500,7 +500,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def faulttrace(self, fault, color='r', add=False, discretized=False, zorder=0):
+    def faulttrace(self, fault, color='r', add=False, discretized=False, linewidth=1, zorder=0):
         '''
         Plots a fault trace.
 
@@ -528,16 +528,16 @@ class geodeticplot(object):
         if add:
             for f in fault.addfaults:
                 #f[0][f[0]<0.] += 360.
-                self.carte.plot(f[0], f[1], '-k', zorder=zorder)
+                self.carte.plot(f[0], f[1], '-k', zorder=zorder, linewidth=linewidth)
             for f in fault.addfaults:
                 if self.faille_flag:
-                    self.faille.plot(f[0], f[1], '-k')
+                    self.faille.plot(f[0], f[1], '-k', linewidth=linewidth)
 
         # Plot the surface trace
         #lon[lon<0] += 360.
         #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-        self.faille.plot(lon, lat, '-{}'.format(color), linewidth=2)
-        self.carte.plot(lon, lat, '-{}'.format(color), linewidth=2, zorder=2)
+        self.faille.plot(lon, lat, '-{}'.format(color), linewidth=linewidth)
+        self.carte.plot(lon, lat, '-{}'.format(color), zorder=zorder, linewidth=linewidth)
 
         # All done
         return
@@ -1446,6 +1446,24 @@ class geodeticplot(object):
             sc = self.carte.scatter(lon[::decim], lat[::decim], s=10,
                                     c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax,
                                     linewidth=0.0, zorder=zorder)
+
+        elif plotType is 'flat':
+        
+            # Is there NaNs:
+            if np.isfinite(d).all(): print('Carefull: there is no NaNs, the interpolation might be a whole load of garbage...')
+            # Get coordinantes
+            x,y = insar.x,insar.y
+            # Build an interpolator
+            sarint = sciint.LinearNDInterpolator(np.vstack((x,y)).T, d, fill_value=np.nan)
+            # Interpolate
+            xx = np.linspace(self.lonmin, self.lonmax, 1000)
+            yy = np.linspace(self.latmin, self.latmax, 1000)
+            xx,yy = np.meshgrid(xx,yy)
+            xx,yy = insar.ll2xy(xx,yy)
+            data = sarint(xx,yy)
+            lon,lat = insar.xy2ll(xx,yy)
+            # Plot
+            sc = self.carte.pcolormesh(lon, lat, data, cmap=cmap, vmin=vmin, vmax=vmax, zorder=zorder)
 
         else:
             print('Unknown plot type: {}'.format(plotType))
