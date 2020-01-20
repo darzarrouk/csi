@@ -462,8 +462,14 @@ class TriangularTents(TriangularPatches):
         # Assert
         assert not ( (increments is None) and (nSamples is None) ), 'Specify increments or nSamples...'
 
+        # Lon lat limits
+        lonmin = np.min([t[0] for t in self.tentll])
+        lonmax = np.max([t[0] for t in self.tentll])
+        latmin = np.min([t[1] for t in self.tentll])
+        latmax = np.max([t[1] for t in self.tentll])
+
         # Get the sources
-        gp = geoplot(figure=None)
+        gp = geoplot(figure=None, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
         lon, lat, z, s = gp.faultTents(self, slip=slip, method='scatter',
                                             npoints=npoints)
         gp.close()
