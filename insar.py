@@ -2003,15 +2003,15 @@ class insar(SourceInv):
 
                 # Get the mean
                 if method in ('mean'):
-                    m = vel[uu].mean()
+                    m = np.nanmean(vel[uu])
                 elif method in ('median'):
-                    m = np.median(vel[uu])
+                    m = np.nanmedian(vel[uu])
 
                 # Get the mean distance
-                d = dis[uu].mean()
+                d = np.nanmean(dis[uu])
 
                 # Get the error
-                e = vel[uu].std()
+                e = np.nanstd(vel[uu])
 
                 # Set it
                 outvel.append(m)

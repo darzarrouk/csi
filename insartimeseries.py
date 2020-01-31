@@ -1387,8 +1387,8 @@ class insartimeseries(insar):
         import matplotlib.cm as cmx
 
         # Create the figure
-        fig = plt.figure(figure)
-        ax = fig.add_subplot(111, projection='3d', figsize=figsize)
+        fig = plt.figure(figure, figsize=figsize)
+        ax = fig.add_subplot(111, projection='3d')
 
         # Try to get a color map out of color. 
         #try:
