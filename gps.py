@@ -932,6 +932,102 @@ class gps(SourceInv):
         # All done
         return
 
+    def read_from_midas(self, velfile, stationfile, factor=1., minerr=1., 
+                              header=0, checkNaNs=True):
+        '''
+        Reading velocities from a file produced by the midas tool. Details are available here: http://geodesy.unr.edu/
+
+        Args:
+            * velfile       : Input file
+            * stationfile   : File of the list of stations
+
+        Kwargs:
+            * factor    : multiplication factor for velocities
+            * minerr    : if err=0, then err=minerr.
+            * header    : length of the header
+            * checkNaNs : If True, kicks out stations with NaNs
+
+        Returns:
+            * None
+        '''
+
+        if self.verbose:
+            print ("Read data from file {} into data set {}".format(velfile, 
+                                                                    self.name))
+
+        # Keep the file
+        self.velfile = velfile
+
+        # open the file
+        fvel = open(self.velfile, 'r')
+
+        # read it 
+        Vel = fvel.readlines()
+
+        # Initialize things
+        self.lon = []           # Longitude list
+        self.lat = []           # Latitude list
+        self.vel_enu = []       # ENU velocities list
+        self.err_enu = []       # ENU errors list
+        self.station = []       # Name of the stations
+
+        # Get station info
+        stationInfos = open(stationfile, 'r').readlines() 
+
+        for i in range(header,len(Vel)):
+
+            A = Vel[i].split()
+            if 'nan' not in A or not checkNaNs:
+
+                self.station.append(A[0])
+
+                # Get lon/lat from station file
+                stationInfo = [l for l in stationInfos if A[0] in l]
+                if len(stationInfo)==0:
+                    continue
+
+                # Otherwise, get the station info
+                lon = float(stationInfo[0].split()[2])
+                lat = float(stationInfo[0].split()[1])
+                if lon<0.:
+                    lon += 360.
+                self.lon.append(lon)
+                self.lat.append(lat)
+
+                # Deal with velocities
+                east = np.float(A[8])
+                north = np.float(A[9])
+                up = np.float(A[10])
+                self.vel_enu.append([east, north, up])
+
+                east = np.float(A[11])
+                north = np.float(A[12])
+                up = np.float(A[13])
+                if east == 0.:
+                    east = minerr
+                if north == 0.:
+                    north = minerr
+                if up == 0:
+                    up = minerr
+                self.err_enu.append([east, north, up])
+
+        # Make np array with that
+        self.lon = np.array(self.lon).squeeze()
+        self.lat = np.array(self.lat).squeeze()
+        self.vel_enu = np.array(self.vel_enu).squeeze()*factor
+        self.err_enu = np.array(self.err_enu).squeeze()*factor
+        self.station = np.array(self.station).squeeze()
+        self.factor = factor
+
+        # set lon to (0, 360.)
+        self._checkLongitude()
+
+        # Pass to xy 
+        self.lonlat2xy()
+
+        # All done
+        return
+
     def read_from_enu(self, velfile, factor=1., minerr=1., header=0, checkNaNs=True):
         '''
         Reading velocities from a enu file formatted as
