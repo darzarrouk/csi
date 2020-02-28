@@ -1057,14 +1057,14 @@ class insar(SourceInv):
         else:
             return None, None, None
 
-    def extractAroundGPS(self, gps, distance, doprojection=True):
+    def extractAroundGPS(self, inp, distance, doprojection=True):
         '''
         Returns a gps object with values projected along the LOS around the
         gps stations included in gps. In addition, it projects the gps displacements
         along the LOS
 
         Args:
-            * gps           : gps or gpstimeseries object
+            * inp           : gps or gpstimeseries object
             * distance      : distance to consider around the stations
 
         Kwargs:
@@ -1075,7 +1075,14 @@ class insar(SourceInv):
         '''
 
         # Create a gps object
-        out = copy.deepcopy(gps)
+        from .gps import gps
+        out = gps('{} - {}'.format(self.name, inp.name), lon0=self.lon0, 
+                                                         lat0=self.lat0,
+                                                         utmzone=self.utmzone,
+                                                         ellps=self.ellps)
+        out.setStat(inp.station, inp.lon, inp.lat, initVel=True)
+        out.vel_enu = copy.deepcopy(inp.vel_enu)
+        out.err_enu = copy.deepcopy(inp.err_enu)
 
         # Create a holder in the new gps object
         out.vel_los = []
@@ -2708,8 +2715,9 @@ class insar(SourceInv):
         # Show
         if show:
             fig.show(showFig=['map'])
-        else:
-            self.fig = fig
+        
+        # Save the whole thing
+        self.fig = fig
 
         # All done
         return
