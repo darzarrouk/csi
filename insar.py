@@ -2031,7 +2031,7 @@ class insar(SourceInv):
                     outlos.append(l)
 
         # Copy the old profile and modify it
-        newName = 'Smoothed {}'.format(name)/
+        newName = 'Smoothed {}'.format(name)
         self.profiles[newName] = copy.deepcopy(self.profiles[name])
         self.profiles[newName]['LOS Velocity'] = np.array(outvel)
         self.profiles[newName]['LOS Error'] = np.array(outerr)
@@ -2449,7 +2449,7 @@ class insar(SourceInv):
         # all done
         return
     
-   def pickleProfiles(self, names, filename):
+    def pickleProfiles(self, names, filename):
         '''
         Add on by M. Dalaison (Jan 2019)
         To save in one file several profiles drawn in one image 
