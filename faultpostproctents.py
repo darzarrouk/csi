@@ -16,7 +16,7 @@ from . import csiutils as utils
 
 class faultpostproctents(object):
 
-    def __init__(self, name, fault, Mu=24e9, samplesh5=None, verbose=True):
+    def __init__(self, name, fault, Mu=24e9, samplesh5=None, verbose=False, npoints=20):
         '''
         Args:
             * name          : Name of the InSAR dataset.
@@ -28,6 +28,7 @@ class faultpostproctents(object):
 
         # Initialize the data set 
         self.name = name
+        self.verbose = verbose
         self.fault = copy.deepcopy(fault) # we don't want to modify fault slip
         self.utmzone = fault.utmzone
         self.sourceDepths = None
@@ -37,8 +38,9 @@ class faultpostproctents(object):
         if not hasattr(self.fault, 'sourceNumber'):
             self.fault.sourceNumber = npoints
         if not hasattr(self.fault, 'plotSources'):
+            print("--Interpolate data inside tent patches--")
             from .EDKSmp import dropSourcesInPatches as Patches2Sources
-            Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(self.fault, verbose=False)  
+            Ids, xs, ys, zs, strike, dip, Areas = Patches2Sources(self.fault, verbose=self.verbose)  
             self.fault.plotSources = [Ids, xs, ys, zs, strike, dip, Areas] 
 
         # Get the interpolating sources
@@ -275,6 +277,7 @@ class faultpostproctents(object):
 
         # Get the slip vector
         slip = self.slipVector()
+        print("WARNING : assume slip is already in meters")
 
         # Compute the moment density
         if slip.ndim == 2:
@@ -353,7 +356,7 @@ class faultpostproctents(object):
             self.computeScalarMoment()
 
         # Mw
-        Mw = 2./3.*(np.log10(self.Mo) - 9.1)
+        Mw = 2./3.*(np.log10(self.Mo) - 9.05)
 
         # Store 
         self.Mw = Mw
@@ -519,14 +522,14 @@ class faultpostproctents(object):
         S = self.areas*1e6
 
         # Get slip
-        strikeslip, dipslip = self.slip[:2,:,...]
-        totalSlip = np.sqrt(strikeslip**2 + dipslip**2)
+        #strikeslip, dipslip = self.slip[:,:2]
+        totalSlip = np.linalg.norm(self.slip[:,:2],axis=1)
 
         # Moment
         Mo = self.Mu * S * totalSlip
 
         # Compute magnitude
-        Mw = 2./3.*(np.log10(Mo) - 9.1)
+        Mw = 2./3.*(np.log10(Mo) - 9.05)
 
         # All done
         return Mo, Mw
@@ -819,5 +822,55 @@ class faultpostproctents(object):
 
         # All done
         return
+   
+    # ----------------------------------------------------------------------
+    # Manon's add on 
+    # ----------------------------------------------------------------------
+    def getRectangular3Dfault(self):
+        '''
+        Returns a 3D rectangular fault object with rectangle
+        corresponding to the subsources computed with EDKSmp.dropSourcesInPatches
+        Useful for stress computation 
+        '''
+        
+        #Import Class
+        #inherits from RectangularPatches which inherits from Fault
+        from csi.fault3D import fault3D
+        
+        ## Modified version of EDKSmp.dropSourcesInPatches option returnSplittedPatches 
+        fault = self.fault
+        splitFault = fault3D('Splitted {}'.format(fault.name),
+                                        utmzone=fault.utmzone,
+                                        lon0=fault.lon0,
+                                        lat0=fault.lat0,
+                                        ellps=fault.ellps,
+                                        verbose=self.verbose)
+        # set up patches
+        dist   = np.sqrt((self.y-min(self.y))**2+ (self.x-min(self.x))**2)
+        points = [[alo,dep,dip] for alo,dep,dip in zip(dist,self.depth,self.dip)]
+        dipdir = self.strike + 90. #vertical fault doesn't matter if +/-
+        print("WARNING: dip direction may be wrong by 180 degrees")
+        
+        splitFault.buildPatches(dip=points, dipdirection=dipdir, every=0.5) 
+        splitFault.patch2ll()
+        splitFault.setVerticesFromPatches()
+        splitFault.setdepth()
+        
+        # Interp slip on patches
+        # like in getSubSourcesFault of TriangularPatches
+        splitFault.initializeslip()
+        
+        #subsource xs,ys,zs
+        splitFault.slip[:,0] = fault._getSlipOnSubSources(self.ids, self.x, self.y, 
+                                                                self.z, fault.slip[:,0])
+        splitFault.slip[:,1] = fault._getSlipOnSubSources(self.ids, self.x, self.y, 
+                                                                self.z, fault.slip[:,1])
+        splitFault.slip[:,2] = fault._getSlipOnSubSources(self.ids, self.x, self.y, 
+                                                                self.z, fault.slip[:,2])
+        
+        # All done
+        return splitFault
+
+
 
 #EOF

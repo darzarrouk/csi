@@ -1441,8 +1441,9 @@ class opticorr(SourceInv):
             Np = dic['North'][i]
             Fn = dic['Fault Normal'][i]
             Fp = dic['Fault Parallel'][i]
+            dnorm = dic['Normal Distance'][i]
             if np.isfinite(Ep):
-                fout.write('{} {} {} {} {} \n'.format(d, Ep, Np, Fn, Fp))
+                fout.write('{} {} {} {} {} {}\n'.format(d, Ep, Np, Fn, Fp,dnorm))
 
         # Close the file
         fout.close()

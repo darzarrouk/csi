@@ -2031,13 +2031,13 @@ class insar(SourceInv):
                     outlos.append(l)
 
         # Copy the old profile and modify it
-        newName = 'Smoothed {}'.format(name)
+        newName = 'Smoothed {}'.format(name)/
         self.profiles[newName] = copy.deepcopy(self.profiles[name])
         self.profiles[newName]['LOS Velocity'] = np.array(outvel)
         self.profiles[newName]['LOS Error'] = np.array(outerr)
         self.profiles[newName]['Distance'] = np.array(outdis)
         if los is not None:
-            self.profiles[newName]['LOS vector'] = np.array(outlos)
+            self.profiles[newName]['LOS vectopr'] = np.array(outlos)
 
         # All done
         return
@@ -2448,6 +2448,37 @@ class insar(SourceInv):
 
         # all done
         return
+    
+   def pickleProfiles(self, names, filename):
+        '''
+        Add on by M. Dalaison (Jan 2019)
+        To save in one file several profiles drawn in one image 
+	under the form of a list of python dictionaries
+        
+        Args:
+            * names : list of profile names (list of strings)
+            * filename : for storage of the list of profile object 
+        '''
+        import pickle
+
+        # prepare storage list
+        store = []
+
+        for k in range(len(names)) :
+            # Get the dictionary
+            dic = self.profiles[names[k]]
+
+            # Build list of dictionaries 
+            store.append( dic )
+
+        # open files
+        fout = open(filename, 'wb')
+
+        pickle.dump(store, fout)
+
+        # Close the file
+        fout.close()
+
 
     def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False):
         '''

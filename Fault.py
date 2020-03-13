@@ -517,6 +517,8 @@ class Fault(SourceInv):
                 xi.append(xt)
                 yi.append(yt)
             else:
+                maxcount = 10**6 #maximum number of iteration 
+                count = 0 
                 # While I am to far away from my goal and I did not pass the last x
                 while ((np.abs(d-every)>tol) and (xt<xlast)):
                     # I add the distance*frac that I need to go
@@ -530,6 +532,12 @@ class Fault(SourceInv):
                     yt = f_inter(xt)
                     # I compute the corresponding distance
                     d = np.sqrt( (xt-xi[-1])**2 + (yt-yi[-1])**2 )
+               	    if count > maxcount:
+                        print("ERROR: looks like you are in an infinite loop")
+			print("You should change parameters like fracstep and every")
+			assert False
+		    count+=1
+
                 # When I stepped out of that loop, append
                 if cum_error:
                     total_error += every - d

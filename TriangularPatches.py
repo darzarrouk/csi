@@ -643,6 +643,8 @@ class TriangularPatches(Fault):
             self.top   = np.min(vz)
             self.depth = np.max(vz)
         self.z_patches = np.linspace(self.depth, 0.0, 5)
+        
+        self.initializeslip()
 
         # All done
         return

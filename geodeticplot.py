@@ -61,7 +61,7 @@ class geodeticplot(object):
 
     def __init__(self,lonmin, latmin, lonmax, latmax,
                  figure=None, pbaspect=None,resolution='auto',
-                 scalebar=None, figsize=[None,None]):
+                 scalebar=None, figsize=[8,8]):
         #projection='cyl',
 
         # Save
