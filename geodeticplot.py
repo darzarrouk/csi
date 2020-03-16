@@ -20,6 +20,8 @@ import pyproj as pp
 import os, copy, sys
 
 # Matplotlib
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
@@ -61,7 +63,7 @@ class geodeticplot(object):
 
     def __init__(self,lonmin, latmin, lonmax, latmax,
                  figure=None, pbaspect=None,resolution='auto',
-                 scalebar=None, figsize=[8,8]):
+                 scalebar=None, figsize=[(10,10),None]):
         #projection='cyl',
 
         # Save
