@@ -63,7 +63,7 @@ class geodeticplot(object):
 
     def __init__(self,lonmin, latmin, lonmax, latmax,
                  figure=None, pbaspect=None,resolution='auto',
-                 scalebar=None, figsize=[(10,10),None]):
+                 scalebar=None, figsize=[None,None]):
         #projection='cyl',
 
         # Save
@@ -807,6 +807,8 @@ class geodeticplot(object):
             slip = np.sqrt(fault.slip[:,0]**2 + fault.slip[:,1]**2 + fault.slip[:,2]**2)
         elif slip in ('coupling'):
             slip = fault.coupling.copy()
+        elif slip in ('sensitivity'):
+            slip = fault.sensitivity.copy()
         else:
             print ("Unknown slip direction")
             return
@@ -902,7 +904,7 @@ class geodeticplot(object):
             if plot_on_2d:
                 lon, lat = fault.xy2ll(X, Y)
                 #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-                self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax, zorder=zorder)
+                self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, s=2, vmin=vmin, vmax=vmax, zorder=zorder)
 
             # Color Bar
             if colorbar:
@@ -913,7 +915,7 @@ class geodeticplot(object):
             # Do the scatter ploto
             lon, lat = fault.xy2ll(X, Y)
             #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-            cb = self.faille.scatter3D(lon, lat, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0, vmin=vmin, vmax=vmax)
+            cb = self.faille.scatter3D(lon, lat, zs=-1.0*Z, c=Slip, cmap=cmap, linewidth=0, s=2, vmin=vmin, vmax=vmax)
 
             # On 2D?
             if plot_on_2d:

@@ -1388,14 +1388,14 @@ class TriangularTents(TriangularPatches):
             fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
 
         # Draw the fault
-        x, y, z, slip = fig.faultTents(self, slip=slip, norm=norm, colorbar=colorbar, 
+        x, y, z, slipval = fig.faultTents(self, slip=slip, norm=norm, colorbar=colorbar, 
                 plot_on_2d=plot_on_2d, npoints=npoints, cmap=cmap,
                 method=method, vertIndex=vertIndex)
 
         # Savefigs?
         if savefig:
             prefix = self.name.replace(' ','_')
-            fig.savefig(prefix+'_{}'.format(slip), ftype='eps')
+            fig.savefig('{}_{}_meanslip{}'.format(prefix,slip,round(np.nanmean(slipval),3)), ftype='eps')
 
         # show
         if show:
