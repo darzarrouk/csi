@@ -147,10 +147,11 @@ class transformation(SourceInv):
             elif data.dtype == 'tsunami':
                 self.d[data.name] = data.d
             elif data.dtype in ('gps', 'multigps'):
-                if not np.isnan(data.vel_enu[:,2]).any():
-                    self.d[data.name] = data.vel_enu.T.flatten()
-                else:
-                    self.d[data.name] = data.vel_enu[:,0:2].T.flatten()
+                locdat = []
+                for i in range(3):
+                    if not np.isnan(data.vel_enu[:,i]).any():
+                        locdat.append(data.vel_enu[:,i])
+                    self.d[data.name] = np.array(locdat).flatten()
             elif data.dtype == 'opticorr':
                 self.d[data.name] = np.hstack((data.east.T.flatten(),
                                                data.north.T.flatten()))
@@ -393,7 +394,9 @@ class transformation(SourceInv):
             if Nplocal > 0:
                 assert all([self.G[dname][trans].shape[0]==Ndlocal \
                             for trans in self.G[dname]]),\
-                            'GFs size issue for data set {}'.format(dname)
+                            'GFs size issue for data set {}: {} vs {}'.format(dname, 
+                                    self.G[dname][trans].shape[0], 
+                                    Ndlocal)
             dindex[dname] = (Nd, Nd+Ndlocal)
             Nd += Ndlocal
 
@@ -434,7 +437,7 @@ class transformation(SourceInv):
                     G[Nds:Nde,:3] = Glocal
                 elif trans is None:
                     self.transOrder.append('{} --//-- {}'.format(dname, trans))
-                    self.transIndices.append((Npl, Npe))
+                    self.transIndices.append(None)
                 else:
                     Npe = Npl + Glocal.shape[1]
                     G[Nds:Nde,Npl:Npe] = Glocal
@@ -542,7 +545,7 @@ class transformation(SourceInv):
 
         # Iterate over transOrder
         for datatrans, index in zip(self.transOrder[start:], self.transIndices[start:]):
-            
+
             # Get names
             dname, trans = datatrans.split(' --//-- ')
 
@@ -555,7 +558,11 @@ class transformation(SourceInv):
             # Check
             if dname not in self.m:
                 self.m[dname] = {}
-            self.m[dname][trans] = self.mpost[index[0]:index[1]]
+
+            if index is not None:
+                self.m[dname][trans] = self.mpost[index[0]:index[1]]
+            else:
+                self.m[dname][trans] = None
 
         # Consistency
         self.polysol = self.m

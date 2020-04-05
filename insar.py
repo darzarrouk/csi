@@ -2723,7 +2723,7 @@ class insar(SourceInv):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
+            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True, zorder=0)
 
         # Plot the gps data if asked
         if gps is not None:
@@ -2733,7 +2733,7 @@ class insar(SourceInv):
                 fig.gps(g)
 
         # Plot the decimation process, if asked
-        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, zorder=0)
+        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, zorder=1)
 
         # Plot the fault trace if asked
         if faults is not None:
@@ -2741,7 +2741,7 @@ class insar(SourceInv):
                 faults = [faults]
             for fault in faults:
                 if fault.type is "Fault":
-                    fig.faulttrace(fault, zorder=1)
+                    fig.faulttrace(fault, zorder=2)
 
         # Show
         if show:
