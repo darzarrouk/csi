@@ -459,6 +459,27 @@ class insar(SourceInv):
         else:
             iFinite = range(len(vel))
 
+        # Who to keep
+        iKeep = np.intersect1d(iZeros, iFinite)
+
+        # Remove unwanted pixels
+        vel = vel[iKeep]
+        if err is not None:
+            err = err[iKeep]
+        lon = lon[iKeep]
+        lat = lat[iKeep]
+        if self.los is not None:
+            self.los = self.los[iKeep,:]
+
+        # Set things in self
+        self.vel = vel
+        if err is not None:
+            self.err = err
+        else:
+            self.err = None
+        self.lon = lon
+        self.lat = lat
+
         # Compute the LOS
         if heading is not None:
             if type(incidence) is np.ndarray:
@@ -487,27 +508,6 @@ class insar(SourceInv):
                 self.los = np.fromfile(los, 'f').reshape((len(vel), 3))
         else:
             self.los = None
-
-        # Who to keep
-        iKeep = np.intersect1d(iZeros, iFinite)
-
-        # Remove unwanted pixels
-        vel = vel[iKeep]
-        if err is not None:
-            err = err[iKeep]
-        lon = lon[iKeep]
-        lat = lat[iKeep]
-        if self.los is not None:
-            self.los = self.los[iKeep,:]
-
-        # Set things in self
-        self.vel = vel
-        if err is not None:
-            self.err = err
-        else:
-            self.err = None
-        self.lon = lon
-        self.lat = lat
 
         # Keep track of factor
         self.factor = factor
