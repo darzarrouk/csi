@@ -90,7 +90,7 @@ class geodeticplot(object):
         fig2  = plt.figure(nextFig, figsize=figsize[1])
         carte = fig2.add_subplot(111, projection=self.projection)
         carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax], crs=self.projection)
-        #carte.gridlines(crs=self.projection, draw_labels=True)
+        carte.gridlines(crs=self.projection, draw_labels=True)
 
         # scale bar
         if scalebar is not None:
@@ -352,7 +352,7 @@ class geodeticplot(object):
 
     def drawCoastlines(self, color='k', linewidth=1.0, linestyle='solid',
             resolution='auto', drawLand=True, drawMapScale=None,
-            parallels=4, meridians=4, drawOnFault=False, drawCountries=True,
+            parallels=None, meridians=None, drawOnFault=False, drawCountries=True,
             zorder=1):
         '''
         Draws the coast lines in the desired area.
@@ -447,23 +447,26 @@ class geodeticplot(object):
             ##### NOT WORKING YET ####
 
         # Parallels
-        lmin,lmax = self.latmin, self.latmax
-        if type(parallels) is int:
-            parallels = np.linspace(lmin, lmax, parallels+1)
-        elif type(parallels) is float:
-            parallels = np.arange(lmin, lmax+parallels, parallels)
-        parallels = np.round(parallels, decimals=2)
+        if parallels is not None:
+            lmin,lmax = self.latmin, self.latmax
+            if type(parallels) is int:
+                parallels = np.linspace(lmin, lmax, parallels+1)
+            elif type(parallels) is float:
+                parallels = np.arange(lmin, lmax+parallels, parallels)
+            parallels = np.round(parallels, decimals=2)
 
         # Meridians
-        lmin,lmax = self.lonmin, self.lonmax
-        if type(meridians) is int:
-            meridians = np.linspace(lmin, lmax, meridians+1)
-        elif type(meridians) is float:
-            meridians = np.arange(lmin, lmax+meridians, meridians)
-        meridians = np.round(meridians, decimals=2)
+        if meridians is not None:
+            lmin,lmax = self.lonmin, self.lonmax
+            if type(meridians) is int:
+                meridians = np.linspace(lmin, lmax, meridians+1)
+            elif type(meridians) is float:
+                meridians = np.arange(lmin, lmax+meridians, meridians)
+            meridians = np.round(meridians, decimals=2)
 
-        # Draw them
-        gl = self.carte.gridlines(color='gray', xlocs=meridians, ylocs=parallels, linestyle=(0, (1, 1)))
+            # Draw them
+        if meridians is not None and parallels is not None:
+            gl = self.carte.gridlines(color='gray', xlocs=meridians, ylocs=parallels, linestyle=(0, (1, 1)))
 
         #if drawOnFault and parDir!={}:
         #    segments = []

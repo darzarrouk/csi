@@ -2915,7 +2915,7 @@ class gps(SourceInv):
         # All done 
         return
 
-    def getRMS(self):
+    def getRMS(self, vertical=False):
         '''
         Computes the RMS of the data and if synthetics are computed, the RMS of the residuals
         
@@ -2923,8 +2923,12 @@ class gps(SourceInv):
             * dataRMS, synthRMS: 2 floats
         '''
 
+        # Components
+        ncomp = 2
+        if vertical: ncomp+= 1
+
         # Get the number of points
-        N = self.vel_enu.shape[0] * 3.
+        N = self.vel_enu.shape[0] * ncomp
 
         # RMS of the data
         dataRMS = np.sqrt( 1./N * sum(self.vel_enu.flatten()**2) )
