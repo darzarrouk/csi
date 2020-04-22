@@ -2723,7 +2723,7 @@ class insar(SourceInv):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True, zorder=0)
+            fig.drawCoastlines(drawLand=True, drawOnFault=True, zorder=0)
 
         # Plot the gps data if asked
         if gps is not None:

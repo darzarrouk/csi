@@ -849,7 +849,7 @@ class gps(SourceInv):
         # All done
         return d
 
-    def read_from_en(self, velfile, factor=1., minerr=1., header=0):
+    def read_from_en(self, velfile, factor=1., minerr=1., header=0, error='std'):
         '''
         Reading velocities from a en file formatted as:
 
@@ -867,6 +867,7 @@ class gps(SourceInv):
             * factor    : multiplication factor for velocities
             * minerr    : if err=0, then err=minerr.
             * header    : length of the file header
+            * error     : if 'variance', then np.sqrt(err) is taken. Default is 'std'
 
         Returns:
             * None
@@ -913,6 +914,10 @@ class gps(SourceInv):
                     north = minerr
                 if up == 0:
                     up = minerr
+                if error in ('variance'):
+                    east = np.sqrt(east)
+                    north = np.sqrt(north)
+                    up = np.sqrt(up)
                 self.err_enu.append([east, north, up])
 
         # Make np array with that
