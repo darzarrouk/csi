@@ -441,8 +441,9 @@ class insar(SourceInv):
         # Get the error
         if err is not None:
             if type(err) is str:
-                err = np.fromfile(err, dtype=dtype)[::downsample]
-            err = err * np.abs(factor)
+                err = np.fromfile(err, dtype=dtype)[::downsample]*np.abs(factor)
+            else:
+                err = err.flatten()[::downsample]*np.abs(factor)
             assert vel.shape==err.shape, 'Something wrong with the sizes: {} {}'.format(vel.shape, err.shape)
 
         # If zeros
