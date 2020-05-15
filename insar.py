@@ -443,7 +443,7 @@ class insar(SourceInv):
             if type(err) is str:
                 err = np.fromfile(err, dtype=dtype)[::downsample]
             err = err * np.abs(factor)
-            assert vel.shape==err.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)
+            assert vel.shape==err.shape, 'Something wrong with the sizes: {} {}'.format(vel.shape, err.shape)
 
         # If zeros
         if remove_zeros:
