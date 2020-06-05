@@ -635,12 +635,12 @@ class insar(SourceInv):
         self.Azimuth = azimuth
 
         # Convert angles
-        alpha = -1.0*azimuth*np.pi/180.
+        alpha = azimuth*np.pi/180.
         phi = incidence*np.pi/180.
 
         # Compute LOS
-        Se = np.sin(alpha) * np.sin(phi)
-        Sn = np.cos(alpha) * np.sin(phi)
+        Se = -1.0 * np.sin(alpha) * np.sin(phi)
+        Sn = -1.0 * np.cos(alpha) * np.sin(phi)
         Su = np.cos(phi)
 
         # Store it
@@ -2457,20 +2457,26 @@ class insar(SourceInv):
 	under the form of a list of python dictionaries
         
         Args:
-            * names : list of profile names (list of strings)
+            * names : profile name or list of profile names (list of strings)
             * filename : for storage of the list of profile object 
         '''
         import pickle
 
         # prepare storage list
         store = []
+        
+        if isinstance(names,str):
+            store = self.profiles[names]
 
-        for k in range(len(names)) :
-            # Get the dictionary
-            dic = self.profiles[names[k]]
+        elif isinstance(names,list):
+            for k in range(len(names)) :
+                # Get the dictionary
+                dic = self.profiles[names[k]]
 
-            # Build list of dictionaries 
-            store.append( dic )
+                # Build list of dictionaries 
+                store.append( dic )
+        else:
+            assert False,"Format of names not recognised {} {}".format(names,type(names))
 
         # open files
         fout = open(filename, 'wb')
