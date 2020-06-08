@@ -2687,7 +2687,7 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None], plotType='scatter'):
+    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None], plotType='scatter', cmap='jet'):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2733,7 +2733,7 @@ class insar(SourceInv):
                 fig.gps(g)
 
         # Plot the decimation process, if asked
-        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, zorder=1)
+        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, cmap=cmap, zorder=1)
 
         # Plot the fault trace if asked
         if faults is not None:

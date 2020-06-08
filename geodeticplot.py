@@ -1364,7 +1364,7 @@ class geodeticplot(object):
         return
 
     def insar(self, insar, norm=None, colorbar=True, data='data',
-                       plotType='decimate',
+                       plotType='decimate', cmap='jet',
                        decim=1, zorder=3, edgewidth=1):
         '''
         Plot an insar object
@@ -1414,7 +1414,7 @@ class geodeticplot(object):
             vmax = norm[1]
 
         # Prepare the colormap
-        cmap = plt.get_cmap('jet')
+        cmap = plt.get_cmap(cmap)
         cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 

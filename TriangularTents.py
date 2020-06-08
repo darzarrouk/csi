@@ -1347,7 +1347,7 @@ class TriangularTents(TriangularPatches):
     def plot(self, figure=134, slip='total', equiv=False, 
              show=True, axesscaling=True, norm=None, linewidth=1.0, plot_on_2d=True, 
              method='scatter', npoints=10, colorbar=True, cmap='jet',
-             drawCoastlines=True, expand=0.2, vertIndex=False, savefig=False):
+             drawCoastlines=False, expand=0.2, vertIndex=False, savefig=False):
         '''
         Plot the available elements of the fault.
         
@@ -1385,7 +1385,7 @@ class TriangularTents(TriangularPatches):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
+            fig.drawCoastlines(drawLand=False, parallels=None, meridians=None, drawOnFault=True)
 
         # Draw the fault
         x, y, z, slipval = fig.faultTents(self, slip=slip, norm=norm, colorbar=colorbar, 
