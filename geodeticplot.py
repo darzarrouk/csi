@@ -286,6 +286,37 @@ class geodeticplot(object):
         # All done
         return
 
+    def setzaxis(self, depth, zticklabels=None):
+        '''
+        Set the z-axis.
+
+        Args:
+            * depth     : Maximum depth.
+
+        Kwargs:
+            * ztickslabel   : which labels to use
+
+        Returns:
+            * None
+        '''
+
+        self.faille.set_zlim3d([-1.0*(depth+5), 0])
+        if zticklabels is None:
+            zticks = []
+            zticklabels = []
+            for z in np.linspace(0,depth,5):
+                zticks.append(-1.0*z)
+                zticklabels.append(z)
+        else:
+            zticks = []
+            for z in zticklabels:
+                zticks.append(-1.0*z)
+        self.faille.set_zticks(zticks)
+        self.faille.set_zticklabels(zticklabels)
+
+        # All done
+        return
+
     def set_view(self, elevation, azimuth):
         '''
         Sets azimuth and elevation angle for the 3D plot.
@@ -935,37 +966,6 @@ class geodeticplot(object):
 
         # All done
         return lon, lat, Z, Slip
-
-    def setzaxis(self, depth, zticklabels=None):
-        '''
-        Set the z-axis.
-
-        Args:
-            * depth     : Maximum depth.
-
-        Kwargs:
-            * ztickslabel   : which labels to use
-
-        Returns:
-            * None
-        '''
-
-        self.faille.set_zlim3d([-1.0*(depth+5), 0])
-        if zticklabels is None:
-            zticks = []
-            zticklabels = []
-            for z in np.linspace(0,depth,5):
-                zticks.append(-1.0*z)
-                zticklabels.append(z)
-        else:
-            zticks = []
-            for z in zticklabels:
-                zticks.append(-1.0*z)
-        self.faille.set_zticks(zticks)
-        self.faille.set_zticklabels(zticklabels)
-
-        # All done
-        return
 
     def surfacestress(self, stress, component='normal', linewidth=0.0, norm=None, colorbar=True):
         '''

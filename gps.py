@@ -3425,6 +3425,35 @@ class gps(SourceInv):
         # all done
         return
 
+    def createNetwork(self, lonc, latc, expand, nstation, prefix='S'):
+        '''
+        Builds a GPS network with randomly dropped stations within the box. Box is specified
+        by the center (lonc, latc) and its half-size in degrees (expand). {nstation} gives the 
+        number of stations randomly chosen.
+
+        Args:
+            * lonc          : Longitude of the center of the box
+            * latc          : Latitude of the center of the box
+            * expand        : Half-size in degrees of the box
+            * nstation      : Number of stations in the box
+            * prefix        : Station name prefix (number of the station is added)
+        '''
+        
+        # Create lon, lat and names
+        lon, lat, stations = [],[],[]
+
+        # Iterate
+        for i in range(nstation):
+            lon.append(lonc + np.random.rand()*expand*2. - expand)
+            lat.append(latc + np.random.rand()*expand*2. - expand)
+            stations.append('{}{:03d}'.format(prefix,i))
+
+        # Set the stations
+        self.setStat(stations, lon, lat, loc_format='LL', initVel=True)
+
+        # All done
+        return
+
     def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, 
             plot_los=False, drawCoastlines=True, expand=0.2, show=True, drawCountries=False,
             vertical=False, verticalsize=[30], extent=None,

@@ -2454,6 +2454,9 @@ class RectangularPatches(Fault):
             patchll[i][0] = lon
             patchll[i][1] = lat
 
+        # Equivalent
+        self.computeEquivRectangle()
+
         # All done
         return
     # ----------------------------------------------------------------------
