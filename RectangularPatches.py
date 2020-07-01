@@ -1846,8 +1846,7 @@ class RectangularPatches(Fault):
         '''
 
         # Check
-        if self.N_slip==None:
-            self.N_slip = self.slip.shape[0]
+        self.N_slip = self.slip.shape[0]
 
         # Multiprocessing
         if nproc>1:
