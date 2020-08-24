@@ -73,9 +73,10 @@ class faultpostproctents(object):
             self.Mu = np.array(Mu)
             
         # Display
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initialize Post Processing object {} on fault {}".format(self.name, fault.name))
+        if self.verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Initialize Post Processing object {} on fault {}".format(self.name, fault.name))
 
         # Check to see if we're reading in an h5 file for posterior samples
         self.samplesh5 = samplesh5
@@ -277,7 +278,7 @@ class faultpostproctents(object):
 
         # Get the slip vector
         slip = self.slipVector()
-        print("WARNING : assume slip is already in meters")
+        if self.verbose: print("WARNING : assume slip is already in meters")
 
         # Compute the moment density
         if slip.ndim == 2:

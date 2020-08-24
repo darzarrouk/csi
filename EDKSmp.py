@@ -446,13 +446,13 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
      
     # read sum_layered output Greens function
     # ux
-    ux = np.fromfile(file_dux, 'f').reshape((nrec, Np), order='FORTRAN')
+    ux = np.fromfile(file_dux, 'f').reshape((nrec, Np), order='F')
 
     # uy
-    uy = np.fromfile(file_duy, 'f').reshape((nrec, Np), order='FORTRAN')
+    uy = np.fromfile(file_duy, 'f').reshape((nrec, Np), order='F')
  
     # uz
-    uz = np.fromfile(file_duz, 'f').reshape((nrec, Np), order='FORTRAN')
+    uz = np.fromfile(file_duz, 'f').reshape((nrec, Np), order='F')
  
     # remove IO files.
     if cleanUp:

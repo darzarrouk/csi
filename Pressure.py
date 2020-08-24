@@ -333,7 +333,7 @@ class Pressure(SourceInv):
             fout.write('> {} {} {}\n'.format(string,parameter,slipstring))
 
             # Save the shape parameters we created
-            fout.write(' Source of type {} [Δ{}] \n # x0 y0 -z0 \n {} {} {} \n # ax ay az  (if pCDM, then DVx, DVy, DVz) \n {} {} {} \n # strike dip plunge \n {} {} {} \n'.format(self.source,add_volume,self.ellipshape['x0'], self.ellipshape['y0'],float(self.ellipshape['z0']),float(self.ellipshape['ax']),float(self.ellipshape['ay']),float(self.ellipshape['az']),float(self.ellipshape['strike']),float(self.ellipshape['dip']),float(self.ellipshape['plunge'])))
+            fout.write(' Source of type {} [Delta{}] \n # x0 y0 -z0 \n {} {} {} \n # ax ay az  (if pCDM, then DVx, DVy, DVz) \n {} {} {} \n # strike dip plunge \n {} {} {} \n'.format(self.source,add_volume,self.ellipshape['x0'], self.ellipshape['y0'],float(self.ellipshape['z0']),float(self.ellipshape['ax']),float(self.ellipshape['ay']),float(self.ellipshape['az']),float(self.ellipshape['strike']),float(self.ellipshape['dip']),float(self.ellipshape['plunge'])))
 
             # Close th file
             fout.close()

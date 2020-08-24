@@ -849,7 +849,7 @@ class gps(SourceInv):
         # All done
         return d
 
-    def read_from_en(self, velfile, factor=1., minerr=1., header=0):
+    def read_from_en(self, velfile, factor=1., minerr=1., header=0, error='std'):
         '''
         Reading velocities from a en file formatted as:
 
@@ -867,6 +867,7 @@ class gps(SourceInv):
             * factor    : multiplication factor for velocities
             * minerr    : if err=0, then err=minerr.
             * header    : length of the file header
+            * error     : if 'variance', then np.sqrt(err) is taken. Default is 'std'
 
         Returns:
             * None
@@ -913,6 +914,10 @@ class gps(SourceInv):
                     north = minerr
                 if up == 0:
                     up = minerr
+                if error in ('variance'):
+                    east = np.sqrt(east)
+                    north = np.sqrt(north)
+                    up = np.sqrt(up)
                 self.err_enu.append([east, north, up])
 
         # Make np array with that
@@ -2915,7 +2920,7 @@ class gps(SourceInv):
         # All done 
         return
 
-    def getRMS(self):
+    def getRMS(self, vertical=False):
         '''
         Computes the RMS of the data and if synthetics are computed, the RMS of the residuals
         
@@ -2923,8 +2928,12 @@ class gps(SourceInv):
             * dataRMS, synthRMS: 2 floats
         '''
 
+        # Components
+        ncomp = 2
+        if vertical: ncomp+= 1
+
         # Get the number of points
-        N = self.vel_enu.shape[0] * 3.
+        N = self.vel_enu.shape[0] * ncomp
 
         # RMS of the data
         dataRMS = np.sqrt( 1./N * sum(self.vel_enu.flatten()**2) )
@@ -3414,6 +3423,35 @@ class gps(SourceInv):
             print ('Done')
 
         # all done
+        return
+
+    def createNetwork(self, lonc, latc, expand, nstation, prefix='S'):
+        '''
+        Builds a GPS network with randomly dropped stations within the box. Box is specified
+        by the center (lonc, latc) and its half-size in degrees (expand). {nstation} gives the 
+        number of stations randomly chosen.
+
+        Args:
+            * lonc          : Longitude of the center of the box
+            * latc          : Latitude of the center of the box
+            * expand        : Half-size in degrees of the box
+            * nstation      : Number of stations in the box
+            * prefix        : Station name prefix (number of the station is added)
+        '''
+        
+        # Create lon, lat and names
+        lon, lat, stations = [],[],[]
+
+        # Iterate
+        for i in range(nstation):
+            lon.append(lonc + np.random.rand()*expand*2. - expand)
+            lat.append(latc + np.random.rand()*expand*2. - expand)
+            stations.append('{}{:03d}'.format(prefix,i))
+
+        # Set the stations
+        self.setStat(stations, lon, lat, loc_format='LL', initVel=True)
+
+        # All done
         return
 
     def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, 

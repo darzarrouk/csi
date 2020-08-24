@@ -441,9 +441,10 @@ class insar(SourceInv):
         # Get the error
         if err is not None:
             if type(err) is str:
-                err = np.fromfile(err, dtype=dtype)[::downsample]
-            err = err * np.abs(factor)
-            assert vel.shape==err.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)
+                err = np.fromfile(err, dtype=dtype)[::downsample]*np.abs(factor)
+            else:
+                err = err.flatten()[::downsample]*np.abs(factor)
+            assert vel.shape==err.shape, 'Something wrong with the sizes: {} {}'.format(vel.shape, err.shape)
 
         # If zeros
         if remove_zeros:
@@ -458,6 +459,27 @@ class insar(SourceInv):
             iFinite = np.flatnonzero(np.isfinite(vel))
         else:
             iFinite = range(len(vel))
+
+        # Who to keep
+        iKeep = np.intersect1d(iZeros, iFinite)
+
+        # Remove unwanted pixels
+        vel = vel[iKeep]
+        if err is not None:
+            err = err[iKeep]
+        lon = lon[iKeep]
+        lat = lat[iKeep]
+        if self.los is not None:
+            self.los = self.los[iKeep,:]
+
+        # Set things in self
+        self.vel = vel
+        if err is not None:
+            self.err = err
+        else:
+            self.err = None
+        self.lon = lon
+        self.lat = lat
 
         # Compute the LOS
         if heading is not None:
@@ -487,27 +509,6 @@ class insar(SourceInv):
                 self.los = np.fromfile(los, 'f').reshape((len(vel), 3))
         else:
             self.los = None
-
-        # Who to keep
-        iKeep = np.intersect1d(iZeros, iFinite)
-
-        # Remove unwanted pixels
-        vel = vel[iKeep]
-        if err is not None:
-            err = err[iKeep]
-        lon = lon[iKeep]
-        lat = lat[iKeep]
-        if self.los is not None:
-            self.los = self.los[iKeep,:]
-
-        # Set things in self
-        self.vel = vel
-        if err is not None:
-            self.err = err
-        else:
-            self.err = None
-        self.lon = lon
-        self.lat = lat
 
         # Keep track of factor
         self.factor = factor
@@ -2456,20 +2457,26 @@ class insar(SourceInv):
 	under the form of a list of python dictionaries
         
         Args:
-            * names : list of profile names (list of strings)
+            * names : profile name or list of profile names (list of strings)
             * filename : for storage of the list of profile object 
         '''
         import pickle
 
         # prepare storage list
         store = []
+        
+        if isinstance(names,str):
+            store = self.profiles[names]
 
-        for k in range(len(names)) :
-            # Get the dictionary
-            dic = self.profiles[names[k]]
+        elif isinstance(names,list):
+            for k in range(len(names)) :
+                # Get the dictionary
+                dic = self.profiles[names[k]]
 
-            # Build list of dictionaries 
-            store.append( dic )
+                # Build list of dictionaries 
+                store.append( dic )
+        else:
+            assert False,"Format of names not recognised {} {}".format(names,type(names))
 
         # open files
         fout = open(filename, 'wb')
@@ -2687,7 +2694,7 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None], plotType='scatter'):
+    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None], plotType='scatter', cmap='jet'):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2723,7 +2730,7 @@ class insar(SourceInv):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
+            fig.drawCoastlines(drawLand=True, drawOnFault=True, zorder=0)
 
         # Plot the gps data if asked
         if gps is not None:
@@ -2733,7 +2740,7 @@ class insar(SourceInv):
                 fig.gps(g)
 
         # Plot the decimation process, if asked
-        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, zorder=0)
+        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, cmap=cmap, zorder=1)
 
         # Plot the fault trace if asked
         if faults is not None:
@@ -2741,7 +2748,7 @@ class insar(SourceInv):
                 faults = [faults]
             for fault in faults:
                 if fault.type is "Fault":
-                    fig.faulttrace(fault, zorder=1)
+                    fig.faulttrace(fault, zorder=2)
 
         # Show
         if show:

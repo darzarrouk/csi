@@ -21,7 +21,6 @@ import os, copy, sys
 
 # Matplotlib
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
@@ -287,6 +286,37 @@ class geodeticplot(object):
         # All done
         return
 
+    def setzaxis(self, depth, zticklabels=None):
+        '''
+        Set the z-axis.
+
+        Args:
+            * depth     : Maximum depth.
+
+        Kwargs:
+            * ztickslabel   : which labels to use
+
+        Returns:
+            * None
+        '''
+
+        self.faille.set_zlim3d([-1.0*(depth+5), 0])
+        if zticklabels is None:
+            zticks = []
+            zticklabels = []
+            for z in np.linspace(0,depth,5):
+                zticks.append(-1.0*z)
+                zticklabels.append(z)
+        else:
+            zticks = []
+            for z in zticklabels:
+                zticks.append(-1.0*z)
+        self.faille.set_zticks(zticks)
+        self.faille.set_zticklabels(zticklabels)
+
+        # All done
+        return
+
     def set_view(self, elevation, azimuth):
         '''
         Sets azimuth and elevation angle for the 3D plot.
@@ -353,7 +383,7 @@ class geodeticplot(object):
 
     def drawCoastlines(self, color='k', linewidth=1.0, linestyle='solid',
             resolution='auto', drawLand=True, drawMapScale=None,
-            parallels=4, meridians=4, drawOnFault=False, drawCountries=True,
+            parallels=None, meridians=None, drawOnFault=False, drawCountries=True,
             zorder=1):
         '''
         Draws the coast lines in the desired area.
@@ -448,23 +478,26 @@ class geodeticplot(object):
             ##### NOT WORKING YET ####
 
         # Parallels
-        lmin,lmax = self.latmin, self.latmax
-        if type(parallels) is int:
-            parallels = np.linspace(lmin, lmax, parallels+1)
-        elif type(parallels) is float:
-            parallels = np.arange(lmin, lmax+parallels, parallels)
-        parallels = np.round(parallels, decimals=2)
+        if parallels is not None:
+            lmin,lmax = self.latmin, self.latmax
+            if type(parallels) is int:
+                parallels = np.linspace(lmin, lmax, parallels+1)
+            elif type(parallels) is float:
+                parallels = np.arange(lmin, lmax+parallels, parallels)
+            parallels = np.round(parallels, decimals=2)
 
         # Meridians
-        lmin,lmax = self.lonmin, self.lonmax
-        if type(meridians) is int:
-            meridians = np.linspace(lmin, lmax, meridians+1)
-        elif type(meridians) is float:
-            meridians = np.arange(lmin, lmax+meridians, meridians)
-        meridians = np.round(meridians, decimals=2)
+        if meridians is not None:
+            lmin,lmax = self.lonmin, self.lonmax
+            if type(meridians) is int:
+                meridians = np.linspace(lmin, lmax, meridians+1)
+            elif type(meridians) is float:
+                meridians = np.arange(lmin, lmax+meridians, meridians)
+            meridians = np.round(meridians, decimals=2)
 
-        # Draw them
-        gl = self.carte.gridlines(color='gray', xlocs=meridians, ylocs=parallels, linestyle=(0, (1, 1)))
+            # Draw them
+        if meridians is not None and parallels is not None:
+            gl = self.carte.gridlines(color='gray', xlocs=meridians, ylocs=parallels, linestyle=(0, (1, 1)))
 
         #if drawOnFault and parDir!={}:
         #    segments = []
@@ -934,37 +967,6 @@ class geodeticplot(object):
         # All done
         return lon, lat, Z, Slip
 
-    def setzaxis(self, depth, zticklabels=None):
-        '''
-        Set the z-axis.
-
-        Args:
-            * depth     : Maximum depth.
-
-        Kwargs:
-            * ztickslabel   : which labels to use
-
-        Returns:
-            * None
-        '''
-
-        self.faille.set_zlim3d([-1.0*(depth+5), 0])
-        if zticklabels is None:
-            zticks = []
-            zticklabels = []
-            for z in np.linspace(0,depth,5):
-                zticks.append(-1.0*z)
-                zticklabels.append(z)
-        else:
-            zticks = []
-            for z in zticklabels:
-                zticks.append(-1.0*z)
-        self.faille.set_zticks(zticks)
-        self.faille.set_zticklabels(zticklabels)
-
-        # All done
-        return
-
     def surfacestress(self, stress, component='normal', linewidth=0.0, norm=None, colorbar=True):
         '''
         Plots the stress on the map.
@@ -1362,7 +1364,7 @@ class geodeticplot(object):
         return
 
     def insar(self, insar, norm=None, colorbar=True, data='data',
-                       plotType='decimate',
+                       plotType='decimate', cmap='jet',
                        decim=1, zorder=3, edgewidth=1):
         '''
         Plot an insar object
@@ -1412,7 +1414,7 @@ class geodeticplot(object):
             vmax = norm[1]
 
         # Prepare the colormap
-        cmap = plt.get_cmap('jet')
+        cmap = plt.get_cmap(cmap)
         cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 

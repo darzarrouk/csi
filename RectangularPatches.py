@@ -1846,8 +1846,7 @@ class RectangularPatches(Fault):
         '''
 
         # Check
-        if self.N_slip==None:
-            self.N_slip = self.slip.shape[0]
+        self.N_slip = self.slip.shape[0]
 
         # Multiprocessing
         if nproc>1:
@@ -2453,6 +2452,9 @@ class RectangularPatches(Fault):
             lon, lat = self.xy2ll(x, y)
             patchll[i][0] = lon
             patchll[i][1] = lat
+
+        # Equivalent
+        self.computeEquivRectangle()
 
         # All done
         return
