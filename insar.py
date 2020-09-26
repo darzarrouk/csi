@@ -1749,11 +1749,11 @@ class insar(SourceInv):
             f = [[x, y] for x,y in np.vstack((flt.xf, flt.yf)).T.tolist()]
             fl = fl + f
 
-        # Get all the positions
+        # Get all the positions of pixels
         pp = [[x, y] for x,y in zip(self.x, self.y)]
 
         # Get distances
-        D = scidis.cdist(pp, fl)
+        D = scidis.cdist(pp, fl, 'euclidean')
 
         # Get minimums
         d = np.min(D, axis=1)

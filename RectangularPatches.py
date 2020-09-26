@@ -1315,7 +1315,7 @@ class RectangularPatches(Fault):
         # Check Cm if ellipse
         if ellipse:
             self.ellipse = []
-            assert(self.Cm!=None), 'Provide Cm values'
+            assert((self.Cm!=None).all()), 'Provide Cm values'
 
         # Loop over the patches
         for p in range(len(self.patch)):  
