@@ -999,7 +999,7 @@ class TriangularPatches(Fault):
         # Check Cm if ellipse
         if ellipse:
             self.ellipse = []
-            assert(self.Cm!=None), 'Provide Cm values'
+            assertassert((self.Cm!=None).all()), 'Provide Cm values'
 
         # Loop over the patches
         if self.N_slip == None:
