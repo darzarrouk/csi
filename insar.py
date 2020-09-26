@@ -2708,7 +2708,7 @@ class insar(SourceInv):
             * drawCoastlines    : bool. default is True
             * expand            : default expand around the limits covered by the data
             * edgewidth         : width of the edges of the decimation process patches
-            * plotType          : 'decim', 'scatter' or 'flat'
+            * plotType          : 'decimate', 'scatter' or 'flat'
             * figsize           : tuple of figure sizes
 
         Returns:

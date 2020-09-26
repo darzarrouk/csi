@@ -182,6 +182,7 @@ class mpdownsampler(mp.Process):
                 wgt = len(np.flatnonzero(ii))
                 if self.downsampler.datatype is 'insar':
                     vel = np.mean(self.downsampler.image.vel[ii])
+                    
                     err = np.std(self.downsampler.image.vel[ii])
                     los0 = np.mean(self.downsampler.image.los[ii,0])
                     los1 = np.mean(self.downsampler.image.los[ii,1])
@@ -190,6 +191,15 @@ class mpdownsampler(mp.Process):
                     los0 /= norm
                     los1 /= norm
                     los2 /= norm
+                    
+                    #Error on InSAR displacement? 
+                    if self.downsampler.image.err is not None:
+                        #propagate uncertainty
+                        err = np.sqrt(np.sum(self.downsampler.image.err[ii]**2))*(1./len(self.downsampler.image.vel[ii]))
+                    else :
+                        #take standard deviation
+                        err = np.std(self.downsampler.image.vel[ii])
+
                 elif self.downsampler.datatype is 'opticorr':
                     east = np.mean(self.downsampler.image.east[ii])
                     north = np.mean(self.downsampler.image.north[ii])
