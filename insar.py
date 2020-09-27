@@ -1749,11 +1749,11 @@ class insar(SourceInv):
             f = [[x, y] for x,y in np.vstack((flt.xf, flt.yf)).T.tolist()]
             fl = fl + f
 
-        # Get all the positions of pixels
+        # Get all the positions
         pp = [[x, y] for x,y in zip(self.x, self.y)]
 
         # Get distances
-        D = scidis.cdist(pp, fl, 'euclidean')
+        D = scidis.cdist(pp, fl)
 
         # Get minimums
         d = np.min(D, axis=1)
@@ -2641,8 +2641,8 @@ class insar(SourceInv):
         values = copy.deepcopy(self.vel)
         if self.synth is not None:
             values -= self.synth
-        if self.orbit is not None:
-            values -= self.orbit
+        #obsolete if self.orbit is not None:
+        #    values -= self.orbit
         synthRMS = np.sqrt( 1./N *sum( (values)**2 ) )
 
         # All done
@@ -2708,7 +2708,7 @@ class insar(SourceInv):
             * drawCoastlines    : bool. default is True
             * expand            : default expand around the limits covered by the data
             * edgewidth         : width of the edges of the decimation process patches
-            * plotType          : 'decimate', 'scatter' or 'flat'
+            * plotType          : 'decim', 'scatter' or 'flat'
             * figsize           : tuple of figure sizes
 
         Returns:
