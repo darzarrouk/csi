@@ -855,7 +855,7 @@ class TriangularPatches(Fault):
         '''
 
         # Copmute the slip direction
-        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse,nsigma=nsigma)
+        self.computeSlipDirection(scale=scale, factor=factor, ellipse=ellipse,nsigma=nsigma, neg_depth=neg_depth)
 
         # Write something
         print('Writing slip direction to file {}'.format(filename))
@@ -979,7 +979,7 @@ class TriangularPatches(Fault):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False,nsigma=1.):
+    def computeSlipDirection(self, scale=1.0, factor=1.0, ellipse=False,nsigma=1., neg_depth=False):
         '''
         Computes the segment indicating the slip direction.
 
@@ -1017,8 +1017,11 @@ class TriangularPatches(Fault):
             #z = -1.0*np.sin(dip)*np.sin(rake)
             x = (np.sin(strike)*np.cos(rake) - np.cos(strike)*np.cos(dip)*np.sin(rake))
             y = (np.cos(strike)*np.cos(rake) + np.sin(strike)*np.cos(dip)*np.sin(rake))
-            z =  1.0*np.sin(dip)*np.sin(rake)
-
+            if neg_depth:    # do we need to flip depths? EJF 2020/10/18
+                z =  1.0*np.sin(dip)*np.sin(rake)
+            else:
+                z = -1.0*np.sin(dip)*np.sin(rake)
+                
             # Scale these
             if scale.__class__ is float:
                 sca = scale
