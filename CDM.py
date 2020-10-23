@@ -142,10 +142,10 @@ class CDM(Pressure):
             print("Opening is", opening)
         else:
             # Set the potency value
-            if delta is "volume":
+            if delta=="volume":
                 opening = 1.0
                 self.DV = (4*(ellipse.ax*ellipse.ay + ellipse.ax*ellipse.az + ellipse.ay*ellipse.az))
-            if delta is "pressure":
+            if delta=="pressure":
                 raise Exception("Error: CDM requires potencies, not pressure")
 
         # Set poisson's ratio

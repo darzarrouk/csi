@@ -464,7 +464,7 @@ class TriangularPatches(Fault):
         while i<len(A):
             
             # Assert it works
-            assert A[i].split()[0] is '>', 'Not a patch, reformat your file...'
+            assert A[i].split()[0]=='>', 'Not a patch, reformat your file...'
             # Get the Patch Id
             if readpatchindex:
                 self.index_parameter.append([np.int(A[i].split()[ipatch]),np.int(A[i].split()[ipatch+1]),np.int(A[i].split()[ipatch+2])])
@@ -759,28 +759,28 @@ class TriangularPatches(Fault):
             # Select the string for the color
             string = '  '
             if add_slip is not None:
-                if add_slip is 'coupling':
+                if add_slip=='coupling':
                     slp = self.coupling[pIndex]
                     string = '-Z{}'.format(slp)
-                if add_slip is 'strikeslip':
+                if add_slip=='strikeslip':
                     if stdh5 is not None:
                         slp = np.std(samples[:,pIndex])
                     else:
                         slp = self.slip[pIndex,0]*scale
                     string = '-Z{}'.format(slp)
-                elif add_slip is 'dipslip':
+                elif add_slip=='dipslip':
                     if stdh5 is not None:
                         slp = np.std(samples[:,pIndex+nPatches])
                     else:
                         slp = self.slip[pIndex,1]*scale
                     string = '-Z{}'.format(slp)
-                elif add_slip is 'tensile':
+                elif add_slip=='tensile':
                     if stdh5 is not None:
                         slp = np.std(samples[:,pIndex+2*nPatches])
                     else:
                         slp = self.slip[pIndex,2]*scale
                     string = '-Z{}'.format(slp)
-                elif add_slip is 'total':
+                elif add_slip=='total':
                     if stdh5 is not None:
                         slp = np.std(samples[:,pIndex]**2 + samples[:,pIndex+nPatches]**2)
                     else:
@@ -1593,7 +1593,7 @@ class TriangularPatches(Fault):
             * distance  : float
         '''
 
-        if distance is 'center':
+        if distance=='center':
 
             # Get the centers
             x1, y1, z1 = vertex1
@@ -1631,7 +1631,7 @@ class TriangularPatches(Fault):
         '''
 
         # Assert 
-        assert distance is 'center', 'No other method implemented than center'
+        assert distance=='center', 'No other method implemented than center'
 
         # Check
         if self.N_slip==None:
@@ -1671,7 +1671,7 @@ class TriangularPatches(Fault):
             * distace   : float
         '''
 
-        if distance is 'center':
+        if distance=='center':
 
             # Get the centers
             x1, y1, z1 = self.getcenter(patch1)
@@ -2752,7 +2752,7 @@ class TriangularPatches(Fault):
         '''
 
         # Assert 
-        assert self.patchType is 'triangle', 'Not implemented for Triangular tents'
+        assert self.patchType=='triangle', 'Not implemented for Triangular tents'
 
         # Update the map
         def _checkUpdate(check, iTriangle, modifier, fault):
@@ -2769,13 +2769,13 @@ class TriangularPatches(Fault):
             return modify
 
         # Get the array to test
-        if slip is 'strikeslip':
+        if slip=='strikeslip':
             values = self.slip[:,0]
-        elif slip is 'dipslip':
+        elif slip=='dipslip':
             values = self.slip[:,1]
-        elif slip is 'tensile':
+        elif slip=='tensile':
             values = self.slip[:,2]
-        elif slip is 'coupling':
+        elif slip=='coupling':
             values = self.coupling
         else:
             print('findAsperities: Unknown type slip vector...')

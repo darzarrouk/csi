@@ -1802,13 +1802,13 @@ class opticorr(SourceInv):
         # Get variables
         x = self.lon
         y = self.lat
-        if data is 'data':
+        if data=='data':
             e = self.east
             n = self.north
-        elif data is 'synth':
+        elif data=='synth':
             e = self.east_synth
             n = self.north_synth
-        elif data is 'res':
+        elif data=='res':
             e = self.east - self.east_synth
             n = self.north - self.north_synth
 

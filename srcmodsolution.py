@@ -134,7 +134,7 @@ class srcmodsolution(object):
         A = fin.readline()
         tmpflt=[]
         while len(A.split()) > 0:
-            if A.split()[0] is '>':
+            if A.split()[0]=='>':
                 if len(tmpflt) > 0:
                     self.addfaults.append(np.array(tmpflt))
                 tmpflt = []
@@ -240,7 +240,7 @@ class srcmodsolution(object):
             Lful = Text[l]
 
             # Two cases, metadata (%) or slip/rakes
-            if Lstr[0] is '%':
+            if Lstr[0]=='%':
 
                 if len(Lstr) > 2:
 
@@ -728,13 +728,13 @@ class srcmodsolution(object):
             # Select the string for the color
             string = '  '
             if add_slip is not None:
-                if add_slip is 'strikeslip':
+                if add_slip=='strikeslip':
                     slp = self.slip[p,0]*scale
                     string = '-Z{}'.format(slp)
-                elif add_slip is 'dipslip':
+                elif add_slip=='dipslip':
                     slp = self.slip[p,1]*scale
                     string = '-Z{}'.format(slp)
-                elif add_slip is 'total':
+                elif add_slip=='total':
                     slp = np.sqrt(self.slip[p,0]**2 + self.slip[p,1]**2)*scale
                     string = '-Z{}'.format(slp)
 
@@ -851,13 +851,13 @@ class srcmodsolution(object):
             if scale.__class__ is float:
                 sca = scale
             elif scale.__class__ is str:
-                if scale is 'total':
+                if scale=='total':
                     sca = np.sqrt(slip[0]**2 + slip[1]**2 + slip[2]**2)*factor
-                elif scale is 'strikeslip':
+                elif scale=='strikeslip':
                     sca = slip[0]*factor
-                elif scale is 'dipslip':
+                elif scale=='dipslip':
                     sca = slip[1]*factor
-                elif scale is 'tensile':
+                elif scale=='tensile':
                     sca = slip[2]*factor
                 else:
                     print('Unknown Slip Direction in computeSlipDirection')
@@ -1045,10 +1045,10 @@ class srcmodsolution(object):
 
         # Get the number of data
         Nd = data.lon.shape[0]
-        if data.dtype is 'insar':
+        if data.dtype=='insar':
             Ndt = Nd
             data.obs_per_station = 1
-        elif data.dtype is 'gps':
+        elif data.dtype=='gps':
             Ndt = data.lon.shape[0]*2
             data.obs_per_station = 2
             if vertical:
@@ -1071,10 +1071,10 @@ class srcmodsolution(object):
             G['tensile'] = np.zeros((Ndt, Np))
 
         # Initializes the data vector and the data covariance
-        if data.dtype is 'insar':
+        if data.dtype=='insar':
             self.d[data.name] = data.vel
             vertical = True                 # In InSAR, you need to use the vertical, no matter what....
-        elif data.dtype is 'gps':
+        elif data.dtype=='gps':
             if vertical:
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
@@ -1113,11 +1113,11 @@ class srcmodsolution(object):
                 op = op[:,0:2]
 
             # Organize the response
-            if data.dtype is 'gps':            # If GPS type, just put them in the good format
+            if data.dtype=='gps':            # If GPS type, just put them in the good format
                 ss = ss.T.flatten()
                 ds = ds.T.flatten()
                 op = op.T.flatten()
-            elif data.dtype is 'insar':        # If InSAR, do the dot product with the los
+            elif data.dtype=='insar':        # If InSAR, do the dot product with the los
                 ss_los = []
                 ds_los = []
                 op_los = []
@@ -1223,7 +1223,7 @@ class srcmodsolution(object):
         datatype = data.dtype
 
         # Cut the Matrices following what data do we have and set the GFs
-        if datatype is 'gps':
+        if datatype=='gps':
 
             # Initialize
             GssE = None; GdsE = None; GtsE = None
@@ -1250,7 +1250,7 @@ class srcmodsolution(object):
             # set the GFs
             self.setGFs(data, strikeslip=[GssE, GssN, GssU], dipslip=[GdsE, GdsN, GdsU], tensile=[GtsE, GtsN, GtsU], vertical=vertical)
 
-        elif datatype is 'insar':
+        elif datatype=='insar':
 
             # Initialize
             GssLOS = None; GdsLOS = None; GtsLOS = None
@@ -1281,9 +1281,9 @@ class srcmodsolution(object):
         '''
 
         # Get the number of data per point
-        if data.dtype is 'insar':
+        if data.dtype=='insar':
             data.obs_per_station = 1
-        elif data.dtype is 'gps':
+        elif data.dtype=='gps':
             data.obs_per_station = 2
             if vertical:
                 data.obs_per_station = 3
@@ -1294,10 +1294,10 @@ class srcmodsolution(object):
         G = self.G[data.name]
 
         # Initializes the data vector
-        if data.dtype is 'insar':
+        if data.dtype=='insar':
             self.d[data.name] = data.vel
             vertical = True                 # In InSAR, you need to use the vertical, no matter what....
-        elif data.dtype is 'gps':
+        elif data.dtype=='gps':
             if vertical:
                 self.d[data.name] = data.vel_enu.T.flatten()
             else:
@@ -1427,7 +1427,7 @@ class srcmodsolution(object):
                 if polys.__class__ is not str:
                     self.poly[data.name] = polys*data.obs_per_station
                 else:
-                    if data.dtype is 'gps':
+                    if data.dtype=='gps':
                         self.poly[data.name] = polys
                     else:
                         print('Data type must be gps to implement a Helmert transform')
@@ -1437,7 +1437,7 @@ class srcmodsolution(object):
                 if polys[d].__class__ is not str:
                     self.poly[datas[d].name] = polys[d]*datas[d].obs_per_station
                 else:
-                    if datas[d].dtype is 'gps':
+                    if datas[d].dtype=='gps':
                         self.poly[datas[d].name] = polys[d]
                     else:
                         print('Data type must be gps to implement a Helmert transform')
@@ -1449,7 +1449,7 @@ class srcmodsolution(object):
         Npo = 0
         self.helmert = {}
         for data in datas :
-            if self.poly[data.name] is 'full':
+            if self.poly[data.name]=='full':
                 if data.obs_per_station==3:
                     Npo += 7                    # 3D Helmert transform is 7 parameters
                     self.helmert[data.name] = 7
@@ -1507,14 +1507,14 @@ class srcmodsolution(object):
             # Build the polynomial function
             if self.poly[data.name].__class__ is not str:
                 if self.poly[data.name] > 0:
-                    if data.dtype is 'gps':
+                    if data.dtype=='gps':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         nn = Ndlocal/data.obs_per_station
                         orb[:nn, 0] = 1.0
                         orb[nn:2*nn, 1] = 1.0
                         if data.obs_per_station == 3:
                             orb[2*nn:3*nn, 2] = 1.0
-                    elif data.dtype is 'insar':
+                    elif data.dtype=='insar':
                         orb = np.zeros((Ndlocal, self.poly[data.name]))
                         orb[:] = 1.0
                         if self.poly[data.name] >= 3:
@@ -1528,7 +1528,7 @@ class srcmodsolution(object):
                     G[el:el+Ndlocal, polstart:polend] = orb
                     polstart += self.poly[data.name]
             else:
-                if self.poly[data.name] is 'full':
+                if self.poly[data.name]=='full':
                     orb = self.getHelmertMatrix(data)
                     if data.obs_per_station==3:
                         nc = 7
@@ -1554,7 +1554,7 @@ class srcmodsolution(object):
         '''
 
         # Check
-        assert (data.dtype is 'gps')
+        assert (data.dtype=='gps')
 
         # Get the number of stations
         ns = data.station.shape[0]
@@ -1780,7 +1780,7 @@ class srcmodsolution(object):
             * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
         '''
 
-        if distance is 'center':
+        if distance=='center':
 
             # Get the centers
             x1, y1, z1 = self.getcenter(patch1)
@@ -1826,7 +1826,7 @@ class srcmodsolution(object):
         # Create the variables
         RectanglePropFile = 'edks_{}.END'.format(self.name)
         ReceiverFile = 'edks_{}.idEN'.format(data.name)
-        if data.dtype is 'insar':
+        if data.dtype=='insar':
             useRecvDir = True # True for InSAR, uses LOS information
         else:
             useRecvDir = False # False for GPS, uses ENU displacements
@@ -2070,7 +2070,7 @@ class srcmodsolution(object):
             ax.set_title(self.eventtag)
 
         # Set the axes
-        if ref is 'utm':
+        if ref=='utm':
             ax.set_xlabel('Easting (km)')
             ax.set_ylabel('Northing (km)')
         else:
@@ -2078,15 +2078,15 @@ class srcmodsolution(object):
             ax.set_ylabel('Latitude')
         ax.set_zlabel('Depth (km)')
 
-        if add and (ref is 'utm'):
+        if add and (ref=='utm'):
             for fault in self.addfaultsxy:
                 ax.plot(fault[:,0], fault[:,1], '-k')
-        elif add and (ref is not 'utm'):
+        elif add and (ref!='utm'):
             for fault in self.addfaults:
                 ax.plot(fault[:,0], fault[:,1], '-k')
 
         # Plot the surface trace
-        if ref is 'utm':
+        if ref=='utm':
             if self.xf is None:
                 self.trace2xy()
             ax.plot(self.xf, self.yf, '-b')
@@ -2119,7 +2119,7 @@ class srcmodsolution(object):
                 y = []
                 z = []
                 for i in range(ncorners):
-                    if ref is 'utm':
+                    if ref=='utm':
                         x.append(self.patch[p][i][0])
                         y.append(self.patch[p][i][1])
                         z.append(-1.0*self.patch[p][i][2])

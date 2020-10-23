@@ -118,9 +118,9 @@ class pCDM(Pressure):
             self.computeTotalpotency()
         else:
             # Set the potency value
-            if delta is "volume":
+            if delta=="volume":
                 DVx, DVy, DVz = self.scale, self.scale, self.scale
-            if delta is "pressure":
+            if delta=="pressure":
                 raise Exception("pCDM requires potencies, not pressure")
         # Set poisson's ratio
         if self.nu is None:

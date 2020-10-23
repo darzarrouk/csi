@@ -312,14 +312,14 @@ class velocitymodel(SourceInv):
         '''
 
         # Get data
-        if data is 'all':
+        if data=='all':
             d = self.Vp
             prof = self.depth
-        elif data is 'vertical':
+        elif data=='vertical':
             d = self.VpVert
             std = self.StdVpVert
             prof = self.DVert
-        elif data is 'model':
+        elif data=='model':
             d = self.SimVpVert
             prof = self.SimDepth
 
@@ -338,16 +338,16 @@ class velocitymodel(SourceInv):
 
         # Convert to Vs
         vs = np.sqrt( (1-2*poisson)/(1-poisson) * d**2 * 0.5 )
-        if data is 'vertical':
+        if data=='vertical':
             svs = np.sqrt( (1-2*poisson)/(1-poisson) * std**2 * 0.5 )
 
         # Stores Vs
-        if data is 'all':
+        if data=='all':
             self.Vs = vs
-        elif data is 'vertical':
+        elif data=='vertical':
             self.VsVert = vs
             self.StdVsVert = svs
-        elif data is 'model':
+        elif data=='model':
             self.SimVsVert = vs
 
         # All done
@@ -695,7 +695,7 @@ class velocitymodel(SourceInv):
         '''
 
         # Get the fault depths
-        if fault.patchType is ('triangletent'):
+        if fault.patchType=='triangletent':
             depths = np.array([tent[2] for tent in fault.tent])
         else:
             depths = np.array([center[2] for center in fault.getcenters()])
@@ -850,11 +850,11 @@ class velocitymodel(SourceInv):
         carte.set_zlabel('Depth (km)')
 
         # Get data
-        if data is 'vp':
+        if data=='vp':
             d = self.Vp
-        elif data is 'vs':
+        elif data=='vs':
             d = self.Vs
-        elif data is 'density':
+        elif data=='density':
             d = self.Rho
 
         # Remove the nans

@@ -77,7 +77,7 @@ class multifaultsolve(object):
         # Store an array of the patch areas
         patchAreas = []
         for fault in faults:
-            if fault.type is "Fault":
+            if fault.type=="Fault":
                 if fault.patchType == 'triangletent':
                     fault.computeTentArea()
                     for tentIndex in range(fault.slip.shape[0]):
@@ -88,7 +88,7 @@ class multifaultsolve(object):
                         patchAreas.append(fault.area[patchIndex])
                 self.patchAreas = np.array(patchAreas)
                 self.type = "Fault"
-            elif fault.type is "Pressure":
+            elif fault.type=="Pressure":
                 self.type = "Pressure"
             elif fault.type in ('notafault', 'transformation'):
                 print('Not a fault detected')
@@ -131,7 +131,7 @@ class multifaultsolve(object):
             # Store the G matrix
             self.G[:,st:se] = fault.Gassembled
             # Keep track of indexing
-            if fault.type is "Fault":
+            if fault.type=="Fault":
                 self.affectIndexParameters(fault)
 
         # self ready
@@ -222,7 +222,7 @@ class multifaultsolve(object):
             # Where does this fault starts
             nfs = copy.deepcopy(ns)
 
-            if fault.type is "Fault" or fault.type is 'transformation':
+            if fault.type=="Fault" or fault.type=='transformation':
                 #Prepare the table
                 if self.verbose:
                     print('-----------------')
@@ -277,13 +277,13 @@ class multifaultsolve(object):
                 self.paramDescription[fault.name]['Coupling'] = cp
                 self.paramDescription[fault.name]['Extra Parameters'] = op
 
-            elif fault.type is "Pressure":
+            elif fault.type=="Pressure":
                 #Prepare the table
                 if self.verbose:
                     print('{:30s}||{:12s}||{:12s}'.format('Fault Name', 'Pressure', 'Extra Parms'))
                 # Initialize the values
                 dp = 'None'
-                if fault.source is "pCDM":
+                if fault.source=="pCDM":
                     ne += 3
                     dp = '{:12s}'.format('{:4d} - {:4d}'.format(ns,ne))
                     ns += 3 #fault.slip.shape[0]
@@ -425,7 +425,7 @@ class multifaultsolve(object):
                 fault.distributem()
 
             # Fault object
-            if fault.type is "Fault":
+            if fault.type=="Fault":
 
                 # Affect the indexes
                 self.affectIndexParameters(fault)
@@ -461,7 +461,7 @@ class multifaultsolve(object):
                             st += nc
 
             # Pressure object
-            elif fault.type is "Pressure":
+            elif fault.type=="Pressure":
 
                 st = 0
                 if fault.source in {"Mogi", "Yang"}:
@@ -469,7 +469,7 @@ class multifaultsolve(object):
                     print(np.asscalar(fault.mpost[st:se]*fault.mu))
                     fault.deltapressure = np.asscalar(fault.mpost[st:se]*fault.mu)
                     st += 1
-                elif fault.source is "pCDM":
+                elif fault.source=="pCDM":
                     se = st + 1
                     fault.DVx = np.asscalar(fault.mpost[st:se]*fault.scale)
                     st += 1
@@ -483,7 +483,7 @@ class multifaultsolve(object):
 
                     if fault.DVtot is None:
                         fault.computeTotalpotency()
-                elif fault.source is "CDM":
+                elif fault.source=="CDM":
                     se = st + 1
                     print(np.asscalar(fault.mpost[st:se]*fault.mu))
                     fault.deltaopening = np.asscalar(fault.mpost[st:se])
@@ -506,7 +506,7 @@ class multifaultsolve(object):
                                     fault.polysolindex[dset] = range(st,se)
                                     st += fault.poly[dset]
                             elif (fault.poly[dset].__class__ is str):
-                                if fault.poly[dset] is 'full':
+                                if fault.poly[dset]=='full':
                                     nh = fault.helmert[dset]
                                     se = st + nh
                                     fault.polysol[dset] = fault.mpost[st:se]
@@ -760,7 +760,7 @@ class multifaultsolve(object):
         print(np.sum(Err**2))
         mu = 22.5e9
         Mw_thresh = 10
-        if self.type is "Fault":
+        if self.type=="Fault":
             computeMwDiff(self.mpost, Mw_thresh, self.patchAreas*1.e6, mu)
 
         # All done
@@ -1003,11 +1003,11 @@ class multifaultsolve(object):
             name = prior[0]
             function = prior[1]
             params = prior[2:]
-            if function is 'Gaussian':
+            if function=='Gaussian':
                 center = params[0]
                 tau = params[1]
                 p = pymc.Gaussian(name, center, tau, value=init)
-            elif function is 'Uniform':
+            elif function=='Uniform':
                 boundMin = params[0]
                 boundMax = params[1]
                 p = pymc.Uniform(name, boundMin, boundMax, value=init)

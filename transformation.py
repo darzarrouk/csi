@@ -234,7 +234,7 @@ class transformation(SourceInv):
         data.TransformNormalizingFactor['base'] = base_max
 
         # Special case of a multigps dataset
-        if data.dtype is 'multigps':
+        if data.dtype=='multigps':
             for d in data.gpsobjects:
                 self.computeTransformNormFactor(d)
 

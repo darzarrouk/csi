@@ -79,14 +79,14 @@ class imagecovariance(object):
 
         # Iterate and save the datasets to consider
         self.datasets = {}
-        if self.datatype is 'insar':
+        if self.datatype=='insar':
             dname = '{}'.format(self.name)
             self.datasets[dname] = {'x': self.image.x,
                                     'y': self.image.y,
                                     'lon': self.image.lon,
                                     'lat': self.image.lat,
                                     'data': self.image.vel}
-        elif self.datatype is 'opticorr':
+        elif self.datatype=='opticorr':
             dname = '{} East'.format(self.name)
             self.datasets[dname] = {'x': self.image.x,
                                     'y': self.image.y,
@@ -553,7 +553,7 @@ class imagecovariance(object):
         y = image.y
 
         # Case 1: InSAR
-        if image.dtype is 'insar':
+        if image.dtype=='insar':
 
             # Get the Parameters
             assert 'Sigma' in self.datasets[dname].keys(), 'Need to estimate the covariance function first: {}'.format(dname)
@@ -565,7 +565,7 @@ class imagecovariance(object):
             Cd = self._buildcov(sigma, lamb, function, x, y)
 
         # Case 2: opticorr
-        elif image.dtype is 'opticorr':
+        elif image.dtype=='opticorr':
             
             # Create the two names
             dnameEast = dname+' East'

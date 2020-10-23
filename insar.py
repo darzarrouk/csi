@@ -426,13 +426,13 @@ class insar(SourceInv):
         if type(lon) is str:
             lon = np.fromfile(lon, dtype=dtype)[::downsample]
         else:
-            lon = lon[::downsample]
+            lon = lon.flatten()[::downsample]
 
         # Get the lat
         if type(lat) is str:
             lat = np.fromfile(lat, dtype=dtype)[::downsample]
         else:
-            lat = lat[::downsample]
+            lat = lat.flatten()[::downsample]
 
         # Check sizes
         assert vel.shape==lon.shape, 'Something wrong with the sizes: {} {} {} '.format(vel.shape, lon.shape, lat.shape)
@@ -962,9 +962,9 @@ class insar(SourceInv):
         distance = np.sqrt( (x[:,None] - x[None,:])**2 + (y[:,None] - y[None,:])**2)
 
         # Compute Cd
-        if function is 'exp':
+        if function=='exp':
             self.Cd = sigma*sigma*np.exp(-1.0*distance/lam)
-        elif function is 'gauss':
+        elif function=='gauss':
             self.Cd = sigma*sigma*np.exp(-1.0*distance*distance/(2*lam))
 
         # Normalize
@@ -1057,6 +1057,35 @@ class insar(SourceInv):
             return vel, err, los
         else:
             return None, None, None
+
+    def reference2area(self, lon, lat, radius):
+        '''
+        References the data to an area. Selects the area and sets all dates to zero at this area.
+
+        Args:
+            * lon       : longitude of the center of the area
+            * lat       : latitude of the center of the area
+            * radius    : Radius of the area
+
+        Returns:
+            * None
+        '''
+
+        # Get average
+        vel, err, los = self.returnAverageNearPoint(lon, lat, radius)
+    
+        # Check
+        if np.isnan(vel): 
+            print('Referencing impossible for data {}: Only NaNs in the reference'.format(self.name))
+            return
+
+        # Correct
+        self.vel -= vel
+
+        # All done
+        return
+
+        
 
     def extractAroundGPS(self, inp, distance, doprojection=True):
         '''
@@ -1188,7 +1217,7 @@ class insar(SourceInv):
         Returns:
             * None
         '''
-        if fault.type is "Fault":
+        if fault.type=="Fault":
             # Get the values
             try:
                 GssLOS = G['strikeslip']
@@ -1210,7 +1239,7 @@ class insar(SourceInv):
             # set the GFs
             fault.setGFs(self, strikeslip=[GssLOS], dipslip=[GdsLOS], tensile=[GtsLOS],
                         coupling=[GcpLOS], vertical=True)
-        elif fault.type is "Pressure":
+        elif fault.type=="Pressure":
             try:
                 GpLOS = G['pressure']
             except:
@@ -1568,7 +1597,7 @@ class insar(SourceInv):
 
         # Loop on each fault
         for fault in faults:
-            if fault.type is "Fault":
+            if fault.type=="Fault":
                 # Get the good part of G
                 G = fault.G[self.name]
 
@@ -1602,13 +1631,13 @@ class insar(SourceInv):
                 if poly is not None:
                     # Compute the polynomial
                     self.computePoly(fault,computeNormFact=computeNormFact)
-                    if poly is 'include':
+                    if poly=='include':
                         self.removePoly(fault, computeNormFact=computeNormFact)
                     else:
                         self.synth += self.orbit
 
             #Loop on each pressure source
-            elif fault.type is "Pressure":
+            elif fault.type=="Pressure":
 
                 # Get the good part of G
                 G = fault.G[self.name]
@@ -1619,7 +1648,7 @@ class insar(SourceInv):
                     losdp_synth = Gp*Sp
                     self.synth += losdp_synth
 
-                elif fault.source is ("pCDM"):
+                elif fault.source==("pCDM"):
                     Gdx = G['pressureDVx']
                     Sxp = fault.DVx/fault.scale
                     lossx_synth = np.dot(Gdx,Sxp)
@@ -1633,7 +1662,7 @@ class insar(SourceInv):
                     lossz_synth = np.dot(Gdz, Szp)
                     self.synth += lossz_synth
 
-                elif fault.source is ("CDM"):
+                elif fault.source==("CDM"):
                     Gp = G['pressure']
                     Sp = fault.deltaopening
                     print("Scaling by opening")
@@ -1650,7 +1679,7 @@ class insar(SourceInv):
                 if poly is not None:
                     # Compute the polynomial
                     self.computePoly(fault,computeNormFact=computeNormFact)
-                    if poly is 'include':
+                    if poly=='include':
                         self.removePoly(fault, computeNormFact=computeNormFact)
                     else:
                         self.synth += self.orbit
@@ -2487,7 +2516,7 @@ class insar(SourceInv):
         fout.close()
 
 
-    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False):
+    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False, alpha=.3):
         '''
         Plot profile.
 
@@ -2510,7 +2539,7 @@ class insar(SourceInv):
         assert len(x)>5, 'There is less than 5 points in your profile...'
 
         # Plot the insar
-        self.plot(faults=fault, norm=norm, show=False)
+        self.plot(faults=fault, norm=norm, show=False, alpha=alpha)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
@@ -2694,7 +2723,7 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None], plotType='scatter', cmap='jet'):
+    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None], plotType='scatter', cmap='jet', alpha=1.):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2740,14 +2769,14 @@ class insar(SourceInv):
                 fig.gps(g)
 
         # Plot the decimation process, if asked
-        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, cmap=cmap, zorder=1)
+        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, cmap=cmap, zorder=1, alpha=alpha)
 
         # Plot the fault trace if asked
         if faults is not None:
             if type(faults) is not list:
                 faults = [faults]
             for fault in faults:
-                if fault.type is "Fault":
+                if fault.type=="Fault":
                     fig.faulttrace(fault, zorder=2)
 
         # Show
@@ -2871,13 +2900,13 @@ class insar(SourceInv):
         # Get variables
         x = self.lon
         y = self.lat
-        if data is 'data':
+        if data=='data':
             z = self.vel
-        elif data is 'synth':
+        elif data=='synth':
             z = self.synth
-        elif data is 'poly':
+        elif data=='poly':
             z = self.orbit
-        elif data is 'resid':
+        elif data=='resid':
             z = self.vel - self.synth
 
         # Write these to a file

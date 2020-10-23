@@ -233,13 +233,13 @@ class insartimeseries(insar):
         # Select on latitude and longitude
         u = np.flatnonzero((self.lat>minlat) & (self.lat<maxlat) \
                 & (self.lon>minlon) & (self.lon<maxlon))
-    
-        # Keep pixels
-        self.keepPixels(u)
 
         # Iterate over the timeseries
         for sar in self.timeseries:
             sar.keepPixels(u)
+    
+        # Keep pixels
+        self.keepPixels(u)
 
         # All done
         return
@@ -269,6 +269,28 @@ class insartimeseries(insar):
 
         # All done
         return
+
+    def reference2area(self, lon, lat, radius):
+        '''
+        References the time series to an area. Selects the area and sets all dates to zero at this area.
+
+        Args:
+            * lon       : longitude of the center of the area
+            * lat       : latitude of the center of the area
+            * radius    : Radius of the area
+
+        Returns:
+            * None
+        '''
+
+        # Iterate
+        for insar in self.timeseries:
+            # Reference
+            insar.reference2area(lon, lat, radius)
+
+        # All done
+        return
+
 
     def referenceTimeSeries2Date(self, date):
         '''
@@ -490,6 +512,14 @@ class insartimeseries(insar):
                 elevation.reject_pixel(uu)
             self.reject_pixel(uu)
         h5in.close()
+
+        # Create fakes 
+        self.vel = np.zeros(self.lon.shape)
+        self.err = None
+        if not hasattr(self, 'los'):
+            self.los = None
+        self.synth = None
+        self.corner = None
 
         # all done
         return
