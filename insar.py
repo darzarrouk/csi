@@ -2670,8 +2670,8 @@ class insar(SourceInv):
         values = copy.deepcopy(self.vel)
         if self.synth is not None:
             values -= self.synth
-        if self.orbit is not None:
-            values -= self.orbit
+        #obsolete if self.orbit is not None:
+        #    values -= self.orbit
         synthRMS = np.sqrt( 1./N *sum( (values)**2 ) )
 
         # All done
