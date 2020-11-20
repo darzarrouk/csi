@@ -97,18 +97,18 @@ class seismicplot(geodeticplot):
         '''
 
         # Plot the added faults before
-        if add and (self.ref is 'utm'):
+        if add and (self.ref=='utm'):
             for f in fault.addfaultsxy:
                 self.faille.plot(f[0], f[1], '-k')
                 self.carte.plot(f[0], f[1], '-k')
-        elif add and (self.ref is not 'utm'):
+        elif add and (self.ref!='utm'):
             for f in fault.addfaults:
                 self.faille.plot(f[0], f[1], '-k')
                 self.carte.plot(f[0], f[1], '-k')
 
         # Plot the surface trace
         print(fault.top)
-        if self.ref is 'utm':
+        if self.ref=='utm':
             if fault.xf is None:
                 fault.trace2xy()
             self.faille.plot3D(fault.xf, fault.yf,-fault.top, '-{}'.format(color), linewidth=2)

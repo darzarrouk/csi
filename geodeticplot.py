@@ -83,7 +83,7 @@ class geodeticplot(object):
         # Open a figure
         fig1 = plt.figure(figure, figsize=figsize[0])
         faille = fig1.add_subplot(111, projection='3d')
-        if figure is None:
+        if figure == None:
             nextFig = np.max(plt.get_fignums())+1
         else:
             nextFig=figure+1
@@ -93,9 +93,9 @@ class geodeticplot(object):
         carte.gridlines(crs=self.projection, draw_labels=True)
 
         # scale bar
-        if scalebar is not None:
+        if scalebar != None:
             # Check
-            assert type(scalebar) is float, 'scalebar should be float: {}'.format(type(scalebar))
+            assert type(scalebar) == float, 'scalebar should be float: {}'.format(type(scalebar))
             # Chose where to put the bar
             lonc = self.lonmin + (self.lonmax-self.lonmin)/10.
             latc = self.latmin + (self.latmax-self.latmin)/10.
@@ -169,11 +169,11 @@ class geodeticplot(object):
         '''
 
         # Change axis of the map
-        if mapaxis is not None:
+        if mapaxis != None:
             self.carte.axis(mapaxis)
 
         # Change the axis of the 3d projection
-        if triDaxis is not None:
+        if triDaxis != None:
             self.faille.axis(triDaxis)
 
         # Fits the horizontal axis to the asked values
@@ -227,7 +227,7 @@ class geodeticplot(object):
             self.faille.axis(triDaxis)
 
         # Save
-        if (ftype is 'png') and (dpi is not None) and (bbox_inches is not None):
+        if (ftype == 'png') and (dpi is not None) and (bbox_inches is not None):
             if 'fault' in saveFig:
                 self.fig1.savefig('%s_fault.png' % (prefix),
                         dpi=dpi, bbox_inches=bbox_inches)
@@ -301,7 +301,7 @@ class geodeticplot(object):
         '''
 
         self.faille.set_zlim3d([-1.0*(depth+5), 0])
-        if zticklabels is None:
+        if zticklabels == None:
             zticks = []
             zticklabels = []
             for z in np.linspace(0,depth,5):
@@ -619,7 +619,7 @@ class geodeticplot(object):
         slip *= factor
 
         # norm
-        if norm is None:
+        if norm == None:
             vmin=slip.min()
             vmax=slip.max()
         else:
@@ -720,9 +720,9 @@ class geodeticplot(object):
         '''
 
         # Get slip
-        if delta is 'pressure':
+        if delta == 'pressure':
             delta = fault.deltapressure
-        elif delta is 'volume':
+        elif delta == 'volume':
             delta = fault.deltavolume
         else:
             print ("Unknown slip direction")
@@ -730,7 +730,7 @@ class geodeticplot(object):
         delta *= factor
 
         # norm
-        if norm is None:
+        if norm == None:
             vmin=0
             vmax=delta
         else:
@@ -848,7 +848,7 @@ class geodeticplot(object):
         slip *= factor
 
         # norm
-        if norm is None:
+        if norm == None:
             vmin=slip.min()
             vmax=slip.max()
         else:
@@ -912,7 +912,7 @@ class geodeticplot(object):
         Slip = fault._getSlipOnSubSources(Ids, X, Y, Z, slip)
 
         # Check Method:
-        if method is 'surface':
+        if method == 'surface':
 
             # Do some interpolation
             intpZ = sciint.LinearNDInterpolator(np.vstack((X, Y)).T, Z, fill_value=np.nan)
@@ -944,7 +944,7 @@ class geodeticplot(object):
                 scalarMap.set_array(slip)
                 self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.3, orientation='horizontal')
 
-        elif method is 'scatter':
+        elif method == 'scatter':
             # Do the scatter ploto
             lon, lat = fault.xy2ll(X, Y)
             #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
@@ -1050,7 +1050,7 @@ class geodeticplot(object):
             color = [color[0] for d in data]
 
         # Check
-        if scale is None:
+        if scale == None:
             assert len(data)==1, 'If multiple data are plotted, need to provide scale'
 
         # Get lon lat
@@ -1061,19 +1061,19 @@ class geodeticplot(object):
         # Make the dictionary of the things to plot
         Data = {}
         for dtype,col in zip(data, color):
-            if dtype is 'data':
+            if dtype == 'data':
                 dName = '{} Data'.format(gps.name)
                 Values = gps.vel_enu
-            elif dtype is 'synth':
+            elif dtype == 'synth':
                 dName = '{} Synth.'.format(gps.name)
                 Values = gps.synth
-            elif dtype is 'res':
+            elif dtype == 'res':
                 dName = '{} Res.'.format(gps.name)
                 Values = gps.vel_enu - gps.synth
-            elif dtype is 'strain':
+            elif dtype == 'strain':
                 dName = '{} Strain'.format(gps.name)
                 Values = gps.Strain
-            elif dtype is 'transformation':
+            elif dtype == 'transformation':
                 dName = '{} Trans.'.format(gps.name)
                 Values = gps.transformation
             else:
@@ -1161,19 +1161,19 @@ class geodeticplot(object):
         from collections import OrderedDict
         Data = OrderedDict()
         for dtype,mark in zip(data, markersize):
-            if dtype is 'data':
+            if dtype == 'data':
                 dName = '{} Data'.format(gps.name)
                 Values = gps.vel_enu[:,2]
-            elif dtype is 'synth':
+            elif dtype == 'synth':
                 dName = '{} Synth.'.format(gps.name)
                 Values = gps.synth[:,2]
-            elif dtype is 'res':
+            elif dtype == 'res':
                 dName = '{} Res.'.format(gps.name)
                 Values = gps.vel_enu[:,2] - gps.synth[:,2]
-            elif dtype is 'strain':
+            elif dtype == 'strain':
                 dName = '{} Strain'.format(gps.name)
                 Values = gps.Strain[:,2]
-            elif dtype is 'transformation':
+            elif dtype == 'transformation':
                 dName = '{} Trans.'.format(gps.name)
                 Values = gps.transformation[:,2]
             Data[dName] = {}
@@ -1227,7 +1227,7 @@ class geodeticplot(object):
         lat = gps.lat
 
         # Prepare the color limits
-        if norm is None:
+        if norm == None:
             vmin = d.min()
             vmax = d.max()
         else:
@@ -1321,13 +1321,13 @@ class geodeticplot(object):
             * None
         '''
 
-        if direction is 'east':
+        if direction == 'east':
             d = fault.sim.vel_enu[:,0]
-        elif direction is 'north':
+        elif direction == 'north':
             d = fault.sim.vel_enu[:,1]
-        elif direction is 'up':
+        elif direction == 'up':
             d = fault.sim.vel_enu[:,2]
-        elif direction is 'total':
+        elif direction == 'total':
             d = np.sqrt(fault.sim.vel_enu[:,0]**2 + fault.sim.vel_enu[:,1]**2 + fault.sim.vel_enu[:,2]**2)
         elif direction.__class__ is float:
             d = fault.sim.vel_enu[:,0]/np.sin(direction*np.pi/180.) + fault.sim.vel_enu[:,1]/np.cos(direction*np.pi/180.)
@@ -1338,7 +1338,7 @@ class geodeticplot(object):
             return
 
         # Prepare the color limits
-        if norm is None:
+        if norm == None:
             vmin = d.min()
             vmax = d.max()
         else:
@@ -1365,7 +1365,7 @@ class geodeticplot(object):
 
     def insar(self, insar, norm=None, colorbar=True, data='data',
                        plotType='decimate', cmap='jet',
-                       decim=1, zorder=3, edgewidth=1):
+                       decim=1, zorder=3, edgewidth=1, alpha=1.):
         '''
         Plot an insar object
 
@@ -1406,9 +1406,9 @@ class geodeticplot(object):
             return
 
         # Prepare the colorlimits
-        if norm is None:
-            vmin = d.min()
-            vmax = d.max()
+        if norm == None:
+            vmin = np.nanmin(d)
+            vmax = np.nanmax(d)
         else:
             vmin = norm[0]
             vmax = norm[1]
@@ -1418,7 +1418,7 @@ class geodeticplot(object):
         cNorm = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
-        if plotType is 'decimate':
+        if plotType == 'decimate':
             for corner, disp in zip(insar.corner, d):
                 x = []
                 y = []
@@ -1442,18 +1442,19 @@ class geodeticplot(object):
                 rect.set_color(scalarMap.to_rgba(disp))
                 rect.set_edgecolors('k')
                 rect.set_zorder(zorder)
+                rect.set_alpha(alpha)
                 self.carte.add_collection(rect)
 
-        elif plotType is 'scatter':
+        elif plotType == 'scatter':
 
             lon = insar.lon
             #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             lat = insar.lat
             sc = self.carte.scatter(lon[::decim], lat[::decim], s=10,
                                     c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax,
-                                    linewidth=0.0, zorder=zorder)
+                                    linewidth=0.0, zorder=zorder, alpha=alpha)
 
-        elif plotType is 'flat':
+        elif plotType == 'flat':
         
             # Is there NaNs:
             if np.isfinite(d).all(): print('Carefull: there is no NaNs, the interpolation might be a whole load of garbage...')
@@ -1469,7 +1470,7 @@ class geodeticplot(object):
             data = sarint(xx,yy)
             lon,lat = insar.xy2ll(xx,yy)
             # Plot
-            sc = self.carte.pcolormesh(lon, lat, data, cmap=cmap, vmin=vmin, vmax=vmax, zorder=zorder)
+            sc = self.carte.pcolormesh(lon, lat, data, cmap=cmap, vmin=vmin, vmax=vmax, zorder=zorder, alpha=alpha)
 
         else:
             print('Unknown plot type: {}'.format(plotType))
@@ -1529,7 +1530,7 @@ class geodeticplot(object):
                     (corr.north - corr.north_synth)**2 )
 
         # Prepare the colorlimits
-        if norm is None:
+        if norm == None:
             vmin = d.min()
             vmax = d.max()
         else:
@@ -1541,7 +1542,7 @@ class geodeticplot(object):
         cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
-        if plotType is 'decimate':
+        if plotType == 'decimate':
             for corner, disp in zip(corr.corner, d):
                 x = []
                 y = []
@@ -1567,7 +1568,7 @@ class geodeticplot(object):
                 rect.set_zorder(zorder)
                 self.carte.add_collection(rect)
 
-        elif plotType is 'scatter':
+        elif plotType == 'scatter':
             lon = corr.lon
             #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             lat = corr.lat

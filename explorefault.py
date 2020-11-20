@@ -143,7 +143,7 @@ class explorefault(SourceInv):
                 initialSample[key] = pm.rand()
 
             # Save it
-            if bound[0] is not 'Degenerate':
+            if bound[0]!='Degenerate':
                 self.Priors.append(pm)
                 initSampleVec.append(initialSample[key])
                 self.sampledKeys[key] = isample
@@ -178,7 +178,7 @@ class explorefault(SourceInv):
                     initialSample[key] = pm.rand()
 
                 # Store it
-                if bound[0] is not 'Degenerate':
+                if bound[0]!='Degenerate':
                     self.Priors.append(pm)
                     initSampleVec.append(initialSample[key])
                     self.sampledKeys[key] = isample

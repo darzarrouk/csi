@@ -359,17 +359,17 @@ class strainfield(object):
             self.profiles = {}
 
         # Which value are we going to use
-        if data is 'veast':
+        if data=='veast':
             val = self.vel_east
-        elif data is 'vnorth':
+        elif data=='vnorth':
             val = self.vel_north
-        elif data is 'dilatation':
+        elif data=='dilatation':
             if not hasattr(self, 'dilatation'):
                 self.computeDilatationRate()
             val = self.dilatation
-        elif data is 'projection':
+        elif data=='projection':
             val = self.velproj[comp]['Projected Velocity'].flatten()
-        elif data is 'strainrateprojection':
+        elif data=='strainrateprojection':
             val = self.Dproj[comp]['Projected Strain Rate']
         else:
             print('Keyword unknown. Please implement it...')
@@ -560,17 +560,17 @@ class strainfield(object):
         prof = fig.add_subplot(122)
         
         # Get the data we want to plot
-        if data is 'veast':
+        if data=='veast':
             dplot = self.vel_east.value.flatten()
-        elif data is 'vnorth':
+        elif data=='vnorth':
             dplot = self.vel_north.value.flatten()
-        elif data is 'dilatation':
+        elif data=='dilatation':
             if not hasattr(self, 'dilatation'):
                 self.computeDilatationRate()
             dplot = self.dilatation
-        elif data is 'projection':
+        elif data=='projection':
             dplot = self.velproj[comp]['Projected Velocity'].flatten()
-        elif data is 'strainrateprojection':
+        elif data=='strainrateprojection':
             dplot = self.Dproj[comp]['Projected Strain Rate']
         else:
             print('Keyword Unknown, please implement it....')
@@ -658,17 +658,17 @@ class strainfield(object):
         '''
 
         # Get the data we want to plot
-        if data is 'veast':
+        if data=='veast':
             dplot = self.vel_east.value.flatten()
-        elif data is 'vnorth':
+        elif data=='vnorth':
             dplot = self.vel_north.value.flatten()
-        elif data is 'dilatation':
+        elif data=='dilatation':
             if not hasattr(self, 'dilatation'):
                 self.computeDilatationRate()
             dplot = self.dilatation
-        elif data is 'projection':
+        elif data=='projection':
             dplot = self.velproj[comp]['Projected Velocity'].flatten()
-        elif data is 'strainrateprojection':
+        elif data=='strainrateprojection':
             dplot = self.Dproj[comp]['Projected Strain Rate']
         else:
             print('Keyword Unknown, please implement...')
@@ -679,7 +679,7 @@ class strainfield(object):
         ax = fig.add_subplot(111)
 
         # Set the axes
-        if ref is 'utm':
+        if ref=='utm':
             ax.set_xlabel('Easting (km)')
             ax.set_ylabel('Northing (km)')
         else:
@@ -705,7 +705,7 @@ class strainfield(object):
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
         # plot the wanted data
-        if ref is 'utm':
+        if ref=='utm':
             ax.scatter(x, y, s=20, c=dplot.flatten(), cmap=cmap, vmin=-1.0*MM, vmax=MM, linewidths=0.)
         else:
             ax.scatter(lon, lat, s=20, c=dplot.flatten(), cmap=cmap, vmin=-1.0*MM, vmax=MM, linewidths=0.)
@@ -715,7 +715,7 @@ class strainfield(object):
             if faults.__class__ is not list:
                 faults = [faults]
             for fault in faults:
-                if ref is 'utm':
+                if ref=='utm':
                     ax.plot(fault.xf, fault.yf, '-b', label=fault.name)
                 else:
                     ax.plot(fault.lon, fault.lat, '-b', label=fault.name)
@@ -725,7 +725,7 @@ class strainfield(object):
             if gps.__class__ is not list:
                 gps = [gps]
             for g in gps:
-                if ref is 'utm':
+                if ref=='utm':
                         ax.quiver(g.x, g.y, g.vel_enu[:,0], g.vel_enu[:,1], label=g.name)
                 else:
                         ax.quiver(g.lon, g.lat, g.vel_enu[:,0], g.vel_enu[:,1], label=g.name)
@@ -818,21 +818,21 @@ class strainfield(object):
         '''
 
         # Get the data we want to plot
-        if data is 'veast':
+        if data=='veast':
             dplot = self.vel_east.value
             units = 'mm/yr'
-        elif data is 'vnorth':
+        elif data=='vnorth':
             dplot = self.vel_north.value
             units = 'mm/yr'
-        elif data is 'dilatation':
+        elif data=='dilatation':
             if not hasattr(self, 'dilatation'):
                 self.computeDilatationRate()
             dplot = self.dilatation.reshape((self.length, self.width))
             units = ' '
-        elif data is 'projection':
+        elif data=='projection':
             dplot = self.velproj[comp]['Projected Velocity']
             units = ' '
-        elif data is 'strainrateprojection':
+        elif data=='strainrateprojection':
             dplot = self.Dproj[comp]['Projected Strain Rate'].reshape((self.length, self.width))
             units = ' '
         else:

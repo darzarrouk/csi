@@ -942,7 +942,7 @@ class RectangularPatches(Fault):
         while i<len(A):
             
             # Assert it works
-            assert A[i].split()[0] is '>', 'Not a patch, reformat your file...'
+            assert A[i].split()[0]=='>', 'Not a patch, reformat your file...'
             # Get the Patch Id
             if readpatchindex:
                 self.index_parameter.append([np.int(A[i].split()[3]),np.int(A[i].split()[4]),np.int(A[i].split()[5])])
@@ -1895,7 +1895,7 @@ class RectangularPatches(Fault):
             * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
         '''
 
-        if distance is 'center':
+        if distance=='center':
 
             # Get the centers
             x1, y1, z1 = self.getcenter(patch1)
@@ -2398,10 +2398,10 @@ class RectangularPatches(Fault):
         imin = y.argmin()
         
         # Take the points we need to move
-        if fixedside is 'south':
+        if fixedside=='south':
             fpts = np.flatnonzero(y==y[imin])
             mpts = np.flatnonzero(y!=y[imin])
-        elif fixedside is 'north':
+        elif fixedside=='north':
             fpts = np.flatnonzero(y!=y[imin])
             mpts = np.flatnonzero(y==y[imin])
 
@@ -2426,10 +2426,10 @@ class RectangularPatches(Fault):
         imin = y.argmin()
         
         # Take the points we need to move
-        if fixedside is 'south':
+        if fixedside=='south':
             fpts = np.flatnonzero(y==y[imin])
             mpts = np.flatnonzero(y!=y[imin])
-        elif fixedside is 'north':
+        elif fixedside=='north':
             fpts = np.flatnonzero(y!=y[imin])
             mpts = np.flatnonzero(y==y[imin])
 

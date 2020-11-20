@@ -86,10 +86,10 @@ class mpgradcurv(mp.Process):
                     check = self.downsampler._isItAGoodBlock(block,
                             np.flatnonzero(ii).shape[0])
                     if check:
-                        if self.downsampler.datatype is 'insar':
+                        if self.downsampler.datatype=='insar':
                             vel = np.mean(self.downsampler.image.vel[ii])
                             means.append(vel)
-                        elif self.datatype is 'opticorr':
+                        elif self.datatype=='opticorr':
                             east = np.mean(self.downsampler.image.east[ii])
                             north = np.mean(self.downsampler.image.north[ii])
                             means.append(np.sqrt(east**2+north**2))
@@ -152,9 +152,9 @@ class mpdownsampler(mp.Process):
 
         # Initialize lists
         X, Y, Lon, Lat, Wgt = [], [], [], [], []
-        if self.downsampler.datatype is 'insar':
+        if self.downsampler.datatype=='insar':
             Vel, Err, Los = [], [], []
-        elif self.downsampler.datatype is 'opticorr':
+        elif self.downsampler.datatype=='opticorr':
             East, North, Err_east, Err_north = [], [], [], []
         outBlocks = []
         outBlocksll = []
@@ -180,9 +180,8 @@ class mpdownsampler(mp.Process):
 
                 # Get Mean, Std, x, y, ...
                 wgt = len(np.flatnonzero(ii))
-                if self.downsampler.datatype is 'insar':
+                if self.downsampler.datatype=='insar':
                     vel = np.mean(self.downsampler.image.vel[ii])
-                    
                     err = np.std(self.downsampler.image.vel[ii])
                     los0 = np.mean(self.downsampler.image.los[ii,0])
                     los1 = np.mean(self.downsampler.image.los[ii,1])
@@ -191,8 +190,8 @@ class mpdownsampler(mp.Process):
                     los0 /= norm
                     los1 /= norm
                     los2 /= norm
-                    
-                    #Error on InSAR displacement? 
+
+                    #Error on InSAR displacement?
                     if self.downsampler.image.err is not None:
                         #propagate uncertainty
                         err = np.sqrt(np.sum(self.downsampler.image.err[ii]**2))*(1./len(self.downsampler.image.vel[ii]))
@@ -205,16 +204,17 @@ class mpdownsampler(mp.Process):
                     north = np.mean(self.downsampler.image.north[ii])
                     err_east = np.std(self.downsampler.image.east[ii])
                     err_north = np.std(self.downsampler.image.north[ii])
+
                 x = np.mean(self.downsampler.image.x[ii])
                 y = np.mean(self.downsampler.image.y[ii])
                 lon, lat = self.downsampler.xy2ll(x, y)
 
                 # Store that
-                if self.downsampler.datatype is 'insar':
+                if self.downsampler.datatype=='insar':
                     Vel.append(vel)
                     Err.append(err)
                     Los.append([los0, los1, los2])
-                elif self.downsampler.datatype is 'opticorr':
+                elif self.downsampler.datatype=='opticorr':
                     East.append(east)
                     North.append(north)
                     Err_east.append(err_east)
@@ -226,9 +226,9 @@ class mpdownsampler(mp.Process):
                 Wgt.append(wgt)
 
         # Save
-        if self.downsampler.datatype is 'insar':
+        if self.downsampler.datatype=='insar':
             self.queue.put([X, Y, Lon, Lat, Wgt, Vel, Err, Los, outBlocks, outBlocksll])
-        elif self.downsampler.datatype is 'opticorr':
+        elif self.downsampler.datatype=='opticorr':
             self.queue.put([X, Y, Lon, Lat, Wgt, East, North, Err_east, Err_north, 
                         outBlocks, outBlocksll])
 
@@ -287,7 +287,7 @@ class imagedownsampling(object):
         self.image = image
 
         # Incidence and heading need to be defined if already defined
-        if self.datatype is 'insar':
+        if self.datatype=='insar':
             if hasattr(self.image, 'heading'):
                 self.heading = self.image.heading
             if hasattr(self.image, 'incidence'):
@@ -415,10 +415,10 @@ class imagedownsampling(object):
         '''
 
         # Create the new image object
-        if self.datatype is 'insar':
+        if self.datatype=='insar':
             newimage = insar('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False,
                              lon0=self.lon0, lat0=self.lat0)
-        elif self.datatype is 'opticorr':
+        elif self.datatype=='opticorr':
             newimage = opticorr('Downsampled {}'.format(self.image.name), utmzone=self.utmzone, verbose=False,
                                 lon0=self.lon0, lat0=self.lat0)
 
@@ -427,11 +427,11 @@ class imagedownsampling(object):
         blocksll = self.blocksll
 
         # Create the variables
-        if self.datatype is 'insar':
+        if self.datatype=='insar':
             newimage.vel = []
             newimage.err = []
             newimage.los = []
-        elif self.datatype is 'opticorr':
+        elif self.datatype=='opticorr':
             newimage.east = []
             newimage.north = []
             newimage.err_east = []
@@ -470,12 +470,12 @@ class imagedownsampling(object):
 
         # Collect
         for w in range(nworkers):
-            if self.datatype is 'insar':
+            if self.datatype=='insar':
                 x, y, lon, lat, wgt, vel, err, los, block, blockll  = output.get()
                 newimage.vel.extend(vel)
                 newimage.err.extend(err)
                 newimage.los.extend(los)
-            elif self.datatype is 'opticorr':
+            elif self.datatype=='opticorr':
                 x, y, lon, lat, wgt, east, north, err_east, err_north, block, blockll = output.get()
                 newimage.east.extend(east)
                 newimage.north.extend(north)
@@ -494,11 +494,11 @@ class imagedownsampling(object):
         self.blocksll = blocksll
 
         # Convert
-        if self.datatype is 'insar':
+        if self.datatype=='insar':
             newimage.vel = np.array(newimage.vel)
             newimage.err = np.array(newimage.err)
             newimage.los = np.array(newimage.los)
-        elif self.datatype is 'opticorr':
+        elif self.datatype=='opticorr':
             newimage.east = np.array(newimage.east)
             newimage.north = np.array(newimage.north)
             newimage.err_east = np.array(newimage.err_east)
@@ -660,7 +660,7 @@ class imagedownsampling(object):
         #Where is the large block touching the smaller blocks? [top/bottom/left/right]
         touch = top
         # Form the 3 blocks (if the block is touched by smaller blocks beneath it)
-        if touch is 'bottom':
+        if touch=='bottom':
             bs1 = [ [xs1, ys1],
                    [xs2, ys2],
                    [xs2, ysc],
@@ -674,7 +674,7 @@ class imagedownsampling(object):
                    [xs3, ys3],
                    [xsc, ys3] ]
         # Form the 3 blocks (if the block is touched by smaller blocks above it)
-        elif touch is 'top':
+        elif touch=='top':
             bs1 = [ [xs1, ys1],
                    [xsc, ys1],
                    [xsc, ysc],
@@ -688,7 +688,7 @@ class imagedownsampling(object):
                    [xs4, ys4],
                    [xs3, ys3] ]
        # Form the 3 blocks (if the block is touched by smaller blocks to the left)
-        elif touch is 'left':
+        elif touch=='left':
             bs1 = [ [xs1, ys1],
                    [xsc, ys1],
                    [xsc, ysc],
@@ -702,7 +702,7 @@ class imagedownsampling(object):
                    [xs3, ys3],
                    [xsc, ys3] ]
        # Form the 3 blocks (if the block is touched by smaller blocks to the right)
-        elif touch is 'right':
+        elif touch=='right':
             bs1 = [ [xs1, ys1],
                    [xsc, ys1],
                    [xsc, ys3],
@@ -879,9 +879,9 @@ class imagedownsampling(object):
         it = 0
 
         # Check
-        if quantity is 'curvature':
+        if quantity=='curvature':
             testable = self.Curvature
-        elif quantity is 'gradient':
+        elif quantity=='gradient':
             testable = self.Gradient
 
         # Check if block size is minimum
@@ -922,15 +922,15 @@ class imagedownsampling(object):
 
             # Compute resolution
             self.computeGradientCurvature(smooth=smooth)
-            if quantity is 'curvature':
+            if quantity=='curvature':
                 testable = self.Curvature
-            elif quantity is 'gradient':
+            elif quantity=='gradient':
                 testable = self.Gradient
 
             # initialize
             Bsize = self._is_minimum_size(self.blocks)
 
-            if self.verbose and verboseLevel is not 'minimum':
+            if self.verbose and verboseLevel!='minimum':
                 sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(testable.min(),
                     testable.max(), testable.mean(), testable.std()))
                 sys.stdout.flush()
@@ -967,7 +967,7 @@ class imagedownsampling(object):
             print ("Downsampling Iterations")
 
         # Check if vertical is set properly
-        if not vertical and self.datatype is 'insar':
+        if not vertical and self.datatype=='insar':
             print("----------------------------------")
             print("----------------------------------")
             print(" Watch Out!!!!")
@@ -1027,7 +1027,7 @@ class imagedownsampling(object):
             Bsize = self._is_minimum_size(self.blocks)
             self.Rd[np.where(Bsize)] = 0.0
 
-            if self.verbose and verboseLevel is not 'minimum':
+            if self.verbose and verboseLevel!='minimum':
                 sys.stdout.write(' ===> Resolution from {} to {}, Mean = {} +- {} \n'.format(self.Rd.min(),
                     self.Rd.max(), self.Rd.mean(), self.Rd.std()))
                 sys.stdout.flush()
@@ -1058,7 +1058,7 @@ class imagedownsampling(object):
         '''
 
         # Check if vertical is set properly
-        if not vertical and self.datatype is 'insar':
+        if not vertical and self.datatype=='insar':
             print("----------------------------------")
             print("----------------------------------")
             print(" Watch Out!!!!")
@@ -1082,14 +1082,14 @@ class imagedownsampling(object):
                 G = np.hstack((G, fault.Gassembled))
         # Compute the data resolution matrix
         Npar = G.shape[1]
-        if self.datatype is 'opticorr':
+        if self.datatype=='opticorr':
             Ndat = int(G.shape[0]/2)
         Ginv = np.dot(np.linalg.inv(np.dot(G.T,G)+ damping*np.eye(Npar)),G.T)
         Rd = np.dot(G, Ginv)
         self.Rd = np.diag(Rd).copy()
 
         # If we are dealing with opticorr data, the diagonal is twice as long as the number of blocks
-        if self.datatype is 'opticorr':
+        if self.datatype=='opticorr':
             self.Rd = np.sqrt( self.Rd[:Ndat]**2 + self.Rd[-Ndat:]**2 )
 
         # All done
@@ -1177,7 +1177,7 @@ class imagedownsampling(object):
         colr = fig.add_axes([0.4, 0.9, 0.2, 0.03])
 
         # Set the axes
-        if ref is 'utm':
+        if ref=='utm':
             full.set_xlabel('Easting (km)')
             full.set_ylabel('Northing (km)')
             down.set_xlabel('Easting (km)')
@@ -1193,12 +1193,12 @@ class imagedownsampling(object):
         downsampled = self.newimage
 
         # Get what should be plotted
-        if self.datatype is 'insar':
+        if self.datatype=='insar':
             data = original.vel
-        elif self.datatype is 'opticorr':
-            if data2plot is 'north':
+        elif self.datatype=='opticorr':
+            if data2plot=='north':
                 data = original.north
-            elif data2plot is 'east':
+            elif data2plot=='east':
                 data = original.east
 
         # Vmin, Vmax
@@ -1216,7 +1216,7 @@ class imagedownsampling(object):
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
         # Plot original dataset
-        if ref is 'utm':
+        if ref=='utm':
             # image
             sca = full.scatter(original.x[::decimorig], original.y[::decimorig], s=10, c=data[::decimorig], cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
             # Faults
@@ -1233,18 +1233,18 @@ class imagedownsampling(object):
         import matplotlib.collections as colls
 
         # Get downsampled data
-        if self.datatype is 'insar':
+        if self.datatype=='insar':
             downdata = downsampled.vel
-        elif self.datatype is 'opticorr':
-            if data2plot is 'north':
+        elif self.datatype=='opticorr':
+            if data2plot=='north':
                 downdata = downsampled.north
-            elif data2plot is 'east':
+            elif data2plot=='east':
                 downdata = downsampled.east
 
         # Image
         for i in range(len(self.blocks)):
             # Get block
-            if ref is 'utm':
+            if ref=='utm':
                 block = self.blocks[i]
             else:
                 block = self.blocksll[i]
@@ -1262,7 +1262,7 @@ class imagedownsampling(object):
 
         # Faults
         for fault in self.faults:
-            if ref is 'utm':
+            if ref=='utm':
                 down.plot(fault.xf, fault.yf, '-k')
             else:
                 down.plot(fault.lon, fault.lat, '-k')
@@ -1271,7 +1271,7 @@ class imagedownsampling(object):
         cb = mpl.colorbar.ColorbarBase(colr, cmap=cmap, norm=cNorm ,orientation='horizontal')
 
         # Axes
-        if ref is 'utm':
+        if ref=='utm':
             full.set_xlim([self.xmin, self.xmax])
             full.set_ylim([self.ymin, self.ymax])
             down.set_xlim([self.xmin, self.xmax])
@@ -1513,9 +1513,9 @@ class imagedownsampling(object):
             frsp = open(prefix+'.rsp', 'w')
 
         # Write the header
-        if self.datatype is 'insar':
+        if self.datatype=='insar':
             ftxt.write('Number xind yind east north data err wgt Elos Nlos Ulos\n')
-        elif self.datatype is 'opticorr':
+        elif self.datatype=='opticorr':
             ftxt.write('Number Lon Lat East North EastErr NorthErr \n')
         ftxt.write('********************************************************\n')
         if rsp:
@@ -1531,7 +1531,7 @@ class imagedownsampling(object):
             y = int(self.newimage.y[i])
             lon = self.newimage.lon[i]
             lat = self.newimage.lat[i]
-            if self.datatype is 'insar':
+            if self.datatype=='insar':
                 vel = self.newimage.vel[i]
                 err = self.newimage.err[i]
                 elos = self.newimage.los[i,0]
@@ -1539,7 +1539,7 @@ class imagedownsampling(object):
                 ulos = self.newimage.los[i,2]
                 strg = '{:4d} {:4d} {:4d} {:3.6f} {:3.6f} {} {} {} {} {} {}\n'\
                     .format(i, x, y, lon, lat, vel, err, wgt, elos, nlos, ulos)
-            elif self.datatype is 'opticorr':
+            elif self.datatype=='opticorr':
                 east = self.newimage.east[i]
                 north = self.newimage.north[i]
                 err_east = self.newimage.err_east[i]

@@ -195,9 +195,9 @@ class Mogi(Pressure):
             DP = self.deltapressure
         else:
             # Set the pressure value
-            if delta is "pressure":
+            if delta=="pressure":
                 DP = self.mu                             #Dimensionless unit pressure
-            elif delta is "volume":
+            elif delta=="volume":
                 print("Converting to pressure for Mogi Green's function calculations")
                 DP = self.mu
 
