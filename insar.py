@@ -159,10 +159,11 @@ class insar(SourceInv):
             uLos = np.array([])
 
         # Concatenate all these guys
-        uRemove = np.concatenate((uVel, uErr, uLon, uLat, uLos))
+        uRemove = np.concatenate((uVel, uErr, uLon, uLat, uLos)).astype(int)
+        uRemove = np.unique(uRemove)
 
         # Reject pixels
-        self.reject_pixel(uRemove)
+        self.deletePixels(uRemove)
 
         # All done
         return
@@ -469,8 +470,6 @@ class insar(SourceInv):
             err = err[iKeep]
         lon = lon[iKeep]
         lat = lat[iKeep]
-        if self.los is not None:
-            self.los = self.los[iKeep,:]
 
         # Set things in self
         self.vel = vel
@@ -509,6 +508,8 @@ class insar(SourceInv):
                 self.los = np.fromfile(los, 'f').reshape((len(vel), 3))
         else:
             self.los = None
+        if self.los is not None:
+            self.los = self.los[iKeep,:]
 
         # Keep track of factor
         self.factor = factor
@@ -1198,6 +1199,40 @@ class insar(SourceInv):
         if self.Cd is not None:
             Cdt = self.Cd[u,:]
             self.Cd = Cdt[:,u]
+
+        # All done
+        return
+
+    def deletePixels(self, u):
+        '''
+        Delete the pixels indicated by index in u.
+
+        Args:
+            * u         : array of indexes
+
+        Returns:
+            * None  
+        '''
+
+        # Select the stations
+        self.lon = np.delete(self.lon,u)
+        self.lat = np.delete(self.lat,u)
+        self.x = np.delete(self.x,u)
+        self.y = np.delete(self.y,u)
+        self.vel = np.delete(self.vel,u)
+        if self.err is not None:
+            self.err = np.delete(self.err,u)
+        if self.los is not None:
+            self.los = np.delete(self.los,u, axis=0)
+        if self.synth is not None:
+            self.synth = np.delete(self.synth, u)
+        if self.corner is not None:
+            self.corner = np.delete(self.corner, u, axis=0)
+            self.xycorner = np.delete(self.xycorner, u, axis=0)
+
+        # Deal with the covariance matrix
+        if self.Cd is not None:
+            self.Cd = np.delete(np.delete(Cd ,u, axis=0), u, axis=1)
 
         # All done
         return
@@ -2516,7 +2551,7 @@ class insar(SourceInv):
         fout.close()
 
 
-    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False, alpha=.3):
+    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False, alpha=.3, plotType='scatter'):
         '''
         Plot profile.
 
@@ -2539,20 +2574,20 @@ class insar(SourceInv):
         assert len(x)>5, 'There is less than 5 points in your profile...'
 
         # Plot the insar
-        self.plot(faults=fault, norm=norm, show=False, alpha=alpha)
+        self.plot(faults=fault, norm=norm, show=False, alpha=alpha, plotType=plotType)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
         bb = np.zeros((len(b)+1, 2))
         for i in range(len(b)):
             x = b[i,0]
-            if x<0.:
-                x += 360.
+            #if x<0.:
+            #    x += 360.
             bb[i,0] = x
             bb[i,1] = b[i,1]
         bb[-1,0] = bb[0,0]
         bb[-1,1] = bb[0,1]
-        self.fig.carte.plot(bb[:,0], bb[:,1], '-k', zorder=0)
+        self.fig.carte.plot(bb[:,0], bb[:,1], '-k', zorder=3, linewidth=2)
 
         # open a figure
         fig = plt.figure()

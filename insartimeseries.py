@@ -19,6 +19,7 @@ import scipy.interpolate as sciint
 import copy
 
 # Personals
+from .csiutils import *
 from .SourceInv import SourceInv
 from .insar import insar
 from .gpstimeseries import gpstimeseries
@@ -368,7 +369,7 @@ class insartimeseries(insar):
 
     def readFromKFts(self, h5file, setmaster2zero=None,
                            zfile=None, lonfile=None, latfile=None, filetype='f',
-                           incidence=None, heading=None, inctype='onefloat', 
+                           incidence=None, heading=None, inctype='onefloat', closeh5=True,
                            field='rawts', error='rawts_std', keepnan=False, mask=None, readModel=False):
         '''
         Read the output from a typical GIAnT h5 output file.
@@ -511,7 +512,10 @@ class insartimeseries(insar):
             if zfile is not None:
                 elevation.reject_pixel(uu)
             self.reject_pixel(uu)
-        h5in.close()
+
+        # Close file if asked
+        if closeh5:
+            h5in.close()
 
         # Create fakes 
         self.vel = np.zeros(self.lon.shape)
@@ -1384,6 +1388,60 @@ class insartimeseries(insar):
 
         if verbose:
             print('')
+
+        # All done
+        return
+
+    def write2lonlath5(self, filename, nSamples=None, increments=None, verbose=True):
+        '''
+        Maps the data onto a geocoded h5file.
+
+        Args:
+            * filename      : Output file name
+            * nSamples      : number of points along lon and lat (int or tuple of ints)
+            * increments    : longitude and latitude increments (float or tuple of floats)
+            * verbose       : True/False
+        '''
+
+        # Get a lon/lat grid
+        olon, olat, z = lonlatMapping(self.lon, self.lat, self.timeseries[0].vel, nSamples=nSamples, increments=increments, dryRun=True)
+
+        # Open file
+        h5out = h5py.File(filename, 'w')
+
+        # Create holders
+        l = h5out.create_dataset('longitude', data=olon)
+        l.attrs['help'] = 'Longitude'
+
+        l = h5out.create_dataset('latitude', data=olat)
+        l.attrs['help'] = 'Latitude'
+
+        l = h5out.create_dataset('time', data=np.array([t.isoformat() for t in self.time]).astype(np.string_))
+        l.attrs['help'] = 'Time'
+
+        l = h5out.create_dataset('rawts', shape=(olat.shape[0], olat.shape[1], len(self.time)))
+        l.attrs['help'] = 'Geocoded time series'
+
+        # Iterate over the frames
+        for isar,sar in enumerate(self.timeseries):
+
+            # Show me
+            if verbose:
+                sys.stdout.write('\r {} '.format(self.time[isar].isoformat()))
+                sys.stdout.flush()
+
+            # Interpolate
+            olon, olat, z = lonlatMapping(self.lon, self.lat, sar.vel, nSamples=nSamples, increments=increments)
+
+            # Save
+            l[:,:,isar] = z
+
+        # Printing
+        if verbose:
+            print('')
+
+        # Close file
+        h5out
 
         # All done
         return

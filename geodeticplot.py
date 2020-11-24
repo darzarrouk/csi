@@ -301,7 +301,7 @@ class geodeticplot(object):
         '''
 
         self.faille.set_zlim3d([-1.0*(depth+5), 0])
-        if zticklabels == None:
+        if zticklabels is None:
             zticks = []
             zticklabels = []
             for z in np.linspace(0,depth,5):
@@ -684,13 +684,15 @@ class geodeticplot(object):
                 rect.set_facecolor(scalarMap.to_rgba(slip[p]))
                 rect.set_edgecolors('gray')
                 rect.set_linewidth(linewidth)
+                if alpha<1.0:
+                    rect.set_alpha(alpha)
                 rect.set_zorder(zorder)
                 self.carte.add_collection(rect)
 
         # put up a colorbar
         if colorbar:
             scalarMap.set_array(slip)
-            self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.3, orientation='horizontal')
+            self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.7, orientation='horizontal')
 
         # All done
         return
@@ -795,7 +797,7 @@ class geodeticplot(object):
         # put up a colorbar
         if colorbar:
             scalarMap.set_array(delta)
-            self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.3, orientation='horizontal')
+            self.fphbar = self.fig1.colorbar(scalarMap, shrink=1, orientation='horizontal', ax=self.carte)
 
         # All done
         return
@@ -942,7 +944,7 @@ class geodeticplot(object):
             # Color Bar
             if colorbar:
                 scalarMap.set_array(slip)
-                self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.3, orientation='horizontal')
+                self.fphbar = self.fig1.colorbar(scalarMap, shrink=1, orientation='horizontal')
 
         elif method == 'scatter':
             # Do the scatter ploto
@@ -962,7 +964,7 @@ class geodeticplot(object):
 
             # put up a colorbar
             if colorbar:
-                self.fphbar = self.fig1.colorbar(cb, shrink=0.3, orientation='horizontal')
+                self.fphbar = self.fig1.colorbar(cb, shrink=1, orientation='horizontal')
 
         # All done
         return lon, lat, Z, Slip
@@ -1017,12 +1019,13 @@ class geodeticplot(object):
 
         # colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.3, orientation='horizontal')
+            self.fig2.colorbar(sc, shrink=1, orientation='horizontal')
 
         # All don
         return
 
-    def gps(self, gps, data=['data'], color=['k'], scale=None, scale_units=None, legendscale=10., linewidths=.1, name=False, zorder=5):
+    def gps(self, gps, data=['data'], color=['k'], scale=None, scale_units=None, 
+            legendscale=10., linewidths=.1, name=False, zorder=5):
         '''
         Args:
             * gps           : gps object from gps.
@@ -1112,7 +1115,7 @@ class geodeticplot(object):
             for lo, la, sta in zip(lon.tolist(), lat.tolist(), gps.station):
                 # Do it twice, I don't know why text is screwed up...
                 self.carte.text(lo, la, sta, zorder=20, fontdict=font)
-                self.carte.text(lo-360., la, sta, zorder=20, fontdict=font)
+                #self.carte.text(lo-360., la, sta, zorder=20, fontdict=font)
 
         # All done
         return
@@ -1198,8 +1201,7 @@ class geodeticplot(object):
 
         # Colorbar
         if colorbar:
-            cbar = self.fig2.colorbar(sc, orientation='horizontal', shrink=0.3)
-            cbar.ax.tick_params(labelsize=4)
+            cbar = self.fig2.colorbar(sc, orientation='horizontal', shrink=0.7)
 
         return
 
@@ -1242,7 +1244,7 @@ class geodeticplot(object):
 
         # plot colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.3, orientation='horizontal')
+            self.fig2.colorbar(sc, shrink=1, orientation='horizontal')
 
         # All done
         return
@@ -1294,13 +1296,13 @@ class geodeticplot(object):
         if '2d' in plot:
             sc = self.carte.scatter(lon, lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1, zorder=zorder)
             if colorbar:
-                self.fig2.colorbar(sc, shrink=0.3, orientation='horizontal')
+                self.fig2.colorbar(sc, shrink=1, orientation='horizontal')
 
         # plot the earthquakes in the volume if ask
         if '3d' in plot:
             sc = self.faille.scatter3D(lon, lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1)
             if colorbar:
-                self.fig1.colorbar(sc, shrink=0.3, orientation='horizontal')
+                self.fig1.colorbar(sc, shrink=1, orientation='horizontal')
 
         # All done
         return
@@ -1358,7 +1360,7 @@ class geodeticplot(object):
 
         # plot colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=0.3, orientation='horizontal')
+            self.fig2.colorbar(sc, shrink=1, orientation='horizontal')
 
         # All done
         return
@@ -1479,7 +1481,7 @@ class geodeticplot(object):
         # plot colorbar
         if colorbar:
             scalarMap.set_array(d)
-            plt.colorbar(scalarMap,shrink=0.3, orientation='horizontal')
+            plt.colorbar(scalarMap,shrink=1, orientation='horizontal')
 
 
         # All done
@@ -1580,7 +1582,7 @@ class geodeticplot(object):
         # plot colorbar
         if colorbar:
             scalarMap.set_array(d)
-            plt.colorbar(scalarMap, shrink=0.3, orientation='horizontal')
+            plt.colorbar(scalarMap, shrink=1, orientation='horizontal')
 
         # All done
         return

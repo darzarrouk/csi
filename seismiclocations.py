@@ -623,7 +623,7 @@ class seismiclocations(SourceInv):
 
         # Compute the magnitudes
         self.Cmt2Dislocation(size=1e-1, mu=44e9, choseplane='nochoice', 
-                             moment_from_tensor=True)
+                             moment_from_tensor=True, verbose=False)
         self.Mo2mag()
 
         # Create the utm
@@ -1586,7 +1586,7 @@ class seismiclocations(SourceInv):
         Builds a list of single square patch faults from the cmt solutions. If no condition is given, it returns the first value.
 
         Kwargs:
-            * size          : Size of one side of the fault patch (km).
+            * size          : Size of one side of the fault patch (km) of (width, length) in km
             * mu            : Shear modulus (Pa).
             * choseplane    : Choice of the focal plane to use (can be 'smallestdip', 'highestdip', 'nochoice')
             * moment_from_tensor: Computes the scalar moment from the cmt.
@@ -1610,6 +1610,13 @@ class seismiclocations(SourceInv):
         # Check something
         if not hasattr(self, 'Mo'):
             self.Mo = np.zeros(self.lon.shape)
+
+        # Check size
+        if type(size) is float:
+            length = size
+            width = size
+        elif type(size) is tuple:
+            width, length = size
 
         # Loop on the earthquakes
         for i in range(len(self.CMTinfo)):
@@ -1657,6 +1664,15 @@ class seismiclocations(SourceInv):
             if (mu.__class__ is float):
                 Mu = mu
 
+            # lon, lat and depth are for the centroid, we want the top of the fault
+            xc,yc = self.ll2xy(self.lon[i], self.lat[i])
+            center = np.array([xc,yc,-depth])
+            top = center + 0.5*width*np.array([np.cos(strike)*np.cos(dip), 
+                                               np.sin(strike)*np.cos(dip),
+                                               np.sin(dip)])
+            lon, lat = self.xy2ll(top[0], top[1])
+            depth = -1.0*top[2]
+
             # Build a planar fault
             fault = planarfault(event, 
                                 utmzone=self.utmzone, 
@@ -1664,11 +1680,12 @@ class seismiclocations(SourceInv):
                                 lat0=self.lat0, 
                                 ellps=self.ellps,
                                 verbose=False)
-            fault.buildPatches(self.lon[i], self.lat[i], depth, strike*180./np.pi, dip*180./np.pi, size, size, 1, 1, verbose=False)
+            fault.buildPatches(lon, lat, depth, strike*180./np.pi, dip*180./np.pi, 
+                               length, width, 1, 1, verbose=verbose)
 
             # Components of slip
-            ss = np.cos(rake) * self.Mo[i] / (Mu * size * size * 1000. * 1000.)
-            ds = np.sin(rake) * self.Mo[i] / (Mu * size * size * 1000. * 1000.)
+            ss = np.cos(rake) * self.Mo[i] / (Mu * width * length * 1000. * 1000.)
+            ds = np.sin(rake) * self.Mo[i] / (Mu * width * length * 1000. * 1000.)
 
             # Set slip
             fault.slip[0,0] = ss

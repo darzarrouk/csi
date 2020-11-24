@@ -555,16 +555,16 @@ class gps(SourceInv):
         self.profiles[name] = {}
 
         # What data do we want
-        if data is 'data':
+        if data == 'data':
             values = self.vel_enu
             self.profiles[name]['data type'] = 'data'
-        elif data is 'synth':
+        elif data == 'synth':
             values = self.synth
             self.profiles[name]['data type'] = 'synth'
-        elif data is 'res':
+        elif data == 'res':
             values = self.vel_enu - self.synth
             self.profiles[name]['data_type'] = 'res'
-        elif data is 'transformation':
+        elif data == 'transformation':
             values = self.transformation
             self.profiles[name]['data_type'] = 'transformation'
 
@@ -1920,35 +1920,35 @@ class gps(SourceInv):
         '''
 
         # Helmert Transform
-        if transformation is 'full':
+        if transformation == 'full':
             if self.obs_per_station==3:
                 Npo = 7                    # 3D Helmert transform is 7 parameters
             else:
                 Npo = 4                    # 2D Helmert transform is 4 parameters
         # Full Strain (Translation + Strain + Rotation)
-        elif transformation is 'strain':
+        elif transformation == 'strain':
             Npo = 6
         # Strain without rotation (Translation + Strain)
-        elif transformation is 'strainnorotation':
+        elif transformation == 'strainnorotation':
             Npo = 5
         # Strain Only (Strain)
-        elif transformation is 'strainonly':
+        elif transformation == 'strainonly':
             Npo = 3
         # Strain without translation (Strain + Rotation)
-        elif transformation is 'strainnotranslation':
+        elif transformation == 'strainnotranslation':
             Npo = 4
         # Translation
-        elif transformation is 'translation':
+        elif transformation == 'translation':
             Npo = 2
         # Translation and Rotation
-        elif transformation is 'translationrotation':
+        elif transformation == 'translationrotation':
             Npo = 3
         # Uknown
         else:
             return 0
 
         # If verticals
-        if not np.isnan(self.vel_enu[:,2]).any() and transformation is not 'full':
+        if not np.isnan(self.vel_enu[:,2]).any() and transformation != 'full':
             Npo += 1
          
         # If no horizontals
@@ -1973,25 +1973,25 @@ class gps(SourceInv):
         '''
         
         # Helmert Transform
-        if transformation is 'full':
+        if transformation == 'full':
             orb = self.getHelmertMatrix(components=self.obs_per_station)
         # Strain + Rotation + Translation
-        elif transformation is 'strain':
+        elif transformation == 'strain':
             orb = self.get2DstrainEst(computeNormFact=computeNormFact)
         # Strain + Translation
-        elif transformation is 'strainnorotation':
+        elif transformation == 'strainnorotation':
             orb = self.get2DstrainEst(rotation=False, computeNormFact=computeNormFact)
         # Strain
-        elif transformation is 'strainonly':
+        elif transformation == 'strainonly':
             orb = self.get2DstrainEst(rotation=False, translation=False, computeNormFact=computeNormFact)
         # Strain + Rotation
-        elif transformation is 'strainnotranslation':
+        elif transformation == 'strainnotranslation':
             orb = self.get2DstrainEst(translation=False, computeNormFact=computeNormFact)
         # Translation
-        elif transformation is 'translation':
+        elif transformation == 'translation':
             orb = self.get2DstrainEst(strain=False, rotation=False, computeNormFact=computeNormFact)
         # Translation and Rotation
-        elif transformation is 'translationrotation': 
+        elif transformation == 'translationrotation': 
             orb = self.get2DstrainEst(strain=False, computeNormFact=computeNormFact)
         # Unknown case
         else:
@@ -2327,27 +2327,27 @@ class gps(SourceInv):
         # Get some info
         if write2file or verbose:
             transformation = fault.poly[self.name]
-            if transformation is 'strain':
+            if transformation == 'strain':
                 strain = True
                 translation = True
                 rotation = True
-            elif transformation is 'strainnorotation':
+            elif transformation == 'strainnorotation':
                 strain = True
                 translation = True
                 rotation = False
-            elif transformation is 'strainnotranslation':
+            elif transformation == 'strainnotranslation':
                 strain = True
                 translation = False
                 rotation = True
-            elif transformation is 'translation':
+            elif transformation == 'translation':
                 strain = False
                 rotation = False
                 translation = True
-            elif transformation is 'translationrotation':
+            elif transformation == 'translationrotation':
                 strain = False
                 rotation = True
                 translation = True
-            elif transformation is 'strainonly':
+            elif transformation == 'strainonly':
                 strain = True
                 rotation = False
                 translation = False
@@ -2818,7 +2818,7 @@ class gps(SourceInv):
                         if gpsref in ('strain', 'strainonly', 'strainnorotation', 'strainnotranslation'):
                             self.compute2Dstrain(fault)
                             self.synth = self.synth + self.Strain
-                        elif gpsref is 'full':
+                        elif gpsref == 'full':
                             self.computeHelmertTransform(fault)
                             self.synth = self.synth + self.HelmTransform
                     elif type(gpsref) is float:
@@ -2891,15 +2891,15 @@ class gps(SourceInv):
         fout.write('# Name lon lat v_east v_north v_up e_east e_north e_up \n')
 
         # Get the data 
-        if data is 'data':
+        if data == 'data':
             z = self.vel_enu
-        elif data is 'synth':
+        elif data == 'synth':
             z = self.synth
-        elif data is 'res':
+        elif data == 'res':
             z = self.vel_enu - self.synth
-        elif data is 'strain':
+        elif data == 'strain':
             z = self.Strain
-        elif data is 'transformation':
+        elif data == 'transformation':
             z = self.transformation
         else:
             print('Unknown data type to write...')
@@ -3454,7 +3454,7 @@ class gps(SourceInv):
         # All done
         return
 
-    def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, 
+    def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, figsize=None,
             plot_los=False, drawCoastlines=True, expand=0.2, show=True, drawCountries=False,
             vertical=False, verticalsize=[30], extent=None,
             data=['data'], color=['k']):
@@ -3493,13 +3493,15 @@ class gps(SourceInv):
             lonmin, lonmax, latmin, latmax = extent
 
         # Create a figure
+        if figsize is not None: figsize=(figsize,figsize)
         fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, 
-                                     latmin=latmin, latmax=latmax)
+                                     latmin=latmin, latmax=latmax, 
+                                     figsize=figsize)
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=True, parallels=5, 
-                               meridians=5, drawOnFault=True, 
+            fig.drawCoastlines(drawLand=True, parallels=None, 
+                               meridians=None, drawOnFault=True, 
                                drawCountries=drawCountries)
 
         # Plot the fault trace if asked

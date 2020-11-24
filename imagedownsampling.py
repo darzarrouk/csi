@@ -722,7 +722,6 @@ class imagedownsampling(object):
         return bs1, bs2, bs3
 
 
-
     def distanceBased(self, chardist=15, expodist=1, plot=False, decimorig=10,norm=None):
         '''
         Downsamples the dataset depending on the distance from the fault R.Grandin, April 2015
