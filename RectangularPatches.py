@@ -1232,6 +1232,67 @@ class RectangularPatches(Fault):
 
         # All done
         return
+   # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def writeSlipCenter2File(self, filename, add_slip=None, scale=1.0, neg_depth=False):
+                                
+        '''
+        Write a psxyz, surface or greenspline compatible file with the center 
+        of each patch and magnitude slip. Scale can be a real 
+        number or a string in 'total', 'strikeslip', 'dipslip' or 'tensile'
+
+        Args:
+            * filename      : Name of the output file
+
+        Kwargs:
+            * add_slip      : Put the slip as a value at the center 
+                              Can be None, strikeslip, dipslip, total, coupling
+            * scale         : Multiply the slip value by a factor.
+            * neg_depth     : if True, depth is a negative nmber
+ 
+        Returns:
+            * None
+        '''
+
+        # Write something
+        print('Writing slip at patch centers to file {}'.format(filename))
+
+        # Open the file
+        fout = open(filename, 'w')
+
+        # Loop over the patches
+        if self.N_slip == None:
+            self.N_slip = len(self.patch)
+        for pIndex in range(self.N_slip):
+            # Get the center of the patch
+            xc, yc, zc, width, length, strike, dip = self.getpatchgeometry(pIndex, center=True)
+            
+           # Get the slip value to be added
+            if add_slip is not None:
+                if add_slip is 'coupling':
+                    slp = self.coupling[pIndex]
+                if add_slip is 'strikeslip':
+                    slp = self.slip[pIndex,0]*scale
+                elif add_slip is 'dipslip':
+                    slp = self.slip[pIndex,1]*scale
+                elif add_slip is 'tensile':
+                    slp = self.slip[pIndex,2]*scale
+                elif add_slip is 'total':
+                    slp = np.sqrt(self.slip[pIndex,0]**2 + self.slip[pIndex,1]**2)*scale
+ 
+            # project center of the patch to lat-long
+            lonc, latc = self.xy2ll(xc, yc)
+            if neg_depth:
+                zc = -1.0*zc
+                
+            fout.write('{} {} {} {}\n'.format(lonc, latc, zc, slp))
+
+        # Close file
+        fout.close()
+
+        # All done
+        return
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
