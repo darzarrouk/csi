@@ -3493,10 +3493,16 @@ class gps(SourceInv):
             lonmin, lonmax, latmin, latmax = extent
 
         # Create a figure
-        if figsize is not None: figsize=(figsize,figsize)
-        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, 
+        # newer versions of Matplotlib expect figsize to be an array of two values
+        # geoplot expects two figure sizes so we need to make a double array EJF 2020/12/27
+        if figsize is not None: 
+            figsize=[[figsize,figsize],[figsize,figsize]] 
+            fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, 
                                      latmin=latmin, latmax=latmax, 
                                      figsize=figsize)
+        else:
+            fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, 
+                                     latmin=latmin, latmax=latmax)
 
         # Draw the coastlines
         if drawCoastlines:
