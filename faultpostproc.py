@@ -26,6 +26,7 @@ class faultpostproc(SourceInv):
     Kwargs:
         * Mu            : Shear modulus. Default is 24e9 GPa, because it is the PREM value for the upper 15km. Can be a scalar or a list/array of len=len(fault.patch)
         * samplesh5     : file name of h5 file containing samples
+        * AlTarV        : AlTar version 1 or version 2 (default 1 for backwards compatibility)
         * utmzone       : UTM zone  (optional, default=None)
         * lon0          : Longitude of the center of the UTM zone
         * lat0          : Latitude of the center of the UTM zone
@@ -34,7 +35,7 @@ class faultpostproc(SourceInv):
      
     '''
 
-    def __init__(self, name, fault, Mu=24e9, samplesh5=None, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
+    def __init__(self, name, fault, Mu=24e9, samplesh5=None, AlTarV=1, utmzone=None, ellps='WGS84', lon0=None, lat0=None, verbose=True):
 
         # Base class init
         super(faultpostproc,self).__init__(name,
@@ -44,7 +45,7 @@ class faultpostproc(SourceInv):
 
         # Initialize the data set 
         self.name = name
-        self.fault = copy.deepcopy(fault) # we don't want to modify fault slip
+        self.fault = copy.deepcopy(fault) # we don't want to modify original fault slip
         self.patchDepths = None
         self.MTs = None
 
@@ -70,6 +71,8 @@ class faultpostproc(SourceInv):
 
         # Check to see if we're reading in an h5 file for posterior samples
         self.samplesh5 = samplesh5
+        # get the AlTar version to know format of h5 file
+        self.AlTarV = AlTarV
 
         # All done
         return
@@ -98,21 +101,64 @@ class faultpostproc(SourceInv):
                 print('Cannot import h5py. Computing scalar moments only')
                 return
             self.hfid = h5py.File(self.samplesh5, 'r')
-            samples = self.hfid['Sample Set']
+            if self.AlTarV == 1:  # AlTar v 1.x h5 file reading
+                samples = self.hfid['Sample Set']
 
-            if indss is None or indds is None:
-                nsamples = np.arange(0, samples.shape[0], decim).size
-                self.fault.slip = np.zeros((self.numPatches,3,nsamples))
-                self.fault.slip[:,0,:] = samples[::decim,:self.numPatches].T
-                self.fault.slip[:,1,:] = samples[::decim,self.numPatches:2*self.numPatches].T
+                if indss is None or indds is None:
+                    nsamples = np.arange(0, samples.shape[0], decim).size
+                    self.fault.slip = np.zeros((self.numPatches,3,nsamples))
+                    self.fault.slip[:,0,:] = samples[::decim,:self.numPatches].T
+                    self.fault.slip[:,1,:] = samples[::decim,self.numPatches:2*self.numPatches].T
 
+                else:
+                    assert indss[1]-indss[0] == self.numPatches, 'indss[1] - indss[0] different from number of patches'
+                    assert indss[1]-indss[0] == self.numPatches, 'indds[1] - indds[0] different from number of patches'
+                    nsamples =  np.arange(0, samples.shape[0], decim).size
+                    self.fault.slip = np.zeros((self.numPatches,3,nsamples))
+                    self.fault.slip[:,0,:] = samples[::decim,indss[0]:indss[1]].T
+                    self.fault.slip[:,1,:] = samples[::decim,indds[0]:indds[1]].T
+            elif self.AlTarV == 2: # AlTar v 2.x h5 file reading EJF Jan. 2021
+                paramGroup=self.hfid['ParameterSets']
+                numParamSets=len(paramGroup)
+                if 'dipslip' in paramGroup:
+                    print('reading dipslip samples')
+                    totSamples=len(paramGroup['dipslip'])
+                    ds = paramGroup['dipslip'][::decim,:]   # copying results to variable might be inefficient, but easier to follow
+                    numSamp=len(ds)     # count actual number of samples after possible decimation
+                else:
+                    ds = None
+                    
+                if 'strikeslip' in paramGroup:
+                    print('reading strikeslip samples')
+                    totSamples=len(paramGroup['strikeslip'])
+                    ss = paramGroup['strikeslip'][::decim,:]
+                    numSamp=len(ss)
+                else:
+                    ss = None
+                   
+                # now load slip values into fault
+                self.fault.slip = np.zeros((self.numPatches,3,numSamp))  # create array set to all zeros
+                if ss is not None:
+                    if indss is None:
+                        self.fault.slip[:,0,:] = ss.T
+                    else:
+                        assert indss[1]-indss[0] == self.numPatches, 'indss[1] - indss[0] different from number of patches'
+                        self.fault.slip[:,0,:] = ss[:,indss[0]:indss[1]].T
+                        
+                if ds is not None:
+                    if indds is None:
+                        self.fault.slip[:,1,:] = ds.T
+                    else:
+                        assert indss[1]-indss[0] == self.numPatches, 'indds[1] - indds[0] different from number of patches'
+                        self.fault.slip[:,1,:] = ds[:,indds[0]:indds[1]].T
+                    
+# not used                if 'ramp' in paramGroup:
+#                    print('reading ramp samples')
+#                    ramp = paramGroup['ramp'][::decim,:]
+#                else:
+#                    ramp = None
             else:
-                assert indss[1]-indss[0] == self.numPatches, 'indss[1] - indss[0] different from number of patches'
-                assert indss[1]-indss[0] == self.numPatches, 'indds[1] - indds[0] different from number of patches'
-                nsamples =  np.arange(0, samples.shape[0], decim).size
-                self.fault.slip = np.zeros((self.numPatches,3,nsamples))
-                self.fault.slip[:,0,:] = samples[::decim,indss[0]:indss[1]].T
-                self.fault.slip[:,1,:] = samples[::decim,indds[0]:indds[1]].T
+                print('AlTar version',AlTarV,'not supported')
 
 
         return
