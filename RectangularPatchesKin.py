@@ -877,7 +877,7 @@ class RectangularPatchesKin(RectangularPatches):
                 o_sac.npts   = npts
                 o_sac.b      = t[ib]+o_sac.o
                 #if p==91:
-                #    o_sac.wsac('bidon/'+dkey+'_gf%d'%(rake))
+                #    o_sac.write('bidon/'+dkey+'_gf%d'%(rake))
                 # Assemble GFs                
                 synth[s_name[s]] = o_sac.copy()
             G.append(copy.deepcopy(synth))
@@ -1172,7 +1172,7 @@ class RectangularPatchesKin(RectangularPatches):
             for p in range(Np):
                 for dkey in data.sta_name:                    
                     o_file = os.path.join(o_dir,'%s_p%d_%s.kin'%(prefix,p,dkey))
-                    self.G[data.name][r][p][dkey].wsac(o_file)
+                    self.G[data.name][r][p][dkey].write(o_file)
     
         # All done
         return
