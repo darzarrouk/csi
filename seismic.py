@@ -192,7 +192,7 @@ class seismic(SourceInv):
             eik_solver.fastSweep()
             
             # BigG x BigM (on the fly time-domain convolution)
-            Ntriangles = fault.bigG.shape[1]/(2*Np)            
+            Ntriangles = int(fault.bigG.shape[1]/(2*Np))           
             m = np.zeros((G.shape[1],))
             for p in range(len(fault.patch)):
                 # Location at the patch center

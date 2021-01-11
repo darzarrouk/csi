@@ -1129,7 +1129,7 @@ class RectangularPatchesKin(RectangularPatches):
             Nd = self.bigD.size
             self.bigG = np.fromfile(bigGfile, dtype=dtype).astype('float64')
             assert self.bigG.size%Nd == 0
-            Nm = self.bigG.size/Nd
+            Nm = int(self.bigG.size/Nd)
             # Reshape bigG matrix
             self.bigG = self.bigG.reshape(Nm,Nd).T
         
