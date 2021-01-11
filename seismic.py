@@ -390,7 +390,7 @@ class seismic(SourceInv):
         self.d = {}
         for sacfile in sacfiles:
             sac = sacpy.sac()
-            sac.rsac(sacfile)
+            sac.read(sacfile)
             self.lon.append(sac.stlo)
             self.lat.append(sac.stla)
             stanm = sac.kstnm+'_'+sac.kcmpnm
