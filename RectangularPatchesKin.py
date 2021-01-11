@@ -1264,7 +1264,7 @@ class RectangularPatchesKin(RectangularPatches):
         
         # BigG x BigM (on the fly time-domain convolution)
         Np = len(self.patch)  
-        Ntriangles = self.bigG.shape[1]/(2*Np)
+        Ntriangles = int(self.bigG.shape[1]/(2*Np))
         bigM = np.zeros((self.bigG.shape[1],))
         for p in range(Np):
             # Location at the patch center
