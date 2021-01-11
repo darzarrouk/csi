@@ -795,7 +795,7 @@ class RectangularPatchesKin(RectangularPatches):
             assert self.mu is not None
 
         # Init Green's functions
-        if not self.G.has_key(data.name):
+        if data.name not in self.G:
             self.G[data.name] = {}
         self.G[data.name][rake_key] = []
         
@@ -1210,7 +1210,7 @@ class RectangularPatchesKin(RectangularPatches):
         assert os.path.exists(inputDir), '%s: No such directory'%(inputDir)
         
         # Init Green's functions
-        if not self.G.has_key(data.name):
+        if data.name not in self.G:
             self.G[data.name] = {}
 
         # Main loop
@@ -1228,7 +1228,7 @@ class RectangularPatchesKin(RectangularPatches):
                 for dkey in data.sta_name:
                     # Read sac
                     i_file = os.path.join(i_dir,'%s_p%d_%s.kin'%(prefix,p,dkey))
-                    i_sac.rsac(i_file)
+                    i_sac.read(i_file)
                     synth[dkey] = i_sac.copy()
                 self.G[data.name][r].append(copy.deepcopy(synth))
         
