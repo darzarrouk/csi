@@ -641,7 +641,7 @@ class insar(SourceInv):
 
         # Compute LOS
         Se = -1.0 * np.sin(alpha) * np.sin(phi)
-        Sn = -1.0 * np.cos(alpha) * np.sin(phi)
+        Sn = np.cos(alpha) * np.sin(phi)
         Su = np.cos(phi)
 
         # Store it
@@ -1788,20 +1788,16 @@ class insar(SourceInv):
         # All done
         return
 
-    def reject_pixels_fault(self, dis, faults):
+    def getDistance2Faults(self, faults):
         '''
-        Rejects the pixels that are {dis} km close to the fault.
+        Returns the minimum distance to a fault for each pixel
 
         Args:
-            * dis       : Threshold distance.
-            * faults    : list of fault objects.
+            * faults    : a fault or a list of faults.
 
-        Returns:
-            * None
+        Return:
+            * distance  : array
         '''
-
-        # Variables to trim are  self.corner,
-        # self.xycorner, self.Cd, (self.synth)
 
         # Check something
         if faults.__class__ is not list:
@@ -1822,6 +1818,24 @@ class insar(SourceInv):
         # Get minimums
         d = np.min(D, axis=1)
         del D
+
+        # All done
+        return d
+
+    def reject_pixels_fault(self, dis, faults):
+        '''
+        Rejects the pixels that are {dis} km close to the fault.
+
+        Args:
+            * dis       : Threshold distance.
+            * faults    : list of fault objects.
+
+        Returns:
+            * None
+        '''
+
+        # Get distances 
+        d = self.getDistance2Faults(faults)
 
         # Find the close ones
         if dis>0.:
@@ -2574,7 +2588,7 @@ class insar(SourceInv):
         assert len(x)>5, 'There is less than 5 points in your profile...'
 
         # Plot the insar
-        self.plot(faults=fault, norm=norm, show=False, alpha=alpha, plotType=plotType)
+        self.plot(faults=fault, norm=norm, show=False, alpha=alpha, plotType=plotType, expand=0.)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
@@ -2758,7 +2772,7 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=[None, None], plotType='scatter', cmap='jet', alpha=1.):
+    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=None, plotType='scatter', cmap='jet', alpha=1.):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2790,7 +2804,13 @@ class insar(SourceInv):
         latmax = self.lat.max()+expand
 
         # Create a figure
-        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax, figsize=figsize)
+        if figsize is not None: 
+            figsize=(figsize,figsize)
+        else:
+            figsize=(None, None)
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, 
+                                     latmin=latmin, latmax=latmax, 
+                                     figsize=figsize)
 
         # Draw the coastlines
         if drawCoastlines:
@@ -2804,7 +2824,8 @@ class insar(SourceInv):
                 fig.gps(g)
 
         # Plot the decimation process, if asked
-        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, edgewidth=edgewidth, cmap=cmap, zorder=1, alpha=alpha)
+        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, 
+                        edgewidth=edgewidth, cmap=cmap, zorder=1, alpha=alpha)
 
         # Plot the fault trace if asked
         if faults is not None:

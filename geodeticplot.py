@@ -63,7 +63,6 @@ class geodeticplot(object):
     def __init__(self,lonmin, latmin, lonmax, latmax,
                  figure=None, pbaspect=None,resolution='auto',
                  scalebar=None, figsize=[None,None]):
-        #projection='cyl',
 
         # Save
         self.lonmin = lonmin
@@ -76,8 +75,6 @@ class geodeticplot(object):
         self.lat0 = latmin + (latmax-latmin)/2.
 
         # Projection
-        #self.projection = ccrs.TransverseMercator(central_longitude=self.lon0, 
-        #                                          central_latitude=self.lat0)
         self.projection = ccrs.PlateCarree()
 
         # Open a figure
@@ -90,7 +87,14 @@ class geodeticplot(object):
         fig2  = plt.figure(nextFig, figsize=figsize[1])
         carte = fig2.add_subplot(111, projection=self.projection)
         carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax], crs=self.projection)
-        carte.gridlines(crs=self.projection, draw_labels=True)
+
+        # Gridlines (there is something wrong with the gridlines class...)
+        gl = carte.gridlines(crs=self.projection, draw_labels=True, alpha=0.5)
+        #gl.xlabel_style = {'size': 'small', 'color': 'k', 'weight': 'bold'}
+        #gl.ylabel_style = {'size': 'small', 'color': 'k', 'weight': 'bold'}
+        carte.set_xticks(carte.get_xticks())
+        carte.set_yticks(carte.get_yticks())
+        carte.tick_params(axis='both', which='major', labelsize='large')
 
         # scale bar
         if scalebar != None:
@@ -112,14 +116,15 @@ class geodeticplot(object):
             lonc,latc = putm(xc,yc+0.5*1000.,inverse=True)
             # Plot
             carte.plot([lon1, lon2], [lat1,lat2], '-k', linewidth=2,zorder=4)
-            carte.text(lonc,latc,'{} km'.format(scalebar), horizontalalignment='center',zorder=4)
+            carte.text(lonc,latc,'{} km'.format(scalebar), 
+                            horizontalalignment='center',zorder=4)
 
         # Set the axes
         faille.set_xlabel('Longitude')
         faille.set_ylabel('Latitude')
         faille.set_zlabel('Depth (km)')
-        carte.set_xlabel('Longitude')
-        carte.set_ylabel('Latitude')
+        #carte.set_xlabel('Longitude')
+        #carte.set_ylabel('Latitude')
 
         # store plots
         self.faille = faille
@@ -154,7 +159,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def show(self, mapaxis=None, triDaxis=None, showFig=['fault', 'map'], fitOnBox=True):
+    def show(self, mapaxis=None, triDaxis=None, showFig=['fault', 'map'], fitOnBox=False):
         '''
         Show to screen
 
@@ -571,8 +576,11 @@ class geodeticplot(object):
         # Plot the surface trace
         #lon[lon<0] += 360.
         #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        if hasattr(fault, 'color'): color = fault.color
+        if hasattr(fault, 'linewidth'): linewidth = fault.linewidth
         self.faille.plot(lon, lat, '-{}'.format(color), linewidth=linewidth)
-        self.carte.plot(lon, lat, '-{}'.format(color), zorder=zorder, linewidth=linewidth)
+        self.carte.plot(lon, lat, '-{}'.format(color), zorder=zorder, 
+                        linewidth=linewidth)
 
         # All done
         return
@@ -1366,7 +1374,7 @@ class geodeticplot(object):
         return
 
     def insar(self, insar, norm=None, colorbar=True, data='data',
-                       plotType='decimate', cmap='jet',
+                       plotType='scatter', cmap='jet',
                        decim=1, zorder=3, edgewidth=1, alpha=1.):
         '''
         Plot an insar object
@@ -1403,6 +1411,9 @@ class geodeticplot(object):
         elif data == 'poly':
             assert insar.orb is not None, 'No Orbital correction to plot'
             d = insar.orb
+        elif data == 'err':
+            assert insar.err is not None, 'No Error to plot'
+            d = insar.err
         else:
             print('Unknown data type')
             return

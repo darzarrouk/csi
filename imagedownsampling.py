@@ -199,7 +199,7 @@ class mpdownsampler(mp.Process):
                         #take standard deviation
                         err = np.std(self.downsampler.image.vel[ii])
 
-                elif self.downsampler.datatype is 'opticorr':
+                elif self.downsampler.datatype == 'opticorr':
                     east = np.mean(self.downsampler.image.east[ii])
                     north = np.mean(self.downsampler.image.north[ii])
                     err_east = np.std(self.downsampler.image.east[ii])
@@ -511,6 +511,10 @@ class imagedownsampling(object):
 
         # Store newimage
         self.newimage = newimage
+
+        # Create corners in newimage
+        self.newimage.corner = [[b[0][0], b[0][1], b[2][0], b[2][1]] for b in self.blocksll]
+        self.newimage.xycorner = [[b[0][0], b[0][1], b[2][0], b[2][1]] for b in self.blocks]
 
         # plot y/n
         if plot:
@@ -1169,121 +1173,23 @@ class imagedownsampling(object):
             * None
         '''
 
-        # Create the figure
-        fig = plt.figure(figure, figsize=(10,5))
-        full = fig.add_axes([0.05, 0.05, 0.4, 0.8])
-        down = fig.add_axes([0.55, 0.05, 0.4, 0.8])
-        colr = fig.add_axes([0.4, 0.9, 0.2, 0.03])
-
-        # Set the axes
-        if ref=='utm':
-            full.set_xlabel('Easting (km)')
-            full.set_ylabel('Northing (km)')
-            down.set_xlabel('Easting (km)')
-            down.set_ylabel('Northing (km)')
-        else:
-            full.set_xlabel('Longitude')
-            full.set_ylabel('Latitude')
-            down.set_xlabel('Longitude')
-            down.set_ylabel('Latitude')
-
         # Get the datasets
         original = self.image
         downsampled = self.newimage
+        
+        # Get the min max values
+        if original.dtype == 'insar':
+            minmax = [np.nanmin(original.vel), np.nanmax(original)]
+        elif original.dtype == 'opticorr':
+            assert False, 'Need to implement opticorr type for plotting the results'
+        if norm is None:
+            norm = minmax
 
-        # Get what should be plotted
-        if self.datatype=='insar':
-            data = original.vel
-        elif self.datatype=='opticorr':
-            if data2plot=='north':
-                data = original.north
-            elif data2plot=='east':
-                data = original.east
-
-        # Vmin, Vmax
-        if norm is not None:
-            vmin, vmax = Norm
-        else:
-            vmin = data.min()
-            vmax = data.max()
-
-        # Prepare the colormaps
-        import matplotlib.colors as colors
-        import matplotlib.cm as cmx
-        cmap = plt.get_cmap('jet')
-        cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
-        scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
-
-        # Plot original dataset
-        if ref=='utm':
-            # image
-            sca = full.scatter(original.x[::decimorig], original.y[::decimorig], s=10, c=data[::decimorig], cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
-            # Faults
-            for fault in self.faults:
-                full.plot(fault.xf, fault.yf, '-k')
-        else:
-            # image
-            sca = full.scatter(original.lon[::decimorig], original.lat[::decimorig], s=10, c=data[::decimorig], cmap=cmap, vmin=vmin, vmax=vmax, linewidths=0.)
-            # Faults
-            for fault in self.faults:
-                full.plot(fault.lon, fault.lat, '-k')
-
-        # Patches
-        import matplotlib.collections as colls
-
-        # Get downsampled data
-        if self.datatype=='insar':
-            downdata = downsampled.vel
-        elif self.datatype=='opticorr':
-            if data2plot=='north':
-                downdata = downsampled.north
-            elif data2plot=='east':
-                downdata = downsampled.east
-
-        # Image
-        for i in range(len(self.blocks)):
-            # Get block
-            if ref=='utm':
-                block = self.blocks[i]
-            else:
-                block = self.blocksll[i]
-            # Get value
-            val = downdata[i]
-            # Build patch
-            x = [block[j][0] for j in range(4)]
-            y = [block[j][1] for j in range(4)]
-            verts = [list(zip(x, y))]
-            patch = colls.PolyCollection(verts)
-            # Set its color
-            patch.set_color(scalarMap.to_rgba(val))
-            patch.set_edgecolors('k')
-            down.add_collection(patch)
-
-        # Faults
-        for fault in self.faults:
-            if ref=='utm':
-                down.plot(fault.xf, fault.yf, '-k')
-            else:
-                down.plot(fault.lon, fault.lat, '-k')
-
-        # Color bar
-        cb = mpl.colorbar.ColorbarBase(colr, cmap=cmap, norm=cNorm ,orientation='horizontal')
-
-        # Axes
-        if ref=='utm':
-            full.set_xlim([self.xmin, self.xmax])
-            full.set_ylim([self.ymin, self.ymax])
-            down.set_xlim([self.xmin, self.xmax])
-            down.set_ylim([self.ymin, self.ymax])
-        else:
-            full.set_xlim([self.lonmin, self.lonmax])
-            full.set_ylim([self.latmin, self.latmax])
-            down.set_xlim([self.lonmin, self.lonmax])
-            down.set_ylim([self.latmin, self.latmax])
-
-        # Savefig
-        if savefig is not None:
-            plt.savefig(savefig)
+        # Plot the original 
+        original.plot(faults=self.faults, plotType='scatter', norm=norm, 
+                        show=False, drawCoastlines=False)
+        downsampled.plot(faults=self.faults, plotType='decimate', norm=norm, 
+                        show=False, drawCoastlines=False)
 
         # Gradient?
         if hasattr(self, 'Gradient'):

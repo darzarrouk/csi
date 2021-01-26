@@ -624,10 +624,10 @@ class gps(SourceInv):
         dic['Length'] = length
         dic['Width'] = width
         dic['Box'] = np.array(boxll)
-        dic['Normal Velocity'] = np.array(Vacros)
-        dic['Normal Error'] = np.array(Eacros)
-        dic['Parallel Velocity'] = np.array(Valong)
-        dic['Parallel Error'] = np.array(Ealong)
+        dic['Parallel Velocity'] = np.array(Vacros)
+        dic['Parallel Error'] = np.array(Eacros)
+        dic['Normal Velocity'] = np.array(Valong)
+        dic['Normal Error'] = np.array(Ealong)
         dic['Vertical Velocity'] = np.array(Vup)
         dic['Vertical Error'] = np.array(Eup)
         dic['Distance'] = np.array(Dalong)
@@ -707,7 +707,7 @@ class gps(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None, data=['parallel', 'normal', 'vertical'], show=True):
+    def plotprofile(self, name, legendscale=10., fault=None, data=['parallel', 'normal', 'vertical'], show=True, figsize=None):
         '''
         Plot profile.
 
@@ -732,7 +732,7 @@ class gps(SourceInv):
             vertical=True
         else:
             vertical=False
-        self.plot(faults=fault, figure=None, show=False, legendscale=legendscale, vertical=vertical)
+        self.plot(faults=fault, figure=None, show=False, legendscale=legendscale, vertical=vertical, figsize=figsize)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
@@ -749,7 +749,7 @@ class gps(SourceInv):
         self.fig.carte.plot(bb[:,0], bb[:,1], '-k', zorder=0)
 
         # open a figure
-        fig = plt.figure()
+        fig = plt.figure(figsize=figsize)
         prof = fig.add_subplot(111)
 
         # plot the profile
@@ -3493,7 +3493,10 @@ class gps(SourceInv):
             lonmin, lonmax, latmin, latmax = extent
 
         # Create a figure
-        if figsize is not None: figsize=(figsize,figsize)
+        if figsize is not None: 
+            figsize=(figsize,figsize)
+        else:
+            figsize=(None, None)
         fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, 
                                      latmin=latmin, latmax=latmax, 
                                      figsize=figsize)

@@ -1270,15 +1270,15 @@ class RectangularPatches(Fault):
             
            # Get the slip value to be added
             if add_slip is not None:
-                if add_slip is 'coupling':
+                if add_slip == 'coupling':
                     slp = self.coupling[pIndex]
-                if add_slip is 'strikeslip':
+                if add_slip == 'strikeslip':
                     slp = self.slip[pIndex,0]*scale
-                elif add_slip is 'dipslip':
+                elif add_slip == 'dipslip':
                     slp = self.slip[pIndex,1]*scale
-                elif add_slip is 'tensile':
+                elif add_slip == 'tensile':
                     slp = self.slip[pIndex,2]*scale
-                elif add_slip is 'total':
+                elif add_slip == 'total':
                     slp = np.sqrt(self.slip[pIndex,0]**2 + self.slip[pIndex,1]**2)*scale
  
             # project center of the patch to lat-long
