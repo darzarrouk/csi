@@ -491,7 +491,7 @@ class planarfaultkinematic(planarfault):
                 for s in G[r][p]: # station name (string)
                     for c in G[r][p][s]: # component name (string)
                         o_file = os.path.join(o_dir,'gf_rake%d_patch%d_%s_%s.sac'%(r,p,s,c))
-                        G[r][p][s][c].wsac(o_file)
+                        G[r][p][s][c].write(o_file)
         
         # Write list of stations
         f = open(os.path.join(o_dir,'stat_list'),'w')
@@ -543,7 +543,7 @@ class planarfaultkinematic(planarfault):
                         i_file = os.path.join(i_dir,'gf_rake%d_patch%d_%s_%s.sac'%(r,p,s,c))
                         if os.path.exists(i_file):                            
                             G[r][p][s][c] = sacpy.sac()
-                            G[r][p][s][c].rsac(i_file)
+                            G[r][p][s][c].read(i_file)
                         else:
                             print('Skipping GF for {} {}'.format(s,c))
 
@@ -568,7 +568,7 @@ class planarfaultkinematic(planarfault):
             f.write('%s\n'%(s))
             for c in d[s]: # component name (string)
                 o_file = os.path.join(o_dir,'data_%s_%s.sac'%(s,c))
-                d[s][c].wsac(o_file)
+                d[s][c].write(o_file)
         f.close()
         
         # All done
@@ -608,7 +608,7 @@ class planarfaultkinematic(planarfault):
                 o_file = os.path.join(i_dir,'data_%s_%s.sac'%(s,c))
                 if os.path.exists(o_file):
                     d[s][c] = sacpy.sac()
-                    d[s][c].rsac(o_file)
+                    d[s][c].read(o_file)
                 else:
                     print('Skipping Data for {} {}'.format(s,c))                    
         # All done

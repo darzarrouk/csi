@@ -795,7 +795,7 @@ class RectangularPatchesKin(RectangularPatches):
             assert self.mu is not None
 
         # Init Green's functions
-        if not self.G.has_key(data.name):
+        if data.name not in self.G:
             self.G[data.name] = {}
         self.G[data.name][rake_key] = []
         
@@ -877,7 +877,7 @@ class RectangularPatchesKin(RectangularPatches):
                 o_sac.npts   = npts
                 o_sac.b      = t[ib]+o_sac.o
                 #if p==91:
-                #    o_sac.wsac('bidon/'+dkey+'_gf%d'%(rake))
+                #    o_sac.write('bidon/'+dkey+'_gf%d'%(rake))
                 # Assemble GFs                
                 synth[s_name[s]] = o_sac.copy()
             G.append(copy.deepcopy(synth))
@@ -1129,7 +1129,7 @@ class RectangularPatchesKin(RectangularPatches):
             Nd = self.bigD.size
             self.bigG = np.fromfile(bigGfile, dtype=dtype).astype('float64')
             assert self.bigG.size%Nd == 0
-            Nm = self.bigG.size/Nd
+            Nm = int(self.bigG.size/Nd)
             # Reshape bigG matrix
             self.bigG = self.bigG.reshape(Nm,Nd).T
         
@@ -1172,7 +1172,7 @@ class RectangularPatchesKin(RectangularPatches):
             for p in range(Np):
                 for dkey in data.sta_name:                    
                     o_file = os.path.join(o_dir,'%s_p%d_%s.kin'%(prefix,p,dkey))
-                    self.G[data.name][r][p][dkey].wsac(o_file)
+                    self.G[data.name][r][p][dkey].write(o_file)
     
         # All done
         return
@@ -1210,7 +1210,7 @@ class RectangularPatchesKin(RectangularPatches):
         assert os.path.exists(inputDir), '%s: No such directory'%(inputDir)
         
         # Init Green's functions
-        if not self.G.has_key(data.name):
+        if data.name not in self.G:
             self.G[data.name] = {}
 
         # Main loop
@@ -1228,7 +1228,7 @@ class RectangularPatchesKin(RectangularPatches):
                 for dkey in data.sta_name:
                     # Read sac
                     i_file = os.path.join(i_dir,'%s_p%d_%s.kin'%(prefix,p,dkey))
-                    i_sac.rsac(i_file)
+                    i_sac.read(i_file)
                     synth[dkey] = i_sac.copy()
                 self.G[data.name][r].append(copy.deepcopy(synth))
         
@@ -1264,7 +1264,7 @@ class RectangularPatchesKin(RectangularPatches):
         
         # BigG x BigM (on the fly time-domain convolution)
         Np = len(self.patch)  
-        Ntriangles = self.bigG.shape[1]/(2*Np)
+        Ntriangles = int(self.bigG.shape[1]/(2*Np))
         bigM = np.zeros((self.bigG.shape[1],))
         for p in range(Np):
             # Location at the patch center

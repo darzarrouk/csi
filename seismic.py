@@ -192,7 +192,7 @@ class seismic(SourceInv):
             eik_solver.fastSweep()
             
             # BigG x BigM (on the fly time-domain convolution)
-            Ntriangles = fault.bigG.shape[1]/(2*Np)            
+            Ntriangles = int(fault.bigG.shape[1]/(2*Np))           
             m = np.zeros((G.shape[1],))
             for p in range(len(fault.patch)):
                 # Location at the patch center
@@ -390,7 +390,7 @@ class seismic(SourceInv):
         self.d = {}
         for sacfile in sacfiles:
             sac = sacpy.sac()
-            sac.rsac(sacfile)
+            sac.read(sacfile)
             self.lon.append(sac.stlo)
             self.lat.append(sac.stla)
             stanm = sac.kstnm+'_'+sac.kcmpnm
@@ -400,7 +400,7 @@ class seismic(SourceInv):
             #if not self.d[sac.kstnm].has_key(sac.kcmpnm):
             #    self.d[sac.kstnm][sac.kcmpnm] = {}
             #self.d[sac.kstnm][sac.kcmpnm[-1]] = sac.copy()
-            assert not self.d.has_key(stanm), 'Multiple data for {}'.format(stanm)
+            assert stanm not in self.d, 'Multiple data for {}'.format(stanm)
             self.d[stanm] = sac.copy()
 
         # All done

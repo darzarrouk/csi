@@ -2920,6 +2920,73 @@ class gps(SourceInv):
         # All done 
         return
 
+    def write2GMTfile(self, namefile=None, data='data', outDir='./',vertOrHoriz='horiz'):
+        '''
+        Writes GPS data to the GMT psvelo format file, converting units from m to cm
+        Args:
+            * namefile  : Name of the output file.
+            * data      : data, synth, strain, transformation.
+            * vertOrHoriz   : write vertical or horizontal data to file (Default horiz)
+
+        '''
+
+        # Determine file name
+        if namefile is None:
+            filename = ''
+            for a in self.name.split():
+                filename = filename+a+'_'
+            filename = outDir+'/'+filename+data+'.psvelo'
+        else: 
+            filename = outDir+'/'+namefile
+        
+        if self.verbose:        
+            print ("Write {} set {} to file {}".format(data, self.name, filename))
+
+        # open the file
+        fout = open(filename,'w')
+
+        # write a header for psvelo format
+        fout.write('#  longitude   latitude east(cm) north(cm) err_e(cm) err_n(cm) covarXY  site_name\n')
+
+        # Get the data 
+        if data is 'data':
+            z = self.vel_enu
+        elif data is 'synth':
+            z = self.synth
+        elif data is 'res':
+            z = self.vel_enu - self.synth
+        elif data is 'strain':
+            z = self.Strain
+        elif data is 'transformation':
+            z = self.transformation
+        else:
+            print('Unknown data type to write...')
+            return
+
+        z_cm = z.squeeze()*100.    # convert m to cm
+        err_enu_cm = self.err_enu.squeeze()*100.
+
+        # Loop over stations
+        for i in range(len(self.station)):
+            if vertOrHoriz is 'horiz':
+                fout.write('{} {} {} {} {} {} {} {}\n'.format(self.lon[i], self.lat[i], 
+                                                        z_cm[i,0], z_cm[i,1],err_enu_cm[i,0], err_enu_cm[i,1],
+                                                        0.0,self.station[i]))
+            elif vertOrHoriz is 'vert':
+                fout.write('{} {} {} {} {} {} {} {}\n'.format(self.lon[i], self.lat[i], 
+                                                        0.0, z_cm[i,2], 0.0, err_enu_cm[i,2],
+                                                        0.0,self.station[i]))
+            else:
+                print('Unknown data component to write...')
+                return
+
+        # Close file
+        fout.close()
+
+        # All done 
+        return
+
+
     def getRMS(self, vertical=False):
         '''
         Computes the RMS of the data and if synthetics are computed, the RMS of the residuals
