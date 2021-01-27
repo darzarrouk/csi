@@ -285,6 +285,9 @@ class imagedownsampling(object):
 
         # Save the image
         self.image = image
+        
+        # Multiprocessing does not like matplotlib instances so clean it up if you made a plot before
+        if hasattr(self.image, 'fig'): del self.image.fig
 
         # Incidence and heading need to be defined if already defined
         if self.datatype=='insar':
@@ -447,6 +450,7 @@ class imagedownsampling(object):
 
         # Build the previous geometry
         self.PIXXY = np.vstack((self.image.x, self.image.y)).T
+
         # Create a queue to hold the results
         output = mp.Queue()
 
