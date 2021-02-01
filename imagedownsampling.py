@@ -791,7 +791,7 @@ class imagedownsampling(object):
             # Set the blocks
             self.setBlocks(newblocks)
             # Do the downsampling
-            self.downsample(plot=plot, decimorig=decimorig,norm=norm)
+            self.downsample(plot=plot, decimorig=decimorig, norm=norm)
 
         # All done
         return
@@ -1413,68 +1413,74 @@ class imagedownsampling(object):
             * None
         '''
 
-        # Replace spaces
-        prefix = prefix.replace(" ", "_")
+        # Check 
+        if self.datatype=='opticorr':
+            raise NotImplementedError
 
-        # Open files
-        ftxt = open(prefix+'.txt', 'w')
-        if rsp:
-            frsp = open(prefix+'.rsp', 'w')
+        self.newimage.writeDownsampled2File(prefix, rsp=rsp)
 
-        # Write the header
-        if self.datatype=='insar':
-            ftxt.write('Number xind yind east north data err wgt Elos Nlos Ulos\n')
-        elif self.datatype=='opticorr':
-            ftxt.write('Number Lon Lat East North EastErr NorthErr \n')
-        ftxt.write('********************************************************\n')
-        if rsp:
-            frsp.write('xind yind UpperLeft-x,y DownRight-x,y\n')
-            frsp.write('********************************************************\n')
+        ## Replace spaces
+        #prefix = prefix.replace(" ", "_")
 
-        # Loop over the samples
-        for i in range(len(self.newimage.x)):
+        ## Open files
+        #ftxt = open(prefix+'.txt', 'w')
+        #if rsp:
+        #    frsp = open(prefix+'.rsp', 'w')
 
-            # Write in txt
-            wgt = self.newimage.wgt[i]
-            x = int(self.newimage.x[i])
-            y = int(self.newimage.y[i])
-            lon = self.newimage.lon[i]
-            lat = self.newimage.lat[i]
-            if self.datatype=='insar':
-                vel = self.newimage.vel[i]
-                err = self.newimage.err[i]
-                elos = self.newimage.los[i,0]
-                nlos = self.newimage.los[i,1]
-                ulos = self.newimage.los[i,2]
-                strg = '{:4d} {:4d} {:4d} {:3.6f} {:3.6f} {} {} {} {} {} {}\n'\
-                    .format(i, x, y, lon, lat, vel, err, wgt, elos, nlos, ulos)
-            elif self.datatype=='opticorr':
-                east = self.newimage.east[i]
-                north = self.newimage.north[i]
-                err_east = self.newimage.err_east[i]
-                err_north = self.newimage.err_north[i]
-                strg = '{:4d} {:3.6f} {:3.6f} {} {} {} {} \n'\
-                        .format(i, lon, lat, east, north, err_east, err_north)
-            ftxt.write(strg)
+        ## Write the header
+        #if self.datatype=='insar':
+        #    ftxt.write('Number xind yind east north data err wgt Elos Nlos Ulos\n')
+        #elif self.datatype=='opticorr':
+        #    ftxt.write('Number Lon Lat East North EastErr NorthErr \n')
+        #ftxt.write('********************************************************\n')
+        #if rsp:
+        #    frsp.write('xind yind UpperLeft-x,y DownRight-x,y\n')
+        #    frsp.write('********************************************************\n')
 
-            # Write in rsp
-            if rsp:
-                ulx = self.blocks[i][0][0]
-                uly = self.blocks[i][0][1]
-                drx = self.blocks[i][2][0]
-                dry = self.blocks[i][2][1]
-                ullon = self.blocksll[i][0][0]
-                ullat = self.blocksll[i][0][1]
-                drlon = self.blocksll[i][2][0]
-                drlat = self.blocksll[i][2][1]
-                strg = '{:4d} {:4d} {} {} {} {} {} {} {} {} \n'\
-                        .format(x, y, ulx, uly, drx, dry, ullon, ullat, drlon, drlat)
-                frsp.write(strg)
+        ## Loop over the samples
+        #for i in range(len(self.newimage.x)):
 
-        # Close the files
-        ftxt.close()
-        if rsp:
-            frsp.close()
+        #    # Write in txt
+        #    wgt = self.newimage.wgt[i]
+        #    x = int(self.newimage.x[i])
+        #    y = int(self.newimage.y[i])
+        #    lon = self.newimage.lon[i]
+        #    lat = self.newimage.lat[i]
+        #    if self.datatype=='insar':
+        #        vel = self.newimage.vel[i]
+        #        err = self.newimage.err[i]
+        #        elos = self.newimage.los[i,0]
+        #        nlos = self.newimage.los[i,1]
+        #        ulos = self.newimage.los[i,2]
+        #        strg = '{:4d} {:4d} {:4d} {:3.6f} {:3.6f} {} {} {} {} {} {}\n'\
+        #            .format(i, x, y, lon, lat, vel, err, wgt, elos, nlos, ulos)
+        #    elif self.datatype=='opticorr':
+        #        east = self.newimage.east[i]
+        #        north = self.newimage.north[i]
+        #        err_east = self.newimage.err_east[i]
+        #        err_north = self.newimage.err_north[i]
+        #        strg = '{:4d} {:3.6f} {:3.6f} {} {} {} {} \n'\
+        #                .format(i, lon, lat, east, north, err_east, err_north)
+        #    ftxt.write(strg)
+
+        #    # Write in rsp
+        #    if rsp:
+        #        ulx = self.blocks[i][0][0]
+        #        uly = self.blocks[i][0][1]
+        #        drx = self.blocks[i][2][0]
+        #        dry = self.blocks[i][2][1]
+        #        ullon = self.blocksll[i][0][0]
+        #        ullat = self.blocksll[i][0][1]
+        #        drlon = self.blocksll[i][2][0]
+        #        drlat = self.blocksll[i][2][1]
+        #        strg = '{:4d} {:4d} {} {} {} {} {} {} {} {} \n'\
+        #                .format(x, y, ulx, uly, drx, dry, ullon, ullat, drlon, drlat)
+        #        frsp.write(strg)
+
+        ## Close the files
+        #ftxt.close()
+        #if rsp:
+        #    frsp.close()
 
         # All done
         return

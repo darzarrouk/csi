@@ -2835,6 +2835,10 @@ class insar(SourceInv):
                 if fault.type=="Fault":
                     fig.faulttrace(fault, zorder=2)
 
+        # Title
+        title = '{} - {} '.format(self.name, data)
+        fig.carte.set_title(title)
+
         # Show
         if show:
             fig.show(showFig=['map'])
@@ -2971,6 +2975,75 @@ class insar(SourceInv):
             fout.write('{} {} {} \n'.format(x[i], y[i], z[i]))
         fout.close()
 
+        return
+
+    def writeDownsampled2File(self, prefix, rsp=False):
+        '''
+        Writes the downsampled image data to a file. The file will be called prefix.txt. If rsp is True, then it writes a file called prefix.rsp containing the boxes of the downsampling. If prefix has white spaces, those are replaced by "_".
+
+        Args:
+            * prefix        : Prefix of the output file
+
+        Kwargs:
+            * rsp           : Write the rsp file?
+
+        Returns:
+            * None
+        '''
+
+        # Replace spaces
+        prefix = prefix.replace(" ", "_")
+
+        # Open files
+        ftxt = open(prefix+'.txt', 'w')
+        if rsp:
+            frsp = open(prefix+'.rsp', 'w')
+
+        # Write the header
+        ftxt.write('Number xind yind east north data err wgt Elos Nlos Ulos\n')
+        ftxt.write('********************************************************\n')
+        if rsp:
+            frsp.write('xind yind UpperLeft-x,y DownRight-x,y\n')
+            frsp.write('********************************************************\n')
+
+        # Loop over the samples
+        for i in range(len(self.x)):
+
+            # Write in txt
+            wgt = self.wgt[i]
+            x = int(self.x[i])
+            y = int(self.y[i])
+            lon = self.lon[i]
+            lat = self.lat[i]
+            vel = self.vel[i]
+            err = self.err[i]
+            elos = self.los[i,0]
+            nlos = self.los[i,1]
+            ulos = self.los[i,2]
+            strg = '{:4d} {:4d} {:4d} {:3.6f} {:3.6f} {} {} {} {} {} {}\n'\
+                .format(i, x, y, lon, lat, vel, err, wgt, elos, nlos, ulos)
+            ftxt.write(strg)
+
+            # Write in rsp
+            if rsp:
+                ulx = self.xycorner[i][0]
+                uly = self.xycorner[i][1]
+                drx = self.xycorner[i][2]
+                dry = self.xycorner[i][3]
+                ullon = self.corner[i][0]
+                ullat = self.corner[i][1]
+                drlon = self.corner[i][2]
+                drlat = self.corner[i][3]
+                strg = '{:4d} {:4d} {} {} {} {} {} {} {} {} \n'\
+                        .format(x, y, ulx, uly, drx, dry, ullon, ullat, drlon, drlat)
+                frsp.write(strg)
+
+        # Close the files
+        ftxt.close()
+        if rsp:
+            frsp.close()
+
+        # All done
         return
 
     def writeDecim2file(self, filename, data='data', outDir='./'):

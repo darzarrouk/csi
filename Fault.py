@@ -224,11 +224,11 @@ class Fault(SourceInv):
         A = fin.readline()
         tmpflt=[]
         while len(A.split()) > 0:
-            if A.split()[0] is '>':
+            if A.split()[0] == '>':
                 if len(tmpflt) > 0:
                     self.addfaults.append(np.array(tmpflt))
                 tmpflt = []
-            elif A.split()[0] is '#':
+            elif A.split()[0] == '#':
                 pass # comment line, ignore
             else:
                 lon = float(A.split()[0])
@@ -342,7 +342,7 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def setTrace(self,delta_depth=0.):
+    def setTrace(self,delta_depth=0., sort='y'):
         '''
         Uses the patches to build a fault trace. Fault trace is made of the
         vertices that are shallower than fault top + delta_depth
@@ -371,7 +371,10 @@ class Fault(SourceInv):
                 self.yf.append(v[1])
         self.xf = np.array(self.xf)
         self.yf = np.array(self.yf)
-        i = np.argsort(self.yf)
+        if sort=='y':
+            i = np.argsort(self.yf)
+        elif sort=='x':
+            i = np.argsort(self.xf)
         self.xf = self.xf[i]
         self.yf = self.yf[i]
 
@@ -850,7 +853,7 @@ class Fault(SourceInv):
 
         # Chech something
         if self.patchType == 'triangletent':
-            assert method is 'edks', 'Homogeneous case not implemented for {} faults'.format(self.patchType)
+            assert method == 'edks', 'Homogeneous case not implemented for {} faults'.format(self.patchType)
 
         # Check something
         if method in ('homogeneous', 'Homogeneous'):
@@ -2493,13 +2496,13 @@ class Fault(SourceInv):
 
         # Select the string for the color
         if slip is not None:
-            if slip is 'coupling':
+            if slip == 'coupling':
                 slp = self.coupling[:]
-            elif slip is 'strikeslip':
+            elif slip == 'strikeslip':
                 slp = self.slip[:,0]*scale
-            elif slip is 'dipslip':
+            elif slip == 'dipslip':
                 slp = self.slip[:,1]*scale
-            elif slip is 'total':
+            elif slip == 'total':
                 slp = np.sqrt(self.slip[:,0]**2 + self.slip[:,1]**2)*scale
             else:
                 try:

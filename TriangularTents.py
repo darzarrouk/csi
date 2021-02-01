@@ -1344,7 +1344,7 @@ class TriangularTents(TriangularPatches):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def plot(self, figure=134, slip='total', equiv=False, 
+    def plot(self, figure=134, slip='total', equiv=False, figsize=(None, None),
              show=True, axesscaling=True, norm=None, linewidth=1.0, plot_on_2d=True, 
              method='scatter', npoints=10, colorbar=True, cmap='jet',
              drawCoastlines=False, expand=0.2, vertIndex=False, savefig=False):
@@ -1381,7 +1381,7 @@ class TriangularTents(TriangularPatches):
         latmax = np.max([p[:,1] for p in self.patchll])+expand
 
         # Create a figure
-        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax, figsize=figsize)
 
         # Draw the coastlines
         if drawCoastlines:

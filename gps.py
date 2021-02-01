@@ -2949,15 +2949,15 @@ class gps(SourceInv):
         fout.write('#  longitude   latitude east(cm) north(cm) err_e(cm) err_n(cm) covarXY  site_name\n')
 
         # Get the data 
-        if data is 'data':
+        if data == 'data':
             z = self.vel_enu
-        elif data is 'synth':
+        elif data == 'synth':
             z = self.synth
-        elif data is 'res':
+        elif data == 'res':
             z = self.vel_enu - self.synth
-        elif data is 'strain':
+        elif data == 'strain':
             z = self.Strain
-        elif data is 'transformation':
+        elif data == 'transformation':
             z = self.transformation
         else:
             print('Unknown data type to write...')
@@ -2968,11 +2968,11 @@ class gps(SourceInv):
 
         # Loop over stations
         for i in range(len(self.station)):
-            if vertOrHoriz is 'horiz':
+            if vertOrHoriz == 'horiz':
                 fout.write('{} {} {} {} {} {} {} {}\n'.format(self.lon[i], self.lat[i], 
                                                         z_cm[i,0], z_cm[i,1],err_enu_cm[i,0], err_enu_cm[i,1],
                                                         0.0,self.station[i]))
-            elif vertOrHoriz is 'vert':
+            elif vertOrHoriz == 'vert':
                 fout.write('{} {} {} {} {} {} {} {}\n'.format(self.lon[i], self.lat[i], 
                                                         0.0, z_cm[i,2], 0.0, err_enu_cm[i,2],
                                                         0.0,self.station[i]))
@@ -3593,6 +3593,11 @@ class gps(SourceInv):
         fig.gps(self, data=data, name=name, 
                       legendscale=legendscale, scale=scale, 
                       color=color)
+
+        # Set up title
+        title = '{} '.format(self.name)
+        for d in data: title += '- {}'.format(d) 
+        fig.carte.set_title(title)
 
         # Save fig
         self.fig = fig

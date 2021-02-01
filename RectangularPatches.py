@@ -3026,7 +3026,7 @@ class RectangularPatches(Fault):
     def plot(self, figure=134, slip='total', 
              equiv=False, show=True, axesscaling=True, 
              norm=None, linewidth=1.0, plot_on_2d=True, 
-             drawCoastlines=True, expand=0.2):
+             drawCoastlines=True, expand=0.2, figsize=(None, None)):
         '''
         Plot the available elements of the fault.
         
@@ -3056,7 +3056,7 @@ class RectangularPatches(Fault):
         latmax = np.max([p[:,1] for p in self.patchll])+expand
 
         # Create a figure
-        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax)
+        fig = geoplot(figure=figure, lonmin=lonmin, lonmax=lonmax, latmin=latmin, latmax=latmax, figsize=figsize)
 
         # Draw the coastlines
         if drawCoastlines:
