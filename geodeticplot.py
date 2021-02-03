@@ -322,7 +322,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def set_view(self, elevation, azimuth):
+    def set_view(self, elevation, azimuth, shape=(1., 1., 1.)):
         '''
         Sets azimuth and elevation angle for the 3D plot.
 
@@ -330,11 +330,18 @@ class geodeticplot(object):
             * elevation     : Point of view elevation angle
             * azimuth       : Point of view azimuth angle
 
+        Kwargs:
+            * shape         : [scale_x, scale_y, scale_z] (0-1 each)
+
         Returns:
             * None
         '''
         # Set angles
         self.faille.view_init(elevation,azimuth)
+
+        # Thank you stackoverflow
+        self.faille.get_proj = lambda: np.dot(Axes3D.get_proj(self.faille), 
+                np.diag([shape[0], shape[1], shape[2], 1]))
 
         #all done
         return
