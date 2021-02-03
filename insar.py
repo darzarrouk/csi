@@ -2772,7 +2772,7 @@ class insar(SourceInv):
 
         # All done
 
-    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=None, plotType='scatter', cmap='jet', alpha=1.):
+    def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2, edgewidth=1, figsize=None, plotType='scatter', cmap='jet', alpha=1., box=None):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -2788,6 +2788,7 @@ class insar(SourceInv):
             * edgewidth         : width of the edges of the decimation process patches
             * plotType          : 'decim', 'scatter' or 'flat'
             * figsize           : tuple of figure sizes
+            * box               : Lon/lat box [lonmin, lonmax, latmin, latmax]
 
         Returns:
             * None
@@ -2802,6 +2803,11 @@ class insar(SourceInv):
             lonmax += 360.
         latmin = self.lat.min()-expand
         latmax = self.lat.max()+expand
+
+        # This gets override if there is a box for plotting
+        if box is not None:
+            assert len(box)==4, 'box must be 4 floats: box = {}'.format(tuple(box))
+            lonmin, lonmax, latmin, latmax = box
 
         # Create a figure
         if figsize is not None: 

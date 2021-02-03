@@ -3523,7 +3523,7 @@ class gps(SourceInv):
 
     def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, figsize=None,
             plot_los=False, drawCoastlines=True, expand=0.2, show=True, drawCountries=False,
-            vertical=False, verticalsize=[30], extent=None,
+            vertical=False, verticalsize=[30], box=None,
             data=['data'], color=['k']):
         '''
         Plot the network
@@ -3544,20 +3544,22 @@ class gps(SourceInv):
             * figure        : number of the figure.
             * faults        : List of fault objects to plot the surface trace of a fault object (see verticalfault.py).
             * plot_los      : Plot the los projected gps as scatter points
+            * box           : Lon/lat box [lonmin, lonmax, latmin, latmax]
 
         Returns:
             * None
         '''
 
         # Get lons lats
-        if extent is None:
-            lonmin = self.lon.min()-expand
-            lonmax = self.lon.max()+expand
-            latmin = self.lat.min()-expand
-            latmax = self.lat.max()+expand
-        else:
-            assert len(extent)==4, 'Extent format must be: [lonmin, lonmax, latmin, latmax]'
-            lonmin, lonmax, latmin, latmax = extent
+        lonmin = self.lon.min()-expand
+        lonmax = self.lon.max()+expand
+        latmin = self.lat.min()-expand
+        latmax = self.lat.max()+expand
+
+        # This gets override if there is a box for plotting
+        if box is not None:
+            assert len(box)==4, 'box must be 4 floats: box = {}'.format(tuple(box))
+            lonmin, lonmax, latmin, latmax = box
 
         # Create a figure
         if figsize is not None: 
