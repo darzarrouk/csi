@@ -1716,6 +1716,49 @@ class TriangularPatches(Fault):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
+    def distancesMatrix(self, distance='center', lim=None):
+        '''
+        Returns two matrices of the distances between patches.
+        One for the horizontal dimensions, the other for verticals
+
+        Kwargs:
+            * distance  : distance estimation mode
+
+                 - center : distance between the centers of the patches.
+                 - no other method is implemented for now.
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+
+        Returns:
+            * distances : Array of floats
+        '''
+
+        # Assert 
+        assert distance=='center', 'No other method implemented than center'
+
+        # Check
+        if self.N_slip==None:
+            self.N_slip = self.slip.shape[0]
+
+        # Loop
+        HDistances = np.zeros((self.N_slip, self.N_slip))
+        for i in range(self.N_slip):
+            p1 = self.patch[i]
+            c1 = self.getcenter(p1)
+            for j in range(self.N_slip):
+                if j == i:
+                    continue
+                p2 = self.patch[j]
+                c2 = self.getcenter(p2)
+                HDistances[i,j] = np.sqrt( (c1[0]-c2[0])**2 + (c1[1]-c2[1])**2 )
+                HDistances[j,i] = HDistances[i,j]
+                VDistances[i,j] = np.sqrt( (c1[2]-c2[2])**2 )
+                VDistances[j,i] = VDistances[i,j]
+
+        # All done
+        return Distances
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
     def distancePatchToPatch(self, patch1, patch2, distance='center', lim=None):
         '''
         Measures the distance between two patches.

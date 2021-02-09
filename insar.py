@@ -2272,165 +2272,165 @@ class insar(SourceInv):
         # All done
         return Dalong, vel, err, Dacross, boxll, xc, yc, xe1, ye1, xe2, ye2, length
 
-    def getAlongStrikeOffset(self, name, fault, interpolation=None, width=1.0,
-            length=10.0, faultwidth=1.0, tolerance=0.2, azimuthpad=2.0):
+    #def getAlongStrikeOffset(self, name, fault, interpolation=None, width=1.0,
+    #        length=10.0, faultwidth=1.0, tolerance=0.2, azimuthpad=2.0):
 
-        '''
-        Runs along a fault to determine variations of the phase offset in the
-        along strike direction. !!!! Not tested in a long time !!!!
+    #    '''
+    #    Runs along a fault to determine variations of the phase offset in the
+    #    along strike direction. !!!! Not tested in a long time !!!!
 
-        Args:
-            * name              : name of the results stored in AlongStrikeOffsets
-            * fault             : a fault object.
+    #    Args:
+    #        * name              : name of the results stored in AlongStrikeOffsets
+    #        * fault             : a fault object.
 
-        Kwargs:
-            * interpolation     : interpolation distance
-            * width             : width of the profiles used
-            * length            : length of the profiles used
-            * faultwidth        : width of the fault zone.
-            * tolerance         : ??
-            * azimuthpad        : ??
+    #    Kwargs:
+    #        * interpolation     : interpolation distance
+    #        * width             : width of the profiles used
+    #        * length            : length of the profiles used
+    #        * faultwidth        : width of the fault zone.
+    #        * tolerance         : ??
+    #        * azimuthpad        : ??
 
-        Returns:
-            * None
-        '''
+    #    Returns:
+    #        * None
+    #    '''
 
-        # the Along strike measurements are in a dictionary
-        if not hasattr(self, 'AlongStrikeOffsets'):
-            self.AlongStrikeOffsets = {}
+    #    # the Along strike measurements are in a dictionary
+    #    if not hasattr(self, 'AlongStrikeOffsets'):
+    #        self.AlongStrikeOffsets = {}
 
-        # Interpolate the fault object if asked
-        if interpolation is not None:
-            fault.discretize(every=interpolation, tol=tolerance)
-            xf = fault.xi
-            yf = fault.yi
-        else:
-            xf = fault.xf
-            yf = fault.yf
+    #    # Interpolate the fault object if asked
+    #    if interpolation is not None:
+    #        fault.discretize(every=interpolation, tol=tolerance)
+    #        xf = fault.xi
+    #        yf = fault.yi
+    #    else:
+    #        xf = fault.xf
+    #        yf = fault.yf
 
-        # Initialize some lists
-        ASprof = []
-        ASx = []
-        ASy = []
-        ASazi = []
+    #    # Initialize some lists
+    #    ASprof = []
+    #    ASx = []
+    #    ASy = []
+    #    ASazi = []
 
-        # Loop
-        for i in range(len(xf)):
+    #    # Loop
+    #    for i in range(len(xf)):
 
-            # Write something
-            sys.stdout.write('\r Fault point {}/{}'.format(i,len(xf)))
-            sys.stdout.flush()
+    #        # Write something
+    #        sys.stdout.write('\r Fault point {}/{}'.format(i,len(xf)))
+    #        sys.stdout.flush()
 
-            # Get coordinates
-            xp = xf[i]
-            yp = yf[i]
+    #        # Get coordinates
+    #        xp = xf[i]
+    #        yp = yf[i]
 
-            # get the local profile and fault azimuth
-            Az, pAz = self._getazimuth(xf, yf, i, pad=azimuthpad)
+    #        # get the local profile and fault azimuth
+    #        Az, pAz = self._getazimuth(xf, yf, i, pad=azimuthpad)
 
-            # If there is something
-            if np.isfinite(Az):
+    #        # If there is something
+    #        if np.isfinite(Az):
 
-                # Get the profile
-                norm, dis, Bol = utils.coord2prof(xp, yp,
-                        length, pAz, width)[0:3]
-                vel = self.vel[Bol]
-                err = self.err[Bol]
+    #            # Get the profile
+    #            norm, dis, Bol = utils.coord2prof(xp, yp,
+    #                    length, pAz, width)[0:3]
+    #            vel = self.vel[Bol]
+    #            err = self.err[Bol]
 
-                # Keep only the non NaN values
-                pts = np.flatnonzero(np.isfinite(vel))
-                dis = np.array(dis)[pts]
-                ptspos = np.flatnonzero(dis>0.0)
-                ptsneg = np.flatnonzero(dis<0.0)
+    #            # Keep only the non NaN values
+    #            pts = np.flatnonzero(np.isfinite(vel))
+    #            dis = np.array(dis)[pts]
+    #            ptspos = np.flatnonzero(dis>0.0)
+    #            ptsneg = np.flatnonzero(dis<0.0)
 
-                # If there is enough points, on both sides, get the offset value
-                if (len(pts)>20 and len(ptspos)>10 and len(ptsneg)>10):
+    #            # If there is enough points, on both sides, get the offset value
+    #            if (len(pts)>20 and len(ptspos)>10 and len(ptsneg)>10):
 
-                    # Select the points
-                    vel = vel[pts]
-                    err = err[pts]
-                    norm = np.array(norm)[pts]
+    #                # Select the points
+    #                vel = vel[pts]
+    #                err = err[pts]
+    #                norm = np.array(norm)[pts]
 
-                    # Symmetrize the profile
-                    mindis = np.min(dis)
-                    maxdis = np.max(dis)
-                    if np.abs(mindis)>np.abs(maxdis):
-                       pts = np.flatnonzero(dis>-1.0*maxdis)
-                    else:
-                        pts = np.flatnonzero(dis<=-1.0*mindis)
+    #                # Symmetrize the profile
+    #                mindis = np.min(dis)
+    #                maxdis = np.max(dis)
+    #                if np.abs(mindis)>np.abs(maxdis):
+    #                   pts = np.flatnonzero(dis>-1.0*maxdis)
+    #                else:
+    #                    pts = np.flatnonzero(dis<=-1.0*mindis)
 
-                    # Get the points
-                    dis = dis[pts]
-                    ptsneg = np.flatnonzero(dis>0.0)
-                    ptspos = np.flatnonzero(dis<0.0)
+    #                # Get the points
+    #                dis = dis[pts]
+    #                ptsneg = np.flatnonzero(dis>0.0)
+    #                ptspos = np.flatnonzero(dis<0.0)
 
-                    # If we still have enough points on both sides
-                    if (len(pts)>20 and len(ptspos)>10 and len(ptsneg)>10 and np.abs(mindis)>(10*faultwidth/2)):
+    #                # If we still have enough points on both sides
+    #                if (len(pts)>20 and len(ptspos)>10 and len(ptsneg)>10 and np.abs(mindis)>(10*faultwidth/2)):
 
-                        # Get the values
-                        vel = vel[pts]
-                        err = err[pts]
-                        norm = norm[pts]
+    #                    # Get the values
+    #                    vel = vel[pts]
+    #                    err = err[pts]
+    #                    norm = norm[pts]
 
-                        # Get offset
-                        off = self._getoffset(dis, vel, faultwidth, plot=False)
+    #                    # Get offset
+    #                    off = self._getoffset(dis, vel, faultwidth, plot=False)
 
-                        # Store things in the lists
-                        ASprof.append(off)
-                        ASx.append(xp)
-                        ASy.append(yp)
-                        ASazi.append(Az)
+    #                    # Store things in the lists
+    #                    ASprof.append(off)
+    #                    ASx.append(xp)
+    #                    ASy.append(yp)
+    #                    ASazi.append(Az)
 
-                    else:
+    #                else:
 
-                        # Store some NaNs
-                        ASprof.append(np.nan)
-                        ASx.append(xp)
-                        ASy.append(yp)
-                        ASazi.append(Az)
+    #                    # Store some NaNs
+    #                    ASprof.append(np.nan)
+    #                    ASx.append(xp)
+    #                    ASy.append(yp)
+    #                    ASazi.append(Az)
 
-                else:
+    #            else:
 
-                    # Store some NaNs
-                    ASprof.append(np.nan)
-                    ASx.append(xp)
-                    ASy.append(yp)
-                    ASazi.append(Az)
-            else:
+    #                # Store some NaNs
+    #                ASprof.append(np.nan)
+    #                ASx.append(xp)
+    #                ASy.append(yp)
+    #                ASazi.append(Az)
+    #        else:
 
-                # Store some NaNs
-                ASprof.append(np.nan)
-                ASx.append(xp)
-                ASy.append(yp)
-                ASazi.append(Az)
+    #            # Store some NaNs
+    #            ASprof.append(np.nan)
+    #            ASx.append(xp)
+    #            ASy.append(yp)
+    #            ASazi.append(Az)
 
-        ASprof = np.array(ASprof)
-        ASx = np.array(ASx)
-        ASy = np.array(ASy)
-        ASazi = np.array(ASazi)
+    #    ASprof = np.array(ASprof)
+    #    ASx = np.array(ASx)
+    #    ASy = np.array(ASy)
+    #    ASazi = np.array(ASazi)
 
-        # Store things
-        self.AlongStrikeOffsets[name] = {}
-        dic = self.AlongStrikeOffsets[name]
-        dic['xpos'] = ASx
-        dic['ypos'] = ASy
-        lon, lat = self.xy2ll(ASx, ASy)
-        dic['lon'] = lon
-        dic['lat'] = lat
-        dic['offset'] = ASprof
-        dic['azimuth'] = ASazi
+    #    # Store things
+    #    self.AlongStrikeOffsets[name] = {}
+    #    dic = self.AlongStrikeOffsets[name]
+    #    dic['xpos'] = ASx
+    #    dic['ypos'] = ASy
+    #    lon, lat = self.xy2ll(ASx, ASy)
+    #    dic['lon'] = lon
+    #    dic['lat'] = lat
+    #    dic['offset'] = ASprof
+    #    dic['azimuth'] = ASazi
 
-        # Compute along strike cumulative distance
-        if interpolation is not None:
-            disc = True
-        dic['distance'] = fault.cumdistance(discretized=disc)
+    #    # Compute along strike cumulative distance
+    #    if interpolation is not None:
+    #        disc = True
+    #    dic['distance'] = fault.cumdistance(discretized=disc)
 
-        # Clean screen
-        sys.stdout.write('\n')
-        sys.stdout.flush()
+    #    # Clean screen
+    #    sys.stdout.write('\n')
+    #    sys.stdout.flush()
 
-        # all done
-        return
+    #    # all done
+    #    return
 
     def writeAlongStrikeOffsets2File(self, name, filename):
         '''
@@ -2641,7 +2641,7 @@ class insar(SourceInv):
         # All done
         return
 
-    def intersectProfileFault(self, name, fault):
+    def intersectProfileFault(self, name, fault, discretized=False):
         '''
         Gets the distance between the fault/profile intersection and the profile center.
 
@@ -2657,8 +2657,12 @@ class insar(SourceInv):
         import shapely.geometry as geom
 
         # Grab the fault trace
-        xf = fault.xf
-        yf = fault.yf
+        if discretized:
+            xf = fault.xi
+            yf = fault.yi
+        else:
+            xf = fault.xf
+            yf = fault.yf
 
         # Grab the profile
         prof = self.profiles[name]
@@ -3125,6 +3129,81 @@ class insar(SourceInv):
                 pAz = np.nan
         # All done
         return Az*180./np.pi,pAz*180./np.pi
+
+    def getOffsetFault(self, profile, fault, distance, threshold=25, discretized=True, verbose=False):
+        '''
+        Computes the offset next to a fault along a profile. This is a copy from 
+        a script written by Manon Dalaison during her PhD in 2020 (infamous year).
+        
+        Args:
+            * profile   : Name of the profile
+            * fault     : fault object
+            * distance  : Distance to take on each side of the fault (min, max)
+
+        Kwargs:
+            * threshold : minimum number of data points on each side to move on
+
+        Returns:
+            * offset, uncertainty
+        '''
+
+        # Get the profile
+        rawts = self.profiles[profile]['LOS Velocity']
+        d     = self.profiles[profile]['Distance']
+        err = self.profiles[profile]['LOS Error']
+        if err is None: err = np.ones((len(d),))
+
+        # Shift with respect to the fault position
+        intersect = self.intersectProfileFault(profile, fault, discretized=discretized)
+        if intersect is not None: d -= intersect
+        
+        # Extract points that are in the limit fault area
+        pointleft  = ((d > -distance[1]) & (d < -distance[0]))
+        pointright = ((d < distance[1]) & (d > distance[0]))
+
+        # Remove outliers
+        # Mean and standard deviation on left and right side
+        meanleft = np.nanmean(rawts[pointleft])
+        stdleft  = np.nanstd(rawts[pointleft])
+        meanright = np.nanmean(rawts[pointright])
+        stdright  = np.nanstd(rawts[pointright])
+
+        # Remove outliers out of (Mean +/- 2*SD)
+        # AND Deal with NaN appearing as Zeros in H5file
+        mask1    = (abs(rawts[pointleft]-meanleft)<2*stdleft) & (rawts[pointleft]!=0)
+        mask2    = (abs(rawts[pointright]-meanright)<2*stdright) & (rawts[pointright]!=0)
+
+        displeft  = rawts[pointleft][mask1]
+        dispright = rawts[pointright][mask2]
+        dleft     = d[pointleft][mask1]
+        dright    = d[pointright][mask2]
+        errleft   = err[pointleft][mask1]
+        errright  = err[pointright][mask2]
+
+        # Check, if False, keep going
+        if (len(displeft)<threshold) or (len(dispright)<threshold) :
+            if verbose: print("Warning: not enough data for profile",profile,"values replaced by NaN")
+            return np.nan, np.nan
+
+        # Linear regression in the two clouds of points
+        wleft    = 1./errleft /np.sum(1./errleft)
+        wright   = 1./errright /np.sum(1./errright)
+        fitLeft   = np.polyfit(dleft, displeft, 1, w=wleft)
+        fitRight  = np.polyfit(dright, dispright, 1, w=wright)
+        fitLeft_fn = np.poly1d(fitLeft)
+        fitRight_fn = np.poly1d(fitRight)
+
+        # Get RMS Residual of fit
+        rmsleft  = (np.sum(wleft*(fitLeft_fn(dleft)-displeft)**2) )**(1/2.)
+        rmsright = (np.sum(wright*(fitRight_fn(dright)-dispright)**2) )**(1/2.)
+        creep_err = (rmsleft**2+rmsright**2)**(1/2.)
+
+        # Get creep rate value
+        # Offset calculated from points of fitting lines nearest the fault trace
+        creep = fitLeft_fn(max(dleft)) - fitRight_fn(min(dright))
+
+        # All done
+        return creep, creep_err
 
     def _getoffset(self, x, y, w, plot=True):
         '''

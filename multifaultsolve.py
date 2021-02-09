@@ -152,6 +152,50 @@ class multifaultsolve(object):
         # All done
         return
 
+    def strongConstraint(self, iparams, cov=1e-6):
+        '''
+        Adds a bunch of lines to force the parameters {iparams} to 
+        be equal, within {cov}. Effectively, it adds a line of +1 and -1
+        to the parameters so that all {iparams} are equal to the first one.
+        The equality will fall within {cov} as this number is set as the diagonal
+        term of the data covariance for the corresponding lines.
+
+        Args:
+            * iparams       : List of parameters
+        
+        Kwargs:
+            * cov           : Covariance
+
+        '''
+
+        # Number of constraints
+        nc = len(iparams) - 1 
+
+        # Create the new lines
+        Glines = np.zeros((nc, self.G.shape[1]))
+        dlines = np.zeros((nc,))
+
+        # Iterate 
+        for i,ip in enumerate(iparams[1:]):
+            Glines[i,iparams[0]] = 1.
+            Glines[i,ip] = -1.
+
+        # Concatenate
+        self.G = np.concatenate((self.G, Glines))
+        self.d = np.concatenate((self.d, dlines))
+
+        # Expand Cd 
+        self.Cd = np.concatenate((self.Cd, np.zeros((self.Cd.shape[0], nc))), axis=1)
+        self.Cd = np.concatenate((self.Cd, np.zeros((nc, self.Cd.shape[1]))), axis=0)
+        cc = np.eye(nc)*cov
+        self.Cd[-nc:,-nc:] = cc
+
+        # Update 
+        self.Nd = len(self.d)
+
+        # All done
+        return
+
     def OrganizeGBySlipmode(self):
 
         '''

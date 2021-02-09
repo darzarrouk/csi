@@ -39,6 +39,17 @@ def getDist(ij):
         dist.append(f.distancePatchToPatch(p1, p2, distance='center', lim=lim))
     return i,dist
 
+def getDistHV(ij):
+    f,i,lim = ij
+    p1 = f.patch[i]
+    c1 = self.getcenter(p1)
+    dist = []
+    for j in range(i):
+        p2 = f.patch[j]
+        c2 = self.getcenter(p2)
+        dist.append( (np.sqrt((c1[0]-c2[0])**2 + (c1[1]-c2[1])**2), np.sqrt((c1[2]-c2[2])**2)) )
+    return i,dist
+
 class RectangularPatches(Fault):
     '''
     Classes implementing a fault made of rectangular patches. Inherits from Fault
@@ -1972,6 +1983,61 @@ class RectangularPatches(Fault):
 
         # All done
         return dis
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def distancesMatrix(self, distance='center', lim=None, nproc=1, verbose=False):
+        '''
+        Returns two matrices of the distances between patches.
+        One along the horizontal dimension, the other for the vertical.
+
+        Kwargs:
+            * distance  : has to be 'center' for now. No other method is implemented for now.
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+        '''
+
+        # Check
+        self.N_slip = self.slip.shape[0]
+
+        # Multiprocessing
+        if nproc>1:
+            import multiprocessing
+            print('Computing distances using %d cpus'%(nproc))
+            ijs = []
+            for i in range(self.N_slip):
+                f = deepcopy(self)
+                ijs.append([f,i,lim])
+            pool = multiprocessing.Pool(nproc)
+            results = pool.map(getDistHV,ijs)
+            HDistances = np.zeros((self.N_slip, self.N_slip))
+            VDistances = np.zeros((self.N_slip, self.N_slip))
+            for result in results:
+                i,d=result
+                for j in range(i):
+                    HDistances[i,j] = d[0][j]
+                    HDistances[j,i] = d[0][j]
+                    VDistances[j,i] = d[1][j]
+                    VDistances[j,i] = d[1][j]
+            return HDistances,VDistances
+
+        # Loop
+        HDistances = np.zeros((self.N_slip, self.N_slip))
+        VDistances = np.zeros((self.N_slip, self.N_slip))
+        for i in range(self.N_slip):
+            if verbose:
+                sys.stdout.write('Distances from patch %d/%d\r'%(i,self.N_slip))
+            p1 = self.patch[i]
+            c1 = self.getcenter(p1)
+            for j in range(i):
+                p2 = self.patch[j]
+                c2 = self.getcenter(p2)
+                HDistances[i,j] = np.sqrt( (c1[0]-c2[0])**2 + (c1[1]-c2[1])**2 )
+                HDistances[j,i] = HDistances[i,j]
+                VDistances[i,j] = np.sqrt( (c1[2]-c2[2])**2 )
+                VDistances[j,i] = VDistances[i,j]
+        print('')
+        # All done
+        return HDistances,VDistances
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------

@@ -13,6 +13,7 @@ import scipy.interpolate as sciint
 from . import triangularDisp as tdisp
 from scipy.linalg import block_diag
 import scipy.spatial.distance as scidis
+import scipy.signal as scisig
 import copy
 import sys
 import os
@@ -567,6 +568,93 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
+    def smoothTrace(self, winsize=10, std=1., discretized=True):
+        '''
+        Smoothes the trace of the fault using a median filter (scipy.signal.medfilt)
+
+        Kwargs:
+            * std               : Standard deviation of the Gaussian kernel in km
+            * discretized       : Use the discretized fault trace (self.xi and self.yi) (default True)
+
+        Returns:
+            * None
+        '''
+    
+        # Get the fault trace
+        if discretized:
+            xt = self.xi
+            yt = self.yi
+        else:
+            xt = self.xf
+            yt = self.yf
+
+        # Smooth it
+        win = scisig.windows.gaussian(winsize, std)
+        x = scisig.convolve(np.concatenate((xt[::-1], xt, xt[::-1])), win,
+                            mode='same', method='fft')/sum(win)
+        y = scisig.convolve(np.concatenate((yt[::-1], yt, yt[::-1])), win, 
+                            mode='same', method='fft')/sum(win)
+
+        # Keep what I need
+        x = x[len(xt):2*len(xt)]
+        y = y[len(yt):2*len(yt)]
+
+        # Save it 
+        if discretized:
+            self.xi = x
+            self.yi = y
+            self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000.,
+                                             inverse=True)
+        else:
+            self.xf = x
+            self.yf = y
+            self.lon, self.lat = self.putm(self.xf*1000., self.yf*1000., 
+                                           inverse=True)
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def strikeOfTrace(self, discretized=True, npoints=2):
+        '''
+        Computes the strike of the fault trace from the discretized (default) 
+        fault trace.
+
+        Kwargs:
+            * discretized       : Use the discretized fault trace (self.xi and self.yi) (default True)
+            * npoints           : Number of points to average strike
+
+        Return:
+            * None. Stores the strike in self.strike
+        '''
+
+        # Get the fault trace
+        if discretized:
+            xt = self.xi
+            yt = self.yi
+        else:
+            xt = self.xf
+            yt = self.yf
+
+        # Iterate over these guys
+        strike = []
+        for i in range(len(xt)):
+            s = []
+            for n in range(1, npoints):
+                istart = np.max((0, i-n))
+                iend = np.min((len(xt)-1, i+n))
+                s.append(np.pi/2.-np.arctan2(yt[iend]-yt[istart],xt[iend]-xt[istart]))
+            strike.append(np.mean(s))
+
+        # Save strike 
+        self.strike = strike
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
     def cumdistance(self, discretized=False):
         '''
         Computes the distance between the first point of the fault and every
@@ -1092,6 +1180,8 @@ class Fault(SourceInv):
 
         # Store
         self.edksSources = sources
+        self.plotSources = [sources[0], sources[1]/1e3, sources[2]/1e3, sources[3]/1e3, 
+                            sources[4]*np.pi/180., sources[5]*np.pi/180., sources[6]/1e6]
 
         # All done
         return
@@ -2219,6 +2309,94 @@ class Fault(SourceInv):
         # Loop over the patches
         distances = self.distanceMatrix(distance='center', lim=lim)
         Cmt = C * np.exp(-distances / lam)
+
+        # Store that into Cm
+        st = 0
+        for i in range(len(slipdir)):
+            se = st + self.N_slip
+            Cm[st:se, st:se] = Cmt
+            st += self.N_slip
+
+        # Put the extra values
+        if extra_params is not None:
+            for i in range(len(extra_params)):
+                Cm[st+i, st+i] = extra_params[i]
+
+        # Store Cm into self
+        self.Cm = Cm
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def buildCmXY(self, sigma, lam, lam0=None, extra_params=None, lim=None,
+                                  verbose=True):
+        '''
+        Builds a model covariance matrix using the equation described in
+        Radiguet et al 2010 with a different characteristic lengthscale along
+        the horizontal and vertical directions. We use
+
+        :math:`C_m(i,j) = \\frac{\sigma \lambda_0}{ \lambda_x }^2 e^{-\\frac{||i,j||_{x2}}{ \lambda_x }} \\frac{\sigma \lambda_0}{ \lambda_z }^2 e^{-\\frac{||i,j||_{z2}}{ \lambda_z }}`
+
+        extra_params allows to add some diagonal terms and expand the size
+        of the matrix, in case the fault object is also hosting the estimation
+        of transformation parameters.
+
+        Model covariance is stored in self.Cm
+
+        Args:
+            * sigma         : Amplitude of the correlation.
+            * lam           : Characteristic length scale (lamx, lamz)
+
+        Kwargs:
+            * lam0          : Normalizing distance. if None, lam0=min(distance between patches)
+            * extra_params  : A list of extra parameters.
+            * lim           : Limit distance parameter (see self.distancePatchToPatch)
+            * verbose       : Talk to me (overwrites self.verrbose)
+
+        Returns:
+            * None
+        '''
+
+        # print
+        if verbose:
+            print ("---------------------------------")
+            print ("---------------------------------")
+            print ("Assembling the Cm matrix ")
+            print ("Sigma = {}".format(sigma))
+            print ("Lambda = {}".format(tuple(lam)))
+
+        # Geth the desired slip directions
+        slipdir = self.slipdir
+
+        # Get the patch centers
+        self.centers = np.array(self.getcenters())
+
+        # Sets the lambda0 value
+        if lam0 is None:
+            xd = ((np.unique(self.centers[:,0]).max() - np.unique(self.centers[:,0]).min())
+                / (np.unique(self.centers[:,0]).size))
+            yd = ((np.unique(self.centers[:,1]).max() - np.unique(self.centers[:,1]).min())
+                / (np.unique(self.centers[:,1]).size))
+            zd = ((np.unique(self.centers[:,2]).max() - np.unique(self.centers[:,2]).min())
+                / (np.unique(self.centers[:,2]).size))
+            lam0 = np.sqrt(xd**2 + yd**2 + zd**2)
+        if verbose:
+            print("Lambda0 = {}".format(lam0))
+        C = (sigma * lam0 / lam[0])**2 * (sigma * lam0 / lam[1])**2
+
+        # Creates the principal Cm matrix
+        if self.N_slip==None:
+            self.N_slip = self.slip.shape[0]
+        Np = self.N_slip * len(slipdir)
+        if extra_params is not None:
+            Np += len(extra_params)
+        Cm = np.zeros((Np, Np))
+
+        # Loop over the patches
+        Hdistances,Vdistances = self.distancesMatrix(distance='center', lim=lim)
+        Cmt = C * np.exp(-Hdistances / lam[0]) * np.exp(-Vdistances / lam[1])
 
         # Store that into Cm
         st = 0

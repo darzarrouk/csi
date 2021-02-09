@@ -653,6 +653,49 @@ class TriangularTents(TriangularPatches):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
+    def distancesMatrix(self, distance='center', lim=None):
+        '''
+        Returns two matrices of the distances between Nodes.
+        One along horizontal dimensions, the other along the vertical axis
+
+        Kwargs:
+            * distance  : distance estimation mode
+
+                 - center : distance between the centers of the patches.
+                 - no other method is implemented for now.
+
+            * lim       : if not None, list of two float, the first one is the distance above which d=lim[1].
+
+        Returns:
+            * distance  : 2d array
+        '''
+
+        # Assert 
+        assert distance=='center', 'No other method implemented than center'
+
+        # Check
+        if self.N_slip==None:
+            self.N_slip = self.slip.shape[0]
+
+        # Loop
+        HDistances = np.zeros((self.N_slip, self.N_slip))
+        VDistances = np.zeros((self.N_slip, self.N_slip))
+        for i in range(self.N_slip):
+            v1 = self.Vertices[i]
+            for j in range(self.N_slip):
+                if j == i:
+                    continue
+                v2 = self.Vertices[j]
+                HDistances[i,j] = np.sqrt( (v1[0]-v2[0])**2 + (v1[1]-v2[1])**2 )
+                HDistances[j,i] = HDistances[i,j]
+                VDistances[i,j] = np.sqrt( (v1[2]-v2[2])**2 )
+                VDistances[j,i] = VDistances[i,j]
+
+        # All done
+        return HDistances,VDistances
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
     def getTentindex(self, tent):
         '''
         Returns the index of a tent.

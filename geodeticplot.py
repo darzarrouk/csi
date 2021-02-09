@@ -594,7 +594,7 @@ class geodeticplot(object):
 
     def faultpatches(self, fault, slip='strikeslip', norm=None, colorbar=True,
                      plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
-                     transparency=0.0, factor=1.0, zorder=3):
+                     transparency=0.0, factor=1.0, zorder=3, edgecolor='slip'):
         '''
         Plot the fualt patches
 
@@ -612,6 +612,7 @@ class geodeticplot(object):
             * transparency  : 1 - alpha
             * factor        : scale factor for fault slip values
             * zorder        : matplotlib order of plotting
+            * edgecolor     : either a color or 'slip'
 
         Returns:
             * None
@@ -672,7 +673,10 @@ class geodeticplot(object):
                 verts.append((xi,yi,zi))
             rect = art3d.Poly3DCollection([verts])
             rect.set_facecolor(scalarMap.to_rgba(slip[p]))
-            rect.set_edgecolors('gray')
+            if edgecolor=='slip': 
+                rect.set_edgecolors(scalarMap.to_rgba(slip[p]))
+            else:
+                rect.set_edgecolors(edgecolor)
             alpha = 1.0 - transparency
             if alpha<1.0:
                 rect.set_alpha(alpha)
@@ -1392,7 +1396,7 @@ class geodeticplot(object):
         Kwargs:
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
-            * data      : plot either 'data' or 'synth' or 'res'.
+            * data      : plot either 'data' or 'synth' or 'res' or 'err'.
             * plotType  : Can be 'decimate' or 'scatter'
             * decim     : In case plotType='scatter', decimates the data by a factor decim.
             * edgewidth : width of the patches in case plotTtype is decimate
@@ -1403,7 +1407,7 @@ class geodeticplot(object):
         '''
 
         # Assert
-        assert data in ('data', 'synth', 'res', 'poly'), 'Data type to plot unknown'
+        assert data in ('data', 'synth', 'res', 'poly', 'err'), 'Data type to plot unknown'
         # Choose data type
         if data == 'data':
             assert insar.vel is not None, 'No data to plot'
