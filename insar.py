@@ -3144,13 +3144,14 @@ class insar(SourceInv):
             * threshold : minimum number of data points on each side to move on
 
         Returns:
-            * offset, uncertainty
+            * offset, uncertainty, los
         '''
 
         # Get the profile
         rawts = self.profiles[profile]['LOS Velocity']
         d     = self.profiles[profile]['Distance']
         err = self.profiles[profile]['LOS Error']
+        los = self.profiles[profile]['LOS vector']
         if err is None: err = np.ones((len(d),))
 
         # Shift with respect to the fault position
@@ -3183,7 +3184,7 @@ class insar(SourceInv):
         # Check, if False, keep going
         if (len(displeft)<threshold) or (len(dispright)<threshold) :
             if verbose: print("Warning: not enough data for profile",profile,"values replaced by NaN")
-            return np.nan, np.nan
+            return np.nan, np.nan, [np.nan, np.nan, np.nan]
 
         # Linear regression in the two clouds of points
         wleft    = 1./errleft /np.sum(1./errleft)
@@ -3202,8 +3203,11 @@ class insar(SourceInv):
         # Offset calculated from points of fitting lines nearest the fault trace
         creep = fitLeft_fn(max(dleft)) - fitRight_fn(min(dright))
 
+        # Average the LOS value at the fault
+        los = np.mean(los[np.abs(d)<distance[0]], axis=0)
+
         # All done
-        return creep, creep_err
+        return creep, creep_err, los
 
     def _getoffset(self, x, y, w, plot=True):
         '''

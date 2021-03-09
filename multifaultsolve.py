@@ -872,6 +872,12 @@ class multifaultsolve(object):
         Cd = self.Cd
         Cm = self.Cm
 
+        # Assert
+        assert G.shape[0]==d.shape[0], "Green's functions and data not compatible: {} / {}".format(G.shape, d.shape)
+        assert G.shape[1]==Cm.shape[1], "Green's functions and model covariance not compatible: {} / {}".format(G.shape, Cm.shape)
+        print('Final data space size: {}'.format(d.shape[0]))
+        print('Final model space size: {}'.format(Cm.shape[0]))
+
         # Get the number of model parameters
         Nm = Cm.shape[0]
 
