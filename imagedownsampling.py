@@ -168,8 +168,11 @@ class mpdownsampler(mp.Process):
             # Find those who are inside
             ii = p.contains_points(self.downsampler.PIXXY)
 
+            # How many valid points
+            valids = len(ii) - len(np.isnan(self.downsampler.image.vel[ii]))
+
             # Check if total area is sufficient
-            check = self.downsampler._isItAGoodBlock(block, np.flatnonzero(ii).shape[0])
+            check = self.downsampler._isItAGoodBlock(block, valids)
 
             # If yes
             if check:
@@ -181,11 +184,10 @@ class mpdownsampler(mp.Process):
                 # Get Mean, Std, x, y, ...
                 wgt = len(np.flatnonzero(ii))
                 if self.downsampler.datatype=='insar':
-                    vel = np.mean(self.downsampler.image.vel[ii])
-                    err = np.std(self.downsampler.image.vel[ii])
-                    los0 = np.mean(self.downsampler.image.los[ii,0])
-                    los1 = np.mean(self.downsampler.image.los[ii,1])
-                    los2 = np.mean(self.downsampler.image.los[ii,2])
+                    vel = np.nanmean(self.downsampler.image.vel[ii])
+                    los0 = np.nanmean(self.downsampler.image.los[ii,0])
+                    los1 = np.nanmean(self.downsampler.image.los[ii,1])
+                    los2 = np.nanmean(self.downsampler.image.los[ii,2])
                     norm = np.sqrt(los0*los0+los1*los1+los2*los2)
                     los0 /= norm
                     los1 /= norm
@@ -194,19 +196,19 @@ class mpdownsampler(mp.Process):
                     #Error on InSAR displacement?
                     if self.downsampler.image.err is not None:
                         #propagate uncertainty
-                        err = np.sqrt(np.sum(self.downsampler.image.err[ii]**2))*(1./len(self.downsampler.image.vel[ii]))
+                        err = np.sqrt(np.nansum(self.downsampler.image.err[ii]**2))*(1./valids)
                     else :
                         #take standard deviation
-                        err = np.std(self.downsampler.image.vel[ii])
+                        err = np.nanstd(self.downsampler.image.vel[ii])
 
                 elif self.downsampler.datatype == 'opticorr':
-                    east = np.mean(self.downsampler.image.east[ii])
-                    north = np.mean(self.downsampler.image.north[ii])
-                    err_east = np.std(self.downsampler.image.east[ii])
-                    err_north = np.std(self.downsampler.image.north[ii])
+                    east = np.nanmean(self.downsampler.image.east[ii])
+                    north = np.nanmean(self.downsampler.image.north[ii])
+                    err_east = np.nanstd(self.downsampler.image.east[ii])
+                    err_north = np.nanstd(self.downsampler.image.north[ii])
 
-                x = np.mean(self.downsampler.image.x[ii])
-                y = np.mean(self.downsampler.image.y[ii])
+                x = np.nanmean(self.downsampler.image.x[ii])
+                y = np.nanmean(self.downsampler.image.y[ii])
                 lon, lat = self.downsampler.xy2ll(x, y)
 
                 # Store that
@@ -1176,6 +1178,8 @@ class imagedownsampling(object):
         Returns:
             * None
         '''
+
+        assert False, 'plotDownsampled Not implemented correctly yet'
 
         # Get the datasets
         original = self.image

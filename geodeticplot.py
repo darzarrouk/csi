@@ -1463,7 +1463,10 @@ class geodeticplot(object):
                     #if xi<0.: xi += 360.
                     verts.append((xi,yi))
                 rect = colls.PolyCollection([verts],linewidth=edgewidth)
-                rect.set_color(scalarMap.to_rgba(disp))
+                if np.isnan(disp):
+                    rect.set_color(None)
+                else:
+                    rect.set_color(scalarMap.to_rgba(disp))
                 rect.set_edgecolors('k')
                 rect.set_zorder(zorder)
                 rect.set_alpha(alpha)
