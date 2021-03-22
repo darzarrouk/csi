@@ -1484,15 +1484,21 @@ class geodeticplot(object):
             if np.isfinite(d).all(): print('Carefull: there is no NaNs, the interpolation might be a whole load of garbage...')
             # Get coordinantes
             x,y = insar.x,insar.y
-            # Build an interpolator
-            sarint = sciint.LinearNDInterpolator(np.vstack((x,y)).T, d, fill_value=np.nan)
-            # Interpolate
-            xx = np.linspace(self.lonmin, self.lonmax, 1000)
-            yy = np.linspace(self.latmin, self.latmax, 1000)
-            xx,yy = np.meshgrid(xx,yy)
-            xx,yy = insar.ll2xy(xx,yy)
-            data = sarint(xx,yy)
-            lon,lat = insar.xy2ll(xx,yy)
+            # Check if insar has the nx ny attributes
+            if hasattr(insar, 'nx') and hasattr(insar, 'ny'):
+                lon = insar.lon.reshape((insar.ny,insar.nx))
+                lat = insar.lat.reshape((insar.ny,insar.nx))
+                data = insar.vel.reshape((insar.ny,insar.nx))
+            else:
+                # Build an interpolator
+                sarint = sciint.LinearNDInterpolator(np.vstack((x,y)).T, d, fill_value=np.nan)
+                # Interpolate
+                xx = np.linspace(self.lonmin, self.lonmax, 1000)
+                yy = np.linspace(self.latmin, self.latmax, 1000)
+                xx,yy = np.meshgrid(xx,yy)
+                xx,yy = insar.ll2xy(xx,yy)
+                data = sarint(xx,yy)
+                lon,lat = insar.xy2ll(xx,yy)
             # Plot
             sc = self.carte.pcolormesh(lon, lat, data, cmap=cmap, vmin=vmin, vmax=vmax, zorder=zorder, alpha=alpha)
 
