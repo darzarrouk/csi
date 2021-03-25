@@ -2565,7 +2565,7 @@ class insar(SourceInv):
         fout.close()
 
 
-    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False, alpha=.3, plotType='scatter'):
+    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False, alpha=.3, plotType='scatter', drawCoastlines=True):
         '''
         Plot profile.
 
@@ -2588,7 +2588,7 @@ class insar(SourceInv):
         assert len(x)>5, 'There is less than 5 points in your profile...'
 
         # Plot the insar
-        self.plot(faults=fault, norm=norm, show=False, alpha=alpha, plotType=plotType, expand=0.)
+        self.plot(faults=fault, norm=norm, show=False, alpha=alpha, plotType=plotType, expand=0., drawCoastlines=drawCoastlines)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
