@@ -492,6 +492,10 @@ class insartimeseries(insar):
             # Store the object in the list
             self.timeseries.append(sar)
 
+            # Remove nans
+            if not keepnan:
+                sar.checkNaNs()
+
         # Keep incidence and heading
         self.incidence = incidence
         self.heading = heading
@@ -510,7 +514,7 @@ class insartimeseries(insar):
             for sar in self.timeseries:
                 sar.reject_pixel(uu)
             if zfile is not None:
-                elevation.reject_pixel(uu)
+                self.elevation.reject_pixel(uu)
             self.reject_pixel(uu)
 
         # Close file if asked
