@@ -1771,7 +1771,8 @@ class insar(SourceInv):
         self.y = np.delete(self.y, u)
         if self.err is not None:
             self.err = np.delete(self.err, u)
-        self.los = np.delete(self.los, u, axis=0)
+        if self.los is not None:
+            self.los = np.delete(self.los, u, axis=0)
         self.vel = np.delete(self.vel, u)
 
         if self.Cd is not None:
@@ -2952,7 +2953,7 @@ class insar(SourceInv):
         return
 
 
-    def write2file(self, fname, data='data', outDir='./'):
+    def write2file(self, fname, data='data', outDir='./', err=False):
         '''
         Write to an ascii file
 
@@ -2978,11 +2979,16 @@ class insar(SourceInv):
             z = self.orbit
         elif data=='resid':
             z = self.vel - self.synth
+        if err:
+            e = self.err
 
         # Write these to a file
         fout = open(os.path.join(outDir, fname), 'w')
         for i in range(x.shape[0]):
-            fout.write('{} {} {} \n'.format(x[i], y[i], z[i]))
+            line = '{} {} {} '.format(x[i], y[i], z[i])
+            if err: line += '{} '.format(e[i])
+            line += '\n'
+            fout.write(line)
         fout.close()
 
         return
@@ -3130,7 +3136,7 @@ class insar(SourceInv):
         # All done
         return Az*180./np.pi,pAz*180./np.pi
 
-    def getOffsetFault(self, profile, fault, distance, threshold=25, discretized=True, verbose=False):
+    def getOffsetFault(self, profile, fault, distance, threshold=25, discretized=True, verbose=False, useerrors=True):
         '''
         Computes the offset next to a fault along a profile. This is a copy from 
         a script written by Manon Dalaison during her PhD in 2020 (infamous year).
@@ -3187,10 +3193,16 @@ class insar(SourceInv):
             return np.nan, np.nan, [np.nan, np.nan, np.nan]
 
         # Linear regression in the two clouds of points
-        wleft    = 1./errleft /np.sum(1./errleft)
-        wright   = 1./errright /np.sum(1./errright)
-        fitLeft   = np.polyfit(dleft, displeft, 1, w=wleft)
-        fitRight  = np.polyfit(dright, dispright, 1, w=wright)
+        if useerrors:
+            wleft    = 1./errleft /np.sum(1./errleft)
+            wright   = 1./errright /np.sum(1./errright)
+            fitLeft   = np.polyfit(dleft, displeft, 1, w=wleft)
+            fitRight  = np.polyfit(dright, dispright, 1, w=wright)
+        else:
+            wleft = 1.
+            wright = 1.
+            fitLeft   = np.polyfit(dleft, displeft, 1)
+            fitRight  = np.polyfit(dright, dispright, 1)
         fitLeft_fn = np.poly1d(fitLeft)
         fitRight_fn = np.poly1d(fitRight)
 
@@ -3204,7 +3216,8 @@ class insar(SourceInv):
         creep = fitLeft_fn(max(dleft)) - fitRight_fn(min(dright))
 
         # Average the LOS value at the fault
-        los = np.mean(los[np.abs(d)<distance[0]], axis=0)
+        if los is not None:
+            los = np.mean(los[np.abs(d)<distance[0]], axis=0)
 
         # All done
         return creep, creep_err, los
