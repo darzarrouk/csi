@@ -9,11 +9,12 @@ Edited by T. Shreve, May 2019
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
-import scipy.interpolate as sciint
 from . import triangularDisp as tdisp
 from scipy.linalg import block_diag
 import scipy.spatial.distance as scidis
+import scipy.interpolate as sciint
 import scipy.signal as scisig
+import scipy.optimize as sciopt
 import copy
 import sys
 import os
@@ -685,6 +686,50 @@ class Fault(SourceInv):
 
         # all done
         return dis
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    def cumdis2xy(self, distance, recompute=True, mode='lonlat', discretized=False):
+        '''
+        For a given {distance}, returns the x and y position along strike.
+
+        Args:   
+            * distance          : Along strike distance
+
+        Kwargs:
+            * recompute         : recompute the interpolator
+            * mode              : 'lonlat' returns lon/lat while 'xy' returns x and y
+            * discretized       : use the discretized fault trace
+        
+        Returns:
+            * xy                : tuple of floats
+        '''
+
+        # Get the coordinates
+        if discretized:
+            x,y = self.xi,self.yi
+        else:
+            x,y = self.xy,self.yf
+
+        # Cumulative distance is needed
+        cumdis = self.cumdistance(discretized=discretized)
+        
+        # Make the interpolator
+        if recompute:
+            self.intcumdis = sciint.interp2d(x, y, cumdis, fill_value=0.) 
+        assert hasattr(self, 'intcumdis'), 'An interpolator is needed'
+
+        # Make a function with this
+        def norm(m):
+            return (self.intcumdis(m[0], m[1])-distance)**2
+        
+        # Minimize from a starting point that is close to the good point
+        istart = np.argmin(np.abs(cumdis-distance))
+        startm = np.array([x[istart], y[istart]])
+        m = sciopt.minimize(norm, startm)
+
+        # All done
+        return tuple(m.x)
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------

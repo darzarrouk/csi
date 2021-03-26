@@ -44,6 +44,9 @@ class TriangularPatches(Fault):
         # Specify the type of patch
         self.patchType = 'triangle'
 
+        # The case of vertical faults with triangular patches is tricky, so we leave this option here
+        self.vertical = False
+
         # All done
         return
     # ----------------------------------------------------------------------
@@ -1390,6 +1393,43 @@ class TriangularPatches(Fault):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
+    def homogeneizeStrike(self, direction=1, sign=1.):
+        '''
+        Rotates the vertices in {Faces} so that the normals are all pointing in
+        a common direction. The {direction} is checked by the axis (0=x, 1=y, 2=z).
+
+        Kwargs: 
+            * direction : Direction of the normal to check. 
+            * sign      : +1 or -1
+        '''
+
+        # Check
+        assert type(sign) in (float, int), 'sign must be a float or int: {}'.format(sign)
+        assert float(sign)!=0., 'sign must be different from 0'
+
+        # Compute normals
+        normals = np.array([self.getpatchgeometry(p, retNormal=True) for p in self.patch])
+
+        # Find the normals that are not following the rule
+        inormals = np.flatnonzero(np.sign(normals[:,direction])==np.sign(sign))
+
+        # For these patches, get the patch, flip 2 summits
+        for ip in inormals:
+            p1, p2, p3 = self.patch[ip]
+            self.patch[ip] = np.array([p1, p3, p2])
+            f1, f2, f3 = self.Faces[ip,:]
+            self.Faces[ip,0] = f1
+            self.Faces[ip,1] = f3
+            self.Faces[ip,2] = f2
+
+        # Recompute patches 2 lonlat
+        self.patch2ll()
+
+        # All done
+        return
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
     def replacePatch(self, patch, iPatch):
         '''
         Replaces one patch by the given geometry.
@@ -1601,7 +1641,7 @@ class TriangularPatches(Fault):
         # Get the center of the patch
         x1, x2, x3 = self.getcenter(patch)
 
-        # Get the vertices of the patch
+        # Get the vertices of the patch (indexes are flipped to get depth along z axis)
         verts = copy.deepcopy(patch)
         p1, p2, p3 = [np.array([lst[1],lst[0],lst[2]]) for lst in verts]
 
@@ -1611,20 +1651,22 @@ class TriangularPatches(Fault):
 
         # Get the patch normal
         normal = np.cross(p2 - p1, p3 - p1)
+
+        # If fault is vertical, force normal to be horizontal
+        if self.vertical:
+            normal[2] = 0.
+
+        # Normalize
         normal /= np.linalg.norm(normal)
 
         # Enforce clockwise circulation
-        if np.round(normal[2],decimals=1) < 0:
+        if np.round(normal[2],decimals=1) < 0.:
             normal *= -1.0
             p2, p3 = p3, p2
 
-        # If fault is vertical, force normal to be horizontal
-        if np.round(normal[2],decimals=1) == 0.: 
-            normal[2] = 0.
-
         # Force strike between 0 and 90 or between 270 and 360
-            if normal[1] > 0:
-                normal *= -1
+        if normal[1] > 0:
+             normal *= -1
                     
         # Get the strike vector and strike angle
         strike = np.arctan2(-normal[0], normal[1]) - np.pi
