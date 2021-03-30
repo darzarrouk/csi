@@ -1389,7 +1389,8 @@ class TriangularTents(TriangularPatches):
     # ----------------------------------------------------------------------
     def plot(self, figure=134, slip='total', equiv=False, figsize=(None, None),
              show=True, axesscaling=True, norm=None, linewidth=1.0, plot_on_2d=True, 
-             method='scatter', npoints=10, colorbar=True, cmap='jet',
+             method='scatter', npoints=10, cmap='jet',
+             colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
              drawCoastlines=False, expand=0.2, vertIndex=False, savefig=False):
         '''
         Plot the available elements of the fault.
@@ -1432,6 +1433,7 @@ class TriangularTents(TriangularPatches):
 
         # Draw the fault
         x, y, z, slipval = fig.faultTents(self, slip=slip, norm=norm, colorbar=colorbar, 
+                cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel,
                 plot_on_2d=plot_on_2d, npoints=npoints, cmap=cmap,
                 method=method, vertIndex=vertIndex)
 

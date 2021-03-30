@@ -707,7 +707,8 @@ class gps(SourceInv):
         # all done
         return
 
-    def plotprofile(self, name, legendscale=10., fault=None, data=['parallel', 'normal', 'vertical'], show=True, figsize=None):
+    def plotprofile(self, name, legendscale=10., fault=None, data=['parallel', 'normal', 'vertical'], 
+                    show=True, figsize=None, colorbar=False, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel=''):
         '''
         Plot profile.
 
@@ -732,7 +733,8 @@ class gps(SourceInv):
             vertical=True
         else:
             vertical=False
-        self.plot(faults=fault, figure=None, show=False, legendscale=legendscale, vertical=vertical, figsize=figsize)
+        self.plot(faults=fault, figure=None, show=False, legendscale=legendscale, vertical=vertical, figsize=figsize, 
+                  colorbar=colorbar, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel)
 
         # plot the box on the map
         b = self.profiles[name]['Box']
@@ -3523,6 +3525,7 @@ class gps(SourceInv):
 
     def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, figsize=None,
             plot_los=False, drawCoastlines=True, expand=0.2, show=True, drawCountries=False,
+            colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
             vertical=False, verticalsize=[30], box=None,
             data=['data'], color=['k']):
         '''
@@ -3585,11 +3588,11 @@ class gps(SourceInv):
 
         # plot GPS along the LOS
         if plot_los:
-            fig.gps_projected(self, colorbar=True)
+            fig.gps_projected(self, colorbar=True, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel)
 
         # Plot verticals?
         if vertical:
-            fig.gpsverticals(self, colorbar=True, data=data, markersize=verticalsize)
+            fig.gpsverticals(self, colorbar=True, data=data, markersize=verticalsize, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel)
 
         # Plot GPS velocities
         fig.gps(self, data=data, name=name, 

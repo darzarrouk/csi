@@ -1657,7 +1657,9 @@ class opticorr(SourceInv):
 #        # All done  
 #        return
 
-    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, data='data', show=True, drawCoastlines=True, expand=0.2):
+    def plot(self, faults=None, figure=None, gps=None, decim=False, norm=None, 
+             data='data', show=True, drawCoastlines=True, expand=0.2, 
+             colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel=''):
         '''
         Plot the data set, together with a fault, if asked.
 
@@ -1709,11 +1711,11 @@ class opticorr(SourceInv):
 
         # Plot the decimation process, if asked
         if decim:
-            fig.opticorr(self, norm=norm, colorbar=True, data=data, plotType='decimate')
+            fig.opticorr(self, norm=norm, colorbar=True, data=data, plotType='decimate', cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel)
 
         # Plot the data
         if not decim:
-            fig.opticorr(self, norm=norm, colorbar=True, data=data, plotType='scatter')
+            fig.opticorr(self, norm=norm, colorbar=True, data=data, plotType='scatter', cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel)
 
         # Show
         if show:

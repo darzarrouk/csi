@@ -78,14 +78,14 @@ class geodeticplot(object):
         self.projection = ccrs.PlateCarree()
 
         # Open a figure
-        fig1 = plt.figure(figure, figsize=figsize[0])
-        faille = fig1.add_subplot(111, projection='3d')
+        figFaille = plt.figure(figure, figsize=figsize[0])
+        faille = figFaille.add_subplot(111, projection='3d')
         if figure == None:
             nextFig = np.max(plt.get_fignums())+1
         else:
             nextFig=figure+1
-        fig2  = plt.figure(nextFig, figsize=figsize[1])
-        carte = fig2.add_subplot(111, projection=self.projection)
+        figCarte  = plt.figure(nextFig, figsize=figsize[1])
+        carte = figCarte.add_subplot(111, projection=self.projection)
         carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax], crs=self.projection)
 
         # Gridlines (there is something wrong with the gridlines class...)
@@ -128,9 +128,9 @@ class geodeticplot(object):
 
         # store plots
         self.faille = faille
-        self.fig1 = fig1
+        self.figFaille = figFaille
         self.carte  = carte
-        self.fig2 = fig2
+        self.figCarte = figCarte
 
         # All done
         return
@@ -152,9 +152,9 @@ class geodeticplot(object):
 
         # Figure 1
         if 'fault' in fig2close:
-            plt.close(self.fig1)
+            plt.close(self.figFaille)
         if 'map' in fig2close:
-            plt.close(self.fig2)
+            plt.close(self.figCarte)
 
         # All done
         return
@@ -193,9 +193,9 @@ class geodeticplot(object):
 
         # Delete figures
         if 'map' not in showFig:
-            plt.close(self.fig2)
+            plt.close(self.figCarte)
         if 'fault' not in showFig:
-            plt.close(self.fig1)
+            plt.close(self.figFaille)
 
         # Show
         plt.show()
@@ -234,17 +234,40 @@ class geodeticplot(object):
         # Save
         if (ftype == 'png') and (dpi is not None) and (bbox_inches is not None):
             if 'fault' in saveFig:
-                self.fig1.savefig('%s_fault.png' % (prefix),
+                self.figFaille.savefig('%s_fault.png' % (prefix),
                         dpi=dpi, bbox_inches=bbox_inches)
             if 'map' in saveFig:
-                self.fig2.savefig('%s_map.png' % (prefix),
+                self.figCarte.savefig('%s_map.png' % (prefix),
                         dpi=dpi, bbox_inches=bbox_inches)
         else:
             if 'fault' in saveFig:
-                self.fig1.savefig('{}_fault.{}'.format(prefix, ftype))
+                self.figFaille.savefig('{}_fault.{}'.format(prefix, ftype))
             if 'map' in saveFig:
-                self.fig2.savefig('{}_map.{}'.format(prefix, ftype))
+                self.figCarte.savefig('{}_map.{}'.format(prefix, ftype))
 
+        # All done
+        return
+
+    def addColorbar(self, values, scalarMap, cbaxis, cborientation, figure, cblabel=''):
+        '''
+        Adds a colorbar for a given {scalarMap} to the chosen {figure}
+
+        Args:
+            * values        : Values used fr the plot
+            * scalaMap      : Scalar Mappable from matplotlib
+            * cbaxis        : [Left, Bottom, Width, Height] shape of the axis in which the colorbar is plot
+            * cborientation : 'horizontal' or 'vertical'
+            * figure        : Figure object
+
+        Kwargs:
+            * cblabel       : Label the colorbar
+        '''
+
+        scalarMap.set_array(values)
+        cax = figure.add_axes(cbaxis)
+        cb = plt.colorbar(scalarMap, cax=cax, orientation=cborientation)
+        cb.set_label(label=cblabel, weight='bold')
+        
         # All done
         return
 
@@ -255,8 +278,8 @@ class geodeticplot(object):
         Returns:
             * None
         '''
-        self.fig1.clf()
-        self.fig2.clf()
+        self.figFaille.clf()
+        self.figCarte.clf()
         return
 
     def titlemap(self, titre):
@@ -372,7 +395,7 @@ class geodeticplot(object):
         self.faille.set_ylim3d([y0-max_range, y0+max_range])
         self.faille.set_zlim3d(zlim)
 
-        self.fig1.set_size_inches((14,6))
+        self.figFaille.set_size_inches((14,6))
 
         return
 
@@ -593,6 +616,7 @@ class geodeticplot(object):
         return
 
     def faultpatches(self, fault, slip='strikeslip', norm=None, colorbar=True,
+                     cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
                      plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
                      transparency=0.0, factor=1.0, zorder=3, edgecolor='slip'):
         '''
@@ -605,6 +629,9 @@ class geodeticplot(object):
             * slip          : Can be 'strikeslip', 'dipslip', 'tensile', 'total' or 'coupling'
             * norm          : Limits for the colorbar.
             * colorbar      : if True, plots a colorbar.
+            * cbaxis        : [Left, Bottom, Width, Height] of the colorbar axis
+            * cborientation : 'horizontal' (default) 
+            * cblabel       : Write something next to the colorbar.
             * plot_on_2d    : if True, adds the patches on the map.
             * revmap        : Revert the colormap
             * linewidth     : Width of the edges of the patches
@@ -710,13 +737,16 @@ class geodeticplot(object):
 
         # put up a colorbar
         if colorbar:
-            scalarMap.set_array(slip)
-            self.fphbar = self.fig1.colorbar(scalarMap, shrink=0.7, orientation='horizontal')
+            self.addColorbar(slip, scalarMap, cbaxis, cborientation, self.figFaille, cblabel=cblabel) 
+            if plot_on_2d:
+                self.addColorbar(slip, scalarMap, cbaxis, cborientation,self.figCarte, cblabel=cblabel)
 
         # All done
         return
 
-    def pressuresource(self, fault, delta='pressure', norm=None, colorbar=True, revmap=False, linewidth=1.0, cmap='jet',
+    def pressuresource(self, fault, delta='pressure', norm=None, colorbar=True, 
+                     cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
+                     revmap=False, linewidth=1.0, cmap='jet',
                      transparency=0.0, factor=1.0, zorder=3, plot_on_2d=False):
         '''
         Plots a pressure source.
@@ -815,14 +845,16 @@ class geodeticplot(object):
 
         # put up a colorbar
         if colorbar:
-            scalarMap.set_array(delta)
-            self.fphbar = self.fig1.colorbar(scalarMap, shrink=1, orientation='horizontal', ax=self.carte)
+            self.addColorbar(delta, scalaMap, cbaxis, cborientation, self.figFaille, cblabel=cblabel)
+            if plot_on_2d:
+                self.addColorbar(delta, scalaMap, cbaxis, cborientation, self.figCarte, cblabel=cblabel)
 
         # All done
         return
 
     def faultTents(self, fault,
                    slip='strikeslip', norm=None, colorbar=True,
+                    cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
                    method='scatter', cmap='jet', plot_on_2d=False,
                    revmap=False, factor=1.0, npoints=10,
                    xystrides=[100, 100], zorder=0,
@@ -960,11 +992,6 @@ class geodeticplot(object):
                 #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
                 self.carte.scatter(lon, lat, c=Slip, cmap=cmap, linewidth=0, s=2, vmin=vmin, vmax=vmax, zorder=zorder)
 
-            # Color Bar
-            if colorbar:
-                scalarMap.set_array(slip)
-                self.fphbar = self.fig1.colorbar(scalarMap, shrink=1, orientation='horizontal')
-
         elif method == 'scatter':
             # Do the scatter ploto
             lon, lat = fault.xy2ll(X, Y)
@@ -981,14 +1008,18 @@ class geodeticplot(object):
                         plt.annotate('{}'.format(ivert), xy=(x,y),
                                      xycoords='data', xytext=(x,y), textcoords='data')
 
-            # put up a colorbar
-            if colorbar:
-                self.fphbar = self.fig1.colorbar(cb, shrink=1, orientation='horizontal')
+        # put up a colorbar
+        if colorbar:
+            self.addColorbar(Slip, scalarMap, cbaxis, cborientation, self.figFaille, cblabel=cblabel) 
+            if plot_on_2d:
+                self.addColorbar(Slip, scalarMap, cbaxis, cborientation, self.figCarte, cblabel=cblabel)
 
         # All done
         return lon, lat, Z, Slip
 
-    def surfacestress(self, stress, component='normal', linewidth=0.0, norm=None, colorbar=True):
+    def surfacestress(self, stress, component='normal', linewidth=0.0, norm=None, 
+                      colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal',
+                      cblabel=''):
         '''
         Plots the stress on the map.
 
@@ -1000,6 +1031,9 @@ class geodeticplot(object):
             * linewidth     : option of scatter.
             * norm          : Scales the color bar.
             * colorbar      : if true, plots a colorbar
+            * cbaxis        : [Left, Bottom, Width, Height] of the colorbar axis
+            * cborientation : 'horizontal' (default) 
+            * cblabel       : Write something next to the colorbar.
 
         Returns:
             * None
@@ -1038,7 +1072,7 @@ class geodeticplot(object):
 
         # colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=1, orientation='horizontal')
+            self.addColorbar(val, sc, cbaxis, cborientation, self.figCarte, cblabel=cblabel) 
 
         # All don
         return
@@ -1140,6 +1174,7 @@ class geodeticplot(object):
         return
 
     def gpsverticals(self, gps, norm=None, colorbar=True,
+                     cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
                      data=['data'], markersize=[10], linewidth=0.1,
                      zorder=4, cmap='jet', marker='o'):
         '''
@@ -1220,11 +1255,13 @@ class geodeticplot(object):
 
         # Colorbar
         if colorbar:
-            cbar = self.fig2.colorbar(sc, orientation='horizontal', shrink=0.7)
+            self.addColorbar(V, sc, cbaxis, cborientation, self.figCarte, cblabel=cblabel) 
 
         return
 
-    def gpsprojected(self, gps, norm=None, colorbar=True, zorder=4, cmap='jet'):
+    def gpsprojected(self, gps, norm=None, colorbar=True, 
+                     cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
+                     zorder=4, cmap='jet'):
         '''
         Plot the gps data projected in the LOS
 
@@ -1263,12 +1300,14 @@ class geodeticplot(object):
 
         # plot colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=1, orientation='horizontal')
+            self.addColorbar(d, sc, cbaxis, cborientation, self.figCarte, cblabel=cblabel)
 
         # All done
         return
 
-    def earthquakes(self, earthquakes, plot='2d3d', color='k', markersize=5, norm=None, colorbar=False, zorder=2):
+    def earthquakes(self, earthquakes, plot='2d3d', color='k', markersize=5, norm=None, 
+                    colorbar=False, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', 
+                    cblabel='', zorder=2):
         '''
         Plot earthquake catalog
 
@@ -1281,6 +1320,9 @@ class geodeticplot(object):
             * markersize    : size of each dots. Can be an array.
             * norm          : upper and lower bound for the color code.
             * colorbar      : Draw a colorbar.
+            * cbaxis        : [Left, Bottom, Width, Height] of the colorbar axis
+            * cborientation : 'horizontal' (default) 
+            * cblabel       : Write something next to the colorbar.
             * zorder    : order of the plot in matplotlib
 
         Returns:
@@ -1315,18 +1357,20 @@ class geodeticplot(object):
         if '2d' in plot:
             sc = self.carte.scatter(lon, lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1, zorder=zorder)
             if colorbar:
-                self.fig2.colorbar(sc, shrink=1, orientation='horizontal')
+                self.addColorbar(color, sc, cbaxis, cborientation, self.figCarte, cblabel=cblabel) 
 
         # plot the earthquakes in the volume if ask
         if '3d' in plot:
             sc = self.faille.scatter3D(lon, lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1)
             if colorbar:
-                self.fig1.colorbar(sc, shrink=1, orientation='horizontal')
+                self.addColorbar(color, sc, cbaxis, cborientation, self.figFaille, cblabel=cblabel) 
 
         # All done
         return
 
-    def faultsimulation(self, fault, norm=None, colorbar=True, direction='north'):
+    def faultsimulation(self, fault, norm=None, colorbar=True, 
+                        cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
+                        direction='north'):
         '''
         Plot a fault simulation, Not tested in a long time... Might be obsolete.
 
@@ -1379,14 +1423,15 @@ class geodeticplot(object):
 
         # plot colorbar
         if colorbar:
-            self.fig2.colorbar(sc, shrink=1, orientation='horizontal')
+            self.addColorbar(d, sc, cbaxis, cborientation, self.figCarte, cblabel=cblabel) 
 
         # All done
         return
 
-    def insar(self, insar, norm=None, colorbar=True, data='data',
-                       plotType='scatter', cmap='jet',
-                       decim=1, zorder=3, edgewidth=1, alpha=1.):
+    def insar(self, insar, norm=None, colorbar=True, 
+                    cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
+                    data='data', plotType='scatter', cmap='jet',
+                    decim=1, zorder=3, edgewidth=1, alpha=1.):
         '''
         Plot an insar object
 
@@ -1396,6 +1441,9 @@ class geodeticplot(object):
         Kwargs:
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
+            * cbaxis        : [Left, Bottom, Width, Height] of the colorbar axis
+            * cborientation : 'horizontal' (default) 
+            * cblabel       : Write something next to the colorbar.
             * data      : plot either 'data' or 'synth' or 'res' or 'err'.
             * plotType  : Can be 'decimate' or 'scatter'
             * decim     : In case plotType='scatter', decimates the data by a factor decim.
@@ -1508,15 +1556,14 @@ class geodeticplot(object):
 
         # plot colorbar
         if colorbar:
-            scalarMap.set_array(d)
-            plt.colorbar(scalarMap,shrink=1, orientation='horizontal')
-
+            self.addColorbar(d, scalarMap, cbaxis, cborientation, self.figCarte, cblabel=cblabel) 
 
         # All done
         return
 
-    def opticorr(self, corr, norm=None, colorbar=True, data='dataEast',
-                plotType='decimate', decim=1, zorder=3):
+    def opticorr(self, corr, norm=None, colorbar=True, 
+                 cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
+                 data='dataEast', plotType='decimate', decim=1, zorder=3):
         '''
         Plot opticorr instance
 
@@ -1526,6 +1573,9 @@ class geodeticplot(object):
         Kwargs:
             * norm      : lower and upper bound of the colorbar.
             * colorbar  : plot the colorbar (True/False).
+            * cbaxis        : [Left, Bottom, Width, Height] of the colorbar axis
+            * cborientation : 'horizontal' (default) 
+            * cblabel       : Write something next to the colorbar.
             * data      : plot either 'dataEast', 'dataNorth', 'synthNorth', 'synthEast', 'resEast', 'resNorth', 'data', 'synth' or 'res'
             * plotType  : plot either rectangular patches (decimate) or scatter (scatter)
             * decim     : decimation factor if plotType='scatter'
@@ -1609,8 +1659,7 @@ class geodeticplot(object):
 
         # plot colorbar
         if colorbar:
-            scalarMap.set_array(d)
-            plt.colorbar(scalarMap, shrink=1, orientation='horizontal')
+            self.addColorbar(d, scalarMap, cbaxis, cborientation, self.figCarte, cblabel=cblabel) 
 
         # All done
         return
