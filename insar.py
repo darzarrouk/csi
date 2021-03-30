@@ -3221,7 +3221,7 @@ class insar(SourceInv):
 
         # Average the LOS value at the fault
         if los is not None:
-            los = np.mean(los[np.abs(d)<distance[0]], axis=0)
+            los = np.nanmean(los[np.abs(d)<distance[1]], axis=0)
 
         # All done
         return creep, creep_err, los
