@@ -2576,6 +2576,7 @@ class TriangularPatches(Fault):
     # ----------------------------------------------------------------------
     def plot(self, figure=134, slip='total', equiv=False, show=True, 
              axesscaling=True, norm=None, linewidth=1.0, plot_on_2d=True, 
+             colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='', 
              drawCoastlines=False, expand=0.2, savefig=False, scalebar=None, figsize=(None, None)):
         '''
         Plot the available elements of the fault.
@@ -2618,7 +2619,8 @@ class TriangularPatches(Fault):
             fig.drawCoastlines(drawLand=False, parallels=None, meridians=None, drawOnFault=True)
 
         # Draw the fault
-        fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, plot_on_2d=plot_on_2d, linewidth=linewidth)
+        fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel, 
+                         plot_on_2d=plot_on_2d, linewidth=linewidth)
 
         # Savefigs?
         if savefig:

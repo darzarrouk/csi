@@ -3092,6 +3092,7 @@ class RectangularPatches(Fault):
     def plot(self, figure=134, slip='total', 
              equiv=False, show=True, axesscaling=True, 
              norm=None, linewidth=1.0, plot_on_2d=True, 
+             colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
              drawCoastlines=True, expand=0.2, figsize=(None, None)):
         '''
         Plot the available elements of the fault.
@@ -3129,7 +3130,9 @@ class RectangularPatches(Fault):
             fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
 
         # Draw the fault
-        fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, plot_on_2d=plot_on_2d)
+        fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, 
+                         cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel,
+                         plot_on_2d=plot_on_2d)
 
         # Plot the trace of there is one
         if self.lon is not None:
