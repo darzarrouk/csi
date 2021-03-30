@@ -3222,6 +3222,44 @@ class insar(SourceInv):
         # All done
         return creep, creep_err, los
 
+    def getStepFromProfile(self, profname, fault, distance, mindis=0.1, discretized=False):
+        '''
+        Returns the offset across a fault from a profile.
+
+        Args:
+            profname    : Name of the profile
+            fault       : fault pobject
+            distance    : max distnace away from the fault
+            mindis      : Do not consider poitns closer than {mindis} from the fault
+
+        Returns:
+            step, std, los
+        '''
+
+        # get profile
+        profile = self.profiles[profname]
+        x = profile['Distance']
+        y = profile['LOS Velocity']
+        los = profile['LOS vector']
+
+        # Reference
+        x -= self.intersectProfileFault(profname, fault, discretized=True)
+
+        # Find plus and minus
+        ip = np.flatnonzero(np.logical_and(x>mindis, x<distance))
+        im = np.flatnonzero(np.logical_and(x>-1.*distance, x<-1.*mindis))
+
+        # Average
+        step = np.nanmean(y[ip]) - np.nanmean(y[im])
+        std = np.sqrt(np.nanstd(y[ip])**2 + np.nanstd(y[im])**2)
+        if los is not None:
+            los = (np.nanmean(los[ip,:], axis=0) + np.nanmean(los[im,:], axis=0))/2
+        else:
+            los = None
+
+        # All done
+        return step,std,los
+
     def _getoffset(self, x, y, w, plot=True):
         '''
         Computes the offset around zero along a profile.
