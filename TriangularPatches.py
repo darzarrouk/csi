@@ -1783,6 +1783,7 @@ class TriangularPatches(Fault):
 
         # Loop
         HDistances = np.zeros((self.N_slip, self.N_slip))
+        VDistances = np.zeros((self.N_slip, self.N_slip))
         for i in range(self.N_slip):
             p1 = self.patch[i]
             c1 = self.getcenter(p1)
@@ -1797,7 +1798,7 @@ class TriangularPatches(Fault):
                 VDistances[j,i] = VDistances[i,j]
 
         # All done
-        return Distances
+        return HDistances, VDistances
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
