@@ -1783,6 +1783,7 @@ class TriangularPatches(Fault):
 
         # Loop
         HDistances = np.zeros((self.N_slip, self.N_slip))
+        VDistances = np.zeros((self.N_slip, self.N_slip))
         for i in range(self.N_slip):
             p1 = self.patch[i]
             c1 = self.getcenter(p1)
@@ -1797,7 +1798,7 @@ class TriangularPatches(Fault):
                 VDistances[j,i] = VDistances[i,j]
 
         # All done
-        return Distances
+        return HDistances, VDistances
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
@@ -2058,13 +2059,18 @@ class TriangularPatches(Fault):
 
 
     # ----------------------------------------------------------------------
-    def getcenters(self):
+    def getcenters(self, coordinates='xy'):
         '''
         Get the center of the patches.
+
+        Kwargs:
+            * coordinates   : xy or ll
 
         Returns:
             * centers:  list of triplets
         '''
+
+        assert coordinates in ('xy', 'll'), 'coordinates must either be xy or ll: currently set to {}'.format(coordinates)
 
         # Initialize a list
         center = []
@@ -2075,7 +2081,11 @@ class TriangularPatches(Fault):
             center.append(np.array([x, y, z]))
 
         # All done
-        return center
+        if coordinates=='xy':
+            return center
+        else:
+            lon,lat = self.xy2ll(np.array([c[0] for c in center]), np.array([c[1] for c in center]))
+            return [np.array([lo,la,c[2]]) for lo,la,c in zip(lon, lat, center)]
     # ----------------------------------------------------------------------
 
 
