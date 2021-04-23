@@ -1357,36 +1357,6 @@ class TriangularTents(TriangularPatches):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def cumdistance(self, discretized=False):
-        '''
-        Computes the distance between the first point of the fault and every other
-        point, when you walk along the fault.
-
-        Kwargs:
-            * discretized           : if True, use the discretized fault trace
-        '''
-
-        # Get the x and y positions
-        if discretized:
-            x = self.xi
-            y = self.yi
-        else:
-            x = self.xf
-            y = self.yf
-
-        # initialize
-        dis = np.zeros((x.shape[0]))
-
-        # Loop
-        for i in np.arange(1,x.shape[0]):
-            d = np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
-            dis[i] = dis[i-1] + d
-
-        # all done
-        return dis
-    # ----------------------------------------------------------------------
-
-    # ----------------------------------------------------------------------
     def plot(self, figure=134, slip='total', equiv=False, figsize=(None, None),
              show=True, axesscaling=True, norm=None, linewidth=1.0, plot_on_2d=True, 
              method='scatter', npoints=10, cmap='jet',

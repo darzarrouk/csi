@@ -3164,6 +3164,13 @@ class insar(SourceInv):
         los = self.profiles[profile]['LOS vector']
         if err is None: err = np.ones((len(d),))
 
+        # NaNs
+        d = d[np.isfinite(rawts)]
+        err = err[np.isfinite(rawts)]
+        if los is not None:
+            los = los[np.isfinite(rawts),:]
+        rawts = rawts[np.isfinite(rawts)]
+
         # Shift with respect to the fault position
         intersect = self.intersectProfileFault(profile, fault, discretized=discretized)
         if intersect is not None: d -= intersect
@@ -3263,6 +3270,101 @@ class insar(SourceInv):
 
         # All done
         return step,std,los
+
+    def alongStrikeStep(self, fault, offset, width, binning, discretized=True, strike='mean', returnBox=False):
+        '''
+        Computes the difference in values along 2 lines, parallel to the surface trace of a fault.
+
+        Args:
+            * fault     : fault object with a trace
+            * offset    : offset between each line and the fault
+            * width     : width of the averaging box
+            * binning   : bins width (in km)
+
+        Kwargs:
+            * disctretized  : Use the discretized trace of the fault
+            * strike        : 'mean' (mean strike) or a number between 0 and 2pi
+            * returnBox     : Return the boxes i which data are taken
+        '''
+        
+        # Average fault strike
+        if strike == 'mean':
+            strike = np.mean(fault.strike)
+        else:
+            assert type(strike) is float, 'Strike should either be mean or a float (currently: {})'.format(strike)
+            assert 0.<strike<2*np.pi, 'Strike should be in radians (currrently: {})'.format(strike)
+
+        # Compute cumulative distance once and for all
+        cumdis = fault.cumdistance(discretized=discretized)
+
+        # Get the fault trace
+        x = fault.xi
+        y = fault.yi
+
+        # Offset north/south
+        voff = [np.sin(strike+np.pi/2.), np.cos(strike+np.pi/2.)]
+        xs = x + offset*voff[0]
+        ys = y + offset*voff[1]
+        xn = x - offset*voff[0]
+        yn = y - offset*voff[1]
+
+        # Make two closed path
+        north = [(x, y) for x,y in zip(xn,yn)] + \
+                [(x, y) for x,y in zip(xn[::-1]-width*voff[0], yn[::-1]-width*voff[1])]
+        south = [(x, y) for x,y in zip(xs,ys)] + \
+                [(x, y) for x,y in zip(xs[::-1]+width*voff[0], ys[::-1]+width*voff[1])]
+        northll = [self.xy2ll(*xy) for xy in north]
+        southll = [self.xy2ll(*xy) for xy in south]
+
+        # Make matplotlib paths
+        southPath = path.Path(south, closed=False)
+        northPath = path.Path(north, closed=False)
+
+        # Create an array with the position
+        XY = np.vstack((self.x, self.y)).T
+
+        # Find who is in the southern path
+        bolSouth = southPath.contains_points(XY)
+        bolNorth = northPath.contains_points(XY)
+
+        # Get these points
+        xn = self.x[bolNorth]; yn = self.y[bolNorth]
+        lonn = self.lon[bolNorth]; latn = self.lat[bolNorth]
+        valn = self.vel[bolNorth]
+        xs = self.x[bolSouth]; ys = self.y[bolSouth]
+        lons = self.lon[bolSouth]; lats = self.lat[bolSouth]
+        vals = self.vel[bolSouth]
+
+        # Find their along strike distance
+        disn = [fault.distance2trace(lo,la,discretized=discretized, recompute=False)[0] \
+                for lo,la in zip(lonn, latn)]
+        diss = [fault.distance2trace(lo,la,discretized=discretized, recompute=False)[0] \
+                for lo,la in zip(lons, lats)]
+
+        # Digitize as a function of distance along strike
+        bins = np.arange(0., np.max(fault.cumdis), binning)
+        distance = bins[:-1] + (bins[1:] - bins[:-1])/2.
+        idisn = np.digitize(disn, bins)
+        idiss = np.digitize(diss, bins)
+
+        # Average the values in the bins
+        averageNorth = [np.nanmean(valn[idisn==ibin]) for ibin, b in enumerate(bins[:-1])]
+        averageSouth = [np.nanmean(vals[idiss==ibin]) for ibin, b in enumerate(bins[:-1])]
+        lonn = [np.nanmean(lonn[idisn==ibin]) for ibin, b in enumerate(bins[:-1])]
+        latn = [np.nanmean(latn[idisn==ibin]) for ibin, b in enumerate(bins[:-1])]
+        lons = [np.nanmean(lons[idiss==ibin]) for ibin, b in enumerate(bins[:-1])]
+        lats = [np.nanmean(lats[idiss==ibin]) for ibin, b in enumerate(bins[:-1])]
+        diffNS = [n-s for n,s in zip(averageNorth,averageSouth)]
+
+        # Save
+        north = [disn, valn, lonn, latn, averageNorth]
+        south = [diss, vals, lons, lats, averageSouth]
+
+        # All done
+        if returnBox:
+            return distance, diffNS, north, south, northll, southll
+        else:
+            return distance, diffNS, north, south
 
     def _getoffset(self, x, y, w, plot=True):
         '''

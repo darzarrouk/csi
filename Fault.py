@@ -656,17 +656,22 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def cumdistance(self, discretized=False):
+    def cumdistance(self, discretized=False, recompute=True):
         '''
         Computes the distance between the first point of the fault and every
         other point. The distance is cumulative along the fault.
 
         Args:
             * discretized           : if True, use the discretized fault trace (default False)
+            * recompute             : if False, just returns the attribute cumdis
 
         Returns:
             * dis                   : Cumulative distance array
         '''
+
+        # Check 
+        if not recompute:
+            return self.cumdis
 
         # Get the x and y positions
         if discretized:
@@ -684,6 +689,9 @@ class Fault(SourceInv):
             d = np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
             dis[i] = dis[i-1] + d
 
+        # Save
+        self.cumdis = dis
+    
         # all done
         return dis
     # ----------------------------------------------------------------------
@@ -712,11 +720,11 @@ class Fault(SourceInv):
             x,y = self.xy,self.yf
 
         # Cumulative distance is needed
-        cumdis = self.cumdistance(discretized=discretized)
+        cumdis = self.cumdistance(discretized=discretized, recompute=recompute)
         
         # Make the interpolator
         if recompute:
-            self.intcumdis = sciint.interp2d(x, y, cumdis, fill_value=0.) 
+            self.intcumdis = sciint.interp2d(x, y, self.cumdis, fill_value=0.) 
         assert hasattr(self, 'intcumdis'), 'An interpolator is needed'
 
         # Make a function with this
@@ -733,7 +741,7 @@ class Fault(SourceInv):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    def distance2trace(self, lon, lat, discretized=False, coord='ll'):
+    def distance2trace(self, lon, lat, discretized=False, coord='ll', recompute=True):
         '''
         Computes the distance between a point and the trace of a fault.
         This is a slow method, so it has been recoded in a few places
@@ -745,6 +753,7 @@ class Fault(SourceInv):
 
         Kwargs:
             * discretized       : Uses the discretized trace.
+            * recompute         : recompute the cumulative distance
             * coord             : if 'll' or 'lonlat', input in degree. If 'xy' or 'utm', input in km
 
         Returns:
@@ -753,7 +762,7 @@ class Fault(SourceInv):
         '''
 
         # Get the cumulative distance along the fault
-        cumdis = self.cumdistance(discretized=discretized)
+        cumdis = self.cumdistance(discretized=discretized, recompute=recompute)
 
         # ll2xy
         if coord in ('ll', 'lonlat'):
