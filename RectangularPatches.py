@@ -3111,14 +3111,12 @@ class RectangularPatches(Fault):
         '''
 
         # Get lons lats
-
         lonmin = np.min([p[:,0] for p in self.patchll])-expand
-	
-        if lonmin<0: 
-            lonmin += 360
+        #if lonmin<0: 
+        #    lonmin += 360
         lonmax = np.max([p[:,0] for p in self.patchll])+expand
-        if lonmax<0:
-            lonmax+= 360
+        #if lonmax<0:
+        #    lonmax+= 360
         latmin = np.min([p[:,1] for p in self.patchll])-expand
         latmax = np.max([p[:,1] for p in self.patchll])+expand
 
@@ -3127,7 +3125,7 @@ class RectangularPatches(Fault):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=False, parallels=5, meridians=5, drawOnFault=True)
+            fig.drawCoastlines(drawLand=False, parallels=None, meridians=None, drawOnFault=True)
 
         # Draw the fault
         fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, 

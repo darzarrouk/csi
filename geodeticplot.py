@@ -418,7 +418,7 @@ class geodeticplot(object):
 
     def drawCoastlines(self, color='k', linewidth=1.0, linestyle='solid',
             resolution='auto', drawLand=True, drawMapScale=None,
-            parallels=None, meridians=None, drawOnFault=False, drawCountries=True,
+            parallels=None, meridians=None, drawOnFault=False, drawCountries=False,
             zorder=1):
         '''
         Draws the coast lines in the desired area.
