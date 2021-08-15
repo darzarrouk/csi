@@ -2554,7 +2554,7 @@ class TriangularPatches(Fault):
     def plot(self, figure=134, slip='total', equiv=False, show=True, 
              axesscaling=True, norm=None, linewidth=1.0, plot_on_2d=True, 
              colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='', 
-             drawCoastlines=False, expand=0.2, savefig=False, scalebar=None, figsize=(None, None)):
+             drawCoastlines=True, expand=0.2, savefig=False, scalebar=None, figsize=(None, None)):
         '''
         Plot the available elements of the fault.
         
@@ -2579,7 +2579,7 @@ class TriangularPatches(Fault):
 
         # Get lons lats
         lon = np.unique(np.array([p[:,0] for p in self.patchll]))
-        lon[lon<0.] += 360.
+        #lon[lon<0.] += 360.
         lat = np.unique(np.array([p[:,1] for p in self.patchll]))
         lonmin = lon.min()-expand
         lonmax = lon.max()+expand
