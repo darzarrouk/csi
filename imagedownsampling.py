@@ -1183,7 +1183,7 @@ class imagedownsampling(object):
         
         # Get the min max values
         if original.dtype == 'insar':
-            minmax = [np.nanmin(original.vel), np.nanmax(original)]
+            minmax = [np.nanmin(original.vel), np.nanmax(original.vel)]
         elif original.dtype == 'opticorr':
             assert False, 'Need to implement opticorr type for plotting the results'
         if norm is None:
