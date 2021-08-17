@@ -13,6 +13,12 @@ import matplotlib.path as path
 import scipy.spatial.distance as scidis
 import copy
 import sys, os
+import cartopy.io.shapereader as shpreader
+import shapely.geometry as sgeom
+from shapely.ops import unary_union
+from shapely.prepared import prep
+import shapely.speedups
+shapely.speedups.enable()
 
 # Personals
 from .SourceInv import SourceInv
@@ -167,6 +173,46 @@ class insar(SourceInv):
 
         # All done
         return
+
+    def checkLand(self, resolution='fine', reject=True):
+        '''
+        Checks whether pixels are inland or in water.
+
+        Args:
+            * resolution: Cartopy resolution. Can be fine, coarse or auto
+            * refect: deletes the pixels if True. If False, returns a list of booleans
+        '''
+
+        # Resolution 
+        if resolution == 'auto' or resolution == 'intermediate':
+            resolution = '50m'
+        elif resolution == 'coarse' or resolution == 'low':
+            resolution = '110m'
+        elif resolution == 'fine':            
+            resolution = '10m'
+        else:
+            assert False, 'Unknown resolution : {}'.format(resolution)
+
+        # Get data from cartopy
+        land_shp_fname = shpreader.natural_earth(resolution=resolution,                               
+                                                         category='physical', name='land')                    
+        
+        # Check it
+        land_geom = unary_union(list(shpreader.Reader(land_shp_fname).geometries()))
+        land = prep(land_geom)                          
+
+        # cartopy works in -180, 180
+        lon = copy.deepcopy(self.lon)
+        lon[lon>180.] -= 360.
+
+        # Checkit
+        island = [land.contains(sgeom.Point(lo,la)) for lo,la in zip(lon, self.lat)]
+
+        # All done
+        if reject:
+            self.deletePixels(np.flatnonzero([not i for i in island]))
+        else:
+            return island
 
     def read_from_ascii_simple(self, filename, factor=1.0, step=0.0, header=0, los=None):
         '''
