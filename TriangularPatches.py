@@ -2843,14 +2843,38 @@ class TriangularPatches(Fault):
             * fault         : Returns a triangularpatches instance
         '''
 
+        # Check
+        if not hasattr(self, 'keepTrackOfSources'):
+            self.keepTrackOfSources = False
+
         # Import What is needed
         from .EDKSmp import dropSourcesInPatches as Patches2Sources
 
         # Drop the sources in the patches and get the corresponding fault
-        Ids, xs, ys, zs, strike, dip, Areas, fault = Patches2Sources(self, 
-                                                verbose=verbose,
-                                                returnSplittedPatches=True)
-        self.plotSources = [Ids, xs, ys, zs, strike, dip, Areas]
+        if not self.keepTrackOfSources:
+            Ids, xs, ys, zs, strike, dip, Areas, allSplitted = Patches2Sources(self, 
+                                                                    verbose=verbose,
+                                                          returnSplittedPatches=True)
+            self.plotSources = [Ids, xs, ys, zs, strike, dip, Areas]
+            self.allSplitted = allSplitted
+        else:
+            Ids, xs, ys, zs, strike, dip, Areas  = self.plotSources
+            allSplitted = self.allSplitted
+
+        # Create a new fault
+        fault = TriangularPatches('Splitted {}'.format(self.name), 
+                                  utmzone=self.utmzone, 
+                                  lon0=self.lon0,
+                                  lat0=self.lat0,
+                                  ellps=self.ellps,
+                                  verbose=verbose)
+        # set up patches
+        fault.patch = [np.array(p) for p in allSplitted]
+        fault.patch2ll()
+        # Patches 2 vertices
+        fault.setVerticesFromPatches()
+        # Depth
+        fault.setdepth()
 
         # Interpolate the slip on each subsource
         fault.initializeslip()

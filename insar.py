@@ -1997,7 +1997,7 @@ class insar(SourceInv):
 
         # Get average value
         if method=='mean':
-            reference = profile['LOS Velocity'][ii].mean()
+            reference = np.nanmean(profile['LOS Velocity'][ii])
         elif method=='linear':
             y = profile['LOS Velocity'][ii]
             x = profile['Distance'][ii]
@@ -2613,9 +2613,9 @@ class insar(SourceInv):
         y = self.profiles[name]['LOS Velocity']
         ey = self.profiles[name]['LOS Error']
         try:
-            p = prof.errorbar(x, y, yerr=ey, label='LOS', fmt='o')
+            p = prof.errorbar(x, y, yerr=ey, label='LOS', fmt='o', alpha=alpha)
         except:
-            p = prof.plot(x, y, label='LOS', marker='.')
+            p = prof.plot(x, y, label='LOS', marker='.', alpha=alpha)
         if synth:
             sy = self.profiles[name]['LOS Synthetics']
             s = prof.plot(x, sy, '-r', label='synthetics')

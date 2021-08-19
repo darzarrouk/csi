@@ -311,21 +311,7 @@ def dropSourcesInPatches(fault, verbose=False, returnSplittedPatches=False):
 
     # All done
     if returnSplittedPatches:
-        from .TriangularPatches import TriangularPatches as trianglePatches
-        splitFault = trianglePatches('Splitted {}'.format(fault.name), 
-                                     utmzone=fault.utmzone, 
-                                     lon0=fault.lon0,
-                                     lat0=fault.lat0,
-                                     ellps=fault.ellps,
-                                     verbose=verbose)
-        # set up patches
-        splitFault.patch = [np.array(p) for p in allSplitted]
-        splitFault.patch2ll()
-        # Patches 2 vertices
-        splitFault.setVerticesFromPatches()
-        # Depth
-        splitFault.setdepth()
-        return Ids, Xs, Ys, Zs, Strikes, Dips, Areas, splitFault
+        return Ids, Xs, Ys, Zs, Strikes, Dips, Areas, allSplitted
     else:
         return Ids, Xs, Ys, Zs, Strikes, Dips, Areas
 # ----------------------------------------------------------------------

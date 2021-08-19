@@ -369,7 +369,7 @@ class insartimeseries(insar):
 
     def readFromKFts(self, h5file, setmaster2zero=None,
                            zfile=None, lonfile=None, latfile=None, filetype='f',
-                           incidence=None, heading=None, inctype='onefloat', closeh5=True,
+                           incidence=None, heading=None, inctype='onefloat', closeh5=True, box=None,
                            field='rawts', error='rawts_std', keepnan=False, mask=None, readModel=False):
         '''
         Read the output from a typical GIAnT h5 output file.
@@ -384,6 +384,7 @@ class insartimeseries(insar):
             * latfile       : File with latitudes 
             * filetype      : type of data in lon, lat and elevation file (default: 'f')
             * incidence     : Incidence angle (degree)
+            * box           : Crop data (default None), ex: [y0:y1,x0:x1]
             * heading       : Heading angle (degree)
             * inctype       : Type of the incidence and heading values (see insar.py for details). Can be 'onefloat', 'grd', 'binary', 'binaryfloat'
             * field         : Name of the field in the h5 file.
@@ -402,10 +403,16 @@ class insartimeseries(insar):
         data = h5in[field]
         err = h5in[field+'_std']
 
+        # Box
+        if box is None:
+            bbox = [0,data.shape[0],0,data.shape[1]]
+        else:
+            bbox = box
+
         # Get some sizes
         nDates = data.shape[2]
-        nLines = data.shape[0]
-        nCols  = data.shape[1]
+        nLines = bbox[1]-bbox[0]
+        nCols = bbox[3]-bbox[2]
 
         # Deal with the mask instructions
         if mask is not None:
@@ -415,9 +422,9 @@ class insartimeseries(insar):
                 instruction = mask[2]
                 mask = np.ones((nLines, nCols))
                 if instruction in ('above'):
-                    mask[np.where(h5in[key][:]>value)] = np.nan
+                    mask[np.where(h5in[key][bbox[0]:bbox[1],bbox[2]:bbox[3]]>value)] = np.nan
                 elif instruction in ('under'):
-                    mask[np.where(h5in[key][:]<value)] = np.nan
+                    mask[np.where(h5in[key][bbox[0]:bbox[1],bbox[2]:bbox[3]]<value)] = np.nan
                 else:
                     print('Unknow instruction type for Masking...')
                     sys.exit(1)
@@ -426,9 +433,9 @@ class insartimeseries(insar):
 
         # Read Lon Lat
         if lonfile is not None:
-            self.lon = np.fromfile(lonfile, dtype=filetype)
+            self.lon = np.fromfile(lonfile, dtype=filetype).reshape((data.shape[0],data.shape[1]))[bbox[0]:bbox[1],bbox[2]:bbox[3]].flatten()
         if latfile is not None:
-            self.lat = np.fromfile(latfile, dtype=filetype)
+            self.lat = np.fromfile(latfile, dtype=filetype).reshape((data.shape[0],data.shape[1]))[bbox[0]:bbox[1],bbox[2]:bbox[3]].flatten()
 
         # Compute utm
         self.x, self.y = self.ll2xy(self.lon, self.lat) 
@@ -438,7 +445,8 @@ class insartimeseries(insar):
             self.elevation = insar('Elevation', utmzone=self.utmzone, 
                                    verbose=False, lon0=self.lon0, lat0=self.lat0,
                                    ellps=self.ellps)
-            self.elevation.read_from_binary(zfile, lonfile, latfile, 
+            z = np.fromfile(zfile, dtype=filetype).reshape((data.shape[0],data.shape[1]))[bbox[0]:bbox[1],bbox[2]:bbox[3]].flatten()
+            self.elevation.read_from_binary(z, self.lon, self.lat, 
                                             incidence=None, heading=None, 
                                             remove_nan=False, remove_zeros=False, 
                                             dtype=filetype)
@@ -458,8 +466,8 @@ class insartimeseries(insar):
             
             # Get things
             date = self.time[i]
-            dat = data[:,:,i]*mask
-            std = err[:,:,i]*mask
+            dat = data[bbox[0]:bbox[1],bbox[2]:bbox[3],i]*mask[bbox[0]:bbox[1],bbox[2]:bbox[3]]
+            std = err[bbox[0]:bbox[1],bbox[2]:bbox[3],i]*mask[bbox[0]:bbox[1],bbox[2]:bbox[3]]
 
             # check master date
             if i is setmaster2zero:
@@ -485,6 +493,7 @@ class insartimeseries(insar):
 
             # Take care of the LOS
             if incidence is not None and heading is not None:
+                assert box is None, 'Incidence cropping not implemented yet'
                 sar.inchd2los(incidence, heading, origin=inctype)
             else:
                 sar.los = np.zeros((sar.vel.shape[0], 3))
@@ -1451,7 +1460,7 @@ class insartimeseries(insar):
         return
 
     def plotProfiles(self, prefix, figure=124, show=True, norm=None, xlim=None, zlim=None, marker='.', color='k', line=False, linewidth=2, figsize=(20, 20), 
-            view=None, markersize=0.1):
+            view=None, markersize=0.1, aspectRatio=1.):
         '''
         Plots the profiles in 3D plot.
 
@@ -1469,6 +1478,7 @@ class insartimeseries(insar):
             * line          : If True, plots a line (default is False)
             * linewidth     : controls the width of the line
             * view          : list of elevation angle and azimuth (default is None)
+            * aspectRatio   : aspect of the z-axis with respect to other axis
 
         Returns:
             * None
@@ -1530,6 +1540,10 @@ class insartimeseries(insar):
             else:
                 ax.plot3D(nDate, distance, values, '-', 
                           color=color, linewidth=linewidth)
+
+        # Aspect
+        if aspectRatio>1. or aspectRatio<0.: aspectRatio=1.
+        ax.set_box_aspect((1.,1.,aspectRatio))
 
         # norm
         if norm is not None:

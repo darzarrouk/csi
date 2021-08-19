@@ -563,10 +563,10 @@ class gps(SourceInv):
             self.profiles[name]['data type'] = 'synth'
         elif data == 'res':
             values = self.vel_enu - self.synth
-            self.profiles[name]['data_type'] = 'res'
+            self.profiles[name]['data type'] = 'res'
         elif data == 'transformation':
             values = self.transformation
-            self.profiles[name]['data_type'] = 'transformation'
+            self.profiles[name]['data type'] = 'transformation'
 
         # Convert the lat/lon of the center into UTM.
         xc, yc = self.ll2xy(loncenter, latcenter)
@@ -3527,7 +3527,7 @@ class gps(SourceInv):
             plot_los=False, drawCoastlines=True, expand=0.2, show=True, drawCountries=False,
             colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
             vertical=False, verticalsize=[30], box=None,
-            data=['data'], color=['k']):
+            data=['data'], color=['k'], alpha=1.):
         '''
         Plot the network
 
@@ -3588,20 +3588,23 @@ class gps(SourceInv):
 
         # plot GPS along the LOS
         if plot_los:
-            fig.gps_projected(self, colorbar=True, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel)
+            fig.gpsprojected(self, colorbar=True, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel, alpha=alpha)
 
         # Plot verticals?
         if vertical:
-            fig.gpsverticals(self, colorbar=True, data=data, markersize=verticalsize, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel)
+            fig.gpsverticals(self, colorbar=True, data=data, markersize=verticalsize, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel, alpha=alpha)
 
         # Plot GPS velocities
         fig.gps(self, data=data, name=name, 
                       legendscale=legendscale, scale=scale, 
-                      color=color)
+                      color=color, alpha=alpha)
 
         # Set up title
         title = '{} '.format(self.name)
-        for d in data: title += '- {}'.format(d) 
+        if type(data) is list:
+            for d in data: title += '- {}'.format(d) 
+        else:
+            title += '- {}'.format(data)
         fig.carte.set_title(title)
 
         # Save fig

@@ -92,6 +92,7 @@ class geodeticplot(object):
         gl = carte.gridlines(crs=self.projection, draw_labels=True, alpha=0.5)
         gl.xlabel_style = {'size': 'large', 'color': 'k', 'weight': 'bold'}
         gl.ylabel_style = {'size': 'large', 'color': 'k', 'weight': 'bold'}
+        self.cartegl = gl
         #carte.set_xticks(carte.get_xticks())
         #carte.set_yticks(carte.get_yticks())
         #carte.tick_params(axis='both', which='major', labelsize='large')
@@ -618,7 +619,7 @@ class geodeticplot(object):
     def faultpatches(self, fault, slip='strikeslip', norm=None, colorbar=True,
                      cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
                      plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
-                     transparency=0.0, factor=1.0, zorder=3, edgecolor='slip'):
+                     transparency=0.0, factor=1.0, zorder=3, edgecolor='slip', colorscale='normal'):
         '''
         Plot the fualt patches
 
@@ -640,6 +641,7 @@ class geodeticplot(object):
             * factor        : scale factor for fault slip values
             * zorder        : matplotlib order of plotting
             * edgecolor     : either a color or 'slip'
+            * colorscale    : 'normal' or 'log'
 
         Returns:
             * None
@@ -680,7 +682,10 @@ class geodeticplot(object):
             cmap = plt.get_cmap(cmap)
         else:
             cmap = plt.get_cmap(cmap)
-        cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
+        if colorscale in ('normal', 'n'):
+            cNorm  = colors.Normalize(vmin=vmin, vmax=vmax)
+        elif colorscale in ('log', 'l', 'lognormal'):
+            cNorm = colors.LogNorm(vmin=vmin, vmax=vmax)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
 
         Xs = np.array([])
@@ -1078,7 +1083,7 @@ class geodeticplot(object):
         return
 
     def gps(self, gps, data=['data'], color=['k'], scale=None, scale_units=None, 
-            legendscale=10., linewidths=.1, name=False, zorder=5):
+            legendscale=10., linewidths=.1, name=False, zorder=5, alpha=1.):
         '''
         Args:
             * gps           : gps object from gps.
@@ -1146,7 +1151,7 @@ class geodeticplot(object):
                                   values[:,0], values[:,1],
                                   width=0.005, color=c,
                                   scale=scale, scale_units=scale_units,
-                                  linewidths=linewidths, zorder=zorder)
+                                  linewidths=linewidths, zorder=zorder, alpha=alpha)
             # TODO TODO TODO TODO TODO
             #if np.isfinite(self.err_enu[:,0]).all() and np.isfinite(self.err_enu[:,1]).all():
                 # Extract the location of the arrow head
@@ -1176,7 +1181,7 @@ class geodeticplot(object):
     def gpsverticals(self, gps, norm=None, colorbar=True,
                      cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
                      data=['data'], markersize=[10], linewidth=0.1,
-                     zorder=4, cmap='jet', marker='o'):
+                     zorder=4, cmap='jet', marker='o', alpha=1.):
         '''
         Scatter plot of the vertical displacement of the GPS.
 
@@ -1251,7 +1256,7 @@ class geodeticplot(object):
         for dName in Data:
             mark = Data[dName]['Markersize']
             V = Data[dName]['Values']
-            sc = self.carte.scatter(lon, lat, s=mark, c=V, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth, zorder=zorder)
+            sc = self.carte.scatter(lon, lat, s=mark, c=V, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=linewidth, zorder=zorder, alpha=alpha)
 
         # Colorbar
         if colorbar:
@@ -1261,7 +1266,7 @@ class geodeticplot(object):
 
     def gpsprojected(self, gps, norm=None, colorbar=True, 
                      cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
-                     zorder=4, cmap='jet'):
+                     zorder=4, cmap='jet', alpha=1.):
         '''
         Plot the gps data projected in the LOS
 
@@ -1296,7 +1301,7 @@ class geodeticplot(object):
         cmap = plt.get_cmap(cmap)
 
         # Plot
-        sc = self.carte.scatter(lon, lat, s=100, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.5, zorder=zorder)
+        sc = self.carte.scatter(lon, lat, s=100, c=d, cmap=cmap, vmin=vmin, vmax=vmax, linewidth=0.5, zorder=zorder, alpha=alpha)
 
         # plot colorbar
         if colorbar:
@@ -1429,7 +1434,7 @@ class geodeticplot(object):
         return
 
     def insar(self, insar, norm=None, colorbar=True, 
-                    cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
+                    cbaxis=[0.2,0.2,0.1,0.01], cborientation='horizontal', cblabel='',
                     data='data', plotType='scatter', cmap='jet',
                     decim=1, zorder=3, edgewidth=1, alpha=1.):
         '''
@@ -1536,7 +1541,7 @@ class geodeticplot(object):
             if hasattr(insar, 'nx') and hasattr(insar, 'ny'):
                 lon = insar.lon.reshape((insar.ny,insar.nx))
                 lat = insar.lat.reshape((insar.ny,insar.nx))
-                data = insar.vel.reshape((insar.ny,insar.nx))
+                data = d.reshape((insar.ny,insar.nx))
             else:
                 # Build an interpolator
                 sarint = sciint.LinearNDInterpolator(np.vstack((x,y)).T, d, fill_value=np.nan)

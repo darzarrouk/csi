@@ -2438,7 +2438,7 @@ class Fault(SourceInv):
             lam0 = np.sqrt(xd**2 + yd**2 + zd**2)
         if verbose:
             print("Lambda0 = {}".format(lam0))
-        C = (sigma * lam0 / lam[0])**2 * (sigma * lam0 / lam[1])**2
+        C = (sigma * lam0 / lam[0]) * (sigma * lam0 / lam[1])
 
         # Creates the principal Cm matrix
         if self.N_slip==None:
@@ -2450,7 +2450,7 @@ class Fault(SourceInv):
 
         # Loop over the patches
         Hdistances,Vdistances = self.distancesMatrix(distance='center', lim=lim)
-        Cmt = C * np.exp(-Hdistances / lam[0]) * np.exp(-Vdistances / lam[1])
+        Cmt = C * np.exp(-0.5 * Hdistances / lam[0]) * np.exp(-0.5 * Vdistances / lam[1])
 
         # Store that into Cm
         st = 0
