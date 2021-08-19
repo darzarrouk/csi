@@ -3527,7 +3527,7 @@ class gps(SourceInv):
             plot_los=False, drawCoastlines=True, expand=0.2, show=True, drawCountries=False,
             colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
             vertical=False, verticalsize=[30], box=None,
-            data=['data'], color=['k'], alpha=1.):
+            data=['data'], color=['k'], titleyoffset=1.1, alpha=1.):
         '''
         Plot the network
 
@@ -3605,7 +3605,7 @@ class gps(SourceInv):
             for d in data: title += '- {}'.format(d) 
         else:
             title += '- {}'.format(data)
-        fig.carte.set_title(title)
+        fig.titlemap(title, y=titleyoffset)
 
         # Save fig
         self.fig = fig

@@ -13,6 +13,12 @@ import matplotlib.path as path
 import scipy.spatial.distance as scidis
 import copy
 import sys, os
+import cartopy.io.shapereader as shpreader
+import shapely.geometry as sgeom
+from shapely.ops import unary_union
+from shapely.prepared import prep
+import shapely.speedups
+shapely.speedups.enable()
 
 # Personals
 from .SourceInv import SourceInv
@@ -167,6 +173,46 @@ class insar(SourceInv):
 
         # All done
         return
+
+    def checkLand(self, resolution='fine', reject=True):
+        '''
+        Checks whether pixels are inland or in water.
+
+        Args:
+            * resolution: Cartopy resolution. Can be fine, coarse or auto
+            * refect: deletes the pixels if True. If False, returns a list of booleans
+        '''
+
+        # Resolution 
+        if resolution == 'auto' or resolution == 'intermediate':
+            resolution = '50m'
+        elif resolution == 'coarse' or resolution == 'low':
+            resolution = '110m'
+        elif resolution == 'fine':            
+            resolution = '10m'
+        else:
+            assert False, 'Unknown resolution : {}'.format(resolution)
+
+        # Get data from cartopy
+        land_shp_fname = shpreader.natural_earth(resolution=resolution,                               
+                                                         category='physical', name='land')                    
+        
+        # Check it
+        land_geom = unary_union(list(shpreader.Reader(land_shp_fname).geometries()))
+        land = prep(land_geom)                          
+
+        # cartopy works in -180, 180
+        lon = copy.deepcopy(self.lon)
+        lon[lon>180.] -= 360.
+
+        # Checkit
+        island = [land.contains(sgeom.Point(lo,la)) for lo,la in zip(lon, self.lat)]
+
+        # All done
+        if reject:
+            self.deletePixels(np.flatnonzero([not i for i in island]))
+        else:
+            return island
 
     def read_from_ascii_simple(self, filename, factor=1.0, step=0.0, header=0, los=None):
         '''
@@ -2778,8 +2824,8 @@ class insar(SourceInv):
         # All done
 
     def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, 
-             drawCoastlines=True, expand=0.2, edgewidth=1, figsize=None, 
-             plotType='scatter', cmap='jet', alpha=1., box=None, 
+             drawCoastlines=True, expand=0.2, edgewidth=1, figsize=None, markersize=1.,
+             plotType='scatter', cmap='jet', alpha=1., box=None, titleyoffset=1.1,
              colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel=''):
         '''
         Plot the data set, together with a fault, if asked.
@@ -2838,7 +2884,7 @@ class insar(SourceInv):
                 fig.gps(g)
 
         # Plot the decimation process, if asked
-        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, 
+        fig.insar(self, norm=norm, colorbar=True, data=data, plotType=plotType, markersize=markersize,
                         cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel,
                         edgewidth=edgewidth, cmap=cmap, zorder=1, alpha=alpha)
 
@@ -2852,7 +2898,7 @@ class insar(SourceInv):
 
         # Title
         title = '{} - {} '.format(self.name, data)
-        fig.carte.set_title(title)
+        fig.titlemap(title, y=titleyoffset)
 
         # Show
         if show:

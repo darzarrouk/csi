@@ -283,7 +283,7 @@ class geodeticplot(object):
         self.figCarte.clf()
         return
 
-    def titlemap(self, titre):
+    def titlemap(self, titre, y=1.1):
         '''
         Sets the title of the map.
 
@@ -294,7 +294,7 @@ class geodeticplot(object):
             * None
         '''
 
-        self.carte.set_title(titre, y=1.08)
+        self.carte.set_title(titre, y=y)
 
         # All done
         return
@@ -419,8 +419,8 @@ class geodeticplot(object):
 
     def drawCoastlines(self, color='k', linewidth=1.0, linestyle='solid',
             resolution='auto', drawLand=True, drawMapScale=None,
-            parallels=None, meridians=None, drawOnFault=False, drawCountries=True,
-            zorder=1):
+            parallels=None, meridians=None, drawOnFault=False, drawCountries=False,
+            zorder=0):
         '''
         Draws the coast lines in the desired area.
 
@@ -571,7 +571,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def faulttrace(self, fault, color='r', add=False, discretized=False, linewidth=1, zorder=0):
+    def faulttrace(self, fault, color='r', add=False, discretized=False, linewidth=1, zorder=1):
         '''
         Plots a fault trace.
 
@@ -1527,7 +1527,7 @@ class geodeticplot(object):
             lon = insar.lon
             #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
             lat = insar.lat
-            sc = self.carte.scatter(lon[::decim], lat[::decim], s=10,
+            sc = self.carte.scatter(lon[::decim], lat[::decim], s=markersize,
                                     c=d[::decim], cmap=cmap, vmin=vmin, vmax=vmax,
                                     linewidth=0.0, zorder=zorder, alpha=alpha)
 

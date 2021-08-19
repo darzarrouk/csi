@@ -2090,7 +2090,7 @@ class TriangularPatches(Fault):
 
 
     # ----------------------------------------------------------------------
-    def surfacesimulation(self, box=None, disk=None, err=None, npoints=None, 
+    def surfacesimulation(self, box=None, disk=None, err=None, npoints=10, 
                           lonlat=None, slipVec=None):
         '''
         Takes the slip vector and computes the surface displacement that 
@@ -2114,14 +2114,14 @@ class TriangularPatches(Fault):
         # Create a lon lat grid
         if lonlat is None:
             if (box is None) and (disk is None) :
-                lon = np.linspace(self.lon.min(), self.lon.max(), 100)
-                lat = np.linspace(self.lat.min(), self.lat.max(), 100)
+                lon = np.linspace(self.lon.min(), self.lon.max(), npoints)
+                lat = np.linspace(self.lat.min(), self.lat.max(), npoints)
                 lon, lat = np.meshgrid(lon,lat)
                 lon = lon.flatten()
                 lat = lat.flatten()
             elif (box is not None):
-                lon = np.linspace(box[0], box[1], 100)
-                lat = np.linspace(box[2], box[3], 100)
+                lon = np.linspace(box[0], box[1], npoints)
+                lat = np.linspace(box[2], box[3], npoints)
                 lon, lat = np.meshgrid(lon,lat)
                 lon = lon.flatten()
                 lat = lat.flatten()
@@ -2153,7 +2153,7 @@ class TriangularPatches(Fault):
             self.sim.lon = lon
             self.sim.lat = lat
             # put these in x y utm coordinates
-            self.sim.ll2xy()
+            self.sim.lonlat2xy()
 
         # Initialize the vel_enu array
         self.sim.vel_enu = np.zeros((lon.size, 3))
@@ -2554,7 +2554,7 @@ class TriangularPatches(Fault):
     def plot(self, figure=134, slip='total', equiv=False, show=True, 
              axesscaling=True, norm=None, linewidth=1.0, plot_on_2d=True, 
              colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='', 
-             drawCoastlines=False, expand=0.2, savefig=False, scalebar=None, figsize=(None, None)):
+             drawCoastlines=True, expand=0.2, savefig=False, scalebar=None, figsize=(None, None)):
         '''
         Plot the available elements of the fault.
         
@@ -2579,7 +2579,7 @@ class TriangularPatches(Fault):
 
         # Get lons lats
         lon = np.unique(np.array([p[:,0] for p in self.patchll]))
-        lon[lon<0.] += 360.
+        #lon[lon<0.] += 360.
         lat = np.unique(np.array([p[:,1] for p in self.patchll]))
         lonmin = lon.min()-expand
         lonmax = lon.max()+expand
