@@ -12,6 +12,7 @@ July 2019: R Jolivet replaced basemap by cartopy.
 # Numerics
 import numpy as np
 import scipy.interpolate as sciint
+import scipy.ndimage as sciim
 
 # Geography
 import pyproj as pp
@@ -25,11 +26,15 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 import matplotlib.collections as colls
+from matplotlib.patches import PathPatch
 
 # Cartopy 
 import cartopy 
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from cartopy.io import PostprocessedRasterSource, LocatedImage
+from cartopy.io.srtm import SRTM1Source
+from cartopy.io import srtm
 
 # mpl_toolkits
 from mpl_toolkits.mplot3d import Axes3D
@@ -89,7 +94,7 @@ class geodeticplot(object):
         carte.set_extent([self.lonmin, self.lonmax, self.latmin, self.latmax], crs=self.projection)
 
         # Gridlines (there is something wrong with the gridlines class...)
-        gl = carte.gridlines(crs=self.projection, draw_labels=True, alpha=0.5)
+        gl = carte.gridlines(crs=self.projection, draw_labels=True, alpha=0.5, zorder=0)
         gl.xlabel_style = {'size': 'large', 'color': 'k', 'weight': 'bold'}
         gl.ylabel_style = {'size': 'large', 'color': 'k', 'weight': 'bold'}
         self.cartegl = gl
@@ -417,10 +422,48 @@ class geodeticplot(object):
         # All done
         return
 
+    def shadedTopography(self, smooth=None, azimuth=135, altitude=15, alpha=1., zorder=1):
+        '''
+        Plots the shaded topography from SRTM. 
+        Needs user to download the SRTM tiles and unzip them beforehand (until the day cartopy guru's 
+        manage to input a login and password to access directly SRTM data).
+        Tiles must be stored at ~/.local/share/cartopy/SRTM/SRTMGL1 or in the directory given
+        by the environment variable CARTOPY_DATA_DIR (which must be set before importing cartopy)
+
+        Args:
+            * smooth        : Smoothing factor in pixels of SRTM data (3 is nice)
+            * azimuth       : Azimuth of the sun
+            * elevation     : Sun elevation
+            * alpha         : transparency
+
+        Returns:
+            * None
+        '''
+
+        # Define toposhading (thanks Thomas Lecocq and the Cartopy website)
+        def shade(located_elevations):
+            """
+            Given an array of elevations in a LocatedImage, add a relief (shadows) to
+            give a realistic 3d appearance.
+        
+            """
+            new_img = srtm.add_shading(sciim.gaussian_filter(located_elevations.image, 3),
+                                       azimuth=140, altitude=45)
+            return LocatedImage(new_img, located_elevations.extent)
+
+        # Build the raster
+        shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+
+        # Add the raster
+        self.carte.add_raster(shaded_srtm, cmap='Greys', alpha=alpha, zorder=zorder)
+
+        # All done
+        return
+
     def drawCoastlines(self, color='k', linewidth=1.0, linestyle='solid',
-            resolution='auto', drawLand=True, drawMapScale=None,
+            resolution='auto', landcolor='lightgrey', seacolor=None, drawMapScale=None,
             parallels=None, meridians=None, drawOnFault=False, drawCountries=False,
-            zorder=0):
+            alpha=0.5, zorder=0):
         '''
         Draws the coast lines in the desired area.
 
@@ -441,30 +484,32 @@ class geodeticplot(object):
             * None
         '''
 
-        # Draw continents?
-        landcolor = None
-        if drawLand: landcolor = 'lightgrey'
-
         # Resolution 
-        if resolution == 'auto' or resolution == 'intermediate':
+        if resolution == 'intermediate':
             resolution = '50m'
         elif resolution == 'coarse' or resolution == 'low':
             resolution = '110m'
         elif resolution == 'fine':            
             resolution = '10m'
-        else:
-            assert False, 'Unknown resolution : {}'.format(resolution)
+
+        # Ocean color (not really nice since this colors everything in the background)
+        if seacolor is not None:
+            self.carte.background_patch.set_facecolor(seacolor)
 
         # coastlines in cartopy are multipolygon objects. Polygon has exterior, which has xy
-        self.coastlines = cfeature.GSHHSFeature(scale='auto', edgecolor=color, facecolor=landcolor, 
-                                                linewidth=linewidth, linestyle=linestyle, zorder=zorder, alpha=0.6)
+        self.coastlines = cfeature.GSHHSFeature(scale='auto', 
+                                                edgecolor=color, 
+                                                facecolor=landcolor, 
+                                                linewidth=linewidth, 
+                                                linestyle=linestyle, 
+                                                zorder=zorder, alpha=1.)
+
+        # Draw and get the line object
+        self.carte.add_feature(self.coastlines)
 
         ## MapScale
         if drawMapScale is not None:
             assert False, 'Cannot draw a map scale yet. To be implemented...'
-
-        # Draw and get the line object
-        self.carte.add_feature(self.coastlines)
 
         ##### NOT WORKING YET ####
         #if drawOnFault:
@@ -490,7 +535,7 @@ class geodeticplot(object):
         if drawCountries:
             self.countries = cfeature.NaturalEarthFeature(scale=resolution, category='cultural', name='admin_0_countries', 
                                                    linewidth=linewidth/2., edgecolor='k', facecolor='lightgray', 
-                                                   alpha=0.6, zorder=zorder)
+                                                   alpha=alpha, zorder=zorder)
             self.carte.add_feature(self.countries)
 
             ##### NOT WORKING YET ####
@@ -1312,7 +1357,7 @@ class geodeticplot(object):
 
     def earthquakes(self, earthquakes, plot='2d3d', color='k', markersize=5, norm=None, 
                     colorbar=False, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', 
-                    cblabel='', zorder=2):
+                    cblabel='', cmap='jet', zorder=2, alpha=1., linewidth=0.1):
         '''
         Plot earthquake catalog
 
@@ -1334,6 +1379,11 @@ class geodeticplot(object):
             * None
         '''
 
+        # Get lon lat
+        lon = earthquakes.lon
+        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
+        lat = earthquakes.lat
+
         # set vmin and vmax
         vmin = None
         vmax = None
@@ -1346,32 +1396,52 @@ class geodeticplot(object):
                 vmax = color.max()
             import matplotlib.cm as cmx
             import matplotlib.colors as colors
-            cmap = plt.get_cmap('jet')
+            cmap = plt.get_cmap(cmap)
             cNorm = colors.Normalize(vmin=color.min(), vmax=color.max())
             scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cmap)
             scalarMap.set_array(color)
         else:
             cmap = None
 
-        # Get lon lat
-        lon = earthquakes.lon
-        #lon[np.logical_or(lon<self.lonmin, lon>self.lonmax)] += 360.
-        lat = earthquakes.lat
-
         # plot the earthquakes on the map if ask
         if '2d' in plot:
-            sc = self.carte.scatter(lon, lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1, zorder=zorder)
+            sc = self.carte.scatter(lon, lat, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=linewidth, edgecolor='k', zorder=zorder, alpha=alpha)
             if colorbar:
                 self.addColorbar(color, sc, cbaxis, cborientation, self.figCarte, cblabel=cblabel) 
 
         # plot the earthquakes in the volume if ask
         if '3d' in plot:
-            sc = self.faille.scatter3D(lon, lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=0.1)
+            sc = self.faille.scatter3D(lon, lat, -1.*earthquakes.depth, s=markersize, c=color, vmin=vmin, vmax=vmax, cmap=cmap, linewidth=linewidth, edgecolor='k', alpha=alpha)
             if colorbar:
                 self.addColorbar(color, sc, cbaxis, cborientation, self.figFaille, cblabel=cblabel) 
 
         # All done
         return
+
+    def beachball(self, fm, xy, facecolor='k', bgcolor='white', edgecolor='k', linewidth=2,
+                        width=200, size=100, alpha=1.0, zorder=3):
+        '''
+        Plots a beach ball from a GCMT moment tensor. See obspy.imaging.beachball.beach to have a description of the arguments.
+
+        Args:
+            * fm        : Focal mechanism (M11, M22, M33, M12, M13, M23, Harvard convention)
+            * xy        : Tuple of (lon, lat)
+
+        Returns:
+            * None:
+        '''
+
+        # Import obspy, we just need it here so no general import
+        from .beachball import beach
+
+        # Get the beach ball
+        bb = beach(fm, xy=xy, linewidth=linewidth, edgecolor=edgecolor, bgcolor=bgcolor, facecolor=facecolor, width=width, size=size, alpha=alpha, zorder=zorder)
+
+        # Add it 
+        self.carte.add_collection(bb)
+
+        # All done
+        return 
 
     def faultsimulation(self, fault, norm=None, colorbar=True, 
                         cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
@@ -1433,7 +1503,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def insar(self, insar, norm=None, colorbar=True, 
+    def insar(self, insar, norm=None, colorbar=True, markersize=1,
                     cbaxis=[0.2,0.2,0.1,0.01], cborientation='horizontal', cblabel='',
                     data='data', plotType='scatter', cmap='jet',
                     decim=1, zorder=3, edgewidth=1, alpha=1.):

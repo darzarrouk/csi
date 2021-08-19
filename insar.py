@@ -2826,6 +2826,7 @@ class insar(SourceInv):
     def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, 
              drawCoastlines=True, expand=0.2, edgewidth=1, figsize=None, markersize=1.,
              plotType='scatter', cmap='jet', alpha=1., box=None, titleyoffset=1.1,
+             landcolor='lightgrey', seacolor=None, shadedtopo=None,
              colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel=''):
         '''
         Plot the data set, together with a fault, if asked.
@@ -2872,9 +2873,20 @@ class insar(SourceInv):
                                      latmin=latmin, latmax=latmax, 
                                      figsize=figsize)
 
+        # Shaded topo
+        if shadedtopo is not None:
+            if 'smooth' in shadedtopo:
+                smooth = shadedtopo['smooth']
+            if 'alpha' in shadedtopo:
+                al = shadedtopo['alpha']
+            if 'zorder' in shadedtopo:
+                zo = shadedtopo['zorder']
+            fig.shadedTopography(smooth=smooth, alpha=al, zorder=zo)
+
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=True, drawOnFault=True, zorder=0)
+            fig.drawCoastlines(landcolor=landcolor, seacolor=seacolor, 
+                               drawOnFault=True, zorder=0)
 
         # Plot the gps data if asked
         if gps is not None:

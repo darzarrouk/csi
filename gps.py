@@ -3524,8 +3524,9 @@ class gps(SourceInv):
         return
 
     def plot(self, faults=None, figure=135, name=False, legendscale=10., scale=None, figsize=None,
-            plot_los=False, drawCoastlines=True, expand=0.2, show=True, drawCountries=False,
+            plot_los=False, drawCoastlines=True, expand=0.2, show=True,
             colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
+            landcolor='lightgrey', seacolor=None, shadedtopo=None,
             vertical=False, verticalsize=[30], box=None,
             data=['data'], color=['k'], titleyoffset=1.1, alpha=1.):
         '''
@@ -3573,11 +3574,20 @@ class gps(SourceInv):
                                      latmin=latmin, latmax=latmax, 
                                      figsize=figsize)
 
+        # Shaded topo
+        if shadedtopo is not None:
+            if 'smooth' in shadedtopo:
+                smooth = shadedtopo['smooth']
+            if 'alpha' in shadedtopo:
+                al = shadedtopo['alpha']
+            if 'zorder' in shadedtopo:
+                zo = shadedtopo['zorder']
+            fig.shadedTopography(smooth=smooth, alpha=al, zorder=zo)
+
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=True, parallels=None, 
-                               meridians=None, drawOnFault=True, 
-                               drawCountries=drawCountries)
+            fig.drawCoastlines(landcolor=landcolor, seacolor=seacolor, 
+                               drawOnFault=True, zorder=0)
 
         # Plot the fault trace if asked
         if faults is not None:
