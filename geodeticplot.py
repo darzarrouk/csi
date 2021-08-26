@@ -434,7 +434,7 @@ class geodeticplot(object):
             * smooth        : Smoothing factor in pixels of SRTM data (3 is nice)
             * azimuth       : Azimuth of the sun
             * elevation     : Sun elevation
-            * alpha         : transparency
+            * alpha         : Alpha
 
         Returns:
             * None
@@ -682,7 +682,6 @@ class geodeticplot(object):
             * revmap        : Revert the colormap
             * linewidth     : Width of the edges of the patches
             * cmap          : Colormap (any of the matplotlib ones)
-            * transparency  : 1 - alpha
             * factor        : scale factor for fault slip values
             * zorder        : matplotlib order of plotting
             * edgecolor     : either a color or 'slip'
@@ -754,7 +753,6 @@ class geodeticplot(object):
                 rect.set_edgecolors(scalarMap.to_rgba(slip[p]))
             else:
                 rect.set_edgecolors(edgecolor)
-            alpha = 1.0 - transparency
             if alpha<1.0:
                 rect.set_alpha(alpha)
             rect.set_linewidth(linewidth)
@@ -797,7 +795,7 @@ class geodeticplot(object):
     def pressuresource(self, fault, delta='pressure', norm=None, colorbar=True, 
                      cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
                      revmap=False, linewidth=1.0, cmap='jet',
-                     transparency=0.0, factor=1.0, zorder=3, plot_on_2d=False):
+                     alpha=1.0, factor=1.0, zorder=3, plot_on_2d=False):
         '''
         Plots a pressure source.
 
@@ -811,7 +809,6 @@ class geodeticplot(object):
             * revmap        : Reverts the colormap
             * linewidth     : width of the edhe of the source
             * cmap          : matplotlib colormap
-            * transparency  : 1 - alpha
             * plot_on_2d    : if True, adds the patches on the map.
             * factor        : scale factor for pressure values
             * zorder        : matplotlib plotting order
