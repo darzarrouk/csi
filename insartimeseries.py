@@ -10,10 +10,6 @@ import pyproj as pp
 import matplotlib.pyplot as plt
 import matplotlib.dates as mpdates
 import sys
-try:
-    import h5py
-except:
-    print('No hdf5 capabilities detected')
 import datetime as dt
 import scipy.interpolate as sciint
 import copy
@@ -347,6 +343,11 @@ class insartimeseries(insar):
             * None
         '''
 
+        try:
+            import h5py
+        except:
+            print('No hdf5 capabilities detected')
+
         # Open the file
         h5out = h5py.File(h5file, 'w')
 
@@ -394,6 +395,10 @@ class insartimeseries(insar):
         Returns:
             * None
         '''
+        try:
+            import h5py
+        except:
+            print('No hdf5 capabilities detected')
 
         # open the h5file
         h5in = h5py.File(h5file, 'r')
@@ -567,6 +572,10 @@ class insartimeseries(insar):
         Returns:
             * None
         '''
+        try:
+            import h5py
+        except:
+            print('No hdf5 capabilities detected')
 
         # open the h5file
         h5in = h5py.File(h5file, 'r')
@@ -1415,6 +1424,10 @@ class insartimeseries(insar):
             * increments    : longitude and latitude increments (float or tuple of floats)
             * verbose       : True/False
         '''
+        try:
+            import h5py
+        except:
+            print('No hdf5 capabilities detected')
 
         # Get a lon/lat grid
         olon, olat, z = lonlatMapping(self.lon, self.lat, self.timeseries[0].vel, nSamples=nSamples, increments=increments, dryRun=True)

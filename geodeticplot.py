@@ -664,7 +664,7 @@ class geodeticplot(object):
     def faultpatches(self, fault, slip='strikeslip', norm=None, colorbar=True,
                      cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
                      plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
-                     transparency=0.0, factor=1.0, zorder=3, edgecolor='slip', colorscale='normal'):
+                     alpha=1.0, factor=1.0, zorder=3, edgecolor='slip', colorscale='normal'):
         '''
         Plot the fualt patches
 
@@ -1739,7 +1739,7 @@ class geodeticplot(object):
         # All done
         return
 
-    def slipdirection(self, fault, linewidth=1., color='k', scale=1.):
+    def slipdirection(self, fault, linewidth=1., color='k', scale=1., zorder=10, markersize=10):
         '''
         Plots segments representing the direction of slip along the fault.
 
@@ -1755,12 +1755,8 @@ class geodeticplot(object):
             * None
         '''
 
-        # Check utmzone
-        assert self.utmzone==fault.utmzone, 'Fault object {} not in the same utmzone...'.format(fault.name)
-
         # Check if it exists
-        if not hasattr(fault,'slipdirection'):
-            fault.computeSlipDirection(scale=scale)
+        fault.computeSlipDirection(scale=scale)
 
         # Loop on the vectors
         for v in fault.slipdirection:
@@ -1769,8 +1765,12 @@ class geodeticplot(object):
             v[1][2] *= -1.0
             # Make lists
             x, y, z = zip(v[0],v[1])
+            lo,la = fault.xy2ll(np.array(x),np.array(y))
             # Plot
-            self.faille.plot3D(x, y, z, color=color, linewidth=linewidth)
+            self.faille.plot3D(lo, la, z, color=color, linewidth=linewidth, zorder=zorder)
+            # Plot map
+            self.carte.plot(lo,la,color=color, linewidth=linewidth, zorder=zorder)
+            self.carte.plot(lo[0],la[0], '.', color=color, markersize=markersize)
 
         # All done
         return

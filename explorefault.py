@@ -10,16 +10,12 @@ R. Jolivet 2017
 
 # Externals
 import sys, os, copy
-try:
-    import h5py
-except:
-    print('No hdf5 capabilities detected')
 import numpy as np
 import matplotlib.pyplot as plt
 
 # PyMC
 try:
-    import pymc
+    import pymc3
 except:
     pass 
 
@@ -488,6 +484,11 @@ class explorefault(SourceInv):
         Returns:
             * None
         '''
+
+        try:
+            import h5py
+        except:
+            print('No hdf5 capabilities detected')
 
         # Open an h5file
         fout = h5py.File(filename, 'w')

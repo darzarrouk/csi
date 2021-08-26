@@ -8,10 +8,6 @@ Written by R. Jolivet, Feb 2014.
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
-try:
-    import h5py
-except:
-    print('No hdf5 capabilities detected')
 
 # Personals
 from .SourceInv import SourceInv

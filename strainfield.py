@@ -8,10 +8,6 @@ Written by R. Jolivet, April 2013.
 import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
-try:
-    import h5py
-except:
-    print('No hdf5 capabilities detected')
 
 class strainfield(object):
     '''
@@ -106,6 +102,10 @@ class strainfield(object):
         Returns:
             * None
         '''
+        try:
+            import h5py
+        except:
+            print('No hdf5 capabilities detected')
 
         # Open the file
         h5in = h5py.File(filename, 'r')
