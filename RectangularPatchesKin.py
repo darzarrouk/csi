@@ -317,7 +317,7 @@ class RectangularPatchesKin(RectangularPatches):
     # ----------------------------------------------------------------------
     
     # ----------------------------------------------------------------------
-    def getHypoToCenter(self, p, sd_dist=False):
+    def getHypoToCenter(self, p, ds_dist=False):
         ''' 
         Get patch center coordinates from hypocenter
 
@@ -325,7 +325,7 @@ class RectangularPatchesKin(RectangularPatches):
             * p      : Patch number.
 
         Kwargs:
-            * sd_dist: If true, will return along dip and along strike distances
+            * sd_dist: If true, will return along dip (first) and along strike distances
 
         Returns:
             * Hypocenter coordinates
