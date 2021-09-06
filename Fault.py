@@ -2425,7 +2425,10 @@ class Fault(SourceInv):
         slipdir = self.slipdir
 
         # Get the patch centers
-        self.centers = np.array(self.getcenters())
+        if self.patchType=='triangulartent':
+            self.centers = self.Vertices
+        else:
+            self.centers = np.array(self.getcenters())
 
         # Sets the lambda0 value
         if lam0 is None:
