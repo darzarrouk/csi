@@ -12,6 +12,7 @@ import matplotlib.dates as mpdates
 import sys
 import datetime as dt
 import scipy.interpolate as sciint
+import scipy.io as scio
 import copy
 
 # Personals
@@ -744,6 +745,73 @@ class insartimeseries(insar):
 
         # All done
         return    
+
+    def readFromStamps(self, tsfile, lonlatfile, datefile, setmaster2zero=None,
+                            incidence=None, heading=None, inctype='onefloat', 
+                            keepnan=False):
+        '''
+        Read the output from a typical Stamps mat file
+
+        Returns:
+            * None
+        '''
+
+        # open the h5file
+        ts_file = scio.loadmat(tsfile)
+        lonlat = np.loadtxt(lonlatfile)
+        dates = np.loadtxt(datefile).astype(int)
+        year = np.floor(dates/1e4).astype(int)
+        month = np.floor((dates-year*1e4)/1e2).astype(int)
+        day = np.floor(dates-year*1e4-month*1e2).astype(int)
+
+        # Compute utm
+        self.lon = lonlat[:,0]
+        self.lat = lonlat[:,1]
+        self.x, self.y = self.ll2xy(self.lon, self.lat) 
+
+        # Get the time
+        self.time = [dt.datetime(y, m, d) for y,m,d in zip(year, month, day)]
+
+        # Create a list to hold the dates
+        self.timeseries = []
+
+        # Iterate over the dates
+        for date,phi in zip(self.time, ts_file['ph_disp'].T):
+            
+            # Create an insar object
+            sar = insar('{} {}'.format(self.name,date.isoformat()), utmzone=self.utmzone, 
+                        verbose=False, lon0=self.lon0, lat0=self.lat0, ellps=self.ellps)
+
+            # Put thing in the insarrate object
+            sar.vel = phi
+            sar.lon = self.lon
+            sar.lat = self.lat
+            sar.x = self.x
+            sar.y = self.y
+
+            # Things should remain None
+            sar.corner = None
+            sar.err = None
+
+            # Set factor
+            sar.factor = 1.0
+
+            # Take care of the LOS
+            if incidence is not None and heading is not None:
+                sar.inchd2los(incidence, heading, origin=inctype)
+            else:
+                sar.los = np.zeros((sar.vel.shape[0], 3))
+
+            # Store the object in the list
+            self.timeseries.append(sar)
+
+        # Keep incidence and heading
+        self.incidence = incidence
+        self.heading = heading
+        self.inctype = inctype
+
+        # all done
+        return
 
     def removeDate(self, date):
         '''

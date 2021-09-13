@@ -1693,7 +1693,7 @@ class opticorr(SourceInv):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=True, parallels=5, meridians=5, drawOnFault=True)
+            fig.drawCoastlines(parallels=5, meridians=5, drawOnFault=True)
 
         # Plot the fault trace if asked
         if faults is not None:

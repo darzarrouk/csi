@@ -2593,7 +2593,7 @@ class TriangularPatches(Fault):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=False, parallels=None, meridians=None, drawOnFault=True)
+            fig.drawCoastlines(parallels=None, meridians=None, drawOnFault=True)
 
         # Draw the fault
         fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel, 
