@@ -90,7 +90,6 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
         oZ = z
         olon = lon
         olat = lat
-
     if increments is not None:
         dlon, dlat = increments
     else:
