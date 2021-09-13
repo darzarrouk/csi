@@ -85,20 +85,17 @@ def write2netCDF(filename, lon, lat, z, increments=None, nSamples=None,
     '''
 
     if interpolation:
-
         olon, olat, oZ = lonlatMapping(lon, lat, z, increments=increments, nSamples=nSamples)
-
     else:
-        # Get lon lat
+        oZ = z
         olon = lon
         olat = lat
-        if increments is not None:
-            dlon, dlat = increments
-        else:
-            dlon = olon[0,1]-olon[0,0]
-            dlat = olat[1,0]-olat[0,0]
-        # data
-        oZ = z
+
+    if increments is not None:
+        dlon, dlat = increments
+    else:
+        dlon = olon[0,1]-olon[0,0]
+        dlat = olat[1,0]-olat[0,0]
 
     # Create a file
     fid = netcdf(filename,'w')
