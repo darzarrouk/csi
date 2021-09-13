@@ -979,7 +979,7 @@ class geodeticplot(object):
             y = [v[1] for v in verts]
             z = [-1.0*v[2] for v in verts]
             x.append(x[0]); y.append(y[0]); z.append(z[0])
-            x = np.array(x); x[x<0.] += 360.
+            x = np.array(x); #x[x<0.] += 360.
             self.faille.plot3D(x, y, z, '-', color='gray', linewidth=1)
             if plot_on_2d:
                 self.carte.plot(x, y, '-', color='gray', linewidth=1, zorder=zorder)
@@ -1051,7 +1051,7 @@ class geodeticplot(object):
                 if vertIndex:
                     for ivert,vert in enumerate(fault.Vertices_ll):
                         x,y = self.carte(vert[0], vert[1])
-                        if x<360.: x+= 360.
+                        #if x<360.: #x+= 360.
                         plt.annotate('{}'.format(ivert), xy=(x,y),
                                      xycoords='data', xytext=(x,y), textcoords='data')
 
