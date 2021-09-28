@@ -2851,7 +2851,7 @@ class TriangularPatches(Fault):
         from .EDKSmp import dropSourcesInPatches as Patches2Sources
 
         # Drop the sources in the patches and get the corresponding fault
-        if not self.keepTrackOfSources:
+        if not self.keepTrackOfSources or not hasattr(self, 'allSplitted'):
             Ids, xs, ys, zs, strike, dip, Areas, allSplitted = Patches2Sources(self, 
                                                                     verbose=verbose,
                                                           returnSplittedPatches=True)
