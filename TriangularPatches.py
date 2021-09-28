@@ -1665,8 +1665,8 @@ class TriangularPatches(Fault):
             p2, p3 = p3, p2
 
         # Force strike between 0 and 90 or between 270 and 360
-        if normal[1] > 0:
-             normal *= -1
+        #if normal[1] > 0:
+        #     normal *= -1
                     
         # Get the strike vector and strike angle
         strike = np.arctan2(-normal[0], normal[1]) - np.pi
@@ -2593,7 +2593,7 @@ class TriangularPatches(Fault):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=False, parallels=None, meridians=None, drawOnFault=True)
+            fig.drawCoastlines(parallels=None, meridians=None, drawOnFault=True)
 
         # Draw the fault
         fig.faultpatches(self, slip=slip, norm=norm, colorbar=True, cbaxis=cbaxis, cborientation=cborientation, cblabel=cblabel, 

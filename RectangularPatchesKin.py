@@ -325,7 +325,7 @@ class RectangularPatchesKin(RectangularPatches):
             * p      : Patch number.
 
         Kwargs:
-            * sd_dist: If true, will return along dip (first) and along strike distances
+            * ds_dist: If true, will return along dip (first) and along strike distances
 
         Returns:
             * Hypocenter coordinates
@@ -340,7 +340,7 @@ class RectangularPatchesKin(RectangularPatches):
         p_x, p_y, p_z, p_width, p_length, p_strike, p_dip = self.getpatchgeometry(p,center=True)
 
         # Along dip and along strike distance to hypocenter
-        if sd_dist:
+        if ds_dist:
             assert self.hypo_patch_index is not None, 'Must provide a hypocenter patch index'
             assert self.fault_map        is not None, 'Must provide a fault map'
 

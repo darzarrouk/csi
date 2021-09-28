@@ -2826,7 +2826,7 @@ class insar(SourceInv):
     def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, 
              drawCoastlines=True, expand=0.2, edgewidth=1, figsize=None, markersize=1.,
              plotType='scatter', cmap='jet', alpha=1., box=None, titleyoffset=1.1,
-             landcolor='lightgrey', seacolor=None, shadedtopo=None,
+             landcolor='lightgrey', seacolor=None, shadedtopo=None, title=True,
              colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel=''):
         '''
         Plot the data set, together with a fault, if asked.
@@ -2909,8 +2909,9 @@ class insar(SourceInv):
                     fig.faulttrace(fault, zorder=2)
 
         # Title
-        title = '{} - {} '.format(self.name, data)
-        fig.titlemap(title, y=titleyoffset)
+        if title:
+            title = '{} - {} '.format(self.name, data)
+            fig.titlemap(title, y=titleyoffset)
 
         # Show
         if show:

@@ -1399,7 +1399,7 @@ class TriangularTents(TriangularPatches):
 
         # Draw the coastlines
         if drawCoastlines:
-            fig.drawCoastlines(drawLand=False, parallels=None, meridians=None, drawOnFault=True)
+            fig.drawCoastlines(parallels=None, meridians=None, drawOnFault=True)
 
         # Draw the fault
         x, y, z, slipval = fig.faultTents(self, slip=slip, norm=norm, colorbar=colorbar, 
