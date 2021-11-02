@@ -33,7 +33,7 @@ import cartopy
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.io import PostprocessedRasterSource, LocatedImage
-from cartopy.io.srtm import SRTM1Source
+from cartopy.io.srtm import SRTM1Source, SRTM3Source
 from cartopy.io import srtm
 
 # mpl_toolkits
@@ -110,16 +110,14 @@ class geodeticplot(object):
             lonc = self.lonmin + (self.lonmax-self.lonmin)/10.
             latc = self.latmin + (self.latmax-self.latmin)/10.
             # Convert to xy and build the end points
-            string = '+proj=utm +lat_0={} +lon_0={} +ellps=WGS84'.format(latc, lonc) 
-            putm = pp.Proj(string)
-            xc,yc = putm(lonc,latc,inverse=False)
+            xc,yc = self.ll2xy(lonc,latc)
             # End points
             x1 = xc-scalebar*1000./2.
             x2 = xc+scalebar*1000./2.
             # Convert
-            lon1,lat1 = putm(x1,yc,inverse=True)
-            lon2,lat2 = putm(x2,yc,inverse=True)
-            lonc,latc = putm(xc,yc+0.5*1000.,inverse=True)
+            lon1,lat1 = self.xy2ll(x1,yc)
+            lon2,lat2 = self.xy2ll(x2,yc)
+            lonc,latc = self.xy2ll(xc,yc+0.5*1000.)
             # Plot
             carte.plot([lon1, lon2], [lat1,lat2], '-k', linewidth=2,zorder=4)
             carte.text(lonc,latc,'{} km'.format(scalebar), 
@@ -422,9 +420,9 @@ class geodeticplot(object):
         # All done
         return
 
-    def shadedTopography(self, smooth=None, azimuth=135, altitude=15, alpha=1., zorder=1):
+    def shadedTopography(self, smooth=3, azimuth=140, altitude=45, alpha=1., zorder=1, srtmversion=1):
         '''
-        Plots the shaded topography from SRTM. 
+        Plots the shaded topography from SRTM. Thanks to Thomas Lecocq.
         Needs user to download the SRTM tiles and unzip them beforehand (until the day cartopy guru's 
         manage to input a login and password to access directly SRTM data).
         Tiles must be stored at ~/.local/share/cartopy/SRTM/SRTMGL1 or in the directory given
@@ -435,6 +433,7 @@ class geodeticplot(object):
             * azimuth       : Azimuth of the sun
             * elevation     : Sun elevation
             * alpha         : Alpha
+            * srtmversion   : 1 or 3
 
         Returns:
             * None
@@ -447,12 +446,19 @@ class geodeticplot(object):
             give a realistic 3d appearance.
         
             """
-            new_img = srtm.add_shading(sciim.gaussian_filter(located_elevations.image, 3),
-                                       azimuth=140, altitude=45)
+            new_img = srtm.add_shading(sciim.gaussian_filter(located_elevations.image, smooth),
+                                       azimuth=azimuth, altitude=altitude)
             return LocatedImage(new_img, located_elevations.extent)
 
+        # Version
+        if srtmversion == 1:
+            source = SRTM1Source(max_nx=8, max_ny=8)
+        elif srtmversion == 3:
+            source = SRTM3Source(max_nx=8, max_ny=8)
+
         # Build the raster
-        shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+        shaded_srtm = PostprocessedRasterSource(source, shade)
+        self.shaded_srtm = shaded_srtm
 
         # Add the raster
         self.carte.add_raster(shaded_srtm, cmap='Greys', alpha=alpha, zorder=zorder)

@@ -561,8 +561,7 @@ class Fault(SourceInv):
             self.xi = np.array(yi)
 
         # Compute the lon/lat
-        self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000.,
-                                         inverse=True)
+        self.loni, self.lati = self.xy2ll(self.xi, self.yi)
 
         # All done
         return
@@ -604,13 +603,11 @@ class Fault(SourceInv):
         if discretized:
             self.xi = x
             self.yi = y
-            self.loni, self.lati = self.putm(self.xi*1000., self.yi*1000.,
-                                             inverse=True)
+            self.loni, self.lati = self.xy2ll(self.xi, self.yi)
         else:
             self.xf = x
             self.yf = y
-            self.lon, self.lat = self.putm(self.xf*1000., self.yf*1000., 
-                                           inverse=True)
+            self.lon, self.lat = self.xy2ll(self.xi, self.yi)
 
         # All done
         return

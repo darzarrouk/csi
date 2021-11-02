@@ -1252,7 +1252,7 @@ class TriangularTents(TriangularPatches):
                     ez = -1.0 * ez
 
                 # Conversion to geographical coordinates
-                lone,late = self.putm(ex*1000.,ey*1000.,inverse=True)
+                lone,late = self.xy2ll(ex,ey)
 
                 # Write the > sign to the file
                 fout.write('> \n')

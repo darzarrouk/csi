@@ -66,6 +66,9 @@ class insartimeseries(insar):
         self.xycorner = None
         self.Cd = None
 
+        # Save
+        self.verbose = verbose
+
         # All done
         return
 
@@ -472,6 +475,9 @@ class insartimeseries(insar):
             
             # Get things
             date = self.time[i]
+            if self.verbose:
+                sys.stdout.write('\r Reading {}'.format(date.isoformat()))
+                sys.stdout.flush()
             dat = data[bbox[0]:bbox[1],bbox[2]:bbox[3],i]*mask[bbox[0]:bbox[1],bbox[2]:bbox[3]]
             std = err[bbox[0]:bbox[1],bbox[2]:bbox[3],i]*mask[bbox[0]:bbox[1],bbox[2]:bbox[3]]
 
@@ -515,22 +521,6 @@ class insartimeseries(insar):
         self.incidence = incidence
         self.heading = heading
         self.inctype = inctype
-
-        # Make a common mask if asked
-        if not keepnan:
-            # Create an array
-            checkNaNs = np.zeros(self.lon.shape)
-            checkNaNs[:] = False
-            # Trash the pixels where there is only NaNs
-            for sar in self.timeseries:
-                checkNaNs += np.isfinite(sar.vel)
-            uu = np.flatnonzero(checkNaNs==0)
-            # Keep 'em
-            for sar in self.timeseries:
-                sar.reject_pixel(uu)
-            if zfile is not None:
-                self.elevation.reject_pixel(uu)
-            self.reject_pixel(uu)
 
         # Close file if asked
         if closeh5:

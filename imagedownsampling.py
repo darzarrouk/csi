@@ -268,7 +268,6 @@ class imagedownsampling(object):
         self.utmzone = image.utmzone
         self.lon0 = image.lon0
         self.lat0 = image.lat0
-        self.putm = image.putm
         self.ll2xy = image.ll2xy
         self.xy2ll = image.xy2ll
 

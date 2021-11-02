@@ -1953,8 +1953,8 @@ class insar(SourceInv):
         dic['Distance'] = np.array(Dalong)
         dic['Normal Distance'] = np.array(Dacros)
         dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
-        lone1, late1 = self.putm(xe1*1000., ye1*1000., inverse=True)
-        lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
+        lone1, late1 = self.xy2ll(xe1,ye1)
+        lone2, late2 = self.xy2ll(xe2,ye2)
         dic['EndPointsLL'] = [[lone1, late1],
                               [lone2, late2]]
         dic['LOS vector'] = los
@@ -2007,8 +2007,8 @@ class insar(SourceInv):
         dic['Distance'] = np.array(Dalong)
         dic['Normal Distance'] = np.array(Dacros)
         dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
-        lone1, late1 = self.putm(xe1*1000., ye1*1000., inverse=True)
-        lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
+        lone1, late1 = self.xy2ll(xe1, ye1)
+        lone2, late2 = self.xy2ll(xe2, ye2)
         dic['EndPointsLL'] = [[lone1, late1],
                               [lone2, late2]]
 
@@ -2612,7 +2612,7 @@ class insar(SourceInv):
         fout.close()
 
 
-    def plotprofile(self, name, legendscale=10., fault=None, norm=None, ref='utm', synth=False, alpha=.3, plotType='scatter', drawCoastlines=True):
+    def plotprofile(self, name, legendscale=10., fault=None, norm=None, synth=False, alpha=.3, plotType='scatter', drawCoastlines=True):
         '''
         Plot profile.
 
@@ -2623,7 +2623,6 @@ class insar(SourceInv):
             * legendscale: Length of the legend arrow.
             * fault     : Fault object
             * norm      : Colorscale limits
-            * ref       : utm or lonlat
             * synth     : Plot synthetics (True/False).
 
         Returns:
@@ -2875,12 +2874,9 @@ class insar(SourceInv):
 
         # Shaded topo
         if shadedtopo is not None:
-            if 'smooth' in shadedtopo:
-                smooth = shadedtopo['smooth']
-            if 'alpha' in shadedtopo:
-                al = shadedtopo['alpha']
-            if 'zorder' in shadedtopo:
-                zo = shadedtopo['zorder']
+            smooth = shadedtopo['smooth']
+            al = shadedtopo['alpha']
+            zo = shadedtopo['zorder']
             fig.shadedTopography(smooth=smooth, alpha=al, zorder=zo)
 
         # Draw the coastlines

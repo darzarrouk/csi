@@ -174,39 +174,6 @@ class faultpostproc(SourceInv):
             self.hfid.close()
 
         return
-            
-    def lonlat2xy(self, lon, lat):
-        '''
-        Uses the transformation in self to convert  lon/lat vector to x/y utm.
-
-        Args:
-            * lon           : Longitude array.
-            * lat           : Latitude array.
-
-        Returns:
-            * None
-        '''
-
-        x, y = self.putm(lon,lat)
-        x /= 1000.
-        y /= 1000.
-
-        return x, y
-
-    def xy2lonlat(self, x, y):
-        '''
-        Uses the transformation in self to convert x.y vectors to lon/lat.
-
-        Args:
-            * x             : Xarray
-            * y             : Yarray
-
-        Returns:
-            * lon, lat      : 2 float arrays
-        '''
-
-        lon, lat = self.putm(x*1000., y*1000., inverse=True)
-        return lon, lat
 
     def patchNormal(self, p):
         '''
@@ -506,7 +473,7 @@ class faultpostproc(SourceInv):
         self.centroid = [xc, yc, zc]
 
         # Convert to lon lat
-        lonc, latc = self.putm(xc*1000., yc*1000., inverse=True)
+        lonc, latc = self.xy2ll(xc,yc)
         self.centroidll = [lonc, latc, zc]
 
         # Plot scatter

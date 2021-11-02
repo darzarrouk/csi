@@ -640,10 +640,10 @@ class RectangularPatches(Fault):
             self.equivpatch.append(np.array([pt1, pt2, pt3, pt4]))
             
             # Deal with the lon lat
-            lon1, lat1 = self.putm(x1*1000., y1*1000., inverse=True)
-            lon2, lat2 = self.putm(x2*1000., y2*1000., inverse=True)
-            lon3, lat3 = self.putm(x3*1000., y3*1000., inverse=True)
-            lon4, lat4 = self.putm(x4*1000., y4*1000., inverse=True)
+            lon1, lat1 = self.xy2ll(x1, y1)
+            lon2, lat2 = self.xy2ll(x2, y2)
+            lon3, lat3 = self.xy2ll(x3, y3)
+            lon4, lat4 = self.xy2ll(x4, y4)
             pt1 = [lon1, lat1, z1]
             pt2 = [lon2, lat2, z2]
             pt3 = [lon3, lat3, z3]
@@ -1230,7 +1230,7 @@ class RectangularPatches(Fault):
                     ez = -1.0 * ez
 
                 # Conversion to geographical coordinates
-                lone,late = self.putm(ex*1000.,ey*1000.,inverse=True)
+                lone,late = self.xy2ll(ex, ey)
                 
                 # Write the > sign to the file
                 fout.write('> \n')

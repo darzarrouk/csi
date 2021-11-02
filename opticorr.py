@@ -141,12 +141,12 @@ class opticorr(SourceInv):
 
         # Compute corner to xy
         self.xycorner = np.zeros(self.corner.shape)
-        x, y = self.putm(self.corner[:,0], self.corner[:,1])
-        self.xycorner[:,0] = x/1000.
-        self.xycorner[:,1] = y/1000.
-        x, y = self.putm(self.corner[:,2], self.corner[:,3])
-        self.xycorner[:,2] = x/1000.
-        self.xycorner[:,3] = y/1000.
+        x, y = self.ll2xy(self.corner[:,0], self.corner[:,1])
+        self.xycorner[:,0] = x
+        self.xycorner[:,1] = y
+        x, y = self.ll2xy(self.corner[:,2], self.corner[:,3])
+        self.xycorner[:,2] = x
+        self.xycorner[:,3] = y
 
         # Read the covariance
         if cov:
@@ -1381,8 +1381,8 @@ class opticorr(SourceInv):
         dic['Distance'] = np.array(Dalong)
         dic['Normal Distance'] = np.array(Dacros)
         dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
-        lone1, late1 = self.putm(xe1*1000., ye1*1000., inverse=True)
-        lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
+        lone1, late1 = self.xy2ll(xe1, ye1)
+        lone2, late2 = self.xy2ll(xe2, ye2)
         dic['EndPointsLL'] = [[lone1, late1], 
                             [lone2, late2]]
 

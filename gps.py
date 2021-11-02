@@ -634,8 +634,8 @@ class gps(SourceInv):
         dic['Normal Distance'] = np.array(Dacros)
         dic['Stations'] = names
         dic['EndPoints'] = [[xe1, ye1], [xe2, ye2]]
-        lone1, late1 = self.putm(xe1*1000., ye1*1000., inverse=True)
-        lone2, late2 = self.putm(xe2*1000., ye2*1000., inverse=True)
+        lone1, late1 = self.xy2ll(xe1,ye1)
+        lone2, late2 = self.xy2ll(xe2,ye2)
         dic['EndPointsLL'] = [[lone1, late1],
                               [lone2, late2]]
         dic['Vectors'] = [vec1, vec2]
@@ -3576,12 +3576,9 @@ class gps(SourceInv):
 
         # Shaded topo
         if shadedtopo is not None:
-            if 'smooth' in shadedtopo:
-                smooth = shadedtopo['smooth']
-            if 'alpha' in shadedtopo:
-                al = shadedtopo['alpha']
-            if 'zorder' in shadedtopo:
-                zo = shadedtopo['zorder']
+            smooth = shadedtopo['smooth']
+            al = shadedtopo['alpha']
+            zo = shadedtopo['zorder']
             fig.shadedTopography(smooth=smooth, alpha=al, zorder=zo)
 
         # Draw the coastlines

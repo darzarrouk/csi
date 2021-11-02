@@ -70,7 +70,6 @@ class imagecovariance(object):
 
         # Set the transformation
         self.utmzone = image.utmzone
-        self.putm = image.putm
         self.ll2xy = image.ll2xy
         self.xy2ll = image.xy2ll
 

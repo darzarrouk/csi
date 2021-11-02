@@ -19,7 +19,7 @@ if major==2:
 from .gps import gps as gpsclass
 from .SourceInv import SourceInv
 
-class srcmodsolution(object):
+class srcmodsolution(SourceInv):
 
     def __init__(self, name, utmzone=None, lon0=None, lat0=None, ellps='WGS84', verbose=True):
         '''
@@ -193,29 +193,6 @@ class srcmodsolution(object):
 
         # All done
         return
-
-    def ll2xy(self, lon, lat):
-        '''
-        Do the lat lon 2 utm transform
-        '''
-
-        # Transpose
-        x, y = self.putm(lon, lat)
-
-        # Put it in Km
-        x = x/1000.
-        y = y/1000.
-
-        # All done
-        return x, y
-
-    def xy2ll(self, x, y):
-        '''
-        Do the utm to lat lon transform
-        '''
-
-        # Transpose and return
-        return self.putm(x*1000., y*1000., inverse=True)
 
     def readSLP(self, filename):
         '''

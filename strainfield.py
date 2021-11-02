@@ -9,7 +9,9 @@ import numpy as np
 import pyproj as pp
 import matplotlib.pyplot as plt
 
-class strainfield(object):
+from .SourceInv import SourceInv
+
+class strainfield(SourceInv):
     '''
     Class that handles a strain field. Has not been used in a long time... Might be incorrect and untested.
 
@@ -59,39 +61,6 @@ class strainfield(object):
         # All done
         return
 
-    def lonlat2xy(self, lon, lat):
-        '''
-        Uses the transformation in self to convert  lon/lat vector to x/y utm.
-
-        Args:
-            * lon           : Longitude array.
-            * lat           : Latitude array.
-
-        Returns:
-            * None
-        '''
-
-        x, y = self.putm(lon,lat)
-        x /= 1000.
-        y /= 1000.
-
-        return x, y
-
-    def xy2lonlat(self, x, y):
-        '''
-        Uses the transformation in self to convert x.y vectors to lon/lat.
-
-        Args:
-            * x             : Xarray
-            * y             : Yarray
-
-        Returns:    
-            * None
-        '''
-
-        lon, lat = self.putm(x*1000., y*1000., inverse=True)
-        return lon, lat
-
     def read_from_h5(self, filename):
         '''
         Read the Continuous strain field from a hdf5 file.
@@ -130,7 +99,7 @@ class strainfield(object):
         # Reshape lon lat and build x, y
         self.lon = self.lon.reshape((w*l,))
         self.lat = self.lat.reshape((w*l,))
-        self.x, self.y = self.lonlat2xy(self.lon, self.lat)
+        self.x, self.y = self.ll2xy(self.lon, self.lat)
 
         # Build the corners
         self.corners = [ [lonBL,latBL+l*deltaLat], [lonBL+w*deltaLon,latBL+l*deltaLat], 
@@ -383,7 +352,7 @@ class strainfield(object):
         alpha = azimuth*np.pi/180.
 
         # Convert the lat/lon of the center into UTM.
-        xc, yc = self.lonlat2xy(loncenter, latcenter)
+        xc, yc = self.ll2xy(loncenter, latcenter)
 
         # Copmute the across points of the profile
         xa1 = xc - (width/2.)*np.cos(alpha)
@@ -601,7 +570,7 @@ class strainfield(object):
         b = self.profiles[name]['Box']
         bb = np.zeros((5, 2))
         for i in range(4):
-            x, y = self.lonlat2xy(b[i,0], b[i,1])
+            x, y = self.ll2xy(b[i,0], b[i,1])
             bb[i,0] = x
             bb[i,1] = y
         bb[4,0] = bb[0,0]
@@ -790,7 +759,7 @@ class strainfield(object):
 
         # Get the center
         lonc, latc = prof['Center']
-        xc, yc = self.lonlat2xy(lonc, latc)
+        xc, yc = self.ll2xy(lonc, latc)
 
         # Get the sign 
         xa,ya = prof['EndPoints'][0]

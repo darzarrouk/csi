@@ -12,65 +12,32 @@ import scipy.interpolate as sciint
 import copy
 import sys
 
+from .RectangularPatches import RectangularPatches 
+
 # Personals
 major, minor, micro, release, serial = sys.version_info
 if major==2:
     import okada4py as ok
 from .gps import gps as gpsclass
 
-class dippingfault(object):
+class dippingfault(RectangularPatches):
 
-    def __init__(self, name, utmzone=None):
+    def __init__(self, name, utmzone=None, ellps='WGS84', verbose=True, lon0=None, lat0=None):
         '''
         Args:
             * name          : Name of the fault.
+            * utmzone   : UTM zone  (optional, default=None)
+            * ellps     : ellipsoid (optional, default='WGS84')
         '''
 
-        # Initialize the fault
-        self.name = name
-
-        print ("---------------------------------")
-        print ("---------------------------------")
-        print ("Initializing fault {}".format(self.name))
-
-        # Set the reference point in the x,y domain (not implemented)
-        self.xref = 0.0
-        self.yref = 0.0
-
-        # Set the utm zone
-        self.utmzone = utmzone
-        if self.utmzone is not None:
-            self.putm = pp.Proj(proj='utm', zone=self.utmzone, ellps='WGS84')
-
-        # allocate some things
-        self.xf = None
-        self.yf = None
-        self.xi = None
-        self.yi = None
-        self.loni = None
-        self.lati = None
-
-        # Allocate depth and number of patches
-        self.top = None             # Depth of the top of the fault
-        self.depth = None           # Depth of the bottom of the fault
-        self.numz = None
-
-        # Allocate patches
-        self.patch = None
-        self.slip = None
-        self.totalslip = None
-
-        # Create a dictionary for the Green's functions and the data vector
-        self.G = {}
-        self.d = {}
-
-        # Create a dictionnary for the polysol
-        self.polysol = {}
-
-        # Create structure to store the GFs and the assembled d vector
-        self.Gassembled = None
-        self.dassembled = None
-
+        # Parent class init
+        super(planarfault,self).__init__(name,
+                                         utmzone=utmzone,
+                                         ellps=ellps,
+                                         lon0=lon0,
+                                         lat0=lat0,
+                                         verbose=verbose)
+        
         # All done
         return
 

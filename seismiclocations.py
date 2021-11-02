@@ -1822,9 +1822,9 @@ class seismiclocations(SourceInv):
             * None
         '''
 
-        x, y = self.putm(self.lon, self.lat)
-        self.x = x/1000.
-        self.y = y/1000.
+        x, y = self.ll2xy(self.lon, self.lat)
+        self.x = x
+        self.y = y
 
         # All done
         return
@@ -1837,7 +1837,7 @@ class seismiclocations(SourceInv):
             * None
         '''
 
-        lon, lat = self.putm(x*1000., y*1000.)
+        lon, lat = self.xy2ll(x, y)
         self.lon = lon
         self.lat = lat
 
@@ -2198,12 +2198,9 @@ class seismiclocations(SourceInv):
 
         # Shaded topo
         if shadedtopo is not None:
-            if 'smooth' in shadedtopo:
-                smooth = shadedtopo['smooth']
-            if 'alpha' in shadedtopo:
-                al = shadedtopo['alpha']
-            if 'zorder' in shadedtopo:
-                zo = shadedtopo['zorder']
+            smooth = shadedtopo['smooth']
+            al = shadedtopo['alpha']
+            zo = shadedtopo['zorder']
             fig.shadedTopography(smooth=smooth, alpha=al, zorder=zo)
 
         # Draw the coastlines
