@@ -140,13 +140,13 @@ class SourceInv(object):
                                 ),
                             )
             self.utm = pp.CRS.from_epsg(utm_crs_list[0].code)
+            self.code = utm_crs_list[0].code
 
         # Make the projector
         self.proj2utm = Transformer.from_crs(self.wgs, self.utm, always_xy=True) 
         self.proj2wgs = Transformer.from_crs(self.utm, self.wgs, always_xy=True)
 
         # Set utmzone
-        self.code = utm_crs_list[0].code
         self.utmzone = utmzone
         self.lon0 = lon0
         self.lat0 = lat0
