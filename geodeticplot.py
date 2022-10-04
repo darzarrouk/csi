@@ -669,7 +669,7 @@ class geodeticplot(object):
 
     def faultpatches(self, fault, slip='strikeslip', norm=None, colorbar=True,
                      cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
-                     plot_on_2d=False, revmap=False, linewidth=1.0, cmap='jet',
+                     plot_on_2d=False, revmap=False, linewidth=1.0, cmap='seismic',
                      alpha=1.0, factor=1.0, zorder=3, edgecolor='slip', colorscale='normal'):
         '''
         Plot the fualt patches
@@ -1314,7 +1314,7 @@ class geodeticplot(object):
 
     def gpsprojected(self, gps, norm=None, colorbar=True, 
                      cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel='',
-                     zorder=4, cmap='jet', alpha=1.):
+                     zorder=4, cmap='seismic', alpha=1.):
         '''
         Plot the gps data projected in the LOS
 
@@ -1508,7 +1508,7 @@ class geodeticplot(object):
 
     def insar(self, insar, norm=None, colorbar=True, markersize=1,
                     cbaxis=[0.2,0.2,0.1,0.01], cborientation='horizontal', cblabel='',
-                    data='data', plotType='scatter', cmap='jet',
+                    data='data', plotType='scatter', cmap='seismic',
                     decim=1, zorder=3, edgewidth=1, alpha=1.):
         '''
         Plot an insar object
@@ -1556,9 +1556,15 @@ class geodeticplot(object):
             return
 
         # Prepare the colorlimits
+        
+        if (np.abs(np.nanmin(d)) >= np.abs(np.nanmax(d))):
+        	limit = np.abs(np.nanmin(d))
+        else:
+        	limit = np.abs(np.nanmax(d))
+        
         if norm == None:
-            vmin = np.nanmin(d)
-            vmax = np.nanmax(d)
+            vmin = -limit
+            vmax = limit
         else:
             vmin = norm[0]
             vmax = norm[1]
