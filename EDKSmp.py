@@ -493,10 +493,10 @@ class interpolateEDKS(object):
 
         # Show me
         if self.verbose:
-            print('Read Kernel Header file hdr.{}'.format(self.kernel))
+            print(f'Read Kernel Header file {os.path.split(self.kernel)[0]}/hdr.{os.path.split(self.kernel)[1]}')
 
         # Open the header file
-        fhd = open('hdr.{}'.format(self.kernel), 'r')
+        fhd = open(f'{os.path.split(self.kernel)[0]}/hdr.{os.path.split(self.kernel)[1]}', 'r')
 
         # Read things
         self.prefix = fhd.readline().split()[0]
