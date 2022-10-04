@@ -249,7 +249,7 @@ class fault3D(RectangularPatches):
         # Translate slip into an array
         self.slip = np.array(self.slip)
 
-        # Re-discretoze to get the original fault
+        # Re-discretize to get the original fault
         self.discretize(every,trace_tol,trace_fracstep,trace_xaxis,trace_cum_error)
 
         # Compute the equivalent rectangles

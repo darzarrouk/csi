@@ -480,13 +480,13 @@ class RectangularPatchesKin(RectangularPatches):
                 grid_size_strike = p_length/nbp_strike
             else:
                 dum = p_length/nbp_strike
-                errmsg = 'Heteogeneous grid size not implemented (%f,%f)'%(grid_size_strike,dum)
+                errmsg = 'Heterogeneous grid size not implemented (%f,%f)'%(grid_size_strike,dum)
                 assert np.round(grid_size_strike,2) == np.round(dum,2), errmsg
 
             if grid_size_dip==None:
                 grid_size_dip = p_length/nbp_dip
             else:
-                errmsg = 'Heteogeneous grid size not implemented (dip)'
+                errmsg = 'Heterogeneous grid size not implemented (dip)'
                 assert np.round(grid_size_dip,2) ==np.round(p_length/nbp_dip,2), errmsg
 
             # Set grid points coordinates on fault
