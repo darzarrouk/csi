@@ -390,6 +390,48 @@ class RectangularPatches(Fault):
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
+    def refineMesh(self, initializeSlip = True):
+        '''
+        Cuts all the patches in 4, based on the mid-point of each rectangle and 
+        builds a new fault from that.
+        Returns:
+            * None
+        '''
+
+        # Iterate over the fault patches
+        newpatches = []
+        for patch in self.patch:
+            rectangles = self.splitPatch(patch)
+            for rectangle in rectangles:
+                newpatches.append(rectangle)
+
+        # Delete all the patches 
+        del self.patch
+        del self.patchll
+        self.patch = []
+        self.patchll = []
+        self.N_slip = None
+        
+        # Add the new patches
+        for patch in newpatches:
+            self.addpatch(patch)
+
+        # Initialize slip
+        if initializeSlip:
+            self.initializeslip()
+
+        # Depth things
+        depth = [[p[2] for p in patch] for patch in self.patch]
+        depth = np.unique(np.array(depth).flatten())
+        self.z_patches = depth.tolist()
+        self.top = np.min(depth)
+        self.depth = np.max(depth)
+        
+        # All done
+        return
+    # ----------------------------------------------------------------------    
+
+    # ----------------------------------------------------------------------
     # Merge patches into a common patch
     def mergePatches(self, p1, p2, eps=1e-6, verbose=True):
         '''
@@ -1461,7 +1503,7 @@ class RectangularPatches(Fault):
         '''
 
         # Remove the patch
-        if len(self.equivpatch)==len(self.patch): # Check if equivpatch exists
+        if hasattr(self, 'equivpatch'): # Check if equivpatch exists
             del self.equivpatch[patch]
             del self.equivpatchll[patch]
         del self.patch[patch]
@@ -3093,7 +3135,7 @@ class RectangularPatches(Fault):
             * axesscaling   : Perform axes scaling
             * Norm          : Colorbar limits for slip
             * linewidth     : width of the lines
-            * plot_on_2d    : Make a map plot of the fautl
+            * plot_on_2d    : Make a map plot of the fault
             * drawCoastlines: True/False
             * expand        : How much to extend the map around the fault (degrees)
         '''
@@ -3635,8 +3677,7 @@ class RectangularPatches(Fault):
         '''
 
         # Adjacency Matrix
-        if self.adjacencyMat is None:
-            self.computeAdjacencyMat(verbose=verbose)
+        self.computeAdjacencyMat(verbose=verbose)
         Jmat = self.adjacencyMat
         npatch = Jmat.shape[0]
         assert Jmat.shape[1] == npatch, 'adjacency matrix is not square'
