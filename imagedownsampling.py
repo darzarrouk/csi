@@ -342,7 +342,7 @@ class imagedownsampling(object):
 
         Kwargs:
             * tolerance     : Between 0 and 1. If 1, all the pixels must have a value so that the box is kept. If 0, no pixels are needed... Default is 0.5
-            * decimorig     : Decimation ofr plotting purposes only.
+            * decimorig     : Decimation for plotting purposes only.
             * plot          : True/False
 
         Returns:
@@ -1262,6 +1262,8 @@ class imagedownsampling(object):
         for i in u.tolist():
             self.blocks.pop(i-j)
             self.blocksll.pop(i-j)
+            self.Gradient = np.delete(self.Gradient, i-j)
+            self.Curvature = np.delete(self.Curvature, i-j)
             j += 1
 
         # All done
