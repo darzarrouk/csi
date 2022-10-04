@@ -102,10 +102,12 @@ class insar(SourceInv):
             self.lon = np.array([])
         if self.los is None:
             self.los = np.array([])
-
+            
         # Assert everything exists in the slave
         assert sar.vel is not None, 'Nothing to merge in...'
-
+        if sar.err is None:
+            sar.err = np.array([])
+            
         # Add things
         self.err = np.array(self.err.tolist()+sar.err.tolist())
         self.vel = np.array(self.vel.tolist()+sar.vel.tolist())
@@ -635,7 +637,7 @@ class insar(SourceInv):
 
     def incaz2los(self, incidence, azimuth, origin='onefloat', dtype=np.float32):
         '''
-        From the incidence and the heading, defines the LOS vector.
+        From the incidence and the azimuth, defines the LOS vector.
 
         Args:
             * incidence : Incidence angle.
@@ -988,7 +990,7 @@ class insar(SourceInv):
 
         Args:
             * sigma             : Sigma term of the covariance
-            * lam               : Caracteristic length of the covariance
+            * lam               : Characteristic length of the covariance
 
         Kwargs:
             * function          : Can be 'gauss' or 'exp'
@@ -2831,7 +2833,7 @@ class insar(SourceInv):
 
     def plot(self, faults=None, figure=None, gps=None, norm=None, data='data', show=True, 
              drawCoastlines=True, expand=0.2, edgewidth=1, figsize=None, markersize=1.,
-             plotType='scatter', cmap='jet', alpha=1., box=None, titleyoffset=1.1,
+             plotType='scatter', cmap='seismic', alpha=1., box=None, titleyoffset=1.1,
              landcolor='lightgrey', seacolor=None, shadedtopo=None, title=True,
              colorbar=True, cbaxis=[0.1, 0.2, 0.1, 0.02], cborientation='horizontal', cblabel=''):
         '''
