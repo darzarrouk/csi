@@ -23,6 +23,9 @@ import os
 from .SourceInv import SourceInv
 from .EDKSmp import sum_layered
 from .EDKSmp import dropSourcesInPatches as Patches2Sources
+from .EDKSmp import interpolateEDKS
+
+from skspatial.objects import Line
 
 #class Fault
 class Fault(SourceInv):
@@ -765,7 +768,7 @@ class Fault(SourceInv):
         if coord in ('ll', 'lonlat'):
             x, y = self.ll2xy(lon, lat)
         elif coord in ('xy', 'utm'):
-            x,y = lon, lat
+            x, y = lon, lat
 
         # Fault coordinates
         if discretized:
@@ -786,17 +789,18 @@ class Fault(SourceInv):
         dmin2 = d[imin2]
         d[imin2] = 999999.
         dtot = dmin1+dmin2
-
-        # Along the fault?
-        xc = (xf[imin1]*dmin1 + xf[imin2]*dmin2)/dtot
-        yc = (yf[imin1]*dmin1 + yf[imin2]*dmin2)/dtot
+        
+        line = Line.from_points([xf[imin1], yf[imin1]], [xf[imin2], yf[imin2]])
+        pp = line.project_point([x, y])
+        xc = pp[0]
+        yc = pp[1]
 
         # Distance
-        if dmin1<dmin2:
-            jm = imin1
+        jm = imin1
+        if imin1 < imin2:
+            dalong = cumdis[jm] - np.sqrt((xc-xf[jm])**2 + (yc-yf[jm])**2)
         else:
-            jm = imin2
-        dalong = cumdis[jm] + np.sqrt( (xc-xf[jm])**2 + (yc-yf[jm])**2 )
+            dalong = cumdis[jm] + np.sqrt((xc-xf[jm])**2 + (yc-yf[jm])**2)
         dacross = np.sqrt((xc-x)**2 + (yc-y)**2)
 
         # All done
@@ -992,7 +996,7 @@ class Fault(SourceInv):
 
         # Chech something
         if self.patchType == 'triangletent':
-            assert method == 'edks', 'Homogeneous case not implemented for {} faults'.format(self.patchType)
+            assert (method in ('edks', 'EDKS', 'pyedks', 'pythonedks')), 'Homogeneous case not implemented for {} faults'.format(self.patchType)
 
         # Check something
         if method in ('homogeneous', 'Homogeneous'):
