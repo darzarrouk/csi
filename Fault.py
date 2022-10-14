@@ -882,6 +882,11 @@ class Fault(SourceInv):
         fout = open(filename, 'w')
 
         # Write
+        if ref in ('utm'):
+            fout.write('x y\n')
+        elif ref in ('lonlat'):
+            fout.write('lon lat\n')
+            
         for i in range(x.shape[0]):
             fout.write('{} {} \n'.format(x[i], y[i]))
 
@@ -1246,7 +1251,7 @@ class Fault(SourceInv):
     def edksGFs(self, data, vertical=True, slipdir='sd', verbose=True,
                       convergence=None, method='fortran'):
         '''
-        Builds the Green's functions based on the solution by Zhao & Rivera 2002.
+        Builds the Green's functions based on the solution by Zhu & Rivera 2002.
         The corresponding functions are in the EDKS code that needs to be installed and
         the executables should be found in the directory set by the environment
         variable EDKS_BIN.
