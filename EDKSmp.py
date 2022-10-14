@@ -12,6 +12,7 @@ import struct
 import sys
 import numpy as np
 import multiprocessing as mp
+import subprocess
 
 # Scipy
 from scipy.io import FortranFile
@@ -397,11 +398,11 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
     zs = zs - dZ
 
     # Define filenames:
-    file_rec = prefix + '.rec'
-    file_pat = prefix + '.pat'
-    file_dux = prefix + '_ux.dis'
-    file_duy = prefix + '_uy.dis'
-    file_duz = prefix + '_uz.dis'
+    file_rec = os.path.dirname(edks) + '/' +  prefix + '.rec'
+    file_pat = os.path.dirname(edks) + '/' +  prefix + '.pat'
+    file_dux = os.path.dirname(edks) + '/' +  prefix + '_ux.dis'
+    file_duy = os.path.dirname(edks) + '/' +  prefix + '_uy.dis'
+    file_duz = os.path.dirname(edks) + '/' +  prefix + '_uz.dis'
 
     # Clean the file if they exist
     cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
@@ -423,13 +424,10 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
        for i in range(0, len(temp)):
           file.write( struct.pack( BIN_FILE_FMT, temp[i][k] ) )
     file.close()
-  
+
     # call sum_layered
-    cmd = '{}/sum_layered {} {} {} {} {} {}'.format(BIN_EDKS, edks, prefix, nrec, Np, npw, npy)
-    if verbose:
-        print(cmd)
-    os.system(cmd)
-     
+    subprocess.run([f'{BIN_EDKS}/sum_layered', f'{os.path.basename(edks)}', f'{prefix}', f'{nrec}', f'{Np}', f'{npw}', f'{npy}'], cwd=f'{os.path.dirname(edks)}')
+
     # read sum_layered output Greens function
     # ux
     ux = np.fromfile(file_dux, 'f').reshape((nrec, Np), order='F')
