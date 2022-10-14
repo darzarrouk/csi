@@ -1,7 +1,9 @@
-Installation.
+# Classic Slip Inversion library for Python
 
-I. install okada4py
+## Installation.
 
-II. conda install -c conda-forge gcc numpy scipy pyproj matplotlib cartopy multiprocess h5py
+1. install okada4py
 
-III. export PYTHONPATH=/path:${PYTHONPATH}
+2. conda install -c conda-forge gcc numpy scipy pyproj matplotlib cartopy multiprocess h5py
+
+3. export PYTHONPATH=/path/to/your/folder:${PYTHONPATH}
