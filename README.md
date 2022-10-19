@@ -14,6 +14,6 @@
    
 6. pip install git+https://github.com/pyrocko/kite
 
-7. conda install -c pyrocko pyrocko
+7. conda install -c anaconda pyqt=5.9.2
 
 8. export PYTHONPATH=/path/to/your/folder:${PYTHONPATH}
