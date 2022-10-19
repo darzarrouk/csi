@@ -4,7 +4,7 @@
 
 1. install okada4py
 
-2. conda install -c conda-forge gcc numpy scipy pyproj matplotlib cartopy multiprocess h5py subprocess
+2. conda install -c conda-forge gcc numpy scipy pyproj matplotlib cartopy multiprocess h5py
 
 3. pip install calfem-python
 
