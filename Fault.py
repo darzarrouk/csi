@@ -22,6 +22,7 @@ import os
 # Personals
 from .SourceInv import SourceInv
 from .EDKSmp import sum_layered
+from .EDKSmp import sum_layered_fomosto
 from .EDKSmp import dropSourcesInPatches as Patches2Sources
 from .EDKSmp import interpolateEDKS
 
@@ -1038,7 +1039,7 @@ class Fault(SourceInv):
             G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
         elif method in ('edks', 'EDKS', 'pyedks', 'pythonedks'):
             if 'py' not in method:
-                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='fortran')
+                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='fomosto')
             else:
                 G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='python')
 
@@ -1284,7 +1285,7 @@ class Fault(SourceInv):
             print('---------------------------------')
             print('---------------------------------')
             print ("Building Green's functions for the data set")
-            print("{} of type {} using EDKS on fault {}".format(data.name, data.dtype, self.name))
+            print("{} of type {} using {} on fault {}".format(data.name, data.dtype, method, self.name))
 
         # Check if we can find kernels
         if not hasattr(self, 'kernelsEDKS'):
@@ -1300,7 +1301,7 @@ class Fault(SourceInv):
                 print('---------------------------------')
             self.kernelsEDKS = 'kernels.edks'
         stratKernels = self.kernelsEDKS
-        assert os.path.isfile(stratKernels), 'Kernels for EDKS not found...'
+        assert (os.path.isfile(stratKernels) or os.path.isdir(stratKernels)), 'Kernels for EDKS not found...'
 
         # Show me
         if verbose:
@@ -1411,6 +1412,8 @@ class Fault(SourceInv):
                                                   dip*np.pi/180., np.zeros(dip.shape),
                                                   Areas, slip, 
                                                   xr, yr, method='linear'))
+            elif method in ('fomosto'):
+                iGss = np.array(sum_layered_fomosto(xs, ys, zs, strike, dip, np.zeros(dip.shape), Areas, slip, xr, yr, stratKernels))
             if verbose:
                 print('Summing sub-sources...')
             Gss = np.zeros((3, iGss.shape[1],np.unique(Ids).shape[0]))
@@ -1436,6 +1439,8 @@ class Fault(SourceInv):
                                                   np.ones(dip.shape)*np.pi/2.,
                                                   Areas, slip, 
                                                   xr, yr, method='linear'))
+            elif method in ('fomosto'):
+                iGds = np.array(sum_layered_fomosto(xs, ys, zs, strike, dip, np.ones(dip.shape) * 90.0, Areas, slip, xr, yr, stratKernels))
             if verbose:
                 print('Summing sub-sources...')
             Gds = np.zeros((3, iGds.shape[1], np.unique(Ids).shape[0]))

@@ -3,7 +3,8 @@ A bunch of routines to handle EDKS
 
 Written by F. Ortega in 2010.
 Modified by R. Jolivet in 2014.
-Modified by R. Jolivet in 2017 (multiprocessing added for point dropping)
+Modified by R. Jolivet in 2017 (multiprocessing added for point dropping).
+Modified by L. Pereiaslov in 2022 (Pyrocko's Fomosto could now be used to calculate kernels).
 '''
 
 # Externals
@@ -17,6 +18,9 @@ import subprocess
 # Scipy
 from scipy.io import FortranFile
 import scipy.interpolate as sciint
+
+# Pyrocko
+from pyrocko import gf
 
 # Initialize a class to allow multiprocessing for EDKS interpolation in Python
 class interpolator(mp.Process):
@@ -443,6 +447,39 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
         cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
         os.system(cmd)  
  
+    # return the GF matrices
+    return [ux, uy, uz]
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# Compute the Green's functions for the patches using fomosto
+def sum_layered_fomosto(xs, ys, zs, strike, dip, rake, area, slip, xr, yr, stratKernels):
+
+    # Some initializations
+    Np = len(xs)          # number of sources
+    nrec = len(xr)        # number of receivers
+    mu = 30.5079e9             # shear modulus
+
+    # Calculate point source magnitude
+    M = np.log10(mu * area * slip * 1e7) / 1.5 - 10.7
+
+    store_id = os.path.basename(stratKernels)
+    engine = gf.LocalEngine(store_superdirs=[f'{os.path.dirname(stratKernels)}'])
+
+    target = gf.StaticTarget(east_shifts = xr, north_shifts = yr, interpolation = 'multilinear', store_id = store_id)
+
+    ux = np.zeros((nrec, Np))
+    uy = np.zeros((nrec, Np))
+    uz = np.zeros((nrec, Np))
+
+    for i in range(Np):
+        dc_source = gf.DCSource(lat = 0.0, lon = 0.0, east_shift = xs[i], north_shift = ys[i], depth = zs[i], strike = strike[i], dip = dip[i], rake = rake[i], magnitude = M[i])
+        result = engine.process(dc_source, target)
+        disp = result.results_list[0][0].result
+        ux[:, i] = disp['displacement.e']
+        uy[:, i] = disp['displacement.n']
+        uz[:, i] = disp['displacement.d'] * -1.0
+
     # return the GF matrices
     return [ux, uy, uz]
 # ----------------------------------------------------------------------
