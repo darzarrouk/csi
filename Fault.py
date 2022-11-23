@@ -1002,7 +1002,7 @@ class Fault(SourceInv):
 
         # Chech something
         if self.patchType == 'triangletent':
-            assert (method in ('edks', 'EDKS', 'pyedks', 'pythonedks')), 'Homogeneous case not implemented for {} faults'.format(self.patchType)
+            assert (method in ('edks', 'EDKS', 'pyedks', 'pythonedks', 'fmst', 'fomosto')), 'Homogeneous case not implemented for {} faults'.format(self.patchType)
 
         # Check something
         if method in ('homogeneous', 'Homogeneous'):
@@ -1039,9 +1039,11 @@ class Fault(SourceInv):
             G = self.homogeneousGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence)
         elif method in ('edks', 'EDKS', 'pyedks', 'pythonedks'):
             if 'py' not in method:
-                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='fomosto')
+                G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='fortran')
             else:
                 G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='python')
+        elif method in ('fmst', 'fomosto'):
+            G = self.edksGFs(data, vertical=vertical, slipdir=slipdir, verbose=verbose, convergence=convergence, method='fomosto')
 
         # Separate the Green's functions for each type of data set
         data.setGFsInFault(self, G, vertical=vertical)
@@ -1397,7 +1399,7 @@ class Fault(SourceInv):
             inter.readHeader()
             inter.readKernel()
 
-        # Run EDKS Strike slip
+        # Run EDKS Strike Slip
         if 's' in slipdir:
             if verbose:
                 print('Running Strike Slip component for data set {}'.format(data.name))
@@ -1423,7 +1425,7 @@ class Fault(SourceInv):
         else:
             Gss = np.zeros((3, len(data.x), len(self.patch)))
 
-        # Run EDKS dip slip
+        # Run EDKS Dip Slip
         if 'd' in slipdir:
             if verbose:
                 print('Running Dip Slip component for data set {}'.format(data.name))
@@ -1454,7 +1456,7 @@ class Fault(SourceInv):
         if 't' in slipdir:
             assert False, 'Sorry, this is not working so far... Bryan should get it done soon...'
             if verbose:
-                print('Running tensile component for data set {}'.format(data.name))
+                print('Running Tensile component for data set {}'.format(data.name))
             if method not in ('fortran'): 
                 raise NotImplementedError('Tensile case not implemented in python yet')
             iGts = np.array(sum_layered(xs, ys, zs,
