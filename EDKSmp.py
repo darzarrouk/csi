@@ -458,7 +458,7 @@ def sum_layered_fomosto(xs, ys, zs, strike, dip, rake, area, slip, xr, yr, strat
     # Some initializations
     Np = len(xs)          # number of sources
     nrec = len(xr)        # number of receivers
-    mu = 30.5079e9             # shear modulus
+    mu = calculate_mu(zs, stratKernels) # mu for the point sources
 
     # Calculate point source magnitude
     M = np.log10(mu * area * slip * 1e7) / 1.5 - 10.7
@@ -487,6 +487,45 @@ def sum_layered_fomosto(xs, ys, zs, strike, dip, rake, area, slip, xr, yr, strat
 # ----------------------------------------------------------------------
 # A class that interpolates edks Kernels (same as fortran's sum_layered, 
 # but with more flexibility for the interpolation part)
+
+# ----------------------------------------------------------------------
+# Compute the Green's functions for the patches using fomosto
+def calculate_mu(zs, stratKernels):
+
+    f = open(os.path.join(stratKernels, 'config'), 'r')
+    lines = f.readlines()
+    model = []
+    mu = []
+    top = None
+    bot = None
+    for i in range(len(lines)):
+        if (lines[i].split()[0] == 'earthmodel_1d:'):
+            top = i
+        elif (lines[i].split()[0] == 'sample_rate:'):
+            bot = i
+
+    for i in range(len(lines)):
+        if (i > top and i < bot):
+            model.append([float(num) for num in lines[i].split()])
+    model = np.array(model)
+    
+    zsm = zs / 1e3
+    for i in range(len(zsm)):
+        if (zsm[i] >= model[-1, 0]):
+            vs = model[-1, 2]
+            den = model[-1, 3]
+        else:
+            for j in range(model.shape[0]):
+                if (zsm[i] >= model[j, 0] and zsm[i] <= model[j+1, 0]):
+                    vs = (model[j, 2] + model[j+1, 2]) / 2.0
+                    den = (model[j, 3] + model[j+1, 3]) / 2.0
+        mu.append(den * vs**2 * 1e9)
+    mu = np.array(mu)
+
+    return mu
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
 
 class interpolateEDKS(object):
     
