@@ -2121,16 +2121,12 @@ class Fault(SourceInv):
             * None
         '''
 
-        # Check if the Green's function are ready
-        assert self.Gassembled is not None, \
-                "You should assemble the Green's function matrix first"
-
         # Check
         if type(datas) is not list:
             datas = [datas]
 
-        # Get the total number of data
-        Nd = self.Gassembled.shape[0]
+        # Get the total number of data (dependence on d instead of G)
+        Nd = self.dassembled.shape[0]
         Cd = np.zeros((Nd, Nd))
 
         # Loop over the data sets
