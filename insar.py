@@ -986,7 +986,7 @@ class insar(SourceInv):
 
         elif function='gauss':
 
-            :math:`C_d(i,j) = \sigma^2 e^{-\\frac{d_{i,j}^2}{2*\lambda}}`
+            :math:`C_d(i,j) = \sigma^2 e^{-\\frac{d_{i,j}^2}{2*\lambda^2}}`
 
         Args:
             * sigma             : Sigma term of the covariance
