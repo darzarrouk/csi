@@ -58,19 +58,22 @@ class fault3D(RectangularPatches):
 
     # ----------------------------------------------------------------------
     # Computes dip angle at depth z
-    def dipatZ(self, interp, z):
+    def dipatZ(self, dipinterpolator, dipdirinterpolator, z):
         '''
         Uses the interpolator to return the dip angle evolution along strike at depth z.
         The interpolation scheme is piecewise linear.
 
         Args:
 
-            * interp        : Dip interpolation function
-            * z             : Depth.
+            * dipinterpolator           : Dip interpolation function.
+            * dipdirinterpolator        : Dip direction interpolation function.
+            * z                         : Depth.
         '''
 
         # Create a structure
         self.dip = []
+        self.sdr = []
+        self.cdr = []
 
         # Set a distance counter
         dis = 0
@@ -86,10 +89,18 @@ class fault3D(RectangularPatches):
             dis += np.sqrt( (self.xi[i]-xp)**2 + (self.yi[i]-yp)**2 )
 
             # get the dip
-            d = interp(dis, z[i])
+            d = dipinterpolator(dis, z[i])
 
             # store it
             self.dip.append(d)
+            
+            # get the dip direction
+            s = np.sin(dipdirinterpolator(dis, z[i]))
+            c = np.cos(dipdirinterpolator(dis, z[i]))
+            
+            # store it
+            self.sdr.append(s)
+            self.cdr.append(c)
 
             # Update previous xp, yp
             xp = self.xi[i]; yp = self.yi[i]
@@ -145,14 +156,14 @@ class fault3D(RectangularPatches):
         # Discretize the surface trace of the fault
         self.discretize(every,trace_tol,trace_fracstep,trace_xaxis,trace_cum_error)
 
-        # degree to rad
+        # Build a 2d dip direction interpolator
         if dipdirection is not None:
-            dipdirection_rad = dipdirection*np.pi/180.
-            sdr = np.sin(dipdirection_rad)
-            cdr = np.cos(dipdirection_rad)
+            xy = np.array([ [dipdirection[i][0], dipdirection[i][1]] for i in range(len(dipdirection))])
+            dipdirs = np.array([dipdirection[i][2] * np.pi / 180. for i in range(len(dipdirection))])
+            dipdirinterpolator = sciint.LinearNDInterpolator(xy, dipdirs, fill_value=90.)      # If the points are not inside the area provided by the user, the dip direction will be 90 deg (vertical)
         else:
-            sdr = 0.
-            cdr = 0.
+            def dipdirinterpolator(d, z):
+                return 90.
 
         # initialize the depth of the top row
         self.zi = np.ones((self.xi.shape))*self.top
@@ -166,8 +177,8 @@ class fault3D(RectangularPatches):
             # Get the depth of the top of the row
             zt = self.zi
 
-            # Compute the dips for this row (it updates xi and yi at the same time)
-            self.dipatZ(dipinterpolator, zt)
+            # Compute the dips and dip directions for this row (it updates xi and yi at the same time)
+            self.dipatZ(dipinterpolator, dipdirinterpolator, zt)
             self.dip *= np.pi/180.
 
             # Get the top of the row
@@ -177,8 +188,8 @@ class fault3D(RectangularPatches):
             zt = self.zi.round(decimals=10)
 
             # Compute the bottom row
-            xb = xt + self.width*np.cos(self.dip)*sdr
-            yb = yt + self.width*np.cos(self.dip)*cdr
+            xb = xt + self.width*np.cos(self.dip)*self.sdr
+            yb = yt + self.width*np.cos(self.dip)*self.cdr
             lonb, latb = self.xy2ll(xb,yb)
             zb = zt + self.width*np.sin(self.dip)
 
