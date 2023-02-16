@@ -1021,7 +1021,7 @@ class insar(SourceInv):
         if function=='exp':
             self.Cd = sigma*sigma*np.exp(-1.0*distance/lam)
         elif function=='gauss':
-            self.Cd = sigma*sigma*np.exp(-1.0*distance*distance/(2*lam))
+            self.Cd = sigma*sigma*np.exp(-1.0*distance*distance/(2*lam*lam))
 
         # Normalize
         if normalizebystd:
