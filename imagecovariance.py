@@ -20,7 +20,7 @@ from .opticorr import opticorr
 def costFunction(m, t, function, data, weights, fun):
     sil, sig, lam = m
     if (sil - sig**2) < 0:
-        return 999999999.
+        return 9e9
     else:
         return np.sum(np.sqrt(((data-function(t, sig, lam, covfn=fun, constant=sil))*weights)**2))
 
@@ -35,7 +35,7 @@ def covariance(t,sig,lam,covfn='exp',constant=0.):
         return (sig**2)*np.exp(-t/lam)+constant
     elif covfn in ('gauss'):
         return (sig**2)*np.exp(-(t**2)/(2*(lam)**2))+constant
-        
+
 def semivariance(t,sig,lam,covfn='exp',constant=0.):
     if covfn in ('exp'):
         return -(sig**2)*np.exp(-t/lam)+constant
@@ -442,7 +442,7 @@ class imagecovariance(object):
 
     def computeCovariance(self, function='exp', ComputeSemivar=True, frac=0.4, every=1., distmax=50., rampEst=True, prior=None, tol=1e-10):
         '''
-        Computes the covariance functions through the semivariance fitting to the semivariograms.
+        Computes the covariance functions through the semivariance fit to the semivariograms.
 
         Kwargs:
             * function      : Type of function to fit. Can be 'exp'or 'gauss'.
@@ -493,7 +493,7 @@ class imagecovariance(object):
             # Minimize
             res = sp.differential_evolution(costFunction, 
                     args=(x, semivariance, y, weights, function),
-                    bounds=[(0., 9.), (0., 9.), (0.01, 99.)], mutation=1.9)
+                    bounds=[(0., 99.), (0., 99.), (0.01, 99.)])
             pars = res.x
 
             # Save parameters
@@ -678,7 +678,7 @@ class imagecovariance(object):
             if savefig:
                 figname = 'Data_{}.png'.format(self.name.replace(' ','_'))
                 figname = os.path.join(savedir, figname)
-                plt.savefig(figname)
+                plt.savefig(figname, dpi=300)
 
         # Create a figure
         fig = plt.figure(figure)
@@ -734,7 +734,7 @@ class imagecovariance(object):
         if savefig:
             figname = '{}.png'.format(self.name.replace(' ','_'))
             figname = os.path.join(savedir, figname)
-            plt.savefig(figname)
+            plt.savefig(figname, dpi=300)
 
         # Show me
         if show:
