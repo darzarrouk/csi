@@ -1126,14 +1126,14 @@ class TriangularTents(TriangularPatches):
         for adja in self.adjacentTents:
             # Counting Laplacian
             if method=='count':
-                D[i,i] = 2*float(len(adja))
-                D[i,adja] = -2./float(len(adja))
+                D[i, i] = 2.
+                D[i, adja] = -2. / float(len(adja))
             # Distance-based
             elif method=='distance':
-                distances = self.Distances[i]/normalizer
+                distances = self.Distances[i] / normalizer
                 E = np.sum(distances)
-                D[i,i] = float(len(adja))*2./E * np.sum(1./distances)
-                D[i,adja] = -2./E * 1./distances
+                D[i, i] = 2. / E * np.sum(1. / distances)
+                D[i, adja] = -2. / E * 1. / distances
 
             # Increment 
             i += 1
