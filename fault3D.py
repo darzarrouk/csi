@@ -161,7 +161,7 @@ class fault3D(RectangularPatches):
             import scipy.interpolate as sciint
             xy = np.array([ [dipdir[i][0], dipdir[i][1]] for i in range(len(dipdir))])
             dipdirs = np.array([dipdir[i][2] * np.pi / 180. for i in range(len(dipdir))])
-            dipdirinterpolator = sciint.LinearNDInterpolator(xy, dipdirs, fill_value=90.)      # If the points are not inside the area provided by the user, the dip direction will be 90 deg (to the East)
+            dipdirinterpolator = sciint.NearestNDInterpolator(xy, dipdirs)
         else:
             def dipdirinterpolator(d, z):
                 return 90.
