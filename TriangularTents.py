@@ -893,6 +893,11 @@ class TriangularTents(TriangularPatches):
             * None
         '''
 
+        tracedstks = []
+        for xi, yi in zip(self.xi, self.yi):
+            dstk, dacr = self.distance2trace(xi, yi, coord='xy')
+            tracedstks.append(dstk)
+
         tents2delete = []
         dstks = []
         ddips = []
@@ -902,7 +907,7 @@ class TriangularTents(TriangularPatches):
             dstks.append(dstk)
             ddips.append(ddip)
         for tid, (dstk, ddip) in enumerate(zip(dstks, ddips)):
-            if (np.abs(dstk - np.min(dstks)) < 1. or np.abs(dstk - np.max(dstks)) < 1. or np.abs(ddip - np.max(ddips)) < 1.): 
+            if (dstk <= np.min(tracedstks) or dstk >= np.max(tracedstks) or np.abs(ddip - np.max(ddips)) < 1.): 
                 tents2delete.append(tid)
                 self.N_slip -= 1
 
