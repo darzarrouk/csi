@@ -35,7 +35,7 @@ def covariance(t,sig,lam,covfn='exp',constant=0.):
         return (sig**2)*np.exp(-t/lam)+constant
     elif covfn in ('gauss'):
         return (sig**2)*np.exp(-(t**2)/(2*(lam)**2))+constant
-        
+
 def semivariance(t,sig,lam,covfn='exp',constant=0.):
     if covfn in ('exp'):
         return -(sig**2)*np.exp(-t/lam)+constant
@@ -442,7 +442,7 @@ class imagecovariance(object):
 
     def computeCovariance(self, function='exp', ComputeSemivar=True, frac=0.4, every=1., distmax=50., rampEst=True, prior=None, tol=1e-10):
         '''
-        Computes the covariance functions through the semivariance fitting to the semivariograms.
+        Computes the covariance functions through the semivariance fit to the semivariograms.
 
         Kwargs:
             * function      : Type of function to fit. Can be 'exp'or 'gauss'.
@@ -493,7 +493,7 @@ class imagecovariance(object):
             # Minimize
             res = sp.differential_evolution(costFunction, 
                     args=(x, semivariance, y, weights, function),
-                    bounds=[(0., 100.), (0., 100.), (0.01, 20.)])
+                    bounds=[(0., 99.), (0., 99.), (0.01, 99.)])
             pars = res.x
 
             # Save parameters
