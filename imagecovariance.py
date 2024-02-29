@@ -20,7 +20,7 @@ from .opticorr import opticorr
 def costFunction(m, t, function, data, weights, fun):
     sil, sig, lam = m
     if (sil - sig**2) < 0:
-        return 999999999.
+        return 9e9
     else:
         return np.sum(np.sqrt(((data-function(t, sig, lam, covfn=fun, constant=sil))*weights)**2))
 
@@ -493,7 +493,7 @@ class imagecovariance(object):
             # Minimize
             res = sp.differential_evolution(costFunction, 
                     args=(x, semivariance, y, weights, function),
-                    bounds=[(0., 9.), (0., 9.), (0.01, 99.)], mutation=1.9)
+                    bounds=[(0., 100.), (0., 100.), (0.01, 20.)])
             pars = res.x
 
             # Save parameters
@@ -678,7 +678,7 @@ class imagecovariance(object):
             if savefig:
                 figname = 'Data_{}.png'.format(self.name.replace(' ','_'))
                 figname = os.path.join(savedir, figname)
-                plt.savefig(figname)
+                plt.savefig(figname, dpi=300)
 
         # Create a figure
         fig = plt.figure(figure)
@@ -701,14 +701,14 @@ class imagecovariance(object):
             if data in ('semivariogram', 'semi', 'all', 'semivar'):
                 semi = self.datasets[dname]['Semivariogram']
                 dist = self.datasets[dname]['Distance']
-                ax.plot(dist, semi, '.b', markersize=10)
+                ax.plot(dist, semi, color='lightsteelblue', ls='', marker='*', markersize=10)
                 if 'function' in self.datasets[dname].keys():
                     sill = self.datasets[dname]['Sill']
                     sigm = self.datasets[dname]['Sigma']
                     lamb = self.datasets[dname]['Lambda']
                     function = self.datasets[dname]['function']
-                    fy = semivariance(dist, sigm, lamb, covfn=function, constant=sill)
-                    ax.plot(dist, fy, '-k')
+                    fy = semivariance(np.linspace(np.min(dist), np.max(dist), 1000), sigm, lamb, covfn=function, constant=sill)
+                    ax.plot(np.linspace(np.min(dist), np.max(dist), 1000), fy, '-k')
 
             # Plot Covariance
             if data in ('covariogram', 'all', 'cov'):
@@ -721,20 +721,26 @@ class imagecovariance(object):
                     sigm = self.datasets[dname]['Sigma']
                     lamb = self.datasets[dname]['Lambda']
                     function = self.datasets[dname]['function']
-                    fy = sill - semivariance(dist, sigm, lamb, covfn=function, constant=sill)
-                    ax.plot(dist, fy, '-r')
+                    fy = sill - semivariance(np.linspace(np.min(dist), np.max(dist), 1000), sigm, lamb, covfn=function, constant=sill)
+                    ax.plot(np.linspace(np.min(dist), np.max(dist), 1000), fy, '-r')
 
             # Axes
-            ax.axis('auto')
+            from matplotlib.ticker import FormatStrFormatter
+            ax.yaxis.set_major_formatter(FormatStrFormatter('%.0e'))
+            ax.axis('tight')
+            ax.patch.set(lw=1, ec='black')
+            ax.set_xlabel('Distance (km)')
+            ax.set_ylabel('Value (m$^2$)')
 
             # Increase 
             ii += 1
 
         # Save?
         if savefig:
-            figname = '{}.png'.format(self.name.replace(' ','_'))
+            figname = '{}.cov.png'.format(self.name.replace(' ','_'))
             figname = os.path.join(savedir, figname)
-            plt.savefig(figname)
+            plt.tight_layout()
+            plt.savefig(figname, dpi=300)
 
         # Show me
         if show:
@@ -763,14 +769,14 @@ class imagecovariance(object):
         l4 = linecache.getline(filename,4)
         l5 = linecache.getline(filename,5)
 
-        self.datasets[dname]['function'] = 'exp'
+        self.datasets[dname]['function'] = 'gauss'
         self.datasets[dname]['Sill'] = float(l3.split()[-1])
         self.datasets[dname]['Sigma'] = float(l4.split()[-1])
         self.datasets[dname]['Lambda'] = float(l5.split()[-1])
         self.datasets[dname]['Distance'] = tmp[:,0]
-        self.datasets[dname]['Covariogram'] = tmp[:,1]
-        self.datasets[dname]['Covariogram Std'] = tmp[:,2]
-        
+        self.datasets[dname]['Semivariogram'] = tmp[:,1]
+        self.datasets[dname]['Semivariogram Std'] = tmp[:,2]
+
         return
 
 
@@ -802,7 +808,6 @@ class imagecovariance(object):
 
         # All done
         return Cd
-
     def _getl0(self, dname, s0):
         '''
         From a value of sill, estimates the intersect between the slope on the first
