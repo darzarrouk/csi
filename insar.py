@@ -976,7 +976,7 @@ class insar(SourceInv):
         return
 
     def buildCd(self, sigma, lam, function='exp', diagonalVar=False,
-                normalizebystd=False):
+                normalizebystd=False, plus=False):
         '''
         Builds the full Covariance matrix from values of sigma and lambda.
 
@@ -996,6 +996,7 @@ class insar(SourceInv):
             * function          : Can be 'gauss' or 'exp'
             * diagonalVar       : Substitute the diagonal by the standard deviation of the measurement squared
             * normalizebystd    : Weird option to normalize the covariance matrix by the std deviation
+            * plus              : Add the standard deviation of the measurement squared to the diagonal
 
         Returns:
             * None
@@ -1032,8 +1033,12 @@ class insar(SourceInv):
 
         # Substitute variance?
         if diagonalVar:
-            for i in range(nd):
-                self.Cd[i,i] = self.err[i]**2
+            if (plus == True):
+                for i in range(nd):
+                    self.Cd[i,i] += self.err[i]**2
+            else:
+                for i in range(nd):
+                    self.Cd[i,i] = self.err[i]**2
 
         # All done
         return

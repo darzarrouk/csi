@@ -892,7 +892,25 @@ class TriangularTents(TriangularPatches):
         Returns:    
             * None
         '''
-    
+
+        tracedstks = []
+        for xi, yi in zip(self.xi, self.yi):
+            dstk, dacr = self.distance2trace(xi, yi, coord='xy')
+            tracedstks.append(dstk)
+
+        tents2delete = []
+        dstks = []
+        ddips = []
+        for i, t in enumerate(self.tent):
+            dstk, dacr = self.distance2trace(t[0], t[1], coord='xy')
+            ddip = np.sqrt(dacr**2 + t[2]**2)
+            dstks.append(dstk)
+            ddips.append(ddip)
+        for tid, (dstk, ddip) in enumerate(zip(dstks, ddips)):
+            if (dstk <= np.min(tracedstks) or dstk >= np.max(tracedstks) or np.abs(ddip - np.max(ddips)) < 1.): 
+                tents2delete.append(tid)
+                self.N_slip -= 1
+
         # Get the faces and Nodes
         Faces = np.array(self.Faces)
         Vertices = self.Vertices
@@ -901,7 +919,7 @@ class TriangularTents(TriangularPatches):
         Nodes = {}
 
         # Loop for that 
-        for nId in self.tentid:
+        for nId in [t for t in self.tentid if t not in tents2delete]:
             Nodes[nId] = {'nTriangles': 0, 'idTriangles': []}
             for idFace in range(self.Faces.shape[0]):
                 ns = self.Faces[idFace,:].tolist()
@@ -1113,20 +1131,20 @@ class TriangularTents(TriangularPatches):
         for adja in self.adjacentTents:
             # Counting Laplacian
             if method=='count':
-                D[i,i] = 2*float(len(adja))
-                D[i,adja] = -2./float(len(adja))
+                D[i, i] = 2.
+                D[i, adja] = -2. / float(len(adja))
             # Distance-based
             elif method=='distance':
-                distances = self.Distances[i]/normalizer
+                distances = self.Distances[i] / normalizer
                 E = np.sum(distances)
-                D[i,i] = float(len(adja))*2./E * np.sum(1./distances)
-                D[i,adja] = -2./E * 1./distances
+                D[i, i] = 2. / E * np.sum(1. / distances)
+                D[i, adja] = -2. / E * 1. / distances
 
             # Increment 
             i += 1
 
         # All done
-        return D
+        return D[self.Ids, :][:, self.Ids]
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------

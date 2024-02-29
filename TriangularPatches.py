@@ -1232,7 +1232,7 @@ class TriangularPatches(Fault):
         '''
 
         # Delete only one vertex
-        self.deletevertices([iVertex], checkPatch, checkSlip=checkSlip)
+        self.deletevertices([iVertex], checkPatch=checkPatch, checkSlip=checkSlip)
 
         # All done
         return
@@ -1919,7 +1919,7 @@ class TriangularPatches(Fault):
         for i in range(npatch):
 
             if verbose:
-                sys.stdout.write('%i / %i\r' % (i, npatch))
+                sys.stdout.write('%i / %i\r' % (i+1, npatch))
                 sys.stdout.flush()
 
             # Indices of Vertices of current patch
@@ -2006,6 +2006,13 @@ class TriangularPatches(Fault):
                 h14 = max(h12, h13)
                 D[i,adjacents[0]] = -h13*h14
                 D[i,adjacents[1]] = -h12*h14
+                sumProd = h13*h14 + h12*h14 + h12*h13
+            elif len(hvals) == 1:
+                h12 = hvals[0]
+                # Make two virtual patches
+                h13 = h12
+                h14 = h12
+                D[i,adjacents[0]] = -h13*h14
                 sumProd = h13*h14 + h12*h14 + h12*h13
             D[i,i] = sumProd
 

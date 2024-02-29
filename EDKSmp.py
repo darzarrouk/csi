@@ -11,6 +11,7 @@ Modified by L. Pereiaslov in 2022 (Pyrocko's Fomosto could now be used to calcul
 import os
 import struct 
 import sys
+import copy
 import numpy as np
 import multiprocessing as mp
 import subprocess
@@ -106,7 +107,7 @@ class pointdropper(mp.Process):
     def __init__(self, fault, queue, charArea, istart, iend):
 
         # Save the fault
-        self.fault = fault
+        self.fault = copy.deepcopy(fault)
         self.charArea = charArea
         self.istart = istart
         self.iend = iend
@@ -402,11 +403,11 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
     zs = zs - dZ
 
     # Define filenames:
-    file_rec = os.path.dirname(edks) + '/' +  prefix + '.rec'
-    file_pat = os.path.dirname(edks) + '/' +  prefix + '.pat'
-    file_dux = os.path.dirname(edks) + '/' +  prefix + '_ux.dis'
-    file_duy = os.path.dirname(edks) + '/' +  prefix + '_uy.dis'
-    file_duz = os.path.dirname(edks) + '/' +  prefix + '_uz.dis'
+    file_rec = prefix + '.rec'
+    file_pat = prefix + '.pat'
+    file_dux = prefix + '_ux.dis'
+    file_duy = prefix + '_uy.dis'
+    file_duz = prefix + '_uz.dis'
 
     # Clean the file if they exist
     cmd = 'rm -f {} {} {} {} {}'.format(file_rec, file_pat, file_dux, file_duy, file_duz)
@@ -428,10 +429,13 @@ def sum_layered(xs, ys, zs, strike, dip, rake, slip, width, length,\
        for i in range(0, len(temp)):
           file.write( struct.pack( BIN_FILE_FMT, temp[i][k] ) )
     file.close()
-
+  
     # call sum_layered
-    subprocess.run([f'{BIN_EDKS}/sum_layered', f'{os.path.basename(edks)}', f'{prefix}', f'{nrec}', f'{Np}', f'{npw}', f'{npy}'], cwd=f'{os.path.dirname(edks)}')
-
+    cmd = '{}/sum_layered {} {} {} {} {} {}'.format(BIN_EDKS, edks, prefix, nrec, Np, npw, npy)
+    if verbose:
+        print(cmd)
+    os.system(cmd)
+     
     # read sum_layered output Greens function
     # ux
     ux = np.fromfile(file_dux, 'f').reshape((nrec, Np), order='F')
@@ -485,11 +489,7 @@ def sum_layered_fomosto(xs, ys, zs, strike, dip, rake, area, slip, xr, yr, strat
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-# A class that interpolates edks Kernels (same as fortran's sum_layered, 
-# but with more flexibility for the interpolation part)
-
-# ----------------------------------------------------------------------
-# Compute the Green's functions for the patches using fomosto
+# Compute the mu values for the patches using fomosto config file
 def calculate_mu(zs, stratKernels):
 
     f = open(os.path.join(stratKernels, 'config'), 'r')
@@ -509,14 +509,14 @@ def calculate_mu(zs, stratKernels):
             model.append([float(num) for num in lines[i].split()])
     model = np.array(model)
     
-    zsm = zs / 1e3
-    for i in range(len(zsm)):
-        if (zsm[i] >= model[-1, 0]):
+    zskm = zs / 1e3
+    for i in range(len(zskm)):
+        if (zskm[i] >= model[-1, 0]):
             vs = model[-1, 2]
             den = model[-1, 3]
         else:
             for j in range(model.shape[0]):
-                if (zsm[i] >= model[j, 0] and zsm[i] <= model[j+1, 0]):
+                if (zskm[i] >= model[j, 0] and zskm[i] < model[j+1, 0]):
                     vs = (model[j, 2] + model[j+1, 2]) / 2.0
                     den = (model[j, 3] + model[j+1, 3]) / 2.0
         mu.append(den * vs**2 * 1e9)
@@ -524,6 +524,10 @@ def calculate_mu(zs, stratKernels):
 
     return mu
 # ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# A class that interpolates edks Kernels (same as fortran's sum_layered, 
+# but with more flexibility for the interpolation part)
 
 # ----------------------------------------------------------------------
 
@@ -567,10 +571,10 @@ class interpolateEDKS(object):
 
         # Show me
         if self.verbose:
-            print(f'Read Kernel Header file {os.path.split(self.kernel)[0]}/hdr.{os.path.split(self.kernel)[1]}')
+            print('Read Kernel Header file hdr.{}'.format(self.kernel))
 
         # Open the header file
-        fhd = open(f'{os.path.split(self.kernel)[0]}/hdr.{os.path.split(self.kernel)[1]}', 'r')
+        fhd = open('hdr.{}'.format(self.kernel), 'r')
 
         # Read things
         self.prefix = fhd.readline().split()[0]
